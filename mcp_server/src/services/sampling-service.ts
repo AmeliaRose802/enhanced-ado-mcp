@@ -12,16 +12,21 @@ import type {
 
 import { WorkItemIntelligenceAnalyzer } from './analyzers/work-item-intelligence.js';
 import { AIAssignmentAnalyzer } from './analyzers/ai-assignment.js';
-import { buildErrorResponse } from './helpers/response-builder.js';
+import { FeatureDecomposerAnalyzer } from './analyzers/feature-decomposer.js';
+import { HierarchyValidatorAnalyzer } from './analyzers/hierarchy-validator.js';
 import { logger } from '../utils/logger.js';
 
 export class SamplingService {
   private workItemAnalyzer: WorkItemIntelligenceAnalyzer;
   private aiAssignmentAnalyzer: AIAssignmentAnalyzer;
+  private featureDecomposerAnalyzer: FeatureDecomposerAnalyzer;
+  private hierarchyValidatorAnalyzer: HierarchyValidatorAnalyzer;
   
   constructor(private server: any) {
     this.workItemAnalyzer = new WorkItemIntelligenceAnalyzer(server);
     this.aiAssignmentAnalyzer = new AIAssignmentAnalyzer(server);
+    this.featureDecomposerAnalyzer = new FeatureDecomposerAnalyzer(server);
+    this.hierarchyValidatorAnalyzer = new HierarchyValidatorAnalyzer(server);
   }
 
   async analyzeWorkItem(args: WorkItemIntelligenceArgs): Promise<ToolExecutionResult> {
@@ -33,13 +38,11 @@ export class SamplingService {
   }
 
   async decomposeFeature(args: FeatureDecomposerArgs): Promise<ToolExecutionResult> {
-    logger.warn('Feature decomposer not yet migrated to new architecture');
-    return buildErrorResponse('Feature decomposer temporarily unavailable during refactoring');
+    return this.featureDecomposerAnalyzer.analyze(args);
   }
 
   async validateHierarchy(args: HierarchyValidatorArgs): Promise<ToolExecutionResult> {
-    logger.warn('Hierarchy validator not yet migrated to new architecture');
-    return buildErrorResponse('Hierarchy validator temporarily unavailable during refactoring');
+    return this.hierarchyValidatorAnalyzer.analyze(args);
   }
 }
 

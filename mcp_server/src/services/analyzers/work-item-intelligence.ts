@@ -88,35 +88,74 @@ export class WorkItemIntelligenceAnalyzer {
     const responseText = this.samplingClient.extractResponseText(aiResult);
     logger.debug(`Parsing AI response for ${analysisType}:`, responseText.substring(0, 200) + '...');
     
-    const completenessScore = extractScore(responseText, 'complete');
-    const aiReadinessScore = extractScore(responseText, 'readiness|ai');
+    // Try to extract JSON from response
+    let jsonData: any = null;
+    try {
+      // First try: parse directly
+      jsonData = JSON.parse(responseText);
+    } catch {
+      // Second try: extract JSON from markdown code block
+      const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch) {
+        try {
+          jsonData = JSON.parse(jsonMatch[1]);
+        } catch (e) {
+          logger.warn(`Failed to parse JSON from code block: ${e}`);
+        }
+      }
+      
+      // Third try: find any JSON object in the text
+      if (!jsonData) {
+        const objectMatch = responseText.match(/\{[\s\S]*\}/);
+        if (objectMatch) {
+          try {
+            jsonData = JSON.parse(objectMatch[0]);
+          } catch (e) {
+            logger.warn(`Failed to parse extracted JSON object: ${e}`);
+          }
+        }
+      }
+    }
     
-    let priority: "Low" | "Medium" | "High" | "Critical" = "Medium";
-    if (containsKeyword(responseText, ['critical'])) priority = "Critical";
-    else if (containsKeyword(responseText, ['high'])) priority = "High";
-    else if (containsKeyword(responseText, ['low'])) priority = "Low";
+    // If we successfully parsed JSON, use it directly with minimal processing
+    if (jsonData) {
+      return {
+        completenessScore: jsonData.overallScore || jsonData.completeness?.overallScore || 5,
+        aiReadinessScore: jsonData.aiReadiness?.overallScore || jsonData.overallScore || 5,
+        category: jsonData.category || jsonData.categorization?.category || "General",
+        priority: jsonData.priority || jsonData.suggestedPriority || jsonData.categorization?.priority || "Medium",
+        complexity: jsonData.complexity || jsonData.suggestedComplexity || jsonData.categorization?.complexity || "Medium",
+        assignmentSuggestion: this.normalizeAssignment(jsonData.decision || jsonData.assignment || jsonData.categorization?.assignment),
+        recommendations: jsonData.recommendations || jsonData.suggestions || [],
+        missingElements: jsonData.missing || jsonData.missingInfo || [],
+        strengths: jsonData.strengths || [],
+        improvementAreas: [],
+        rawAnalysis: jsonData  // Include full JSON for intelligent agent to interpret
+      };
+    }
     
-    let complexity: "Simple" | "Medium" | "Complex" | "Expert" = "Medium";
-    if (containsKeyword(responseText, ['simple', 'trivial'])) complexity = "Simple";
-    else if (containsKeyword(responseText, ['complex'])) complexity = "Complex";
-    else if (containsKeyword(responseText, ['expert'])) complexity = "Expert";
-    
-    let assignmentSuggestion: "AI" | "Human" | "Hybrid" = "Human";
-    if (containsKeyword(responseText, ['ai-suitable', 'ai suitable'])) assignmentSuggestion = "AI";
-    else if (containsKeyword(responseText, ['hybrid'])) assignmentSuggestion = "Hybrid";
-    
+    // Fallback: if JSON parsing failed, return raw text for agent to interpret
+    logger.warn(`Failed to parse JSON response, returning raw text for analysis type: ${analysisType}`);
     return {
-      completenessScore,
-      aiReadinessScore,
+      completenessScore: 5,
+      aiReadinessScore: 5,
       category: "General",
-      priority,
-      complexity,
-      assignmentSuggestion,
-      recommendations: [`🤖 **AI Analysis (${analysisType.toUpperCase()})**:\n\n${responseText}\n\n`],
+      priority: "Medium",
+      complexity: "Medium",
+      assignmentSuggestion: "Human",
+      recommendations: [`⚠️ Raw AI Response (parse as needed):\n${responseText}`],
       missingElements: [],
       strengths: [],
       improvementAreas: []
     };
+  }
+  
+  private normalizeAssignment(assignment: string | undefined): "AI" | "Human" | "Hybrid" {
+    if (!assignment) return "Human";
+    const normalized = assignment.toLowerCase();
+    if (normalized.includes('ai-suitable') || normalized === 'ai') return "AI";
+    if (normalized.includes('hybrid')) return "Hybrid";
+    return "Human";
   }
 
   private async createEnhancedWorkItem(args: WorkItemIntelligenceArgs, analysis: AnalysisResult): Promise<string> {

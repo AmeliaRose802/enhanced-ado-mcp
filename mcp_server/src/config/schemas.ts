@@ -139,31 +139,9 @@ export const getConfigurationSchema = z.object({
   Section: z.enum(["all", "azureDevOps", "gitRepository", "gitHubCopilot", "toolBehavior", "security"]).optional().default("all").describe("Specific configuration section to retrieve")
 });
 
-export const discoverAreaPathsSchema = z.object({
-  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  Project: z.string().optional().default(() => cfg().azureDevOps.project),
-  IncludeChildPaths: z.boolean().optional().default(true).describe("Include all child area paths"),
-  MaxDepth: z.number().int().optional().default(10).describe("Maximum depth to traverse for area paths")
-});
 
-export const discoverIterationPathsSchema = z.object({
-  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  Project: z.string().optional().default(() => cfg().azureDevOps.project),
-  IncludeChildPaths: z.boolean().optional().default(true).describe("Include all child iteration paths"),
-  MaxDepth: z.number().int().optional().default(10).describe("Maximum depth to traverse for iteration paths"),
-  IncludeCompleted: z.boolean().optional().default(false).describe("Include completed/past iterations")
-});
 
-export const discoverRepositoriesSchema = z.object({
-  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  Project: z.string().optional().default(() => cfg().azureDevOps.project),
-  IncludeBranches: z.boolean().optional().default(true).describe("Include branch information for each repository"),
-  MaxRepositories: z.number().int().optional().default(50).describe("Maximum number of repositories to return")
-});
 
-export const discoverWorkItemTypesSchema = z.object({
-  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  Project: z.string().optional().default(() => cfg().azureDevOps.project),
-  IncludeFields: z.boolean().optional().default(false).describe("Include available fields for each work item type"),
-  IncludeStates: z.boolean().optional().default(true).describe("Include available states for each work item type")
-});
+
+
+

@@ -8,7 +8,6 @@ import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../helpers/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
 import { formatWorkItemForAIAnalysis } from '../sampling-formatters.js';
-import { extractConfidence, extractNumber, extractFileRange, containsKeyword } from '../helpers/text-extraction.js';
 
 export class AIAssignmentAnalyzer {
   private samplingClient: SamplingClient;
@@ -57,50 +56,89 @@ export class AIAssignmentAnalyzer {
     const responseText = this.samplingClient.extractResponseText(aiResult);
     logger.debug(`Parsing AI assignment response:`, responseText.substring(0, 200) + '...');
     
-    let decision: "AI_FIT" | "HUMAN_FIT" | "HYBRID" = "HUMAN_FIT";
-    if (containsKeyword(responseText, ['ai_fit', 'ai-fit'])) decision = "AI_FIT";
-    else if (containsKeyword(responseText, ['hybrid'])) decision = "HYBRID";
+    // Try to extract JSON from response
+    let jsonData: any = null;
+    try {
+      jsonData = JSON.parse(responseText);
+    } catch {
+      const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch) {
+        try {
+          jsonData = JSON.parse(jsonMatch[1]);
+        } catch (e) {
+          logger.warn(`Failed to parse JSON from code block: ${e}`);
+        }
+      }
+      
+      if (!jsonData) {
+        const objectMatch = responseText.match(/\{[\s\S]*\}/);
+        if (objectMatch) {
+          try {
+            jsonData = JSON.parse(objectMatch[0]);
+          } catch (e) {
+            logger.warn(`Failed to parse extracted JSON object: ${e}`);
+          }
+        }
+      }
+    }
     
-    const confidence = extractConfidence(responseText);
-    const riskScore = extractNumber(responseText, 'risk');
-    const { min: minFiles, max: maxFiles } = extractFileRange(responseText);
+    // If JSON parsed successfully, use it
+    if (jsonData) {
+      const decision = this.normalizeDecision(jsonData.decision);
+      const confidence = jsonData.confidence || 0.5;
+      const riskScore = jsonData.riskScore || 50;
+      
+      return {
+        decision,
+        confidence,
+        riskScore,
+        primaryReasons: jsonData.reasons || jsonData.primaryReasons || [],
+        missingInfo: jsonData.missingInfo || [],
+        recommendedNextSteps: jsonData.nextSteps || jsonData.recommendedNextSteps || [],
+        estimatedScope: {
+          files: {
+            min: jsonData.scope?.filesMin || jsonData.estimatedScope?.files?.min || 1,
+            max: jsonData.scope?.filesMax || jsonData.estimatedScope?.files?.max || 5
+          },
+          complexity: jsonData.scope?.complexity || jsonData.estimatedScope?.complexity || "medium"
+        },
+        guardrails: {
+          testsRequired: jsonData.guardrails?.testsRequired || false,
+          featureFlagOrToggle: jsonData.guardrails?.featureFlag || jsonData.guardrails?.featureFlagOrToggle || false,
+          touchSensitiveAreas: jsonData.guardrails?.touchesSensitive || jsonData.guardrails?.touchSensitiveAreas || false,
+          needsCodeReviewFromOwner: jsonData.guardrails?.needsReview || jsonData.guardrails?.needsCodeReviewFromOwner || false
+        }
+      };
+    }
     
-    let complexity: "trivial" | "low" | "medium" | "high" = "medium";
-    if (containsKeyword(responseText, ['trivial'])) complexity = "trivial";
-    else if (containsKeyword(responseText, ['low complexity'])) complexity = "low";
-    else if (containsKeyword(responseText, ['high complexity'])) complexity = "high";
-    
-    const guardrails = {
-      testsRequired: containsKeyword(responseText, ['tests required', 'testing needed']),
-      featureFlagOrToggle: containsKeyword(responseText, ['feature flag', 'toggle']),
-      touchSensitiveAreas: containsKeyword(responseText, ['sensitive', 'critical']),
-      needsCodeReviewFromOwner: containsKeyword(responseText, ['code review', 'domain expert'])
-    };
-    
+    // Fallback: return conservative default with raw response
+    logger.warn(`Failed to parse JSON response for AI assignment analysis`);
     return {
-      decision,
-      confidence,
-      riskScore,
-      primaryReasons: [responseText],
-      missingInfo: [],
-      recommendedNextSteps: [],
+      decision: "HUMAN_FIT",
+      confidence: 0.3,
+      riskScore: 70,
+      primaryReasons: [`⚠️ Parsing failed - raw response: ${responseText.substring(0, 200)}`],
+      missingInfo: ["Unable to parse AI response"],
+      recommendedNextSteps: ["Manual review required"],
       estimatedScope: {
-        files: { min: minFiles, max: maxFiles },
-        complexity
+        files: { min: 1, max: 10 },
+        complexity: "medium"
       },
-      guardrails,
-      assignmentStrategy: this.generateStrategy(decision, confidence, riskScore)
+      guardrails: {
+        testsRequired: true,
+        featureFlagOrToggle: false,
+        touchSensitiveAreas: true,
+        needsCodeReviewFromOwner: true
+      },
+      assignmentStrategy: "👤 Manual review needed due to parsing failure"
     };
   }
-
-  private generateStrategy(decision: string, confidence: number, riskScore: number): string {
-    if (decision === "AI_FIT" && confidence > 0.7 && riskScore < 40) {
-      return "✅ Ready for GitHub Copilot assignment. Well-defined task with low risk.";
-    } else if (decision === "AI_FIT" && riskScore >= 40) {
-      return "⚠️ AI-suitable but requires careful monitoring due to risk factors.";
-    } else if (decision === "HYBRID") {
-      return "🔄 Hybrid approach: Break down into AI-suitable subtasks with human oversight.";
-    }
-    return "👤 Human assignment recommended. Requires domain expertise or stakeholder interaction.";
+  
+  private normalizeDecision(decision: string | undefined): "AI_FIT" | "HUMAN_FIT" | "HYBRID" {
+    if (!decision) return "HUMAN_FIT";
+    const normalized = decision.toUpperCase();
+    if (normalized.includes('AI_FIT') || normalized.includes('AI-FIT')) return "AI_FIT";
+    if (normalized.includes('HYBRID')) return "HYBRID";
+    return "HUMAN_FIT";
   }
 }

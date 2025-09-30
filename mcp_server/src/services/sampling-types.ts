@@ -83,6 +83,7 @@ export interface AnalysisResult {
   missingElements: string[];
   strengths: string[];
   improvementAreas: string[];
+  rawAnalysis?: any;  // Full JSON response from AI for intelligent agent interpretation
 }
 
 export interface AIAssignmentResult {

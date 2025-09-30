@@ -139,11 +139,8 @@ Language model access is managed by VS Code and persists across sessions. To res
 ### Configuration & Discovery Tools
 
 9. `wit-show-config` - Display the effective merged configuration (redacted)
+  - TODO: Do we even still offer this? I think we should likely remove it since we no longer use the merged configuation and instead use the MCP server config. Please remove this and any unused debt related to it or the old configuration if you can confirm they are no longer needed
 10. `wit-get-configuration` - Get current MCP server configuration
-11. `wit-discover-area-paths` - Discover available area paths from Azure DevOps project
-12. `wit-discover-iteration-paths` - Discover available iteration paths
-13. `wit-discover-repositories` - Discover available Git repositories
-14. `wit-discover-work-item-types` - Discover available work item types and their properties
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 

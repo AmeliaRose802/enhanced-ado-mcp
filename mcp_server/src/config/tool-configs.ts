@@ -8,11 +8,7 @@ import {
   aiAssignmentAnalyzerSchema,
   featureDecomposerSchema,
   hierarchyValidatorSchema,
-  getConfigurationSchema,
-  discoverAreaPathsSchema,
-  discoverIterationPathsSchema,
-  discoverRepositoriesSchema,
-  discoverWorkItemTypesSchema
+  getConfigurationSchema
 } from "./schemas.js";
 import { z } from 'zod';
 import { getRedactedConfig } from './config-manager.js';
@@ -231,71 +227,6 @@ export const toolConfigs: ToolConfig[] = [
       properties: {
         IncludeSensitive: { type: "boolean", description: "Include potentially sensitive configuration values" },
         Section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot", "toolBehavior", "security"], description: "Specific configuration section to retrieve" }
-      },
-      required: []
-    }
-  },
-  {
-    name: "wit-discover-area-paths",
-    description: "Discover available area paths from Azure DevOps project to help agents choose appropriate paths for work item creation",
-    script: "", // Handled internally  
-    schema: discoverAreaPathsSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        IncludeChildPaths: { type: "boolean", description: "Include all child area paths" },
-        MaxDepth: { type: "number", description: "Maximum depth to traverse for area paths" }
-      },
-      required: []
-    }
-  },
-  {
-    name: "wit-discover-iteration-paths", 
-    description: "Discover available iteration paths from Azure DevOps project to help agents choose appropriate iterations for work item planning",
-    script: "", // Handled internally
-    schema: discoverIterationPathsSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        IncludeChildPaths: { type: "boolean", description: "Include all child iteration paths" },
-        MaxDepth: { type: "number", description: "Maximum depth to traverse for iteration paths" },
-        IncludeCompleted: { type: "boolean", description: "Include completed/past iterations" }
-      },
-      required: []
-    }
-  },
-  {
-    name: "wit-discover-repositories",
-    description: "Discover available Git repositories in the Azure DevOps project to help agents link work items to correct repositories", 
-    script: "", // Handled internally
-    schema: discoverRepositoriesSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        IncludeBranches: { type: "boolean", description: "Include branch information for each repository" },
-        MaxRepositories: { type: "number", description: "Maximum number of repositories to return" }
-      },
-      required: []
-    }
-  },
-  {
-    name: "wit-discover-work-item-types",
-    description: "Discover available work item types and their properties from Azure DevOps project to help agents choose appropriate types and understand available fields",
-    script: "", // Handled internally
-    schema: discoverWorkItemTypesSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        IncludeFields: { type: "boolean", description: "Include available fields for each work item type" },
-        IncludeStates: { type: "boolean", description: "Include available states for each work item type" }
       },
       required: []
     }

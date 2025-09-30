@@ -12,7 +12,7 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 
 1. **Core Work Item Tools**: Create, assign, and manage work items
 2. **AI-Powered Analysis Tools**: Intelligent work item analysis, feature decomposition, hierarchy validation
-3. **Configuration & Discovery Tools**: Discover area paths, iterations, repositories, and work item types
+3. **Configuration & Discovery Tools**: View configuration and discover available resources
 4. **Prompt Templates**: Work item enhancement, AI suitability analysis, security item analysis
 
 ## Best Practices
