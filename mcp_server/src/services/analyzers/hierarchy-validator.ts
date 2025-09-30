@@ -13,9 +13,11 @@ import type {
 } from '../sampling-types.js';
 import { execSync } from 'child_process';
 import { logger } from '../../utils/logger.js';
+import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/defaults.js';
 import { SamplingClient } from '../helpers/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
-import { formatWorkItemsForHierarchyAnalysis } from '../sampling-formatters.js';
+import { extractJSON } from '../helpers/json-parser.js';
+import { formatForAI } from '../helpers/sampling-formatters.js';
 
 export class HierarchyValidatorAnalyzer {
   private samplingClient: SamplingClient;
@@ -107,7 +109,7 @@ export class HierarchyValidatorAnalyzer {
   private getAzureDevOpsToken(): string {
     try {
       const result = execSync(
-        'az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv',
+        `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`,
         { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
       );
       return result.trim();
@@ -235,7 +237,7 @@ export class HierarchyValidatorAnalyzer {
     logger.debug(`Analyzing ${workItems.length} work items for hierarchy issues`);
 
     const systemPromptName = 'hierarchy-validator';
-    const userContent = formatWorkItemsForHierarchyAnalysis(workItems, args);
+    const userContent = formatForAI({ workItems, ...args });
 
     const aiResult = await this.samplingClient.createMessage({
       systemPromptName,
@@ -257,32 +259,10 @@ export class HierarchyValidatorAnalyzer {
     args: HierarchyValidatorArgs
   ): HierarchyValidationResult {
     const responseText = this.samplingClient.extractResponseText(aiResult);
-    logger.debug(`Parsing hierarchy validation response:`, responseText.substring(0, 200) + '...');
-
-    let parsed: any;
-
-    try {
-      // Level 1: Try direct JSON parse
-      parsed = JSON.parse(responseText);
-    } catch {
-      try {
-        // Level 2: Extract from code block
-        const codeBlockMatch = responseText.match(/```(?:json)?\s*\n([\s\S]*?)\n```/);
-        if (codeBlockMatch) {
-          parsed = JSON.parse(codeBlockMatch[1]);
-        } else {
-          // Level 3: Extract JSON object using regex
-          const objectMatch = responseText.match(/\{[\s\S]*\}/);
-          if (objectMatch) {
-            parsed = JSON.parse(objectMatch[0]);
-          } else {
-            throw new Error('No JSON found in response');
-          }
-        }
-      } catch (parseError) {
-        logger.error('Failed to parse hierarchy validation response', { responseText, parseError });
-        throw new Error('Failed to parse AI response as JSON');
-      }
+    const parsed = extractJSON(responseText);
+    if (!parsed) {
+      logger.error('Failed to parse hierarchy validation response', { responseText });
+      throw new Error('Failed to parse AI response as JSON');
     }
 
     // Validate and normalize the response

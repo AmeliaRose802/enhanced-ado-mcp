@@ -18,7 +18,7 @@ Your mission: **Systematically identify, categorize, and create actionable plans
 - `wit-assign-to-copilot` - assign items to GitHub Copilot  
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
-- `wit-show-config` - display current configuration
+- `wit-get-configuration` - display current MCP server configuration
 
 ### Find Security Items  
 **Search Process:**

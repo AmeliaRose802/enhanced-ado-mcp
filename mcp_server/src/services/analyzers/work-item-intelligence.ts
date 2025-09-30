@@ -7,8 +7,8 @@ import type { WorkItemIntelligenceArgs, AnalysisResult } from '../sampling-types
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../helpers/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
-import { formatWorkItemForAnalysis } from '../sampling-formatters.js';
-import { extractScore, containsKeyword } from '../helpers/text-extraction.js';
+import { extractJSON } from '../helpers/json-parser.js';
+import { formatForAI } from '../helpers/sampling-formatters.js';
 import { executeTool } from '../tool-service.js';
 
 export class WorkItemIntelligenceAnalyzer {
@@ -50,7 +50,7 @@ export class WorkItemIntelligenceAnalyzer {
   private async performAnalysis(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
     const analysisType = args.AnalysisType || 'full';
     const systemPromptName = `${analysisType}-analyzer`;
-    const userContent = formatWorkItemForAnalysis(args);
+    const userContent = formatForAI(args);
 
     const aiResult = await this.samplingClient.createMessage({
       systemPromptName,
@@ -87,35 +87,7 @@ export class WorkItemIntelligenceAnalyzer {
   private parseAnalysisResponse(aiResult: any, analysisType: string): AnalysisResult {
     const responseText = this.samplingClient.extractResponseText(aiResult);
     logger.debug(`Parsing AI response for ${analysisType}:`, responseText.substring(0, 200) + '...');
-    
-    // Try to extract JSON from response
-    let jsonData: any = null;
-    try {
-      // First try: parse directly
-      jsonData = JSON.parse(responseText);
-    } catch {
-      // Second try: extract JSON from markdown code block
-      const jsonMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-      if (jsonMatch) {
-        try {
-          jsonData = JSON.parse(jsonMatch[1]);
-        } catch (e) {
-          logger.warn(`Failed to parse JSON from code block: ${e}`);
-        }
-      }
-      
-      // Third try: find any JSON object in the text
-      if (!jsonData) {
-        const objectMatch = responseText.match(/\{[\s\S]*\}/);
-        if (objectMatch) {
-          try {
-            jsonData = JSON.parse(objectMatch[0]);
-          } catch (e) {
-            logger.warn(`Failed to parse extracted JSON object: ${e}`);
-          }
-        }
-      }
-    }
+    const jsonData = extractJSON(responseText);
     
     // If we successfully parsed JSON, use it directly with minimal processing
     if (jsonData) {
@@ -125,7 +97,7 @@ export class WorkItemIntelligenceAnalyzer {
         category: jsonData.category || jsonData.categorization?.category || "General",
         priority: jsonData.priority || jsonData.suggestedPriority || jsonData.categorization?.priority || "Medium",
         complexity: jsonData.complexity || jsonData.suggestedComplexity || jsonData.categorization?.complexity || "Medium",
-        assignmentSuggestion: this.normalizeAssignment(jsonData.decision || jsonData.assignment || jsonData.categorization?.assignment),
+        assignmentSuggestion: jsonData.decision || jsonData.assignment || jsonData.categorization?.assignment,
         recommendations: jsonData.recommendations || jsonData.suggestions || [],
         missingElements: jsonData.missing || jsonData.missingInfo || [],
         strengths: jsonData.strengths || [],
@@ -134,28 +106,7 @@ export class WorkItemIntelligenceAnalyzer {
       };
     }
     
-    // Fallback: if JSON parsing failed, return raw text for agent to interpret
-    logger.warn(`Failed to parse JSON response, returning raw text for analysis type: ${analysisType}`);
-    return {
-      completenessScore: 5,
-      aiReadinessScore: 5,
-      category: "General",
-      priority: "Medium",
-      complexity: "Medium",
-      assignmentSuggestion: "Human",
-      recommendations: [`⚠️ Raw AI Response (parse as needed):\n${responseText}`],
-      missingElements: [],
-      strengths: [],
-      improvementAreas: []
-    };
-  }
-  
-  private normalizeAssignment(assignment: string | undefined): "AI" | "Human" | "Hybrid" {
-    if (!assignment) return "Human";
-    const normalized = assignment.toLowerCase();
-    if (normalized.includes('ai-suitable') || normalized === 'ai') return "AI";
-    if (normalized.includes('hybrid')) return "Hybrid";
-    return "Human";
+    throw new Error('Failed to parse AI response as JSON');
   }
 
   private async createEnhancedWorkItem(args: WorkItemIntelligenceArgs, analysis: AnalysisResult): Promise<string> {

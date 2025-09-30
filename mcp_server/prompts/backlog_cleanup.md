@@ -25,7 +25,7 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 - `wit-assign-to-copilot` - assign items to GitHub Copilot
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links
-- `wit-show-config` - display current configuration
+- `wit-get-configuration` - display current MCP server configuration
 
 ---
 

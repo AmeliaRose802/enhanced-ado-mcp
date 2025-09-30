@@ -17,7 +17,7 @@ Your goal: **rewrite and expand the work item so it is precise, testable, and se
 - `wit-assign-to-copilot` - assign items to GitHub Copilot
 - `wit-new-copilot-item` - create and assign items to Copilot 
 - `wit-extract-security-links` - extract security instruction links
-- `wit-show-config` - display current configuration
+- `wit-get-configuration` - display current MCP server configuration
 
 **Post-Enhancement Actions:**
 If the user requests automatic creation in Azure DevOps, use the `wit-create-new-item` tool and supply the enhanced content.

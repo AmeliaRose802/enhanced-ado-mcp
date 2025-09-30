@@ -2,7 +2,7 @@ import type { ToolExecutionResult } from "../types/index.js";
 import { toolConfigs } from "../config/tool-configs.js";
 import { executeScript } from "../utils/script-executor.js";
 import { logger } from "../utils/logger.js";
-import { getRedactedConfig, loadConfiguration } from "../config/config-manager.js";
+import { loadConfiguration } from "../config/config-manager.js";
 import { SamplingService } from "./sampling-service.js";
 import { 
   validateAzureCLI 
@@ -30,21 +30,6 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   }
   if (!config) {
     throw new Error(`Unknown tool: ${name}`);
-  }
-
-  // Internal pseudo-tool (no script execution)
-  if (name === 'wit-show-config') {
-    // ensure config loaded (will throw if invalid / secrets missing)
-    const cfg = loadConfiguration();
-    const redacted = getRedactedConfig();
-    return {
-      success: true,
-      data: redacted,
-      raw: { stdout: JSON.stringify(redacted, null, 2), stderr: '', exitCode: 0 },
-      metadata: { source: 'internal', configVersion: cfg.configVersion ?? 1 },
-      errors: [],
-      warnings: []
-    };
   }
 
   // Get configuration information

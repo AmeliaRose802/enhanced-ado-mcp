@@ -115,32 +115,6 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
   return cfg;
 }
 
-
-
-// Redact potential secrets – super light heuristic
-function redact(value: any): any {
-  if (typeof value === 'string') {
-    const lowered = value.toLowerCase();
-    if (lowered.includes('token') || lowered.includes('secret') || lowered.includes('pat')) {
-      return '***';
-    }
-  }
-  if (Array.isArray(value)) return value.map(redact);
-  if (value && typeof value === 'object') {
-    const clone: any = {};
-    for (const [k, v] of Object.entries(value)) {
-      clone[k] = redact(v);
-    }
-    return clone;
-  }
-  return value;
-}
-
-export function getRedactedConfig(): any {
-  const cfg = loadConfiguration();
-  return redact(cfg);
-}
-
 export function updateConfigFromCLI(cliArgs: any): void {
   // Create temporary config override from CLI arguments
   const cliOverride: any = {

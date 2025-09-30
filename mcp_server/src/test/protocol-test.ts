@@ -220,8 +220,8 @@ async function runProtocolTests() {
         testsRun++;
         try {
             const configResponse = await tester.sendRequest('tools/call', {
-                name: 'wit-show-config',
-                arguments: {}
+                name: 'wit-get-configuration',
+                arguments: { Section: 'all' }
             });
             
             if (configResponse.result) {

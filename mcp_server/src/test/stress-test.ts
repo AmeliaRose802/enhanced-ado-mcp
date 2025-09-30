@@ -233,8 +233,8 @@ async function runStressTests() {
         totalTests++;
         try {
             await tester.sendRequest('tools/call', {
-                name: 'wit-show-config',
-                arguments: null
+                name: 'wit-get-configuration',
+                arguments: { Section: 'all' }
             });
             console.log('✅ Handled null arguments');
             passedTests++;

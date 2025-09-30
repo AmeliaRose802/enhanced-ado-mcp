@@ -20,7 +20,7 @@ Your task: decide whether an incoming software work item is a good fit for **aut
 - `wit-assign-to-copilot` - assign existing work items to GitHub Copilot  
 - `wit-new-copilot-item` - create and immediately assign work items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
-- `wit-show-config` - display current configuration
+- `wit-get-configuration` - display current MCP server configuration
 
 ---
 

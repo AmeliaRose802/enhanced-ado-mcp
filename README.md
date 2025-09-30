@@ -138,9 +138,7 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 ### Configuration & Discovery Tools
 
-9. `wit-show-config` - Display the effective merged configuration (redacted)
-  - TODO: Do we even still offer this? I think we should likely remove it since we no longer use the merged configuation and instead use the MCP server config. Please remove this and any unused debt related to it or the old configuration if you can confirm they are no longer needed
-10. `wit-get-configuration` - Get current MCP server configuration
+9. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
@@ -193,7 +191,7 @@ Authentication:
 * Use `az login` (Azure CLI). The Azure DevOps extension is added automatically if missing.
 * Personal Access Tokens are no longer supported/required; we intentionally removed that path.
 
-Show the effective merged configuration (with redaction):
-* Call tool `wit-show-config`.
+View current configuration:
+* Call tool `wit-get-configuration` with optional `Section` parameter to view specific configuration sections.
 
 Verbose debug logging: set `MCP_DEBUG=1` or enable `toolBehavior.verboseLogging`.

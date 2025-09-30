@@ -293,7 +293,7 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('ado-mcp.showConfig', async () => {
             try {
-                const result = await mcpClient.callTool('wit-show-config', {});
+                const result = await mcpClient.callTool('wit-get-configuration', { Section: 'all' });
                 
                 // Show the configuration in a new document
                 const doc = await vscode.workspace.openTextDocument({

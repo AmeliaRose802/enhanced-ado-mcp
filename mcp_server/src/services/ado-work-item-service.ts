@@ -9,6 +9,7 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../utils/logger.js';
+import { AZURE_DEVOPS_RESOURCE_ID } from '../config/defaults.js';
 
 interface WorkItemField {
   op: string;
@@ -47,7 +48,7 @@ function getAzureDevOpsToken(organization: string): string {
   try {
     // Use Azure CLI to get a token for Azure DevOps
     const result = execSync(
-      `az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken -o tsv`,
+      `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`,
       { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     );
     return result.trim();

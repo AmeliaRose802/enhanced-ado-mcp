@@ -125,7 +125,7 @@ async function main() {
         await tester.startServer();
         
         // Test configuration display
-        await tester.testToolCall('wit-show-config');
+        await tester.testToolCall('wit-get-configuration', { Section: 'all' });
         
         // Test creating a new work item (will fail without real credentials, but should show proper error handling)
         await tester.testToolCall('wit-create-new-item', {

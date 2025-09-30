@@ -11,19 +11,11 @@ import {
   getConfigurationSchema
 } from "./schemas.js";
 import { z } from 'zod';
-import { getRedactedConfig } from './config-manager.js';
 
 /**
  * Tool configuration registry to eliminate repetitive switch/case & schema duplication
  */
 export const toolConfigs: ToolConfig[] = [
-  {
-    name: "wit-show-config",
-    description: "Display the effective merged configuration (redacted)",
-    script: "", // no script; handled internally
-    schema: z.object({}),
-    inputSchema: { type: 'object', properties: {}, required: [] }
-  },
   {
     name: "wit-create-new-item",
     description: "Create a new Azure DevOps work item with optional parent relationship",

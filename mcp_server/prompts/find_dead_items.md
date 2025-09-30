@@ -25,7 +25,7 @@ Available Tools:
 - `wit-assign-to-copilot` - assign items to GitHub Copilot
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links
-- `wit-show-config` - display current configuration
+- `wit-get-configuration` - display current MCP server configuration
 
 **Process:**
 1. Use `mcp_ado_search_workitem` to find work items in area path: **{{area_path}}**
