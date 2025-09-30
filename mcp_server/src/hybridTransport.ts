@@ -30,7 +30,7 @@ export class HybridStdioServerTransport {
 
   send(message: any) {
     return new Promise<void>((resolve) => {
-  const json = JSON.stringify(message);
+      const json = JSON.stringify(message);
       const framingMode = process.env.MCP_FORCE_CONTENT_LENGTH === "1" ? "cl" : process.env.MCP_FORCE_NEWLINE === "1" ? "nl" : "auto";
       let payload: string;
       if (framingMode === "cl") {

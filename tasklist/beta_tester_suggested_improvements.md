@@ -60,35 +60,3 @@
 **Why critical**: I can help users fix work items proactively. Before they ask "Is this ready?", I can say "No, because X, Y, Z - here's how to fix it."
 
 **Example use**: Before sprint planning, validate all items in "Ready" state
-
----
-
-### 5. **AI Work Session Management**
-**Tool**: `manage-ai-work-session`
-
-**Operations**:
-- **Claim**: Mark item as "AI working on this" to prevent conflicts
-- **Checkpoint**: Save progress: "Completed analysis, starting implementation"
-- **Update**: Auto-update work item as AI makes progress (comments, state changes)
-- **Complete**: Mark done with AI-generated summary of changes
-- **Handoff**: Transfer to human with context: "I'm stuck on X, here's what I tried"
-
-**Why critical**: When AI (me) works on items autonomously, I need to:
-- Prevent multiple AIs/humans from conflicting
-- Track progress transparently
-- Update work items automatically (not make user do it)
-- Seamlessly hand off when stuck
-
-**Example use**: User assigns me an item → I claim it → update it as I work → complete or escalate with full context
-
----
-
-## Why These 5?
-
-1. **Context Package** - Solves the "death by 1000 API calls" problem
-2. **Batch Retrieval** - Enables multi-item workflows (planning, grooming, dependencies)
-3. **Semantic Search** - Bridges natural language → work items (what users actually do)
-4. **Validation** - Proactive quality gates before problems occur
-5. **Session Management** - Enables autonomous AI work with proper coordination
-
-These 5 tools would transform me from "chat assistant that looks up work items" to "autonomous agent that manages work items end-to-end."

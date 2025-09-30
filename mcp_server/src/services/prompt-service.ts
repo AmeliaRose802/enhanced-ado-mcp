@@ -1,5 +1,5 @@
-import fs from "fs/promises";
-import path from "path";
+import { readdir, readFile } from "fs/promises";
+import { join, basename } from "path";
 import type { Prompt, ParsedPrompt, PromptArgument } from "../types/index.js";
 import { promptsDir } from "../utils/paths.js";
 import { logger } from "../utils/logger.js";
@@ -50,7 +50,7 @@ function applyTemplateSubstitutions(value: string, templateVars: Record<string, 
  */
 export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | null> {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await readFile(filePath, 'utf-8');
     const lines = content.split('\n');
     
     // Check if it starts with YAML frontmatter
@@ -171,7 +171,7 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
     const promptContent = lines.slice(frontmatterEnd + 1).join('\n');
     
     return {
-      name: frontmatter.name || path.basename(filePath, '.md'),
+      name: frontmatter.name || basename(filePath, '.md'),
       description: frontmatter.description || '',
       version: parseInt(frontmatter.version) || 1,
       arguments: argumentsObject,
@@ -188,13 +188,13 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
  */
 export async function loadPrompts(): Promise<Prompt[]> {
   try {
-    const files = await fs.readdir(promptsDir);
-    const promptFiles = files.filter(f => f.endsWith('.md'));
+    const files = await readdir(promptsDir);
+    const promptFiles = files.filter((f: string) => f.endsWith('.md'));
     
     const prompts: Prompt[] = [];
     
     for (const file of promptFiles) {
-      const filePath = path.join(promptsDir, file);
+      const filePath = join(promptsDir, file);
       const parsed = await parsePromptFile(filePath);
       
       if (parsed) {
@@ -224,11 +224,11 @@ export async function loadPrompts(): Promise<Prompt[]> {
  */
 export async function getPromptContent(name: string, args: Record<string, any> = {}): Promise<string> {
   try {
-    const files = await fs.readdir(promptsDir);
-    const promptFiles = files.filter(f => f.endsWith('.md'));
+    const files = await readdir(promptsDir);
+    const promptFiles = files.filter((f: string) => f.endsWith('.md'));
     
     for (const file of promptFiles) {
-      const filePath = path.join(promptsDir, file);
+      const filePath = join(promptsDir, file);
       const parsed = await parsePromptFile(filePath);
       
       if (parsed && parsed.name === name) {

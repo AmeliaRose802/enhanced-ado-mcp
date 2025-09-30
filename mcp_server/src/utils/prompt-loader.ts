@@ -44,20 +44,6 @@ export function loadSystemPrompt(promptName: string, variables?: Record<string, 
     }
   }
   
+  
   return prompt;
-}
-
-/**
- * Clear the prompt cache (useful for testing or when prompts are updated)
- */
-export function clearPromptCache(): void {
-  promptCache.clear();
-  logger.debug('Prompt cache cleared');
-}
-
-/**
- * Get all cached prompt names
- */
-export function getCachedPromptNames(): string[] {
-  return Array.from(promptCache.keys());
 }

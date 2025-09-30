@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
-import path from "path";
-import os from "os";
+import { join } from "path";
+import { platform } from "os";
 import type { ExecResult, ToolExecutionResult } from "../types/index.js";
 import { scriptsDir, repoRoot } from "./paths.js";
 
@@ -9,9 +9,9 @@ import { scriptsDir, repoRoot } from "./paths.js";
  */
 export function runPwshScript(scriptName: string, args: Record<string, unknown>): Promise<ExecResult> {
   return new Promise((resolve, reject) => {
-    const scriptPath = path.join(scriptsDir, scriptName);
+    const scriptPath = join(scriptsDir, scriptName);
 
-    const pwsh = process.env.PWSH_PATH || (os.platform() === "win32" ? "pwsh" : "pwsh");
+    const pwsh = process.env.PWSH_PATH || (platform() === "win32" ? "pwsh" : "pwsh");
 
     // Build PowerShell argument list: -File <script> -ParamName ParamValue ...
     const psArgs: string[] = ["-NoLogo", "-NoProfile", "-File", scriptPath];

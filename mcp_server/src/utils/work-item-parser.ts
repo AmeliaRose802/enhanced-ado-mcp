@@ -41,23 +41,6 @@ export function parseWorkItemForHierarchy(workItemData: any): WorkItemHierarchyI
   }
 }
 
-export function createMockWorkItem(id: number, areaPath?: string): WorkItemHierarchyInfo {
-  const mockTypes = ['Epic', 'Feature', 'User Story', 'Task', 'Bug'];
-  const mockStates = ['New', 'Active', 'Resolved', 'Closed'];
-  
-  return {
-    id,
-    title: `Mock Work Item ${id}`,
-    type: mockTypes[id % mockTypes.length],
-    state: mockStates[id % mockStates.length],
-    currentParentId: id > 1000 ? Math.floor(id / 10) : undefined,
-    currentParentTitle: id > 1000 ? `Mock Parent ${Math.floor(id / 10)}` : undefined,
-    areaPath: areaPath || 'MockProject\\MockTeam',
-    assignedTo: 'Mock User',
-    description: `Mock description for work item ${id}`
-  };
-}
-
 export function getRecommendedParentType(childType: string): string {
   const parentTypeMap: Record<string, string> = {
     'Task': 'User Story or Bug',
