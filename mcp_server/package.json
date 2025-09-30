@@ -1,13 +1,26 @@
 {
   "name": "enhanced-ado-mcp-server",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": false,
   "type": "module",
-  "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol",
+  "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol with AI-powered tools and automation",
   "main": "dist/index.js",
   "bin": {
     "enhanced-ado-msp": "./dist/index.js"
   },
+  "homepage": "https://github.com/AmeliaRose802/enhanced-ado-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmeliaRose802/enhanced-ado-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AmeliaRose802/enhanced-ado-mcp/issues"
+  },
+  "author": {
+    "name": "Amelia Payne",
+    "url": "https://github.com/AmeliaRose802"
+  },
+  "license": "MIT",
   "files": [
     "dist/**/*",
     "../ado_scripts/**/*",
@@ -27,10 +40,16 @@
     "mcp",
     "model-context-protocol",
     "azure-devops",
+    "ado",
+    "ai-tools",
     "copilot",
-    "vscode",
+    "claude",
     "work-items",
-    "automation"
+    "automation",
+    "devops",
+    "project-management",
+    "ai-agent",
+    "powershell"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

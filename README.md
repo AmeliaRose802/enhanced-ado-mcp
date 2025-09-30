@@ -2,127 +2,60 @@
 
 **Enterprise Azure DevOps work item management via Model Context Protocol** - Leverage existing PowerShell automation scripts as AI-powered tools with comprehensive prompt templates for intelligent work item operations.
 
-[![Install with NPX in VS Code](https://img.shields.io/badge/VS_Code-Install_Enhanced_ADO_MCP_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%5D%7D)
-
-[![Install with NPX in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Enhanced_ADO_MCP_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&quality=insiders&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%5D%7D)
+[![npm version](https://badge.fury.io/js/enhanced-ado-mcp-server.svg)](https://badge.fury.io/js/enhanced-ado-mcp-server)
+[![MCP Server](https://img.shields.io/badge/MCP-Server-blue?style=flat-square)](https://modelcontextprotocol.io/)
+[![Azure DevOps](https://img.shields.io/badge/Azure_DevOps-Integration-0078d4?style=flat-square&logo=azuredevops)](https://dev.azure.com/)
 
 ## 🚀 Installation & Getting Started
 
 ### Prerequisites
 
-1. Install [VS Code](https://code.visualstudio.com/download) or [VS Code Insiders](https://code.visualstudio.com/insiders)
-2. Install [Node.js](https://nodejs.org/en/download) 18+
-3. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
-4. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
+1. Install [Node.js](https://nodejs.org/en/download) 18+
+2. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
+3. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
+4. Install an MCP-compatible client:
+   - [Claude Desktop](https://claude.ai/download)
+   - [Cursor](https://cursor.sh/)
+   - [VS Code with MCP extension](https://marketplace.visualstudio.com/items?itemName=anthropic.mcp)
+   - [Windsurf](https://codeium.com/windsurf)
 
-### ✨ One-Click Install
-
-**Recommended:** Click the install buttons above for instant setup in VS Code.
-
-### 🛠️ Manual Installation
+### 🛠️ Installation Options
 
 #### Option 1: NPX (Recommended)
 ```bash
-# Run on-demand (always latest version)
-npx -y enhanced-ado-mcp-server your-org your-project
-```
-
-#### Option 2: Global Install
-```bash
-# Install globally
+# Install the package
 npm install -g enhanced-ado-mcp-server
-
-# Run with required organization and project
-enhanced-ado-msp your-org your-project --area-path "YourProject\\YourTeam"
 ```
 
-#### Option 3: VS Code MCP Configuration
+#### Option 2: Direct Install
+```bash
+# Install globally for system-wide access
+npm install -g enhanced-ado-mcp-server
+```
 
-Create `.vscode/mcp.json` in your project:
+### 🔧 MCP Client Configuration
+
+#### Claude Desktop Configuration
+
+Add to your Claude Desktop configuration file:
+
+**macOS/Linux:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
-  "inputs": [
-    {
-      "id": "ado_org",
-      "type": "promptString",
-      "description": "Azure DevOps organization name (e.g. 'contoso')"
-    },
-    {
-      "id": "ado_project", 
-      "type": "promptString",
-      "description": "Azure DevOps project name (e.g. 'MyProject')"
-    },
-    {
-      "id": "ado_area_path",
-      "type": "promptString",
-      "description": "Default area path (e.g. 'MyProject\\MyTeam')"
-    },
-    {
-      "id": "ado_copilot_guid",
-      "type": "promptString",
-      "description": "GitHub Copilot user GUID (required for Copilot tools)"
-    }
-  ],
-  "servers": {
+  "mcpServers": {
     "enhanced-ado-msp": {
-      "type": "stdio",
       "command": "npx",
       "args": [
-        "-y", 
+        "-y",
         "enhanced-ado-mcp-server",
-        "${input:ado_org}",
-        "${input:ado_project}",
+        "YOUR_ORG",
+        "YOUR_PROJECT",
         "--area-path",
-        "${input:ado_area_path}",
+        "YOUR_PROJECT\\YOUR_TEAM",
         "--copilot-guid",
-        "${input:ado_copilot_guid}"
-      ]
-    }
-  }
-}
-```
-
-#### Option 4: Development/Local Testing
-
-For development or testing with your local build:
-
-```json
-{
-  "inputs": [
-    {
-      "id": "ado_org",
-      "type": "promptString",
-      "description": "Azure DevOps organization name (e.g. 'contoso')"
-    },
-    {
-      "id": "ado_project",
-      "type": "promptString",
-      "description": "Azure DevOps project name (e.g. 'MyProject')"
-    },
-    {
-      "id": "ado_area_path",
-      "type": "promptString",
-      "description": "Default area path (e.g. 'MyProject\\MyTeam')"
-    },
-    {
-      "id": "ado_copilot_guid",
-      "type": "promptString",
-      "description": "GitHub Copilot user GUID (required for Copilot tools)"
-    }
-  ],
-  "servers": {
-    "enhanced-ado-msp": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-  "${workspaceFolder}/mcp_server/dist/index.js", 
-        "${input:ado_org}", 
-        "${input:ado_project}",
-        "--area-path",
-        "${input:ado_area_path}",
-        "--copilot-guid",
-        "${input:ado_copilot_guid}"
+        "YOUR_COPILOT_GUID"
       ],
       "env": {
         "PWSH_PATH": "pwsh"
@@ -132,21 +65,89 @@ For development or testing with your local build:
 }
 ```
 
+#### Alternative: Using Global Installation
+
+```json
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "command": "enhanced-ado-msp",
+      "args": [
+        "YOUR_ORG",
+        "YOUR_PROJECT",
+        "--area-path",
+        "YOUR_PROJECT\\YOUR_TEAM",
+        "--copilot-guid",
+        "YOUR_COPILOT_GUID"
+      ]
+    }
+  }
+}
+```
+
+#### Development/Local Testing
+
+For development or testing with your local build:
+
+```json
+{
+  "mcpServers": {
+    "enhanced-ado-msp-dev": {
+      "command": "node",
+      "args": [
+        "/path/to/ADO-Work-Item-MSP/mcp_server/dist/index.js",
+        "YOUR_ORG",
+        "YOUR_PROJECT",
+        "--area-path",
+        "YOUR_PROJECT\\YOUR_TEAM",
+        "--copilot-guid",
+        "YOUR_COPILOT_GUID"
+      ],
+      "env": {
+        "PWSH_PATH": "pwsh",
+        "MCP_DEBUG": "1"
+      }
+    }
+  }
+}
+```
+
 ### 🎯 Start Using
 
-1. Open GitHub Copilot in VS Code and switch to **Agent Mode**
-2. The Enhanced ADO MCP Server appears in the tools list
-3. Try prompts like:
-   - "Create a new work item for implementing user authentication"
-   - "Assign work item 12345 to GitHub Copilot for automated completion"
-   - "Extract security findings and create remediation tasks"
+1. **Claude Desktop**: Open Claude Desktop and the MCP server will be automatically available
+2. **VS Code**: Install the MCP extension and configure the server
+3. **Cursor**: Configure in settings and use the MCP tools panel
+
+Try prompts like:
+- "Create a new work item for implementing user authentication"
+- "Assign work item 12345 to GitHub Copilot for automated completion"
+- "Extract security findings and create remediation tasks"
+- "Analyze security items in my area path and create remediation plan"
 
 ## Tools Exposed
 
-1. `enhanced-ado-msp-create-new-item` → `ado_scripts/New-WorkItemWithParent-MCP.ps1`
-2. `enhanced-ado-msp-assign-to-copilot` → `ado_scripts/Assign-ItemToCopilot-MCP.ps1`
-3. `enhanced-ado-msp-new-copilot-item` → `ado_scripts/New-WorkItemAndAssignToCopilot-MCP.ps1`
-4. `enhanced-ado-msp-extract-security-links` → `ado_scripts/Extract-SecurityInstructionLinks-MCP.ps1`
+### Core Work Item Tools
+
+1. `wit-create-new-item` - Create a new Azure DevOps work item with optional parent relationship
+2. `wit-assign-to-copilot` - Assign an existing work item to GitHub Copilot and add branch link
+3. `wit-new-copilot-item` - Create a new work item under a parent and immediately assign to GitHub Copilot
+4. `wit-extract-security-links` - Extract instruction links from security scan work items
+
+### AI-Powered Analysis Tools (with VS Code Sampling)
+
+5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
+6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning
+7. `wit-feature-decomposer` - Intelligently decompose large features into smaller, assignable work items
+8. `wit-hierarchy-validator` - Analyze work item parent-child relationships and provide suggestions
+
+### Configuration & Discovery Tools
+
+9. `wit-show-config` - Display the effective merged configuration (redacted)
+10. `wit-get-configuration` - Get current MCP server configuration
+11. `wit-discover-area-paths` - Discover available area paths from Azure DevOps project
+12. `wit-discover-iteration-paths` - Discover available iteration paths
+13. `wit-discover-repositories` - Discover available Git repositories
+14. `wit-discover-work-item-types` - Discover available work item types and their properties
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
