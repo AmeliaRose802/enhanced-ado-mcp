@@ -5,6 +5,9 @@
  */
 
 import { execSync } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { logger } from '../utils/logger.js';
 
 interface WorkItemField {
@@ -106,6 +109,32 @@ async function getParentWorkItem(
 }
 
 /**
+ * Execute REST API call using temporary file for JSON payload
+ */
+function executeRestApiCall(url: string, method: string, token: string, payload: any): any {
+  const tempFile = join(tmpdir(), `ado-api-${Date.now()}.json`);
+  
+  try {
+    // Write payload to temporary file
+    writeFileSync(tempFile, JSON.stringify(payload), 'utf8');
+    
+    // Execute curl with file input
+    const contentType = method === 'POST' ? 'application/json-patch+json' : 'application/json-patch+json';
+    const curlCommand = `curl -s -X ${method} -H "Authorization: Bearer ${token}" -H "Content-Type: ${contentType}" -d @${tempFile} "${url}"`;
+    
+    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    return JSON.parse(response);
+  } finally {
+    // Clean up temporary file
+    try {
+      unlinkSync(tempFile);
+    } catch (error) {
+      logger.warn(`Failed to delete temporary file ${tempFile}`, error);
+    }
+  }
+}
+
+/**
  * Create a work item using Azure DevOps REST API
  */
 export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItemResult> {
@@ -177,19 +206,15 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   
   // Create work item via REST API
   const createUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/$${WorkItemType}?api-version=7.1`;
-  const fieldsJson = JSON.stringify(fields);
   
   logger.debug(`Creating work item: ${Title} (${WorkItemType})`);
   
-  const createCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json-patch+json" -d '${fieldsJson.replace(/'/g, "'\\''")}' "${createUrl}"`;
-  
   let workItem: any;
   try {
-    const createResponse = execSync(createCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    workItem = JSON.parse(createResponse);
+    workItem = executeRestApiCall(createUrl, 'POST', token, fields);
     
     if (!workItem.id) {
-      throw new Error(`Failed to create work item: ${createResponse}`);
+      throw new Error(`Failed to create work item: ${JSON.stringify(workItem)}`);
     }
     
     logger.debug(`Created work item ${workItem.id}`);
@@ -217,11 +242,8 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
       ];
       
       const linkUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${workItem.id}?api-version=7.1`;
-      const linkJson = JSON.stringify(linkFields);
       
-      const linkCommand = `curl -s -X PATCH -H "Authorization: Bearer ${token}" -H "Content-Type: application/json-patch+json" -d '${linkJson.replace(/'/g, "'\\''")}' "${linkUrl}"`;
-      
-      execSync(linkCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      executeRestApiCall(linkUrl, 'PATCH', token, linkFields);
       parentLinked = true;
       
       logger.debug(`Linked work item ${workItem.id} to parent ${ParentWorkItemId}`);
