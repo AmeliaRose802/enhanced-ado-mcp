@@ -16,11 +16,10 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../../utils/logger.js';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/defaults.js';
-import { SamplingClient } from '../helpers/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
-import { extractJSON } from '../helpers/json-parser.js';
-import { formatForAI } from '../helpers/sampling-formatters.js';
+import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/config.js';
+import { SamplingClient } from '../../utils/sampling-client.js';
+import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
+import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 
 export class HierarchyValidatorAnalyzer {
   private samplingClient: SamplingClient;

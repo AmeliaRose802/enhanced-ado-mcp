@@ -1,10 +1,9 @@
 import type { ToolExecutionResult } from '../../types/index.js';
 import type { AIAssignmentAnalyzerArgs, AIAssignmentResult } from '../sampling-types.js';
 import { logger } from '../../utils/logger.js';
-import { SamplingClient } from '../helpers/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
-import { formatForAI } from '../helpers/sampling-formatters.js';
-import { extractJSON } from '../helpers/json-parser.js';
+import { SamplingClient } from '../../utils/sampling-client.js';
+import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
+import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 
 export class AIAssignmentAnalyzer {
   private samplingClient: SamplingClient;

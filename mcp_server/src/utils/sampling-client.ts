@@ -2,8 +2,8 @@
  * Centralized sampling client for making AI requests
  */
 
-import { logger } from '../../utils/logger.js';
-import { loadSystemPrompt } from '../../utils/prompt-loader.js';
+import { logger } from './logger.js';
+import { loadSystemPrompt } from './prompt-loader.js';
 
 export interface SamplingRequest {
   systemPromptName: string;

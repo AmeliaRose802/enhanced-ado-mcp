@@ -9,7 +9,7 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../utils/logger.js';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../config/defaults.js';
+import { AZURE_DEVOPS_RESOURCE_ID } from '../config/config.js';
 
 interface WorkItemField {
   op: string;

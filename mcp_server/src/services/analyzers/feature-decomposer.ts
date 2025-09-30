@@ -4,10 +4,9 @@
 
 import type { ToolExecutionResult } from '../../types/index.js';
 import type { FeatureDecomposerArgs, FeatureDecompositionResult, DecomposedWorkItem } from '../sampling-types.js';
-import { SamplingClient } from '../helpers/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
-import { extractJSON } from '../helpers/json-parser.js';
-import { formatForAI } from '../helpers/sampling-formatters.js';
+import { SamplingClient } from '../../utils/sampling-client.js';
+import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
+import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 
 export class FeatureDecomposerAnalyzer {
   private samplingClient: SamplingClient;

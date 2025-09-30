@@ -2,7 +2,7 @@ import type { ToolExecutionResult } from "../types/index.js";
 import { toolConfigs } from "../config/tool-configs.js";
 import { executeScript } from "../utils/script-executor.js";
 import { logger } from "../utils/logger.js";
-import { loadConfiguration } from "../config/config-manager.js";
+import { loadConfiguration } from "../config/config.js";
 import { SamplingService } from "./sampling-service.js";
 import { 
   validateAzureCLI 
@@ -52,12 +52,6 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
           defaultGuid: cfg.gitHubCopilot.defaultGuid ? '***' : ''
         };
       }
-      if (section === 'all' || section === 'toolBehavior') {
-        configData.toolBehavior = cfg.toolBehavior;
-      }
-      if (section === 'all' || section === 'security') {
-        configData.security = cfg.security;
-      }
       
       return {
         success: true,
@@ -70,12 +64,9 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
             iterationPath: cfg.azureDevOps.iterationPath
               ? `Default iteration path is configured as: ${cfg.azureDevOps.iterationPath}.` :
               'No default iteration path configured.',
-            repository: cfg.gitRepository.defaultRepository
-              ? `Default repository is configured as: ${cfg.gitRepository.defaultRepository}.` :
-              'No default repository configured.',
             gitHubCopilot: cfg.gitHubCopilot.defaultGuid ?
               'GitHub Copilot GUID is configured for automatic assignment.' :
-              'No GitHub Copilot GUID configured. Provide copilot-guid parameter or configure gitHubCopilot.defaultGuid.'
+              'No GitHub Copilot GUID configured. Provide --copilot-guid parameter.'
           }
         },
         raw: { stdout: JSON.stringify(configData, null, 2), stderr: '', exitCode: 0 },

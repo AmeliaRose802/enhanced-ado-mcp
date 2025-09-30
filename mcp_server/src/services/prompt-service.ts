@@ -235,7 +235,7 @@ export async function getPromptContent(name: string, args: Record<string, any> =
         let content = parsed.content;
         
         // Import config after prompt is found to avoid circular dependencies
-        const { loadConfiguration } = await import('../config/config-manager.js');
+        const { loadConfiguration } = await import('../config/config.js');
         const config = loadConfiguration();
 
         // For zero-argument prompts, still provide all standard template variables
@@ -281,7 +281,6 @@ export async function getPromptContent(name: string, args: Record<string, any> =
           default_work_item_type: config.azureDevOps.defaultWorkItemType,
           default_priority: config.azureDevOps.defaultPriority.toString(),
           default_assigned_to: config.azureDevOps.defaultAssignedTo,
-          default_repository: config.gitRepository.defaultRepository || '',
           default_branch: config.gitRepository.defaultBranch
         };
         
@@ -322,9 +321,6 @@ export async function getPromptContent(name: string, args: Record<string, any> =
         }
         
         // Git repository defaults
-        if (!enhancedArgs.repository && config.gitRepository.defaultRepository) {
-          enhancedArgs.repository = config.gitRepository.defaultRepository;
-        }
         if (!enhancedArgs.branch && config.gitRepository.defaultBranch) {
           enhancedArgs.branch = config.gitRepository.defaultBranch;
         }

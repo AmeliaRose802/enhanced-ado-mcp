@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { loadConfiguration } from './config-manager.js';
+import { loadConfiguration } from './config.js';
 
 /**
  * Zod schemas for tool inputs based on PowerShell parameters
@@ -136,7 +136,7 @@ export const hierarchyValidatorSchema = z.object({
 // Configuration and discovery tool schemas
 export const getConfigurationSchema = z.object({
   IncludeSensitive: z.boolean().optional().default(false).describe("Include potentially sensitive configuration values"),
-  Section: z.enum(["all", "azureDevOps", "gitRepository", "gitHubCopilot", "toolBehavior", "security"]).optional().default("all").describe("Specific configuration section to retrieve")
+  Section: z.enum(["all", "azureDevOps", "gitRepository", "gitHubCopilot"]).optional().default("all").describe("Specific configuration section to retrieve")
 });
 
 

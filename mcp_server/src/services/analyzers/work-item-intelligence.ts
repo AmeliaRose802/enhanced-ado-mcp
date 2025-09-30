@@ -5,10 +5,9 @@
 import type { ToolExecutionResult } from '../../types/index.js';
 import type { WorkItemIntelligenceArgs, AnalysisResult } from '../sampling-types.js';
 import { logger } from '../../utils/logger.js';
-import { SamplingClient } from '../helpers/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../helpers/response-builder.js';
-import { extractJSON } from '../helpers/json-parser.js';
-import { formatForAI } from '../helpers/sampling-formatters.js';
+import { SamplingClient } from '../../utils/sampling-client.js';
+import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
+import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 import { executeTool } from '../tool-service.js';
 
 export class WorkItemIntelligenceAnalyzer {

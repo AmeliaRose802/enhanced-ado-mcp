@@ -25,7 +25,6 @@
     "dist/**/*",
     "ado_scripts/**/*",
     "prompts/**/*",
-    "mcp-config.json",
     "README.md"
   ],
   "engines": {

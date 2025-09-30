@@ -2,7 +2,7 @@
  * Work item data parsing utilities
  */
 
-import type { WorkItemHierarchyInfo } from '../sampling-types.js';
+import type { WorkItemHierarchyInfo } from '../services/sampling-types.js';
 
 export function parseWorkItemForHierarchy(workItemData: any): WorkItemHierarchyInfo | null {
   try {

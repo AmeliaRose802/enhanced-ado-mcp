@@ -16,7 +16,7 @@ import { loadPrompts, getPromptContent } from "./services/prompt-service.js";
 import { executeTool, setServerInstance } from "./services/tool-service.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { loadConfiguration, updateConfigFromCLI } from "./config/config-manager.js";
+import { loadConfiguration, updateConfigFromCLI } from "./config/config.js";
 
 /**
  * MCP Server Setup and Request Handling

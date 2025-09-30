@@ -218,7 +218,7 @@ export const toolConfigs: ToolConfig[] = [
       type: "object",
       properties: {
         IncludeSensitive: { type: "boolean", description: "Include potentially sensitive configuration values" },
-        Section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot", "toolBehavior", "security"], description: "Specific configuration section to retrieve" }
+        Section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot"], description: "Specific configuration section to retrieve" }
       },
       required: []
     }

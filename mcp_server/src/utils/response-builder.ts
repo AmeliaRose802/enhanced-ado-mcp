@@ -2,7 +2,7 @@
  * Standard response builder for tool execution results
  */
 
-import type { ToolExecutionResult } from '../../types/index.js';
+import type { ToolExecutionResult } from '../types/index.js';
 
 export function buildSuccessResponse(data: any, metadata: Record<string, any> = {}): ToolExecutionResult {
   return {

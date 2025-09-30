@@ -1,5 +1,6 @@
 /**
- * JSON parsing utilities for AI responses
+ * AI utilities for JSON parsing and formatting
+ * Combined utilities for working with AI responses
  */
 
 /**
@@ -23,4 +24,14 @@ export function extractJSON(text: string): any {
     }
   }
   return null;
+}
+
+/**
+ * Format data for AI consumption (key: value format)
+ */
+export function formatForAI(data: Record<string, any>): string {
+  return Object.entries(data)
+    .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`)
+    .join('\n\n');
 }

@@ -4,7 +4,7 @@
  */
 
 import { executeTool } from '../services/tool-service.js';
-import { loadConfiguration, updateConfigFromCLI } from '../config/config-manager.js';
+import { loadConfiguration, updateConfigFromCLI } from '../config/config.js';
 
 async function testConfigurationTools() {
   console.log('🧪 Testing Configuration and Discovery Tools\n');
