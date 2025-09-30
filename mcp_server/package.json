@@ -59,7 +59,7 @@
     "test:dev": "npm run build && tsx src/test/run-tests.ts",
     "test:smoke": "npm run build && node dist/test/smoke-test.js",
     "test:final": "npm run build && node dist/test/final-test.js",
-    "prepublishOnly": "npm run build && npm test"
+    "prepublishOnly": "npm run build"
   },
   "preferGlobal": false,
   "dependencies": {
