@@ -19,9 +19,13 @@ For the best experience, use **Visual Studio Code** with **GitHub Copilot**. See
 
 ## ✨ One-Click Install for VS Code
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_enhanced--ado--msp-0098FF?style=flat-square&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)
+<a href="vscode:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D">
+  <img src="https://img.shields.io/badge/VS_Code-Install_enhanced--ado--msp-0098FF?style=flat-square&logo=visualstudiocode&logoColor=ffffff" alt="Install in VS Code">
+</a>
 
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_enhanced--ado--msp-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=ffffff)](vscode-insiders:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)
+<a href="vscode-insiders:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D">
+  <img src="https://img.shields.io/badge/VS_Code_Insiders-Install_enhanced--ado--msp-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=ffffff" alt="Install in VS Code Insiders">
+</a>
 
 
 ### 🔧 Alternative MCP Client Configurations
@@ -146,64 +150,7 @@ Requires PowerShell 7 (`pwsh`) and Azure CLI already logged in with required `az
 
 Optional: set `PWSH_PATH` env var to override pwsh executable.
 
-## Notes
-- Input schemas mirror PowerShell parameters; optional empties omitted.
-- Raw stdout/stderr + parsed JSON (if available) are returned for transparency.
-
 ## Configuration
-
-This server now supports layered configuration (system defaults < user < project < tool invocation). Provide your values to remove lingering hardcoded org/project defaults.
-
-Precedence (highest last applied to lowest):
-1. Tool arguments (explicit call overrides)
-2. Project config `./mcp-config.json`
-3. User config `~/.mcp/ado-work-item/config.json`
-4. System defaults (in code)
-
-Example user config (`~/.mcp/ado-work-item/config.json`):
-```json
-{
-  "azureDevOps": {
-    "organization": "my-org",
-    "project": "MyProject",
-    "defaultWorkItemType": "Product Backlog Item",
-    "defaultPriority": 2,
-    "defaultAssignedTo": "@me",
-    "areaPath": "MyProject\\MyTeam\\MyComponent",
-    "iterationPath": "MyProject\\Sprint 2024-10",
-    "inheritParentPaths": true
-  },
-  "gitRepository": {
-    "defaultBranch": "main"
-  },
-  "gitHubCopilot": {
-    "defaultGuid": "your-copilot-guid-here"
-  },
-  "toolBehavior": {
-    "autoInheritPaths": true,
-    "dryRunMode": false,
-    "verboseLogging": false,
-    "defaultTags": ["auto-created", "mcp"]
-  }
-}
-```
-
-**⚠️ Required Configuration**: For GitHub Copilot-related tools (`assign-to-copilot`, `new-copilot-item`), you **must** provide:
-- `Repository` parameter - Git repository name (required for each tool call)
-- `gitHubCopilot.defaultGuid` - Your GitHub Copilot user GUID (can be set in config or CLI)
-
-The repository name must be provided as a parameter for each tool call, while the GitHub Copilot GUID can be set in your configuration file or via CLI argument.
-
-Project config (`./mcp-config.json`) can override a subset:
-```json
-{
-  "azureDevOps": { 
-    "project": "SpecialProject",
-    "areaPath": "SpecialProject\\Experiments" 
-  },
-  "gitRepository": { "defaultBranch": "develop" }
-}
-```
 
 Authentication:
 * Use `az login` (Azure CLI). The Azure DevOps extension is added automatically if missing.
