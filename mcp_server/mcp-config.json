@@ -1,0 +1,17 @@
+{
+  "azureDevOps": {
+    "defaultWorkItemType": "Product Backlog Item",
+    "defaultPriority": 2,
+    "defaultAssignedTo": "@me",
+    "areaPath": "YourProject\\YourTeam\\YourComponent",
+    "iterationPath": "YourProject\\Sprint 1",
+    "inheritParentPaths": true
+  },
+  "gitRepository": {
+    "defaultBranch": "main"
+  },
+  "gitHubCopilot": {
+    "defaultGuid": "your-github-copilot-guid@your-tenant-id"
+  },
+  "verboseLogging": false
+}
