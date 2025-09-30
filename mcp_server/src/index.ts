@@ -23,7 +23,7 @@ import { loadConfiguration, updateConfigFromCLI } from "./config/config-manager.
  */
 const server = new Server({
   name: "enhanced-ado-mcp-server",
-  version: "0.1.0"
+  version: "1.2.2"
 }, {
   capabilities: {
     tools: {},
@@ -97,7 +97,7 @@ server.fallbackRequestHandler = async (request: any) => {
 const argv = yargs(hideBin(process.argv))
   .scriptName("enhanced-ado-msp")
   .usage("Usage: $0 <organization> <project> [options]")
-  .version("1.0.2")
+  .version("1.2.2")
   .command("$0 <organization> <project> [options]", "Enhanced ADO MCP Server", (yargs) => {
     yargs
       .positional("organization", {
