@@ -13,3 +13,6 @@
 
 - All tools should have documentation of schema
 
+- Idea: Would it be feasable to add tools for finding a list of repos/area paths that the current user comonly uses?
+
+- We have both system and normal prompts for most things. Please reduce the redundency by making 

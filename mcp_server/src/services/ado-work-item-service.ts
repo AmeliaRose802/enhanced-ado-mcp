@@ -206,7 +206,9 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   }
   
   // Create work item via REST API
-  const createUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/$${WorkItemType}?api-version=7.1`;
+  // URL-encode the work item type to handle types with spaces like "Product Backlog Item"
+  const encodedWorkItemType = encodeURIComponent(WorkItemType);
+  const createUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/$${encodedWorkItemType}?api-version=7.1`;
   
   logger.debug(`Creating work item: ${Title} (${WorkItemType})`);
   

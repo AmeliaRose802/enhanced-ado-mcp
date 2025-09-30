@@ -12,6 +12,9 @@ import type {
   WorkItemHierarchyInfo
 } from '../sampling-types.js';
 import { execSync } from 'child_process';
+import { writeFileSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import { logger } from '../../utils/logger.js';
 import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/defaults.js';
 import { SamplingClient } from '../helpers/sampling-client.js';
@@ -131,6 +134,8 @@ export class HierarchyValidatorAnalyzer {
     filterByType?: string[],
     excludeStates?: string[]
   ): Promise<number[]> {
+    const tempFile = join(tmpdir(), `ado-wiql-${Date.now()}.json`);
+    
     try {
       // Build WIQL query
       const areaClause = includeChildAreas 
@@ -147,11 +152,12 @@ export class HierarchyValidatorAnalyzer {
 
       const query = `SELECT [System.Id] FROM WorkItems WHERE ${areaClause}${typeFilter}${stateFilter} ORDER BY [System.Id] DESC`;
 
-      const wiqlBody = JSON.stringify({ query });
+      const wiqlBody = { query };
       const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/wiql?api-version=7.1`;
 
-      // Execute WIQL query using curl
-      const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d "${wiqlBody.replace(/"/g, '\\"')}" "${url}"`;
+      // Execute WIQL query using curl with temporary file to avoid shell escaping issues
+      writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
+      const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${url}"`;
       const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
       const wiqlResult = JSON.parse(response);
 
@@ -165,6 +171,13 @@ export class HierarchyValidatorAnalyzer {
     } catch (error) {
       logger.error('WIQL query failed', error);
       throw new Error(`Failed to query work items: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      // Clean up temporary file
+      try {
+        unlinkSync(tempFile);
+      } catch (cleanupError) {
+        logger.warn(`Failed to delete temporary WIQL file ${tempFile}`, cleanupError);
+      }
     }
   }
 
