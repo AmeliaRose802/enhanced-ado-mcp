@@ -3,14 +3,8 @@
 **Enterprise Azure DevOps work item management via Model Context Protocol** - Leverage existing PowerShell automation scripts as AI-powered tools with comprehensive prompt templates for intelligent work item operations.
 
 [![npm version](https://badge.fury.io/js/enhanced-ado-mcp-server.svg)](https://badge.fury.io/js/enhanced-ado-mcp-server)
-[![MCP Server](https://img.shields.io/badge/MCP-Server-blue?style=flat-square)](https://modelcontextprotocol.io/)
-[![Azure DevOps](https://img.shields.io/badge/Azure_DevOps-Integration-0078d4?style=flat-square&logo=azuredevops)](https://dev.azure.com/)
 
-## ✨ One-Click Install for VS Code
 
-**[Install in VS Code](vscode:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22inputs%22%3A%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%20(e.g.%20'contoso')%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Default%20area%20path%20(e.g.%20'MyProject%5C%5CMyTeam')%22%7D%2C%7B%22id%22%3A%22copilot_guid%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22GitHub%20Copilot%20GUID%20(optional%2C%20for%20Copilot%20assignment%20tools)%22%7D%5D%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)** | **[Install in VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22inputs%22%3A%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%20(e.g.%20'contoso')%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Default%20area%20path%20(e.g.%20'MyProject%5C%5CMyTeam')%22%7D%2C%7B%22id%22%3A%22copilot_guid%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22GitHub%20Copilot%20GUID%20(optional%2C%20for%20Copilot%20assignment%20tools)%22%7D%5D%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)**
-
-Click the link for your VS Code version to automatically install. After installation, select **GitHub Copilot Agent Mode** and refresh the tools list. Learn more about [Agent Mode in VS Code](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode).
 
 ## 🚀 Installation & Getting Started
 
@@ -18,81 +12,17 @@ For the best experience, use **Visual Studio Code** with **GitHub Copilot**. See
 
 ### Prerequisites
 
-1. Install [VS Code](https://code.visualstudio.com/download) or [VS Code Insiders](https://code.visualstudio.com/insiders)
-2. Install [Node.js](https://nodejs.org/en/download) 18+
-3. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
-4. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
-5. Open VS Code in your project folder
+1. Install [Node.js](https://nodejs.org/en/download) 18+
+1. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
+1. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
+1. Open VS Code in your project folder
 
-### 🛠️ Installation Options
+## ✨ One-Click Install for VS Code
 
-#### ✨ Option 1: One-Click Install (Recommended for VS Code)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_enhanced--ado--msp-0098FF?style=flat-square&logo=visualstudiocode&logoColor=ffffff)](vscode:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)
 
-Click one of the links above to install:
-- **[Install in VS Code](vscode:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22inputs%22%3A%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%20(e.g.%20'contoso')%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Default%20area%20path%20(e.g.%20'MyProject%5C%5CMyTeam')%22%7D%2C%7B%22id%22%3A%22copilot_guid%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22GitHub%20Copilot%20GUID%20(optional%2C%20for%20Copilot%20assignment%20tools)%22%7D%5D%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)** - Install in stable VS Code
-- **[Install in VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22inputs%22%3A%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%20(e.g.%20'contoso')%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Default%20area%20path%20(e.g.%20'MyProject%5C%5CMyTeam')%22%7D%2C%7B%22id%22%3A%22copilot_guid%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22GitHub%20Copilot%20GUID%20(optional%2C%20for%20Copilot%20assignment%20tools)%22%7D%5D%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)** - Install in VS Code Insiders
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_enhanced--ado--msp-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=ffffff)](vscode-insiders:mcp/install?%7B%22name%22%3A%22enhanced-ado-msp%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D)
 
-VS Code will prompt you for configuration values and automatically set up the MCP server.
-
-#### � Option 2: Manual VS Code Configuration
-
-Create a `.vscode/mcp.json` file in your project with:
-
-```json
-{
-  "inputs": [
-    {
-      "id": "ado_org",
-      "type": "promptString",
-      "description": "Azure DevOps organization name (e.g. 'contoso')"
-    },
-    {
-      "id": "ado_project",
-      "type": "promptString",
-      "description": "Azure DevOps project name"
-    },
-    {
-      "id": "area_path",
-      "type": "promptString",
-      "description": "Default area path (e.g. 'MyProject\\MyTeam')"
-    },
-    {
-      "id": "copilot_guid",
-      "type": "promptString",
-      "description": "GitHub Copilot GUID (optional, for Copilot assignment tools)"
-    }
-  ],
-  "servers": {
-    "enhanced-ado-msp": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "enhanced-ado-mcp-server",
-        "${input:ado_org}",
-        "${input:ado_project}",
-        "--area-path",
-        "${input:area_path}",
-        "--copilot-guid",
-        "${input:copilot_guid}"
-      ]
-    }
-  }
-}
-```
-
-Save the file, then click **'Start'** in VS Code. In GitHub Copilot Chat, switch to [Agent Mode](https://code.visualstudio.com/blogs/2025/02/24/introducing-copilot-agent-mode), click **"Select Tools"**, and choose the available tools.
-
-> 💡 **Pro Tip**: Create a `.github/copilot-instructions.md` file in your project with: "This project uses Azure DevOps. Always check to see if the Enhanced ADO MCP server has a tool relevant to the user's request."
-
-#### 📦 Option 3: Global NPM Installation
-
-```bash
-# Install globally for system-wide access
-npm install -g enhanced-ado-mcp-server
-```
-
-Then update your `.vscode/mcp.json` to use `"command": "enhanced-ado-mcp-server"` instead of `"npx"`.
 
 ### 🔧 Alternative MCP Client Configurations
 
@@ -146,55 +76,14 @@ Add to your Claude Desktop configuration file:
 }
 ```
 
-#### Development/Local Testing
-
-For development or testing with your local build:
-
-```json
-{
-  "mcpServers": {
-    "enhanced-ado-msp-dev": {
-      "command": "node",
-      "args": [
-        "/path/to/ADO-Work-Item-MSP/mcp_server/dist/index.js",
-        "YOUR_ORG",
-        "YOUR_PROJECT",
-        "--area-path",
-        "YOUR_PROJECT\\YOUR_TEAM",
-        "--copilot-guid",
-        "YOUR_COPILOT_GUID"
-      ],
-      "env": {
-        "PWSH_PATH": "pwsh",
-        "MCP_DEBUG": "1"
-      }
-    }
-  }
-}
-```
-
-### 🎯 Start Using
-
-1. **VS Code**: Open GitHub Copilot Chat in Agent Mode, select your tools, and start chatting
-2. **Claude Desktop**: Open Claude Desktop and the MCP server will be automatically available
-3. **Cursor**: Configure in settings and use the MCP tools panel
-
-Try prompts like:
-- "Create a new work item for implementing user authentication"
-- "Assign work item 12345 to GitHub Copilot for automated completion"
-- "Extract security findings and create remediation tasks"
-- "Analyze security items in my area path and create remediation plan"
-- "List my area paths" (discovery tool)
-- "Show me my current configuration" (config tool)
-
 ## Tools Exposed
 
 ### Core Work Item Tools
 
-1. `wit-create-new-item` - Create a new Azure DevOps work item with optional parent relationship
+1. `wit-create-new-item` - Create a new Azure DevOps work item with optional parent relationship. Will correctly inherit area and iteration path from parent.
 2. `wit-assign-to-copilot` - Assign an existing work item to GitHub Copilot and add branch link
 3. `wit-new-copilot-item` - Create a new work item under a parent and immediately assign to GitHub Copilot
-4. `wit-extract-security-links` - Extract instruction links from security scan work items
+4. `wit-extract-security-links` - Extract instruction links from the body of security scan work items
 
 ### AI-Powered Analysis Tools (with VS Code Sampling)
 
@@ -221,52 +110,6 @@ The scripts are executed unchanged. The server just validates inputs and streams
 3. `security_items_analyzer` - Analyze security and compliance items within an area path, categorize them, identify AI-suitable items, and create actionable remediation plans
 
 Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
-
-### Automatic Configuration Integration
-
-**✨ Zero-Config Prompt Usage**: Prompts automatically use your configuration defaults, so you don't need to manually provide common parameters every time!
-
-**Auto-filled Parameters:**
-- `project` / `project_name` → Uses configured Azure DevOps project
-- `area_path` → Uses configured default area path  
-- `organization` → Uses configured Azure DevOps organization
-- `org_url` → Auto-generates from configured organization (https://dev.azure.com/[org])
-- `iteration_path` → Uses configured default iteration path
-- `assigned_to` → Uses configured default assignee
-- `repository` → Uses configured default git repository
-- `branch` → Uses configured default git branch
-
-**Template Variables**: All configuration values are also available as template variables:
-- `{{default_organization}}`, `{{default_project}}`, `{{default_area_path}}`, etc.
-
-**Override Behavior**: User-provided arguments always take precedence over configuration defaults.
-
-### Security Items Analyzer Usage
-
-The Security Items Analyzer prompt helps systematically process security and compliance work items.
-
-**✨ Zero-Config Usage**: Just call the prompt with no arguments - it will use your configured area path and project!
-
-```typescript
-// No arguments needed - uses config defaults!
-const content = await getPromptContent('security_items_analyzer', {});
-```
-
-**Optional Parameters:**
-- `area_path` - Override the default area path (auto-filled from config)
-- `project_name` - Override the default project (auto-filled from config)
-- `include_child_areas` - Whether to include child area paths (boolean)
-- `max_items` - Maximum number of items to analyze (number, default: 50)
-
-**Example Usage:**
-```typescript
-const content = await getPromptContent('security_items_analyzer', {
-  area_path: 'MyProject\\Security\\Compliance',
-  project_name: 'ProductionApp', 
-  include_child_areas: true,
-  max_items: 25
-});
-```
 
 ## Development
 
