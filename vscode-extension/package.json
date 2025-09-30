@@ -1,0 +1,115 @@
+{
+  "name": "ado-work-item-mcp",
+  "displayName": "Azure DevOps Work Item MCP Integration",
+  "description": "VS Code extension for Azure DevOps work item management using MCP server",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:ado-mcp.createWorkItem",
+    "onCommand:ado-mcp.assignToCopilot",
+  "onCommand:ado-mcp.analyzeSecurityItems"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ado-mcp.createWorkItem",
+        "title": "Create Work Item",
+        "category": "ADO MCP"
+      },
+      {
+        "command": "ado-mcp.assignToCopilot",
+        "title": "Assign Work Item to Copilot",
+        "category": "ADO MCP"
+      },
+      {
+        "command": "ado-mcp.newCopilotItem",
+        "title": "Create New Copilot Work Item",
+        "category": "ADO MCP"
+      },
+      {
+        "command": "ado-mcp.extractSecurityLinks",
+        "title": "Extract Security Instruction Links",
+        "category": "ADO MCP"
+      },
+      {
+        "command": "ado-mcp.analyzeSecurityItems",
+        "title": "Analyze Security Work Items",
+        "category": "ADO MCP"
+      },
+      {
+        "command": "ado-mcp.enhanceWorkItem",
+        "title": "Enhance Work Item Description",
+        "category": "ADO MCP"
+      },
+      {
+        "command": "ado-mcp.showConfig",
+        "title": "Show MCP Configuration",
+        "category": "ADO MCP"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "ado-mcp.createWorkItem"
+        },
+        {
+          "command": "ado-mcp.assignToCopilot"
+        },
+        {
+          "command": "ado-mcp.newCopilotItem"
+        },
+        {
+          "command": "ado-mcp.extractSecurityLinks"
+        },
+        {
+          "command": "ado-mcp.analyzeSecurityItems"
+        },
+        {
+          "command": "ado-mcp.enhanceWorkItem"
+        },
+        {
+          "command": "ado-mcp.showConfig"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "ADO MCP Configuration",
+      "properties": {
+        "ado-mcp.serverPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the MCP server executable (node dist/index.js)"
+        },
+        "ado-mcp.serverArgs": {
+          "type": "array",
+          "default": [],
+          "description": "Additional arguments for the MCP server"
+        },
+        "ado-mcp.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start MCP server when extension activates"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.1"
+  }
+}

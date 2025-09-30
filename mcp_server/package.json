@@ -1,0 +1,61 @@
+{
+  "name": "enhanced-ado-mcp-server",
+  "version": "1.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol",
+  "main": "dist/index.js",
+  "bin": {
+    "enhanced-ado-msp": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "../ado_scripts/**/*",
+    "../prompts/**/*",
+    "mcp-config.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "azure-devops",
+    "copilot",
+    "vscode",
+    "work-items",
+    "automation"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "npm run build && node dist/test/run-tests.js",
+    "test:dev": "npm run build && tsx src/test/run-tests.ts",
+    "test:smoke": "npm run build && node dist/test/smoke-test.js",
+    "test:final": "npm run build && node dist/test/final-test.js",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "preferGlobal": false,
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.6.1",
+    "yargs": "^17.7.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/yargs": "^17.0.33",
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

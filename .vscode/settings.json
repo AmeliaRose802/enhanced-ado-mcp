@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/mcp_server/dist/index.js"
+      ],
+      "env": {
+        "PWSH_PATH": "pwsh",
+        "MCP_HYBRID": "1"
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run MCP Server (built)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/mcp_server/dist/index.js",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "MCP Server: Build",
+      "env": {
+        "PWSH_PATH": "pwsh"
+      }
+    },
+    {
+      "name": "Run MCP Server (dev)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["tsx", "src/index.ts"],
+      "cwd": "${workspaceFolder}/mcp_server",
+      "console": "integratedTerminal",
+      "env": {
+        "PWSH_PATH": "pwsh"
+      }
+    }
+  ]
+}
