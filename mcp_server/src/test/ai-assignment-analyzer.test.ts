@@ -54,7 +54,6 @@ The task involves fixing a specific bug with clear reproduction steps and accept
     EstimatedFiles: "2-3",
     TechnicalContext: "React, TypeScript, REST API",
     TestingRequirements: "Unit tests and integration tests required",
-    AutoAssignToAI: false,
     Organization: "test-org",
     Project: "test-project"
   };

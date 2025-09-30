@@ -51,8 +51,7 @@ async function testToolIntegration() {
     EstimatedFiles: "8-12",
     TechnicalContext: "Node.js, WebSockets, FCM, React",
     ExternalDependencies: "Firebase Cloud Messaging setup required",
-    TestingRequirements: "Integration tests with notification services",
-    AutoAssignToAI: false
+    TestingRequirements: "Integration tests with notification services"
   };
 
   try {

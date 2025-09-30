@@ -140,7 +140,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-ai-assignment-analyzer",
-    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling",
+    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
     script: "", // Handled internally with sampling
     schema: aiAssignmentAnalyzerSchema,
     inputSchema: {
@@ -159,9 +159,7 @@ export const toolConfigs: ToolConfig[] = [
         RiskFactors: { type: "string", description: "Known risk factors or sensitive areas" },
         TestingRequirements: { type: "string", description: "Testing requirements and existing coverage" },
         Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        AutoAssignToAI: { type: "boolean", description: "Automatically assign to AI if suitable" },
-        WorkItemId: { type: "number", description: "Existing work item ID if updating existing item" }
+        Project: { type: "string", description: "Azure DevOps project name" }
       },
       required: ["Title"]
     }

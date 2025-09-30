@@ -132,7 +132,7 @@ Language model access is managed by VS Code and persists across sessions. To res
 > **⚠️ Note:** These tools require VS Code with GitHub Copilot and language model access granted. They are not available in Claude Desktop or other MCP clients.
 
 5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
-6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning
+6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning (analysis only - use `wit-assign-to-copilot` separately to perform assignment)
 7. `wit-feature-decomposer` - Intelligently decompose large features into smaller, assignable work items
 8. `wit-hierarchy-validator` - Analyze work item parent-child relationships and provide suggestions
 

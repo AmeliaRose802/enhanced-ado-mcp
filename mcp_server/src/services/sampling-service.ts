@@ -1,5 +1,6 @@
 import type { ToolExecutionResult } from "../types/index.js";
 import { logger } from "../utils/logger.js";
+import { loadSystemPrompt } from "../utils/prompt-loader.js";
 import { executeTool } from "./tool-service.js";
 
 /**
@@ -35,8 +36,6 @@ export interface AIAssignmentAnalyzerArgs {
   TestingRequirements?: string;
   Organization?: string;
   Project?: string;
-  AutoAssignToAI?: boolean;
-  WorkItemId?: number;
 }
 
 export interface FeatureDecomposerArgs {
@@ -340,14 +339,12 @@ export class SamplingService {
     try {
       const analysisResult = await this.performAIAssignmentAnalysis(args);
 
-      // If auto-assign is requested and the item is AI-suitable, perform the assignment
-      if (args.AutoAssignToAI && args.WorkItemId && analysisResult.decision === "AI_FIT") {
-        try {
-          const assignResult = await this.autoAssignToAI(args.WorkItemId, args.Organization, args.Project);
-          analysisResult.recommendedNextSteps.push(`✅ Auto-assigned to AI: ${assignResult}`);
-        } catch (error) {
-          analysisResult.recommendedNextSteps.push(`❌ Failed to auto-assign to AI: ${error}`);
-        }
+      // Note: This tool only provides analysis. To assign the work item to Copilot,
+      // use the wit-assign-to-copilot tool separately with the work item ID.
+      if (analysisResult.decision === "AI_FIT") {
+        analysisResult.recommendedNextSteps.push(
+          `✅ Work item is suitable for AI assignment. Use the 'wit-assign-to-copilot' tool to assign it to GitHub Copilot.`
+        );
       }
 
       return {
@@ -528,16 +525,7 @@ export class SamplingService {
    * Analyze work item completeness using AI sampling
    */
   private async analyzeCompleteness(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
-    const systemPrompt = `You are a senior work item analyst. Analyze the work item for completeness and clarity.
-
-Evaluate these aspects:
-1. Title clarity and descriptiveness (0-10)
-2. Description completeness (0-10) 
-3. Acceptance criteria quality (0-10)
-4. Missing required information
-5. Overall completeness score (0-10)
-
-Provide specific recommendations for improvement.`;
+    const systemPrompt = loadSystemPrompt('completeness-analyzer');
 
     const userContent = this.formatWorkItemForAnalysis(args);
     
@@ -561,17 +549,7 @@ Provide specific recommendations for improvement.`;
    * Analyze AI readiness using sampling
    */
   private async analyzeAIReadiness(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
-    const systemPrompt = `You are an AI assignment specialist. Evaluate if this work item is suitable for AI (GitHub Copilot) assignment.
-
-Rate these factors (0-10 each):
-1. Task clarity and specificity
-2. Scope definition (atomic vs. complex)
-3. Testability and verification criteria
-4. Documentation/context availability
-5. Risk level (low risk = higher AI suitability)
-
-Determine: AI-Suitable, Human-Required, or Hybrid approach needed.
-Provide specific reasons and improvement suggestions.`;
+    const systemPrompt = loadSystemPrompt('ai-readiness-analyzer');
 
     const userContent = this.formatWorkItemForAnalysis(args);
     
@@ -595,16 +573,7 @@ Provide specific reasons and improvement suggestions.`;
    * Generate enhancement suggestions using sampling
    */
   private async generateEnhancements(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
-    const systemPrompt = `You are a work item enhancement specialist. Improve this work item to be clear, actionable, and complete.
-
-Generate:
-1. Enhanced title (if needed)
-2. Improved description with clear steps
-3. Specific acceptance criteria
-4. Missing information that should be added
-5. Priority and complexity assessment
-
-Make it ready for successful execution by either AI or human developers.`;
+    const systemPrompt = loadSystemPrompt('enhancement-analyzer');
 
     const userContent = this.formatWorkItemForAnalysis(args);
     
@@ -628,17 +597,7 @@ Make it ready for successful execution by either AI or human developers.`;
    * Categorize and prioritize work item using sampling
    */
   private async categorizeWorkItem(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
-    const systemPrompt = `You are a work item categorization expert. Analyze and categorize this work item.
-
-Determine:
-1. Category: Feature, Bug, Tech Debt, Security, Documentation, Research, etc.
-2. Priority: Critical, High, Medium, Low
-3. Complexity: Simple, Medium, Complex, Expert
-4. Estimated effort: Hours/Story Points
-5. Required expertise: Front-end, Back-end, DevOps, Security, etc.
-6. Dependencies and blockers
-
-Provide clear reasoning for each classification.`;
+    const systemPrompt = loadSystemPrompt('categorization-analyzer');
 
     const userContent = this.formatWorkItemForAnalysis(args);
     
@@ -662,31 +621,7 @@ Provide clear reasoning for each classification.`;
    * Perform comprehensive analysis using sampling
    */
   private async performFullAnalysis(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
-    const systemPrompt = `You are a comprehensive work item intelligence analyzer. Provide a complete analysis covering:
-
-COMPLETENESS (0-10):
-- Title clarity
-- Description detail
-- Acceptance criteria quality
-
-AI READINESS (0-10):
-- Task specificity
-- Scope definition
-- Testability
-- Risk assessment
-
-CATEGORIZATION:
-- Type: Feature/Bug/Tech Debt/Security/etc.
-- Priority: Critical/High/Medium/Low
-- Complexity: Simple/Medium/Complex/Expert
-- Assignment: AI-Suitable/Human-Required/Hybrid
-
-RECOMMENDATIONS:
-- Top 3 improvement suggestions
-- Missing information to add
-- Strengths to preserve
-
-Be specific and actionable in your analysis.`;
+    const systemPrompt = loadSystemPrompt('full-analyzer');
 
     const userContent = this.formatWorkItemForAnalysis(args);
     
@@ -783,7 +718,7 @@ ${args.ContextInfo}`;
       priority,
       complexity,
       assignmentSuggestion,
-      recommendations: [`🤖 **AI Analysis (${analysisType.toUpperCase()})**:\n\n${responseText}\n\n✨ *Powered by VS Code MCP Sampling*`],
+      recommendations: [`🤖 **AI Analysis (${analysisType.toUpperCase()})**:\n\n${responseText}\n\n`],
       missingElements: [],
       strengths: [],
       improvementAreas: []
@@ -823,33 +758,7 @@ ${args.ContextInfo}`;
    * Perform comprehensive AI assignment analysis using sampling
    */
   private async performAIAssignmentAnalysis(args: AIAssignmentAnalyzerArgs): Promise<AIAssignmentResult> {
-    const systemPrompt = `You are a senior AI assignment specialist evaluating work items for GitHub Copilot assignment. 
-
-Analyze this work item and determine:
-
-1. **ASSIGNMENT DECISION** (AI_FIT, HUMAN_FIT, or HYBRID):
-   - AI_FIT: Well-defined, atomic coding tasks with clear requirements
-   - HUMAN_FIT: Requires judgment, stakeholder interaction, or complex architecture decisions  
-   - HYBRID: Can be partially automated but needs human oversight
-
-2. **CONFIDENCE SCORE** (0.0-1.0): How certain are you about the assignment?
-
-3. **RISK SCORE** (0-100): Overall risk level (higher = more risky for AI)
-
-4. **SCOPE ESTIMATION**:
-   - Estimated files to touch (min/max range)
-   - Complexity level (trivial/low/medium/high)
-
-5. **GUARDRAILS NEEDED**:
-   - Tests required?
-   - Feature flag/toggle needed?
-   - Touches sensitive areas?
-   - Needs code review from domain owner?
-
-Be conservative - when in doubt, prefer HUMAN_FIT or HYBRID over AI_FIT.
-Consider: scope clarity, technical complexity, business risk, and verification feasibility.
-
-Provide specific, actionable reasoning for your decision.`;
+    const systemPrompt = loadSystemPrompt('ai-assignment-analyzer');
 
     const userContent = this.formatWorkItemForAIAnalysis(args);
     
@@ -1003,7 +912,7 @@ ${args.AcceptanceCriteria || 'No acceptance criteria provided'}`;
       riskScore,
       primaryReasons,
       missingInfo: [],
-      recommendedNextSteps: [`🤖 **AI Assignment Analysis**:\n\n${responseText}\n\n✨ *Powered by VS Code MCP Sampling*`],
+      recommendedNextSteps: [`🤖 **AI Assignment Analysis**:\n\n${responseText}\n\n`],
       estimatedScope: {
         files: { min: minFiles, max: maxFiles },
         complexity
@@ -1031,53 +940,13 @@ ${args.AcceptanceCriteria || 'No acceptance criteria provided'}`;
   }
 
   /**
-   * Auto-assign work item to AI (Copilot) if conditions are met
-   */
-  private async autoAssignToAI(workItemId: number, organization?: string, project?: string): Promise<string> {
-    const assignArgs = {
-      WorkItemId: workItemId,
-      Organization: organization,
-      Project: project
-    };
-
-    const result = await executeTool("wit-assign-to-copilot", assignArgs);
-    
-    if (!result.success) {
-      throw new Error(`Failed to assign work item to AI: ${result.errors?.join(', ')}`);
-    }
-
-    return `Work item ${workItemId} assigned to GitHub Copilot successfully`;
-  }
-
-  /**
    * Perform the core feature decomposition using AI sampling
    */
   private async performFeatureDecomposition(args: FeatureDecomposerArgs): Promise<FeatureDecompositionResult> {
-    const systemPrompt = `You are a senior software architect specializing in feature decomposition and task breakdown. Your role is to intelligently decompose large features into smaller, manageable work items.
-
-DECOMPOSITION PRINCIPLES:
-1. **Atomic Work Items**: Each item should be focused on a single responsibility
-2. **Testable Units**: Items should have clear verification criteria
-3. **Appropriate Granularity**: Target complexity of ${args.TargetComplexity || 'medium'} 
-4. **Logical Dependencies**: Consider implementation order and dependencies
-5. **Value Delivery**: Each item should contribute to the overall feature goal
-
-ANALYSIS FRAMEWORK:
-- Break down into ${args.MaxItems || 8} or fewer work items
-- Consider technical architecture and implementation patterns
-- Account for testing, documentation, and quality requirements
-- Identify shared components and reusable elements
-- Plan for incremental delivery and validation
-
-Generate work items with:
-- Clear, specific titles
-- Detailed descriptions with implementation guidance
-- Acceptance criteria (if requested)
-- Complexity and effort estimates
-- Technical considerations and dependencies
-- Testing strategies
-
-Provide reasoning for the decomposition strategy and implementation order.`;
+    const systemPrompt = loadSystemPrompt('feature-decomposer', {
+      TARGET_COMPLEXITY: args.TargetComplexity || 'medium',
+      MAX_ITEMS: String(args.MaxItems || 8)
+    });
 
     const userContent = this.formatFeatureForDecomposition(args);
     
@@ -1562,8 +1431,17 @@ Please provide a comprehensive breakdown with implementation strategy and reason
       
       if (item.aiSuitability === "AI_FIT" && item.confidence && item.confidence > 0.7 && item.riskScore && item.riskScore < 40) {
         try {
-          await this.autoAssignToAI(workItemId, args.Organization, args.Project);
-          logger.info(`Auto-assigned work item ${workItemId} to GitHub Copilot`);
+          const assignArgs = {
+            WorkItemId: workItemId,
+            Organization: args.Organization,
+            Project: args.Project
+          };
+          const result = await executeTool("wit-assign-to-copilot", assignArgs);
+          if (result.success) {
+            logger.info(`Auto-assigned work item ${workItemId} to GitHub Copilot`);
+          } else {
+            logger.warn(`Failed to auto-assign work item ${workItemId} to AI: ${result.errors?.join(', ')}`);
+          }
         } catch (error) {
           logger.warn(`Failed to auto-assign work item ${workItemId} to AI: ${error}`);
         }
@@ -1688,28 +1566,7 @@ Please provide a comprehensive breakdown with implementation strategy and reason
    * Perform the core hierarchy validation using AI sampling
    */
   private async performHierarchyValidation(workItems: WorkItemHierarchyInfo[], args: HierarchyValidatorArgs): Promise<HierarchyValidationResult> {
-    const systemPrompt = `You are a senior project manager and Azure DevOps expert specializing in work item hierarchy analysis and optimization. Your role is to analyze work item parent-child relationships and identify issues with current parenting.
-
-ANALYSIS FRAMEWORK:
-1. **Hierarchy Best Practices**: Epic → Feature → User Story → Task pattern
-2. **Logical Grouping**: Related items should share appropriate parents  
-3. **Scope Alignment**: Child items should be subsets of parent scope
-4. **Type Relationships**: Validate appropriate work item type hierarchies
-5. **Content Analysis**: Use titles and descriptions to assess logical fit
-
-ISSUE IDENTIFICATION:
-- **Orphaned Items**: High-level items without appropriate parents
-- **Misparented Items**: Items with parents that don't logically contain them
-- **Incorrect Level**: Items at wrong hierarchy level for their scope
-- **Type Mismatches**: Inappropriate parent-child type relationships
-
-SUGGESTION CRITERIA:
-- Consider content similarity and logical containment
-- Respect work item type hierarchies
-- Prioritize clear scope boundaries
-- Account for team organization and area paths
-
-Provide specific, actionable recommendations with confidence scores and clear reasoning.`;
+  const systemPrompt = loadSystemPrompt('hierarchy-validator');
 
     const userContent = this.formatWorkItemsForHierarchyAnalysis(workItems, args);
     
