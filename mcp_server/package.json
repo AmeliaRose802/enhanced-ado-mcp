@@ -23,8 +23,8 @@
   "license": "MIT",
   "files": [
     "dist/**/*",
-    "../ado_scripts/**/*",
-    "../prompts/**/*",
+    "ado_scripts/**/*",
+    "prompts/**/*",
     "mcp-config.json",
     "README.md"
   ],

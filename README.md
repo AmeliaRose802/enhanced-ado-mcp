@@ -76,6 +76,48 @@ Add to your Claude Desktop configuration file:
 }
 ```
 
+## 🎯 Configuring Language Model Access (Sampling)
+
+This MCP server includes **AI-powered analysis tools** that leverage VS Code's language model sampling capability to provide intelligent work item analysis. These features require proper configuration to access language models.
+
+### Prerequisites for Sampling Features
+
+1. **VS Code Insiders** or **VS Code Stable** (version 1.87+)
+2. **GitHub Copilot** extension installed and active
+3. **Language Model Access** enabled for the MCP server
+
+### Enabling Language Model Access
+
+When you first use an AI-powered tool (tools 5-8 below), VS Code will prompt you to grant language model access:
+
+1. VS Code will show a permission dialog asking: **"Allow [enhanced-ado-msp] to access language models?"**
+2. Click **"Allow"** to grant access
+3. The permission is remembered for future requests
+
+### Checking Language Model Access Status
+
+You can verify if your MCP server has language model access:
+
+```typescript
+// In VS Code, the extension context provides:
+context.languageModelAccessInformation.canSendRequest(chat)
+```
+
+If you encounter sampling errors, ensure:
+- GitHub Copilot is active and authenticated
+- You've granted language model access when prompted
+- Your GitHub Copilot subscription is active
+
+### Manual Configuration (Advanced)
+
+Language model access is managed by VS Code and persists across sessions. To reset permissions:
+
+1. Open VS Code Settings
+2. Search for "Language Model"
+3. Review and manage extension permissions under **Chat > Language Model Access**
+
+**Note:** Claude Desktop and other non-VS Code MCP clients do not support sampling features. AI-powered tools (5-8) will gracefully degrade and return an error message indicating sampling is unavailable.
+
 ## Tools Exposed
 
 ### Core Work Item Tools
@@ -85,7 +127,9 @@ Add to your Claude Desktop configuration file:
 3. `wit-new-copilot-item` - Create a new work item under a parent and immediately assign to GitHub Copilot
 4. `wit-extract-security-links` - Extract instruction links from the body of security scan work items
 
-### AI-Powered Analysis Tools (with VS Code Sampling)
+### AI-Powered Analysis Tools (Requires VS Code Language Model Access)
+
+> **⚠️ Note:** These tools require VS Code with GitHub Copilot and language model access granted. They are not available in Claude Desktop or other MCP clients.
 
 5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
 6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning

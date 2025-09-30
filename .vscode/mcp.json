@@ -24,10 +24,9 @@
   "servers": {
     "enhanced-ado-msp": {
       "type": "stdio",
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "enhanced-ado-mcp-server",
+        "mcp_server/dist/index.js",
         "${input:ado_org}",
         "${input:ado_project}",
         "--area-path",
