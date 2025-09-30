@@ -65,7 +65,7 @@ export class HierarchyValidatorAnalyzer {
    * Fetch work items from Azure DevOps REST API
    */
   private async fetchWorkItems(args: HierarchyValidatorArgs): Promise<WorkItemHierarchyInfo[]> {
-    const { WorkItemIds, AreaPath, Organization, Project, IncludeChildAreas, MaxItemsToAnalyze, FilterByWorkItemType, ExcludeStates } = args;
+    const { WorkItemIds, AreaPath, Organization, Project, IncludeChildAreas, MaxItemsToAnalyze, FilterByWorkItemType, ExcludeStates, AnalysisDepth } = args;
 
     try {
       // Get Azure DevOps access token
@@ -73,9 +73,19 @@ export class HierarchyValidatorAnalyzer {
       
       let workItemIds: number[] = [];
 
-      // If specific IDs provided, use them
+      // If specific IDs provided, use them and optionally fetch their children
       if (WorkItemIds && WorkItemIds.length > 0) {
-        workItemIds = WorkItemIds.slice(0, MaxItemsToAnalyze || 50);
+        workItemIds = [...WorkItemIds];
+        
+        // For deep analysis or when analyzing hierarchy, also fetch children
+        if (AnalysisDepth === 'deep' || WorkItemIds.length === 1) {
+          logger.debug(`Fetching children for provided work item IDs: ${WorkItemIds.join(', ')}`);
+          const childIds = await this.fetchChildWorkItems(Organization!, Project!, WorkItemIds, token, MaxItemsToAnalyze);
+          workItemIds = [...workItemIds, ...childIds];
+          logger.debug(`Total work items including children: ${workItemIds.length}`);
+        }
+        
+        workItemIds = workItemIds.slice(0, MaxItemsToAnalyze || 50);
       } 
       // Otherwise, query by area path
       else if (AreaPath) {
@@ -103,6 +113,66 @@ export class HierarchyValidatorAnalyzer {
     } catch (error) {
       logger.error('Failed to fetch work items from Azure DevOps', error);
       throw new Error(`Failed to fetch work items: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Fetch child work items for given parent IDs using WIQL
+   */
+  private async fetchChildWorkItems(
+    organization: string,
+    project: string,
+    parentIds: number[],
+    token: string,
+    maxItems?: number
+  ): Promise<number[]> {
+    const tempFile = join(tmpdir(), `ado-wiql-children-${Date.now()}.json`);
+    
+    try {
+      const allChildIds: Set<number> = new Set();
+      
+      // Query children for each parent
+      for (const parentId of parentIds) {
+        const query = `SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = ${parentId}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') ORDER BY [System.Id] MODE (MustContain)`;
+        
+        const wiqlBody = { query };
+        const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/wiql?api-version=7.1`;
+
+        // Execute WIQL query
+        writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
+        const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${url}"`;
+        const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+        const wiqlResult = JSON.parse(response);
+
+        // Extract target (child) work item IDs from the link results
+        if (wiqlResult.workItemRelations) {
+          wiqlResult.workItemRelations.forEach((relation: any) => {
+            if (relation.target?.id && relation.target.id !== parentId) {
+              allChildIds.add(relation.target.id);
+            }
+          });
+        }
+        
+        // Stop if we've reached the max
+        if (maxItems && allChildIds.size >= maxItems) {
+          break;
+        }
+      }
+
+      const childIds = Array.from(allChildIds);
+      logger.debug(`Found ${childIds.length} child work items`);
+      return childIds.slice(0, maxItems);
+
+    } catch (error) {
+      logger.warn('Failed to fetch child work items, continuing with parent items only', error);
+      return [];
+    } finally {
+      // Clean up temporary file
+      try {
+        unlinkSync(tempFile);
+      } catch (cleanupError) {
+        logger.warn(`Failed to delete temporary WIQL file ${tempFile}`, cleanupError);
+      }
     }
   }
 
@@ -212,6 +282,12 @@ export class HierarchyValidatorAnalyzer {
         return [];
       }
 
+      // Build a map of work item IDs to titles for parent lookups
+      const idToTitleMap = new Map<number, string>();
+      result.value.forEach((wi: any) => {
+        idToTitleMap.set(wi.id, wi.fields['System.Title']);
+      });
+
       return result.value.map((wi: any) => {
         // Find parent relationship
         const parentRelation = wi.relations?.find((rel: any) => 
@@ -222,12 +298,15 @@ export class HierarchyValidatorAnalyzer {
           ? parseInt(parentRelation.url.split('/').pop())
           : undefined;
 
+        const parentTitle = parentId ? idToTitleMap.get(parentId) : undefined;
+
         return {
           id: wi.id,
           title: wi.fields['System.Title'],
           type: wi.fields['System.WorkItemType'],
           state: wi.fields['System.State'],
           currentParentId: parentId,
+          currentParentTitle: parentTitle,
           areaPath: wi.fields['System.AreaPath'],
           assignedTo: wi.fields['System.AssignedTo']?.displayName,
           description: wi.fields['System.Description']
