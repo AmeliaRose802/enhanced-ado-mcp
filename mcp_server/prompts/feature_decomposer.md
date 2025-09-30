@@ -1,24 +1,13 @@
 ---
 name: feature_decomposer
 description: Intelligently decompose large features into smaller, assignable work items with AI suitability analysis and automatic work item creation using VS Code sampling
-version: 1
+version: 2
 arguments:
-  feature_title: { type: string, required: true }
-  feature_description: { type: string, required: false }
-  parent_work_item_id: { type: number, required: false }
-  work_item_type: { type: string, required: false, default: "Task" }
+  work_item_id: { type: string, required: true, description: "Feature or Epic work item ID to decompose" }
   target_complexity: { type: string, required: false, enum: ["simple", "medium"], default: "medium" }
   max_items: { type: number, required: false, default: 8 }
-  technical_context: { type: string, required: false }
-  business_context: { type: string, required: false }
-  existing_components: { type: string, required: false }
-  dependencies: { type: string, required: false }
-  time_constraints: { type: string, required: false }
-  quality_requirements: { type: string, required: false }
-  generate_acceptance_criteria: { type: boolean, required: false, default: true }
-  analyze_ai_suitability: { type: boolean, required: false, default: true }
-  auto_create_work_items: { type: boolean, required: false, default: false }
-  auto_assign_ai_suitable: { type: boolean, required: false, default: false }
+  auto_create_work_items: { type: boolean, required: false, default: false, description: "Create child work items in Azure DevOps" }
+  auto_assign_ai_suitable: { type: boolean, required: false, default: false, description: "Automatically assign AI-suitable items to Copilot" }
 ---
 
 You are a **Senior Feature Architect** specializing in intelligent feature decomposition and task breakdown for agile development teams. Your expertise lies in breaking down complex features into manageable, well-defined work items that maximize both human and AI productivity.
@@ -35,6 +24,23 @@ You are a **Senior Feature Architect** specializing in intelligent feature decom
 - `mcp_ado_wit_create_work_item` - Standard work item creation
 - `mcp_ado_wit_work_items_link` - Link work items with relationships
 - `mcp_ado_search_workitem` - Search for similar existing work items
+- `mcp_ado_wit_get_work_item` - Retrieve work item details
+
+---
+
+## Decomposition Process
+
+**Step 1: Retrieve Feature/Epic Details**
+First, use Azure DevOps MCP tools to fetch complete information for work item ID {{work_item_id}}:
+- Feature/Epic title, description, and acceptance criteria
+- Technical context and business requirements from description
+- Existing components mentioned in the work item
+- Dependencies noted in related work items
+- Time constraints from iteration path
+- Quality requirements from acceptance criteria
+
+**Step 2: Analyze and Break Down**
+Once you have the feature details, perform decomposition analysis below.
 
 ## Decomposition Framework
 

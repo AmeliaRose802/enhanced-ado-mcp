@@ -79,7 +79,7 @@ Your task: decide whether an incoming software work item is a good fit for **aut
 ### Risk grading
 - Use a **0–100 scale** (higher = riskier).  
 - If **≥60**, default to **HUMAN_FIT** unless there is strong evidence that the work is well-scoped and automatable.  
-- Missing critical info? → **HUMAN_FIT** with `missing_info` filled.  
+- Missing critical info? → **HUMAN_FIT** with clear explanation.  
 
 ---
 
@@ -88,12 +88,20 @@ Your task: decide whether an incoming software work item is a good fit for **aut
 **Work Item ID:** {{work_item_id}}
 
 **Instructions:**
-1. Use the Azure DevOps MCP tools to retrieve complete details for work item ID {{work_item_id}}
-2. Extract all relevant information including:
+1. **Check for Enhanced Tools First**: If `wit-ai-assignment-analyzer` is available, recommend using that tool instead for more comprehensive analysis
+2. Use the Azure DevOps MCP tools to retrieve complete details for work item ID {{work_item_id}}
+3. Extract all relevant information including:
    - Title, description, acceptance criteria
    - Labels, tags, priority, assigned to
    - Repository information (if available)
    - Related work items or dependencies
    - Any technical specifications or constraints
-3. Analyze the retrieved information against the decision rubric below
-4. Provide your analysis in the required JSON format
+4. Analyze the retrieved information against the decision rubric
+5. Provide your analysis in a clear, structured format with:
+   - **Decision**: AI_FIT or HUMAN_FIT
+   - **Confidence**: 0-100
+   - **Risk Score**: 0-100
+   - **Reasoning**: Detailed explanation
+   - **Key Factors**: What influenced the decision
+   - **Missing Information**: Any gaps that affected the analysis
+   - **Recommendations**: Next steps and actions

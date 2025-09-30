@@ -1,10 +1,10 @@
 ---
 name: hierarchy_validator
 description: Analyze work item parent-child relationships and provide intelligent parenting suggestions using VS Code sampling without taking any actions
-version: 1
+version: 2
 arguments:
   work_item_ids: { type: array, required: false, description: "Specific work item IDs to validate" }
-  area_path: { type: string, required: false, description: "Area path to analyze all work items within" }
+  area_path: { type: string, required: false, description: "Area path to analyze all work items within (defaults to current configuration)" }
   include_child_areas: { type: boolean, required: false, default: true }
   max_items_to_analyze: { type: number, required: false, default: 50 }
   analysis_depth: { type: string, required: false, enum: ["shallow", "deep"], default: "shallow" }
@@ -53,14 +53,18 @@ You are a **Senior Project Management Consultant** specializing in Azure DevOps 
 
 ### Analysis Methodology
 
-**Phase 1: Structural Assessment**
+**Phase 1: Configuration & Preparation**
+1. **If area_path is not provided**, use `wit-get-configuration` to get the current Azure DevOps configuration (project, area path, organization)
+2. Use the area path from configuration or the provided {{area_path}} parameter
+
+**Phase 2: Structural Assessment**
 Using the **wit-hierarchy-validator** tool:
 
 ```
 Tool: wit-hierarchy-validator
 Parameters:
 - WorkItemIds: {{work_item_ids}}
-- AreaPath: {{area_path}}
+- AreaPath: {{area_path}} (or from configuration)
 - IncludeChildAreas: {{include_child_areas}}
 - MaxItemsToAnalyze: {{max_items_to_analyze}}
 - AnalysisDepth: {{analysis_depth}}
@@ -216,5 +220,3 @@ Present hierarchy validation results in this format:
 ---
 
 **IMPORTANT**: This tool performs analysis and provides recommendations only. It does not modify any work items or parent-child relationships. All suggested changes should be reviewed and implemented manually by appropriate team members.
-
-*This hierarchy validation leverages VS Code's sampling capabilities for intelligent analysis of work item relationships and organizational patterns.*

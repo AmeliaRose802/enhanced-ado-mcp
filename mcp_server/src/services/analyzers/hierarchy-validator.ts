@@ -76,12 +76,12 @@ export class HierarchyValidatorAnalyzer {
       if (WorkItemIds && WorkItemIds.length > 0) {
         workItemIds = [...WorkItemIds];
         
-        // For deep analysis or when analyzing hierarchy, also fetch children
+        // For deep analysis or when analyzing hierarchy, fetch descendants recursively
         if (AnalysisDepth === 'deep' || WorkItemIds.length === 1) {
-          logger.debug(`Fetching children for provided work item IDs: ${WorkItemIds.join(', ')}`);
-          const childIds = await this.fetchChildWorkItems(Organization!, Project!, WorkItemIds, token, MaxItemsToAnalyze);
-          workItemIds = [...workItemIds, ...childIds];
-          logger.debug(`Total work items including children: ${workItemIds.length}`);
+          logger.debug(`Fetching descendants for provided work item IDs: ${WorkItemIds.join(', ')}`);
+          const descendantIds = await this.fetchDescendantsRecursively(Organization!, Project!, WorkItemIds, token, MaxItemsToAnalyze);
+          workItemIds = [...workItemIds, ...descendantIds];
+          logger.debug(`Total work items including descendants: ${workItemIds.length}`);
         }
         
         workItemIds = workItemIds.slice(0, MaxItemsToAnalyze || 50);
@@ -176,6 +176,52 @@ export class HierarchyValidatorAnalyzer {
   }
 
   /**
+   * Recursively fetch all descendants (children, grandchildren, etc.) for given parent IDs
+   */
+  private async fetchDescendantsRecursively(
+    organization: string,
+    project: string,
+    parentIds: number[],
+    token: string,
+    maxItems?: number
+  ): Promise<number[]> {
+    const allDescendants: Set<number> = new Set();
+    const visited: Set<number> = new Set();
+    const queue: number[] = [...parentIds];
+
+    logger.debug(`Starting recursive descendant fetch for ${parentIds.length} parent(s)`);
+
+    while (queue.length > 0 && (!maxItems || allDescendants.size < maxItems)) {
+      const currentId = queue.shift()!;
+      
+      // Skip if already visited (prevent infinite loops in case of circular refs)
+      if (visited.has(currentId)) {
+        continue;
+      }
+      visited.add(currentId);
+
+      // Fetch immediate children for this work item
+      const children = await this.fetchChildWorkItems(organization, project, [currentId], token, maxItems);
+      
+      for (const childId of children) {
+        if (!allDescendants.has(childId) && !parentIds.includes(childId)) {
+          allDescendants.add(childId);
+          queue.push(childId); // Add to queue to fetch its children
+          
+          // Stop if we've reached max items
+          if (maxItems && allDescendants.size >= maxItems) {
+            break;
+          }
+        }
+      }
+    }
+
+    const descendantIds = Array.from(allDescendants);
+    logger.debug(`Found ${descendantIds.length} total descendants across ${visited.size} levels`);
+    return descendantIds;
+  }
+
+  /**
    * Get Azure DevOps PAT token from Azure CLI
    */
   private getAzureDevOpsToken(): string {
@@ -261,17 +307,9 @@ export class HierarchyValidatorAnalyzer {
   ): Promise<WorkItemHierarchyInfo[]> {
     try {
       const ids = workItemIds.join(',');
-      const fields = [
-        'System.Id',
-        'System.Title',
-        'System.WorkItemType',
-        'System.State',
-        'System.AreaPath',
-        'System.AssignedTo',
-        'System.Description'
-      ].join(',');
-
-      const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${ids}&fields=${fields}&$expand=relations&api-version=7.1`;
+      
+      // Note: Cannot use fields parameter with $expand=relations, so we get all fields
+      const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${ids}&$expand=relations&api-version=7.1`;
 
       const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${url}"`;
       const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
