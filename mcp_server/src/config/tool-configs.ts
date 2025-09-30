@@ -31,7 +31,7 @@ export const toolConfigs: ToolConfig[] = [
   {
     name: "wit-create-new-item",
     description: "Create a new Azure DevOps work item with optional parent relationship",
-    script: "New-WorkItemWithParent-MCP.ps1",
+    script: "", // Handled internally with REST API
     schema: createNewItemSchema,
     inputSchema: {
       type: "object",
