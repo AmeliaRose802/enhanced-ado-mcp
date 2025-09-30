@@ -1,4 +1,4 @@
-# ⭐ Enhanced ADO MSP MCP Server
+# ⭐ Enhanced ADO MCP Server
 
 **Enterprise Azure DevOps work item management via Model Context Protocol** - Leverage existing PowerShell automation scripts as AI-powered tools with comprehensive prompt templates for intelligent work item operations.
 
