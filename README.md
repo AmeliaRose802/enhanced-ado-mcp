@@ -6,34 +6,91 @@
 [![MCP Server](https://img.shields.io/badge/MCP-Server-blue?style=flat-square)](https://modelcontextprotocol.io/)
 [![Azure DevOps](https://img.shields.io/badge/Azure_DevOps-Integration-0078d4?style=flat-square&logo=azuredevops)](https://dev.azure.com/)
 
+## ✨ One-Click Install for VS Code
+
+[![Install with NPX in VS Code](https://img.shields.io/badge/VS%20Code-One--Click%20Install-007ACC?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Default%20area%20path%20(e.g.%20MyProject%5C%5CMyTeam)%22%7D%2C%7B%22id%22%3A%22copilot_guid%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22GitHub%20Copilot%20GUID%20(optional)%22%7D%5D)
+
+After installation, select **GitHub Copilot Agent Mode** and refresh the tools list. Learn more about [Agent Mode in VS Code](https://code.visualstudio.com/docs/copilot/chat/chat-agent-mode).
+
 ## 🚀 Installation & Getting Started
+
+For the best experience, use **Visual Studio Code** with **GitHub Copilot**. See alternative client configurations below for Claude Desktop, Cursor, and other MCP clients.
 
 ### Prerequisites
 
-1. Install [Node.js](https://nodejs.org/en/download) 18+
-2. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
-3. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
-4. Install an MCP-compatible client:
-   - [Claude Desktop](https://claude.ai/download)
-   - [Cursor](https://cursor.sh/)
-   - [VS Code with MCP extension](https://marketplace.visualstudio.com/items?itemName=anthropic.mcp)
-   - [Windsurf](https://codeium.com/windsurf)
+1. Install [VS Code](https://code.visualstudio.com/download) or [VS Code Insiders](https://code.visualstudio.com/insiders)
+2. Install [Node.js](https://nodejs.org/en/download) 18+
+3. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
+4. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
+5. Open VS Code in your project folder
 
 ### 🛠️ Installation Options
 
-#### Option 1: NPX (Recommended)
-```bash
-# Install the package
-npm install -g enhanced-ado-mcp-server
+#### ✨ Option 1: One-Click Install (Recommended for VS Code)
+
+Click the badge above or [install directly in VS Code](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%2C%22--copilot-guid%22%2C%22%24%7Binput%3Acopilot_guid%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Default%20area%20path%20(e.g.%20MyProject%5C%5CMyTeam)%22%7D%2C%7B%22id%22%3A%22copilot_guid%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22GitHub%20Copilot%20GUID%20(optional)%22%7D%5D). VS Code will prompt you for configuration values and automatically set up the MCP server.
+
+#### � Option 2: Manual VS Code Configuration
+
+Create a `.vscode/mcp.json` file in your project with:
+
+```json
+{
+  "inputs": [
+    {
+      "id": "ado_org",
+      "type": "promptString",
+      "description": "Azure DevOps organization name (e.g. 'contoso')"
+    },
+    {
+      "id": "ado_project",
+      "type": "promptString",
+      "description": "Azure DevOps project name"
+    },
+    {
+      "id": "area_path",
+      "type": "promptString",
+      "description": "Default area path (e.g. 'MyProject\\MyTeam')"
+    },
+    {
+      "id": "copilot_guid",
+      "type": "promptString",
+      "description": "GitHub Copilot GUID (optional, for Copilot assignment tools)"
+    }
+  ],
+  "servers": {
+    "enhanced-ado-msp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "${input:ado_org}",
+        "${input:ado_project}",
+        "--area-path",
+        "${input:area_path}",
+        "--copilot-guid",
+        "${input:copilot_guid}"
+      ]
+    }
+  }
+}
 ```
 
-#### Option 2: Direct Install
+Save the file, then click **'Start'** in VS Code. In GitHub Copilot Chat, switch to [Agent Mode](https://code.visualstudio.com/blogs/2025/02/24/introducing-copilot-agent-mode), click **"Select Tools"**, and choose the available tools.
+
+> 💡 **Pro Tip**: Create a `.github/copilot-instructions.md` file in your project with: "This project uses Azure DevOps. Always check to see if the Enhanced ADO MCP server has a tool relevant to the user's request."
+
+#### 📦 Option 3: Global NPM Installation
+
 ```bash
 # Install globally for system-wide access
 npm install -g enhanced-ado-mcp-server
 ```
 
-### 🔧 MCP Client Configuration
+Then update your `.vscode/mcp.json` to use `"command": "enhanced-ado-mcp-server"` instead of `"npx"`.
+
+### 🔧 Alternative MCP Client Configurations
 
 #### Claude Desktop Configuration
 
@@ -114,8 +171,8 @@ For development or testing with your local build:
 
 ### 🎯 Start Using
 
-1. **Claude Desktop**: Open Claude Desktop and the MCP server will be automatically available
-2. **VS Code**: Install the MCP extension and configure the server
+1. **VS Code**: Open GitHub Copilot Chat in Agent Mode, select your tools, and start chatting
+2. **Claude Desktop**: Open Claude Desktop and the MCP server will be automatically available
 3. **Cursor**: Configure in settings and use the MCP tools panel
 
 Try prompts like:
@@ -123,6 +180,8 @@ Try prompts like:
 - "Assign work item 12345 to GitHub Copilot for automated completion"
 - "Extract security findings and create remediation tasks"
 - "Analyze security items in my area path and create remediation plan"
+- "List my area paths" (discovery tool)
+- "Show me my current configuration" (config tool)
 
 ## Tools Exposed
 

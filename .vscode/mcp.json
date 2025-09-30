@@ -1,0 +1,40 @@
+{
+  "inputs": [
+    {
+      "id": "ado_org",
+      "type": "promptString",
+      "description": "Azure DevOps organization name (e.g. 'contoso')"
+    },
+    {
+      "id": "ado_project",
+      "type": "promptString",
+      "description": "Azure DevOps project name"
+    },
+    {
+      "id": "area_path",
+      "type": "promptString",
+      "description": "Default area path (e.g. 'MyProject\\MyTeam')"
+    },
+    {
+      "id": "copilot_guid",
+      "type": "promptString",
+      "description": "GitHub Copilot GUID (optional, for Copilot assignment tools)"
+    }
+  ],
+  "servers": {
+    "enhanced-ado-msp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "${input:ado_org}",
+        "${input:ado_project}",
+        "--area-path",
+        "${input:area_path}",
+        "--copilot-guid",
+        "${input:copilot_guid}"
+      ]
+    }
+  }
+}
