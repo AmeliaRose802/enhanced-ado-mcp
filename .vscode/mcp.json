@@ -26,7 +26,7 @@
       "type": "stdio",
       "command": "node",
       "args": [
-        "mcp_server/dist/index.js",
+        "${workspaceFolder}/mcp_server/dist/index.js",
         "${input:ado_org}",
         "${input:ado_project}",
         "--area-path",
