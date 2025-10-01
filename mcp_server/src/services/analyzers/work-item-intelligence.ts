@@ -51,12 +51,20 @@ export class WorkItemIntelligenceAnalyzer {
     const systemPromptName = `${analysisType}-analyzer`;
     const userContent = formatForAI(args);
 
-    const aiResult = await this.samplingClient.createMessage({
+    // Add timeout wrapper to prevent hanging
+    const timeoutMs = 25000; // 25 seconds
+    const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
       maxTokens: this.getMaxTokens(analysisType),
       temperature: this.getTemperature(analysisType)
     });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('AI sampling timeout after 25 seconds')), timeoutMs);
+    });
+
+    const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);
 
     return this.parseAnalysisResponse(aiResult, analysisType);
   }

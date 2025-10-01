@@ -368,12 +368,20 @@ export class HierarchyValidatorAnalyzer {
     const systemPromptName = 'hierarchy-validator';
     const userContent = formatForAI({ workItems, ...args });
 
-    const aiResult = await this.samplingClient.createMessage({
+    // Add timeout wrapper to prevent hanging
+    const timeoutMs = 30000; // 30 seconds
+    const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
       maxTokens: 2000,
       temperature: 0.3
     });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('AI sampling timeout after 30 seconds')), timeoutMs);
+    });
+
+    const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);
 
     return this.parseHierarchyResponse(aiResult, workItems, args);
   }

@@ -26,12 +26,20 @@ export class AIAssignmentAnalyzer {
   }
 
   private async performAnalysis(args: AIAssignmentAnalyzerArgs): Promise<AIAssignmentResult> {
-    const aiResult = await this.samplingClient.createMessage({
+    // Add timeout wrapper to prevent hanging
+    const timeoutMs = 20000; // 20 seconds (shorter for smaller analysis)
+    const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'ai-assignment-analyzer',
       userContent: formatForAI(args),
       maxTokens: 400,
       temperature: 0.2
     });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('AI sampling timeout after 20 seconds')), timeoutMs);
+    });
+
+    const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);
     return this.parseResponse(aiResult);
   }
 

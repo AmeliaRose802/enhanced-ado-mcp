@@ -1,7 +1,7 @@
-import { execSync } from 'child_process';
 import { logger } from '../../utils/logger.js';
 import { buildSuccessResponse, buildErrorResponse } from '../../utils/response-builder.js';
 import { loadConfiguration } from '../../config/config.js';
+import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
 
 interface ContextPackageArgs {
   WorkItemId: number;
@@ -20,23 +20,6 @@ interface ContextPackageArgs {
   MaxRelatedItems?: number;
   IncludeAttachments?: boolean;
   IncludeTags?: boolean;
-}
-
-// Helper to get ADO token via az cli (re-using pattern from work-item-service)
-function getAzureDevOpsToken(): string {
-  const AZURE_DEVOPS_RESOURCE_ID = '499b84ac-1321-427f-aa17-267ca6975798';
-  try {
-    const result = execSync(`az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`, { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
-    return result.trim();
-  } catch (err) {
-    throw new Error('Failed to get Azure DevOps token. Ensure you are logged in with az login');
-  }
-}
-
-function curlJson(url: string, token: string): any {
-  const cmd = `curl -s -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" "${url}"`;
-  const raw = execSync(cmd, { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
-  try { return JSON.parse(raw); } catch { return raw; }
 }
 
 // Basic HTML to markdown/text simplifier (lightweight; not full fidelity)
@@ -91,10 +74,16 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     const fields = IncludeExtendedFields ? baseFields.concat(extendedFields) : baseFields;
     const fieldParam = fields.join(',');
 
-    const workItemUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?$expand=relations&fields=${encodeURIComponent(fieldParam)}&api-version=7.1`;
+    // Note: Azure DevOps API doesn't allow both $expand and fields parameters together
+    // Use $expand=all to get both relations and all fields
+    const workItemUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?$expand=all&api-version=7.1`;
+    
+    logger.debug(`Fetching work item ${WorkItemId} from ${Organization}/${Project}`);
+    logger.debug(`URL: ${workItemUrl}`);
+    
     const wi = curlJson(workItemUrl, token);
     if (!wi || !wi.id) {
-      throw new Error(`Work item ${WorkItemId} not found`);
+      throw new Error(`Work item ${WorkItemId} not found in organization '${Organization}', project '${Project}'. Verify the work item ID exists and you have access to it.`);
     }
 
     // Parent and children detection

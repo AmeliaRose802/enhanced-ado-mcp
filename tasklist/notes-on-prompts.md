@@ -12,6 +12,27 @@
 - Documentation and examples in README
 - Test suite for validation
 
+## Tool Improvements Needed
+
+### ✅ Fixed: wit-get-work-item-context-package Error Handling
+**Issue**: The `curlJson` function in context package handlers didn't properly handle HTTP error responses, making it difficult to diagnose why work items weren't found.
+
+**Root Cause**: 
+- Using `curl -s` suppressed error details but still returned response bodies
+- No HTTP status code checking
+- Azure DevOps error responses (404, 401, etc.) were not properly parsed
+- Generic "Work item not found" message didn't indicate organization/project context
+
+**Solution Implemented**:
+- Enhanced `curlJson` function to capture HTTP status codes using `-w "\n%{http_code}"`
+- Added proper error response parsing for Azure DevOps API errors
+- Improved error messages to include organization, project, and access verification guidance
+- Applied fix to both `get-work-item-context-package.handler.ts` and `get-work-items-context-batch.handler.ts`
+
+**Technical Debt**: Consider creating a shared utility function for all Azure DevOps REST API calls to ensure consistent error handling across the codebase.
+
+---
+
 A lot of our beta testers requested we add automatic work item fetching in the various prompts and tools. We should accept a work item ID and then automatically inject in all context needed about that item. That would make it faster and easier for the caller
 
 Our beta testers have requested that we don't require area path etc in our tools if we already have the info. We should auto fill these from our config instead.

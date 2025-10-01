@@ -1,7 +1,7 @@
-import { execSync } from 'child_process';
 import { buildSuccessResponse, buildErrorResponse } from '../../utils/response-builder.js';
 import { loadConfiguration } from '../../config/config.js';
 import { logger } from '../../utils/logger.js';
+import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
 
 interface BatchArgs {
   WorkItemIds: number[];
@@ -19,18 +19,6 @@ interface BatchArgs {
   IncludeChildrenOutsideSet?: boolean;
   MaxOutsideReferences?: number;
   ReturnFormat?: 'graph' | 'array';
-}
-
-function getAzureDevOpsToken(): string {
-  const AZURE_DEVOPS_RESOURCE_ID = '499b84ac-1321-427f-aa17-267ca6975798';
-  const result = execSync(`az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`, { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
-  return result.trim();
-}
-
-function curlJson(url: string, token: string): any {
-  const cmd = `curl -s -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" "${url}"`;
-  const raw = execSync(cmd, { encoding: 'utf8', stdio: ['pipe','pipe','pipe'] });
-  try { return JSON.parse(raw); } catch { return raw; }
 }
 
 export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
@@ -65,7 +53,10 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
     const fieldsParam = allFields.join(',');
 
     const idsParam = WorkItemIds.join(',');
-    const detailsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems?ids=${idsParam}&$expand=${IncludeRelations ? 'relations' : ''}&fields=${encodeURIComponent(fieldsParam)}&api-version=7.1`;
+    // Note: Azure DevOps API doesn't allow both $expand and fields parameters together
+    // Use $expand=all to get both relations and all fields when IncludeRelations is true
+    const expandParam = IncludeRelations ? '$expand=all' : '';
+    const detailsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems?ids=${idsParam}${expandParam ? '&' + expandParam : ''}&api-version=7.1`;
     const details = curlJson(detailsUrl, token);
     if (!details.value) {
       throw new Error('Failed to fetch work items');

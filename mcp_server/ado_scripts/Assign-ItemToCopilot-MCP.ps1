@@ -11,13 +11,36 @@ param(
 . (Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Definition) "modules\AzureDevOpsHelper-MCP.ps1")
 
 Invoke-MCPScript {
-    # Get repository information
+    # Get repository information - try by name first, then list all if that fails
     $repoInfo = az repos show --repository $Repository --org "https://dev.azure.com/$Organization" --project $Project --output json 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "Failed to retrieve repository: $repoInfo" }
     
-    $repo = $repoInfo | ConvertFrom-Json
-    $repositoryId = $repo.id
-    $projectId = $repo.project.id
+    if ($LASTEXITCODE -ne 0) {
+        # Repository not found by exact name - try to find it in the list
+        $allRepos = az repos list --org "https://dev.azure.com/$Organization" --project $Project --output json 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            $reposList = $allRepos | ConvertFrom-Json
+            $repo = $reposList | Where-Object { $_.name -eq $Repository -or $_.id -eq $Repository }
+            
+            if (-not $repo) {
+                # Try case-insensitive match
+                $repo = $reposList | Where-Object { $_.name -ieq $Repository }
+            }
+            
+            if ($repo) {
+                $repositoryId = $repo.id
+                $projectId = $repo.project.id
+            } else {
+                $availableRepos = ($reposList | Select-Object -ExpandProperty name) -join ", "
+                throw "Repository '$Repository' not found. Available repositories: $availableRepos"
+            }
+        } else {
+            throw "Failed to retrieve repository: $repoInfo"
+        }
+    } else {
+        $repo = $repoInfo | ConvertFrom-Json
+        $repositoryId = $repo.id
+        $projectId = $repo.project.id
+    }
     
     # Create branch artifact link (Code - Branch type)
     $vstfsUrl = "vstfs:///Git/Ref/$projectId%2F$repositoryId%2FGB$Branch"
