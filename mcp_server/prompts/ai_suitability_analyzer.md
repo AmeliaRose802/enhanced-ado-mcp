@@ -1,7 +1,7 @@
 ---
 name: ai_suitability_analyzer
 description: Decide whether a software work item is a good fit for automated completion by an AI coding agent (e.g., GitHub Copilot + tools) or should be assigned to a human. Output strict JSON only.
-version: 1
+version: 2
 arguments:
   work_item_id: { type: string, required: true, description: "Azure DevOps work item ID to analyze" }
 ---
@@ -23,7 +23,9 @@ Your task: decide whether an incoming software work item is a good fit for **aut
 - `wit-new-copilot-item` - create and immediately assign work items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
 - `wit-get-configuration` - display current MCP server configuration
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries (useful for gathering related items, dependencies, or historical patterns to improve suitability analysis)
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (gather related items, dependencies, or historical patterns)
+- `wit-get-work-item-context-package` - Retrieve a comprehensive enriched context snapshot (linked items, metadata, dependencies) for a single work item prior to suitability scoring
+- `wit-get-work-items-context-batch` - Retrieve a batched graph context when evaluating clusters of related items or dependency chains
 
 ---
 

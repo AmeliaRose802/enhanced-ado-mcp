@@ -94,7 +94,7 @@ export const toolConfigs: ToolConfig[] = [
   {
     name: "wit-assign-to-copilot",
     description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. Organization, Project, Branch, and GitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
-    script: "Assign-ItemToCopilot-MCP.ps1",
+    script: "", // Handled internally with REST API
     schema: assignToCopilotSchema,
     inputSchema: {
       type: "object",
@@ -111,7 +111,7 @@ export const toolConfigs: ToolConfig[] = [
   {
     name: "wit-new-copilot-item",
     description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Organization, Project, WorkItemType, Branch, GitHubCopilotGuid, AreaPath, IterationPath, Priority, and InheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
-    script: "New-WorkItemAndAssignToCopilot-MCP.ps1",
+    script: "", // Handled internally with REST API
     schema: newCopilotItemSchema,
     inputSchema: {
       type: "object",
@@ -135,7 +135,7 @@ export const toolConfigs: ToolConfig[] = [
   {
     name: "wit-extract-security-links",
     description: "Extract instruction links from security scan work items. Organization and Project are automatically filled from configuration - only provide them to override defaults.",
-    script: "Extract-SecurityInstructionLinks-MCP.ps1",
+    script: "", // Handled internally with REST API
     schema: extractSecurityLinksSchema,
     inputSchema: {
       type: "object",

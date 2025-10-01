@@ -1,7 +1,7 @@
 ---
 name: ai_assignment_analyzer
 description: Enhanced AI assignment suitability analysis with detailed reasoning, confidence scoring, and actionable recommendations using VS Code sampling. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.
-version: 2
+version: 3
 arguments:
   work_item_id: { type: string, required: true, description: "Azure DevOps work item ID to analyze for AI assignment suitability" }
 ---
@@ -19,7 +19,9 @@ You are an **AI Assignment Specialist** with deep expertise in evaluating work i
 - `wit-assign-to-copilot` - Assign work items to GitHub Copilot
 - `wit-create-new-item` - Create new work items
 - `wit-intelligence-analyzer` - Comprehensive work item analysis
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries to pull related, linked, or recently changed items for richer context
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries to pull related, linked, or recently changed items
+- `wit-get-work-item-context-package` - Retrieve a comprehensive context package for a single work item (includes enriched linked/related metadata for analysis)
+- `wit-get-work-items-context-batch` - Retrieve a batched graph-style context package for multiple related work items (use before analyzing clusters or dependency impact)
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_get_work_item` - Retrieve work item details

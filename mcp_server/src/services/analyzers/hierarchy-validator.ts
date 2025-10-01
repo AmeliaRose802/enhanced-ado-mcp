@@ -16,7 +16,7 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../../utils/logger.js';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/config.js';
+import { AZURE_DEVOPS_RESOURCE_ID, getRequiredConfig } from '../../config/config.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
@@ -39,15 +39,23 @@ export class HierarchyValidatorAnalyzer {
     }
 
     try {
+      // Merge args with config defaults
+      const config = getRequiredConfig();
+      const mergedArgs: HierarchyValidatorArgs = {
+        ...args,
+        Organization: args.Organization || config.organization,
+        Project: args.Project || config.project
+      };
+
       // Fetch work items from Azure DevOps
-      const workItems = await this.fetchWorkItems(args);
+      const workItems = await this.fetchWorkItems(mergedArgs);
       
       if (workItems.length === 0) {
         return buildErrorResponse('No work items found to analyze. Please check WorkItemIds or AreaPath parameters.');
       }
 
       // Perform AI-powered hierarchy analysis
-      const validationResult = await this.performAnalysis(workItems, args);
+      const validationResult = await this.performAnalysis(workItems, mergedArgs);
 
       return buildSuccessResponse(validationResult, { 
         source: 'ai-sampling', 
@@ -410,7 +418,7 @@ export class HierarchyValidatorAnalyzer {
     const userContent = formatForAI({ workItems, ...args });
 
     // Add timeout wrapper to prevent hanging
-    const timeoutMs = 30000; // 30 seconds
+    const timeoutMs = 180000; // 180 seconds (3 minutes)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
@@ -419,7 +427,7 @@ export class HierarchyValidatorAnalyzer {
     });
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI sampling timeout after 30 seconds')), timeoutMs);
+      setTimeout(() => reject(new Error('AI sampling timeout after 180 seconds')), timeoutMs);
     });
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);

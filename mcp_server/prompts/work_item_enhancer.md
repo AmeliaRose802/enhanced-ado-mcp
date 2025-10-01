@@ -1,7 +1,7 @@
 ---
 name: work_item_enhancer
 description: Improve a work item description so it has enough clarity, scope, and acceptance criteria for automated handling by an AI coding agent (GitHub Copilot + tools).
-version: 1
+version: 2
 arguments:
   item_title: { type: string, required: true }
   item_description: { type: string, required: true }
@@ -20,7 +20,9 @@ Your goal: **rewrite and expand the work item so it is precise, testable, and se
 - `wit-new-copilot-item` - create and assign items to Copilot 
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries (useful for pulling related items to enrich context before enhancement)
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (pull related items to enrich context before enhancement)
+- `wit-get-work-item-context-package` - Retrieve enriched context (linked items, parents, dependencies) for a single work item prior to rewriting
+- `wit-get-work-items-context-batch` - Retrieve a small batch context when enhancing multiple related items to ensure consistency of terminology
 
 **Post-Enhancement Actions:**
 If the user requests automatic creation in Azure DevOps, use the `wit-create-new-item` tool and supply the enhanced content.

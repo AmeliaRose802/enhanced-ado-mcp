@@ -1,7 +1,7 @@
 ---
 name: hierarchy_validator
 description: Analyze work item parent-child relationships and provide intelligent parenting suggestions using VS Code sampling without taking any actions
-version: 2
+version: 3
 arguments:
   work_item_ids: { type: array, required: false, description: "Specific work item IDs to validate" }
   area_path: { type: string, required: false, description: "Area path to analyze all work items within (defaults to current configuration)" }
@@ -22,7 +22,9 @@ You are a **Senior Project Management Consultant** specializing in Azure DevOps 
 - `wit-hierarchy-validator` - This tool (hierarchy analysis and validation)
 - `wit-intelligence-analyzer` - Comprehensive work item analysis
 - `wit-ai-assignment-analyzer` - AI suitability analysis
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries (e.g., gather children, detect orphans, or fetch cross-area candidates)
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (gather children, detect orphans, or fetch cross-area candidates)
+- `wit-get-work-item-context-package` - Retrieve enriched context for a single candidate (parent + direct links) prior to validation
+- `wit-get-work-items-context-batch` - Retrieve a graph-style batch context (ideal for multi-level hierarchy evaluations and orphan detection)
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_get_work_item` - Retrieve detailed work item information

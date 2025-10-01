@@ -1,7 +1,7 @@
 ---
 name: backlog_cleanup
 description: Identify Azure DevOps backlog removal candidates under a specific Area Path using wit-* search tooling.
-version: 1
+version: 2
 arguments: {}
 ---
 
@@ -29,6 +29,8 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
 - `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for bulk backlog cleanup targeting by area/state/date)
+- `wit-get-work-item-context-package` - Retrieve enriched context for an individual candidate prior to removal recommendation (helps avoid deleting items with hidden dependencies)
+- `wit-get-work-items-context-batch` - Retrieve a batched context graph to detect clusters of related stale items vs. isolated or dependent ones
 
 ---
 

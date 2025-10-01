@@ -141,3 +141,25 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
 export function updateConfigFromCLI(args: any): void {
   cliArgs = args;
 }
+
+/**
+ * Get required configuration for work item operations
+ * Returns a simple object with organization, project, and other defaults
+ */
+export function getRequiredConfig() {
+  const config = loadConfiguration();
+  return {
+    organization: config.azureDevOps.organization,
+    project: config.azureDevOps.project,
+    defaultWorkItemType: config.azureDevOps.defaultWorkItemType,
+    defaultPriority: config.azureDevOps.defaultPriority,
+    defaultAreaPath: config.azureDevOps.areaPath,
+    defaultIterationPath: config.azureDevOps.iterationPath,
+    gitRepository: {
+      defaultBranch: config.gitRepository.defaultBranch
+    },
+    gitHubCopilot: {
+      guid: config.gitHubCopilot.defaultGuid
+    }
+  };
+}

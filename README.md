@@ -15,6 +15,7 @@ For the best experience, use **Visual Studio Code** with **GitHub Copilot**. See
 1. Install [Node.js](https://nodejs.org/en/download) 18+
 1. Install [PowerShell 7+](https://github.com/PowerShell/PowerShell)
 1. Install [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and login with `az login`
+1. **Install the [Azure DevOps MCP Server](https://github.com/modelcontextprotocol/servers/tree/main/src/ado)** - This is a required dependency for core Azure DevOps operations
 1. Open VS Code in your project folder
 
 ## ✨ One-Click Install for VS Code
@@ -200,6 +201,207 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 ```
 
 **WIQL Reference:** For more information on WIQL syntax, see the [official Azure DevOps WIQL documentation](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax).
+
+## Available Prompts
+
+The Enhanced ADO MCP Server includes powerful prompt templates for AI-powered work item enhancement and analysis. These prompts can be accessed via the MCP Prompts API.
+
+### User-Facing Prompts
+
+#### 1. `work_item_enhancer`
+
+**Purpose:** Enhance work item descriptions to make them clear, complete, and AI-ready
+
+**Arguments:**
+- `Title` (required) - Work item title
+- `Description` (optional) - Current description
+- `WorkItemType` (optional) - Type (Task, Bug, PBI, etc.)
+- `AcceptanceCriteria` (optional) - Current acceptance criteria
+- `ContextInfo` (optional) - Additional project/team context
+
+**Use Cases:**
+- Improve vague or incomplete work items
+- Add missing acceptance criteria
+- Make work items suitable for AI automation
+- Standardize work item format across team
+
+**Example Request:**
+```json
+{
+  "Title": "Fix login button",
+  "Description": "Button doesn't work",
+  "WorkItemType": "Bug"
+}
+```
+
+**Example Output:**
+```markdown
+## Enhanced Work Item
+
+### Title
+Fix login button click handler not responding on mobile devices
+
+### Description
+The login button on the authentication page is not responding to click events on mobile Safari (iOS 15+). Users tap the button but nothing happens, preventing login.
+
+**Current Behavior:**
+- Button appears on screen
+- No visual feedback on tap
+- No API call triggered
+- Works correctly on desktop browsers
+
+**Expected Behavior:**
+- Button should respond to touch events
+- Show visual feedback (pressed state)
+- Trigger authentication API call
+- Navigate to dashboard on success
+
+### Acceptance Criteria
+- [ ] Login button responds to touch events on iOS Safari
+- [ ] Button shows pressed state when tapped
+- [ ] Authentication API is called on button tap
+- [ ] User is redirected to dashboard after successful login
+- [ ] Error message shown if authentication fails
+- [ ] Tested on iOS 15+ and Android devices
+
+### Technical Notes
+- Check touch event handlers vs click handlers
+- Verify CSS for mobile tap states
+- Test on physical devices, not just simulators
+```
+
+---
+
+#### 2. `ai_suitability_analyzer`
+
+**Purpose:** Analyze whether a work item is suitable for automated AI completion
+
+**Arguments:**
+- `Title` (required) - Work item title
+- `Description` (optional) - Work item description
+- `WorkItemType` (optional) - Type of work item
+- `Complexity` (optional) - Estimated complexity
+- `TechnicalContext` (optional) - Tech stack/frameworks involved
+
+**Use Cases:**
+- Decide if work item should be assigned to AI agent
+- Identify blockers for AI automation
+- Triage work items for human vs AI assignment
+- Quality gate before AI assignment
+
+**Example Request:**
+```json
+{
+  "Title": "Update copyright year in footer",
+  "Description": "Change copyright year from 2024 to 2025 in footer component",
+  "WorkItemType": "Task",
+  "TechnicalContext": "React TypeScript"
+}
+```
+
+**Example Output:**
+```json
+{
+  "suitable_for_ai": true,
+  "confidence": 95,
+  "reasoning": "This is a simple, well-defined change with clear scope. The task involves a straightforward text update in a specific component with no complex logic or dependencies.",
+  "strengths": [
+    "Clear, specific objective",
+    "Well-defined scope",
+    "Low risk change",
+    "Easy to verify",
+    "No external dependencies"
+  ],
+  "concerns": [],
+  "recommendation": "Highly suitable for AI automation. This is an ideal task for an AI agent.",
+  "estimated_effort": "5-10 minutes"
+}
+```
+
+---
+
+#### 3. `security_items_analyzer`
+
+**Purpose:** Analyze security and compliance work items in a given area path
+
+**Arguments:**
+- `AreaPath` (required) - Area path to analyze
+- `ScanType` (optional) - Type of security scan (BinSkim, CodeQL, CredScan, All)
+- `IncludeResolved` (optional) - Include resolved items
+- `MaxItems` (optional) - Maximum items to analyze
+
+**Use Cases:**
+- Triage security scan results
+- Categorize security findings
+- Identify AI-suitable remediation tasks
+- Create remediation plans
+- Track security debt
+
+**Example Request:**
+```json
+{
+  "AreaPath": "MyProject\\Security",
+  "ScanType": "CodeQL",
+  "IncludeResolved": false
+}
+```
+
+**Example Output:**
+```json
+{
+  "summary": {
+    "total_items": 45,
+    "critical": 3,
+    "high": 12,
+    "medium": 20,
+    "low": 10,
+    "ai_suitable": 28
+  },
+  "categories": {
+    "injection_vulnerabilities": 8,
+    "authentication_issues": 5,
+    "data_exposure": 7,
+    "configuration_errors": 15,
+    "dependency_updates": 10
+  },
+  "ai_suitable_items": [
+    {
+      "id": 12345,
+      "title": "Update lodash to fix prototype pollution",
+      "category": "dependency_updates",
+      "severity": "high",
+      "reasoning": "Standard dependency update with clear instructions"
+    }
+  ],
+  "requires_human_review": [
+    {
+      "id": 12346,
+      "title": "Implement OAuth 2.0 authentication",
+      "category": "authentication_issues",
+      "severity": "critical",
+      "reasoning": "Complex security architecture change requiring design decisions"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1": "Update dependencies (AI suitable)",
+    "phase_2": "Fix configuration errors (AI suitable)",
+    "phase_3": "Address authentication issues (Human required)"
+  }
+}
+```
+
+### System Prompts (Internal Use)
+
+These prompts are used internally by AI-powered tools and are not directly exposed to users:
+
+- `ai-assignment-analyzer.md` - Detailed AI suitability analysis
+- `completeness-analyzer.md` - Work item completeness scoring
+- `ai-readiness-analyzer.md` - AI-readiness evaluation
+- `enhancement-analyzer.md` - Enhancement suggestions
+- `categorization-analyzer.md` - Smart categorization
+- `full-analyzer.md` - Complete work item analysis
+- `feature-decomposer.md` - Feature breakdown logic
+- `hierarchy-validator.md` - Hierarchy validation rules
 
 ## Development
 

@@ -52,7 +52,7 @@ export class WorkItemIntelligenceAnalyzer {
     const userContent = formatForAI(args);
 
     // Add timeout wrapper to prevent hanging
-    const timeoutMs = 25000; // 25 seconds
+    const timeoutMs = 180000; // 180 seconds (3 minutes)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
@@ -61,7 +61,7 @@ export class WorkItemIntelligenceAnalyzer {
     });
 
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI sampling timeout after 25 seconds')), timeoutMs);
+      setTimeout(() => reject(new Error('AI sampling timeout after 180 seconds')), timeoutMs);
     });
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);

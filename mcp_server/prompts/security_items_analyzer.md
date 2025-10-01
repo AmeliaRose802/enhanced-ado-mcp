@@ -1,7 +1,7 @@
 ---
 name: security_items_analyzer
 description: Analyze security and compliance items within an area path, categorize them, identify AI-suitable items, and create actionable remediation plans.
-version: 2
+version: 3
 arguments:
   area_path: { type: string, required: false, description: "Area path to analyze (defaults to current configuration)" }
   include_child_areas: { type: boolean, required: false, default: true }
@@ -24,7 +24,9 @@ Your mission: **Systematically identify, categorize, and create actionable plans
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
 - `wit-get-configuration` - display current MCP server configuration
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for precise security domain filtering and bulk retrieval)
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (precise security domain filtering and bulk retrieval)
+- `wit-get-work-item-context-package` - Retrieve enriched context for a single security item (linked dependencies, related findings) before remediation classification
+- `wit-get-work-items-context-batch` - Retrieve a graph of related security items (duplicate findings, dependency clusters) to inform consolidation and prioritization
 
 ### Find Security Items  
 **Search Process:**

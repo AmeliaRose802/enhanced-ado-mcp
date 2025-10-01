@@ -8,6 +8,9 @@ import { handleCreateNewItem } from "./handlers/create-new-item.handler.js";
 import { handleWiqlQuery } from "./handlers/wiql-query.handler.js";
 import { handleGetWorkItemContextPackage } from './handlers/get-work-item-context-package.handler.js';
 import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-context-batch.handler.js';
+import { handleAssignToCopilot } from './handlers/assign-to-copilot.handler.js';
+import { handleNewCopilotItem } from './handlers/new-copilot-item.handler.js';
+import { handleExtractSecurityLinks } from './handlers/extract-security-links.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: any = null;
@@ -92,6 +95,21 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   // Batch context package (graph of work items)
   if (name === 'wit-get-work-items-context-batch') {
     return await handleGetWorkItemsContextBatch(args);
+  }
+
+  // Assign work item to GitHub Copilot with branch link
+  if (name === 'wit-assign-to-copilot') {
+    return await handleAssignToCopilot(config, args);
+  }
+
+  // Create work item and immediately assign to GitHub Copilot
+  if (name === 'wit-new-copilot-item') {
+    return await handleNewCopilotItem(config, args);
+  }
+
+  // Extract security instruction links from work item
+  if (name === 'wit-extract-security-links') {
+    return await handleExtractSecurityLinks(config, args);
   }
 
   logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);

@@ -1,7 +1,7 @@
 ---
 name: feature_decomposer
 description: Intelligently decompose large features into smaller, assignable work items with AI suitability analysis and automatic work item creation using VS Code sampling
-version: 2
+version: 3
 arguments:
   work_item_id: { type: string, required: true, description: "Feature or Epic work item ID to decompose" }
   target_complexity: { type: string, required: false, enum: ["simple", "medium"], default: "medium" }
@@ -21,7 +21,9 @@ You are a **Senior Feature Architect** specializing in intelligent feature decom
 - `wit-ai-assignment-analyzer` - Analyze AI suitability for work items
 - `wit-create-new-item` - Create new work items in Azure DevOps
 - `wit-assign-to-copilot` - Assign items to GitHub Copilot
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries (e.g., fetch parent + children, related dependencies, or recently changed items)
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (fetch parent + children, related dependencies, or recently changed items)
+- `wit-get-work-item-context-package` - Retrieve enriched context for a single feature/epic prior to decomposition
+- `wit-get-work-items-context-batch` - Retrieve a multi-item graph context (parent + existing children + dependencies) to improve decomposition accuracy
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_create_work_item` - Standard work item creation

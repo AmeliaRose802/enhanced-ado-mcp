@@ -266,6 +266,344 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
 }
 
 /**
+ * Assign work item to GitHub Copilot and link to branch
+ */
+interface AssignToCopilotArgs {
+  WorkItemId: number;
+  Organization: string;
+  Project: string;
+  Repository: string;
+  Branch?: string;
+  GitHubCopilotGuid: string;
+}
+
+export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promise<{
+  work_item_id: number;
+  assigned_to: string;
+  repository_linked: boolean;
+  human_friendly_url: string;
+  warnings?: string[];
+}> {
+  const {
+    WorkItemId,
+    Organization,
+    Project,
+    Repository,
+    Branch = 'main',
+    GitHubCopilotGuid
+  } = args;
+
+  const token = getAzureDevOpsToken(Organization);
+  const warnings: string[] = [];
+  
+  // Get repository information
+  let repositoryId: string;
+  let projectId: string;
+  
+  try {
+    const repoUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/git/repositories/${Repository}?api-version=7.1`;
+    const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${repoUrl}"`;
+    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const repoInfo = JSON.parse(response);
+    
+    if (!repoInfo.id) {
+      // Try listing all repos to find it
+      const listUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/git/repositories?api-version=7.1`;
+      const listCommand = `curl -s -H "Authorization: Bearer ${token}" "${listUrl}"`;
+      const listResponse = execSync(listCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const reposList = JSON.parse(listResponse);
+      
+      const repo = reposList.value?.find((r: any) => 
+        r.name === Repository || 
+        r.id === Repository || 
+        r.name.toLowerCase() === Repository.toLowerCase()
+      );
+      
+      if (!repo) {
+        const availableRepos = reposList.value?.map((r: any) => r.name).join(', ') || 'none';
+        throw new Error(`Repository '${Repository}' not found. Available: ${availableRepos}`);
+      }
+      
+      repositoryId = repo.id;
+      projectId = repo.project.id;
+    } else {
+      repositoryId = repoInfo.id;
+      projectId = repoInfo.project.id;
+    }
+  } catch (error) {
+    throw new Error(`Failed to retrieve repository information: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  
+  // Create branch artifact link
+  let branchLinkCreated = false;
+  try {
+    const vstfsUrl = `vstfs:///Git/Ref/${projectId}%2F${repositoryId}%2FGB${Branch}`;
+    const linkFields = [
+      {
+        op: 'add',
+        path: '/relations/-',
+        value: {
+          rel: 'ArtifactLink',
+          url: vstfsUrl,
+          attributes: {
+            name: 'Branch',
+            comment: `GitHub Copilot branch link: ${Repository}/${Branch}`
+          }
+        }
+      }
+    ];
+    
+    const linkUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1`;
+    executeRestApiCall(linkUrl, 'PATCH', token, linkFields);
+    branchLinkCreated = true;
+    
+    logger.debug(`Created branch artifact link for work item ${WorkItemId}`);
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (errorMsg.includes('RelationAlreadyExistsException') || errorMsg.includes('already exists')) {
+      warnings.push('Branch artifact link already exists');
+      branchLinkCreated = true;
+    } else {
+      warnings.push(`Could not create branch artifact link: ${errorMsg}`);
+    }
+  }
+  
+  // Assign to GitHub Copilot
+  try {
+    const assignFields = [
+      {
+        op: 'add',
+        path: '/fields/System.AssignedTo',
+        value: GitHubCopilotGuid
+      }
+    ];
+    
+    const assignUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1`;
+    executeRestApiCall(assignUrl, 'PATCH', token, assignFields);
+    
+    logger.debug(`Assigned work item ${WorkItemId} to GitHub Copilot`);
+  } catch (error) {
+    throw new Error(`Failed to assign work item: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  
+  return {
+    work_item_id: WorkItemId,
+    assigned_to: 'GitHub Copilot',
+    repository_linked: branchLinkCreated,
+    human_friendly_url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${WorkItemId}`,
+    warnings: warnings.length > 0 ? warnings : undefined
+  };
+}
+
+/**
+ * Delete work item
+ */
+interface DeleteWorkItemArgs {
+  WorkItemId: number;
+  Organization: string;
+  Project: string;
+  HardDelete?: boolean;
+}
+
+export async function deleteWorkItem(args: DeleteWorkItemArgs): Promise<{
+  work_item_id: number;
+  deleted: boolean;
+  hard_delete: boolean;
+}> {
+  const {
+    WorkItemId,
+    Organization,
+    Project,
+    HardDelete = false
+  } = args;
+
+  const token = getAzureDevOpsToken(Organization);
+  
+  try {
+    const deleteUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1${HardDelete ? '&destroy=true' : ''}`;
+    const curlCommand = `curl -s -X DELETE -H "Authorization: Bearer ${token}" "${deleteUrl}"`;
+    
+    execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    
+    logger.debug(`Deleted work item ${WorkItemId} (hard delete: ${HardDelete})`);
+    
+    return {
+      work_item_id: WorkItemId,
+      deleted: true,
+      hard_delete: HardDelete
+    };
+  } catch (error) {
+    throw new Error(`Failed to delete work item: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Extract instruction links from work item body
+ */
+interface ExtractSecurityLinksArgs {
+  WorkItemId: number;
+  Organization: string;
+  Project: string;
+  ScanType?: 'BinSkim' | 'CodeQL' | 'CredScan' | 'General' | 'All';
+  IncludeWorkItemDetails?: boolean;
+}
+
+interface InstructionLink {
+  Url: string;
+  Type: string;
+}
+
+export async function extractSecurityInstructionLinks(args: ExtractSecurityLinksArgs): Promise<{
+  work_item_id: number;
+  title: string;
+  instruction_links: InstructionLink[];
+  links_found: number;
+  work_item_url: string;
+  work_item_details?: {
+    assigned_to?: string;
+    state: string;
+    type: string;
+  };
+}> {
+  const {
+    WorkItemId,
+    Organization,
+    Project,
+    ScanType = 'All',
+    IncludeWorkItemDetails = false
+  } = args;
+
+  const token = getAzureDevOpsToken(Organization);
+  
+  // Get work item details
+  const workItemUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1`;
+  const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${workItemUrl}"`;
+  const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  const workItem = JSON.parse(response);
+  
+  if (!workItem.id) {
+    throw new Error(`Work item ${WorkItemId} not found`);
+  }
+  
+  // Extract links from fields
+  const fieldsToCheck = [
+    'System.Description',
+    'Microsoft.VSTS.TCM.ReproSteps',
+    'Microsoft.VSTS.Common.AcceptanceCriteria'
+  ];
+  
+  const allLinks: InstructionLink[] = [];
+  const urlPattern = /https?:\/\/[^\s<>"]+/gi;
+  
+  for (const field of fieldsToCheck) {
+    const content = workItem.fields[field];
+    if (content && typeof content === 'string') {
+      const matches = content.match(urlPattern);
+      if (matches) {
+        for (let url of matches) {
+          // Clean up trailing punctuation
+          url = url.replace(/[,.;:)]$/, '');
+          
+          if (url && !url.includes('example.com')) {
+            let type = 'General Link';
+            
+            if (url.match(/docs\.microsoft\.com|learn\.microsoft\.com/i)) {
+              type = 'Microsoft Docs';
+            } else if (url.match(/aka\.ms/i)) {
+              type = 'Microsoft Link';
+            } else if (url.match(/github\.com.*security/i)) {
+              type = 'GitHub Security';
+            } else if (url.match(/security|remediation|mitigation/i)) {
+              type = 'Security Guide';
+            } else if (url.match(/binskim|codeql|credscan/i)) {
+              type = 'Scanner Docs';
+            }
+            
+            allLinks.push({ Url: url, Type: type });
+          }
+        }
+      }
+    }
+  }
+  
+  // Remove duplicates
+  const uniqueLinks = Array.from(
+    new Map(allLinks.map(link => [link.Url, link])).values()
+  );
+  
+  const result: any = {
+    work_item_id: WorkItemId,
+    title: workItem.fields['System.Title'],
+    instruction_links: uniqueLinks,
+    links_found: uniqueLinks.length,
+    work_item_url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${WorkItemId}`
+  };
+  
+  if (IncludeWorkItemDetails) {
+    result.work_item_details = {
+      assigned_to: workItem.fields['System.AssignedTo']?.displayName,
+      state: workItem.fields['System.State'],
+      type: workItem.fields['System.WorkItemType']
+    };
+  }
+  
+  return result;
+}
+
+/**
+ * Create work item and immediately assign to GitHub Copilot
+ */
+interface CreateAndAssignToCopilotArgs extends CreateWorkItemArgs {
+  Repository: string;
+  Branch?: string;
+  GitHubCopilotGuid: string;
+}
+
+export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCopilotArgs): Promise<{
+  work_item_id: number;
+  work_item_title: string;
+  work_item_type: string;
+  assigned_to: string;
+  repository_linked: boolean;
+  human_friendly_url: string;
+}> {
+  const {
+    Repository,
+    Branch = 'main',
+    GitHubCopilotGuid,
+    ...createArgs
+  } = args;
+
+  // First create the work item (unassigned)
+  const createResult = await createWorkItem({
+    ...createArgs,
+    AssignedTo: '' // Create unassigned initially
+  });
+  
+  // Small delay to let work item initialize
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Then assign to Copilot
+  const assignResult = await assignWorkItemToCopilot({
+    WorkItemId: createResult.id,
+    Organization: args.Organization,
+    Project: args.Project,
+    Repository,
+    Branch,
+    GitHubCopilotGuid
+  });
+  
+  return {
+    work_item_id: createResult.id,
+    work_item_title: createResult.title,
+    work_item_type: createResult.type,
+    assigned_to: 'GitHub Copilot',
+    repository_linked: assignResult.repository_linked,
+    human_friendly_url: assignResult.human_friendly_url
+  };
+}
+
+/**
  * Query work items using WIQL (Work Item Query Language)
  */
 interface WiqlQueryArgs {

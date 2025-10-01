@@ -1,7 +1,7 @@
 ---
 name: find_dead_items
 description: Identify abandoned or "dead" Azure DevOps work items (no signals of progress) in a specified Area Path using query/search wit-* tools.
-version: 1
+version: 2
 arguments: {}
 ---
 
@@ -29,6 +29,8 @@ Available Tools:
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
 - `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for identifying stale items by ChangedDate and state)
+- `wit-get-work-item-context-package` - Retrieve enriched context for individual items to distinguish genuinely dead vs. blocked or dependency-bound
+- `wit-get-work-items-context-batch` - Retrieve a related-items graph to surface systemic neglect patterns and avoid false positives
 
 **Process:**
 1. Preferred: Use `wit-get-work-items-by-query-wiql` with a WIQL query such as:
