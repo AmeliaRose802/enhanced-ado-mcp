@@ -141,7 +141,20 @@ export class HierarchyValidatorAnalyzer {
         writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
         const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${url}"`;
         const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-        const wiqlResult = JSON.parse(response);
+        
+        let wiqlResult;
+        try {
+          wiqlResult = JSON.parse(response);
+        } catch (parseError) {
+          logger.warn(`Failed to parse WIQL response for parent ${parentId}. Response: ${response.substring(0, 200)}`, parseError);
+          continue;
+        }
+
+        // Check for API errors
+        if (wiqlResult.message || wiqlResult.typeKey) {
+          logger.warn(`WIQL query returned error for parent ${parentId}: ${wiqlResult.message || 'Unknown error'}`);
+          continue;
+        }
 
         // Extract target (child) work item IDs from the link results
         if (wiqlResult.workItemRelations) {
@@ -274,9 +287,23 @@ export class HierarchyValidatorAnalyzer {
       writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
       const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${url}"`;
       const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-      const wiqlResult = JSON.parse(response);
+      
+      let wiqlResult;
+      try {
+        wiqlResult = JSON.parse(response);
+      } catch (parseError) {
+        logger.error(`Failed to parse WIQL response. Response: ${response.substring(0, 500)}`, parseError);
+        throw new Error(`Failed to parse WIQL query response: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+      }
+
+      // Check for API errors
+      if (wiqlResult.message || wiqlResult.typeKey) {
+        logger.error(`WIQL query returned error`, wiqlResult);
+        throw new Error(`WIQL query failed: ${wiqlResult.message || wiqlResult.typeKey || 'Unknown error'}`);
+      }
 
       if (!wiqlResult.workItems) {
+        logger.warn(`WIQL query returned no workItems array. Query: ${query}`, wiqlResult);
         return [];
       }
 
@@ -313,9 +340,23 @@ export class HierarchyValidatorAnalyzer {
 
       const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${url}"`;
       const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-      const result = JSON.parse(response);
+      
+      let result;
+      try {
+        result = JSON.parse(response);
+      } catch (parseError) {
+        logger.error(`Failed to parse work item details response. Response: ${response.substring(0, 500)}`, parseError);
+        throw new Error(`Failed to parse work item details: ${parseError instanceof Error ? parseError.message : String(parseError)}`);
+      }
+
+      // Check for API errors
+      if (result.message || result.typeKey) {
+        logger.error(`Work items API returned error`, result);
+        throw new Error(`Failed to fetch work item details: ${result.message || result.typeKey || 'Unknown error'}`);
+      }
 
       if (!result.value) {
+        logger.warn(`Work items API returned no value array. IDs: ${workItemIds.join(',')}`, result);
         return [];
       }
 

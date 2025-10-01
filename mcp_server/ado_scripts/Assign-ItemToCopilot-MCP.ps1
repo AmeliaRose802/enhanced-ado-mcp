@@ -12,34 +12,43 @@ param(
 
 Invoke-MCPScript {
     # Get repository information - try by name first, then list all if that fails
-    $repoInfo = az repos show --repository $Repository --org "https://dev.azure.com/$Organization" --project $Project --output json 2>&1
+    # Note: We redirect stderr to $null to avoid contaminating JSON output
+    $repoInfo = az repos show --repository $Repository --org "https://dev.azure.com/$Organization" --project $Project --output json 2>$null
     
     if ($LASTEXITCODE -ne 0) {
         # Repository not found by exact name - try to find it in the list
-        $allRepos = az repos list --org "https://dev.azure.com/$Organization" --project $Project --output json 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $reposList = $allRepos | ConvertFrom-Json
-            $repo = $reposList | Where-Object { $_.name -eq $Repository -or $_.id -eq $Repository }
-            
-            if (-not $repo) {
-                # Try case-insensitive match
-                $repo = $reposList | Where-Object { $_.name -ieq $Repository }
-            }
-            
-            if ($repo) {
-                $repositoryId = $repo.id
-                $projectId = $repo.project.id
-            } else {
-                $availableRepos = ($reposList | Select-Object -ExpandProperty name) -join ", "
-                throw "Repository '$Repository' not found. Available repositories: $availableRepos"
+        $allRepos = az repos list --org "https://dev.azure.com/$Organization" --project $Project --output json 2>$null
+        if ($LASTEXITCODE -eq 0 -and $allRepos) {
+            try {
+                $reposList = $allRepos | ConvertFrom-Json
+                $repo = $reposList | Where-Object { $_.name -eq $Repository -or $_.id -eq $Repository }
+                
+                if (-not $repo) {
+                    # Try case-insensitive match
+                    $repo = $reposList | Where-Object { $_.name -ieq $Repository }
+                }
+                
+                if ($repo) {
+                    $repositoryId = $repo.id
+                    $projectId = $repo.project.id
+                } else {
+                    $availableRepos = ($reposList | Select-Object -ExpandProperty name) -join ", "
+                    throw "Repository '$Repository' not found. Available repositories: $availableRepos"
+                }
+            } catch {
+                throw "Failed to parse repository list: $($_.Exception.Message)"
             }
         } else {
-            throw "Failed to retrieve repository: $repoInfo"
+            throw "Failed to retrieve repository list"
         }
     } else {
-        $repo = $repoInfo | ConvertFrom-Json
-        $repositoryId = $repo.id
-        $projectId = $repo.project.id
+        try {
+            $repo = $repoInfo | ConvertFrom-Json
+            $repositoryId = $repo.id
+            $projectId = $repo.project.id
+        } catch {
+            throw "Failed to parse repository information: $($_.Exception.Message). Raw output: $repoInfo"
+        }
     }
     
     # Create branch artifact link (Code - Branch type)

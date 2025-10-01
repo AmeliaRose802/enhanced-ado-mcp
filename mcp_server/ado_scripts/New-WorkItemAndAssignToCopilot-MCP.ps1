@@ -132,7 +132,23 @@ Invoke-MCPScript {
         Write-Host "DEBUG: Assignment result type: $($assignResult.GetType().Name)" -ForegroundColor Magenta
         Write-Host "DEBUG: Assignment result: $assignResult" -ForegroundColor Magenta
         
-        $assignResponse = $assignResult | ConvertFrom-Json
+        # The script returns JSON string output from Invoke-MCPScript
+        # Need to handle both single string and array of strings (stdout lines)
+        $jsonString = if ($assignResult -is [array]) {
+            # Join array lines and find the JSON object
+            $joined = $assignResult -join "`n"
+            # Extract just the JSON object (should be the last complete { } block)
+            if ($joined -match '(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})\s*$') {
+                $matches[1]
+            } else {
+                $joined
+            }
+        } else {
+            $assignResult
+        }
+        
+        Write-Host "DEBUG: Parsing JSON: $jsonString" -ForegroundColor Magenta
+        $assignResponse = $jsonString | ConvertFrom-Json
         Write-Host "DEBUG: Assignment response success: $($assignResponse.success)" -ForegroundColor Magenta
         
         if (-not $assignResponse.success) {
