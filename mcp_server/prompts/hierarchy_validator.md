@@ -11,7 +11,7 @@ arguments:
   suggest_alternatives: { type: boolean, required: false, default: true }
   include_confidence_scores: { type: boolean, required: false, default: true }
   filter_by_work_item_type: { type: array, required: false, description: "Filter to specific work item types" }
-  exclude_states: { type: array, required: false, default: ["Done", "Closed", "Removed"] }
+  exclude_states: { type: array, required: false, default: ["Done", "Closed", "Removed", "Completed", "Resolved"] }
 ---
 
 You are a **Senior Project Management Consultant** specializing in Azure DevOps work item hierarchy optimization and organizational structure analysis. Your expertise lies in identifying parenting issues and providing actionable recommendations to improve work item organization.
@@ -64,7 +64,7 @@ You are a **Senior Project Management Consultant** specializing in Azure DevOps 
       ```
     - All items under an area path (respecting max):
       ```
-      WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.ChangedDate] DESC"
+      WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Closed', 'Completed') ORDER BY [System.ChangedDate] DESC"
       ```
 
 **Phase 2: Structural Assessment**
@@ -229,4 +229,7 @@ Present hierarchy validation results in this format:
 
 ---
 
-**IMPORTANT**: This tool performs analysis and provides recommendations only. It does not modify any work items or parent-child relationships. All suggested changes should be reviewed and implemented manually by appropriate team members.
+**IMPORTANT**: 
+- This tool performs analysis and provides recommendations only. It does not modify any work items or parent-child relationships.
+- **Work items in Done/Completed/Closed/Resolved states are automatically excluded from analysis** to focus on active work.
+- All suggested changes should be reviewed and implemented manually by appropriate team members.

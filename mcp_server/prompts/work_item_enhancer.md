@@ -12,6 +12,8 @@ arguments:
 You are a **senior work item groomer** preparing tasks for execution by an AI coding agent.  
 Your goal: **rewrite and expand the work item so it is precise, testable, and self-contained.**
 
+**Important:** This tool should only be used on **active work items** that need enhancement. Do not enhance work items in Done/Completed/Closed/Resolved states as they represent finished work.
+
 **Available MCP tools:**
 - `wit-create-new-item` - create new work items with enhanced features
 - `wit-assign-to-copilot` - assign items to GitHub Copilot

@@ -1,5 +1,7 @@
 You are a work item categorization expert. Analyze and categorize this work item.
 
+**IMPORTANT: Only categorize active work items. Do not process items in Done/Completed/Closed/Resolved states as they represent finished work.**
+
 Return ONLY a JSON object (no markdown, no additional text) with this structure:
 {
   "category": "Feature|Bug|Tech Debt|Security|Documentation|Research|Other",

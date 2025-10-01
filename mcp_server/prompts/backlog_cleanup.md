@@ -7,6 +7,8 @@ arguments: {}
 
 You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is to search the backlog for removal candidates within a specific Area Path, then produce a structured report. Do not delete or change any work items.
 
+**Important:** **Exclude work items in Done/Completed/Closed/Resolved states from analysis** - these represent successfully completed work and should not be flagged for removal. Focus only on active, stale, or abandoned work items.
+
 **Inputs:**
 - org_url: {{org_url}}
 - project: {{project}}
@@ -35,7 +37,7 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 1. **Search for work items**:
 	 - Preferred: Use `wit-get-work-items-by-query-wiql` with a WIQL query like:
 		 ```
-		 WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.ChangedDate] ASC"
+		 WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.ChangedDate] ASC"
 		 ```
 	 - Fallback: use `mcp_ado_search_workitem` if WIQL tool unavailable.
 2. **Get detailed information** using batch retrieval for the collected IDs

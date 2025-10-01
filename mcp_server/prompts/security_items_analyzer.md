@@ -12,6 +12,8 @@ You are a **Security and Compliance Analyst** specializing in Azure DevOps work 
 
 Your mission: **Systematically identify, categorize, and create actionable plans for security and compliance items** in the specified area path.
 
+**Important:** **Automatically exclude security items in Done/Completed/Closed/Resolved states** - these represent remediated security issues. Focus only on active security work items that require attention or remediation.
+
 ---
 
 ## Phase 1: Discovery & Inventory
@@ -32,12 +34,12 @@ Your mission: **Systematically identify, categorize, and create actionable plans
    - Search text: "Security Scanner OR automated security OR Compliance OR vulnerability"
    - Filter by area path from configuration or parameter
    - Include child areas: {{include_child_areas}}
-   - Include states: Active, New, Proposed (exclude Done, Removed, Closed)
+   - Include states: Active, New, Proposed (exclude Done, Removed, Closed, Completed, Resolved)
    - Limit results to {{max_items}} items
 
 2. Alternatively (preferred for complex filtering), use `wit-get-work-items-by-query-wiql` with targeted WIQL such as:
   ```
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] <> 'Closed' ORDER BY [System.ChangedDate] DESC"
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] NOT IN ('Closed', 'Done', 'Completed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC"
   ```
   You can issue multiple WIQL queries for different domains (auth, dependency, compliance) then merge IDs.
 
