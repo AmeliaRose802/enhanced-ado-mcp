@@ -8,7 +8,8 @@ import {
   aiAssignmentAnalyzerSchema,
   featureDecomposerSchema,
   hierarchyValidatorSchema,
-  getConfigurationSchema
+  getConfigurationSchema,
+  wiqlQuerySchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -221,6 +222,23 @@ export const toolConfigs: ToolConfig[] = [
         Section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot"], description: "Specific configuration section to retrieve" }
       },
       required: []
+    }
+  },
+  {
+    name: "wit-get-work-items-by-query-wiql",
+    description: "Query Azure DevOps work items using WIQL (Work Item Query Language). Supports complex queries with filtering, sorting, and field selection. Returns work item details including Id, Title, Type, State, and any requested additional fields.",
+    script: "", // Handled internally
+    schema: wiqlQuerySchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WiqlQuery: { type: "string", description: "WIQL query string. Examples: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'' or 'SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'ProjectName\\AreaName' ORDER BY [System.ChangedDate] DESC'" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" },
+        IncludeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include (e.g., 'System.Description', 'Microsoft.VSTS.Common.Priority')" },
+        MaxResults: { type: "number", description: "Maximum number of results to return (default 200)" }
+      },
+      required: ["WiqlQuery"]
     }
   }
 ];

@@ -1,5 +1,8 @@
 # Project TODOs
 
+- Split up tool service so each tool is in it;s own repo
+
+
 - Perform a general cleanup to make the project more clean and AI friendly. Split up large files, clean up unused code, use common methods instead of reinventing the wheel
 
 - Update the readme to include instructions with info on configuring access to sampling. You will need to check the latest VSCode docs as this is a very new feature

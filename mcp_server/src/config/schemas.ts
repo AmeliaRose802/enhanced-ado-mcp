@@ -139,6 +139,14 @@ export const getConfigurationSchema = z.object({
   Section: z.enum(["all", "azureDevOps", "gitRepository", "gitHubCopilot"]).optional().default("all").describe("Specific configuration section to retrieve")
 });
 
+export const wiqlQuerySchema = z.object({
+  WiqlQuery: z.string().describe("WIQL (Work Item Query Language) query string to execute. Example: SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = 'Active'"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  IncludeFields: z.array(z.string()).optional().describe("Additional fields to include in work item details (default includes Id, Title, Type, State, AreaPath, IterationPath, AssignedTo)"),
+  MaxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return (default 200)")
+});
+
 
 
 

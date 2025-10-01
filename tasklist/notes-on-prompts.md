@@ -1,7 +1,20 @@
-Notes on Prompts
+# Notes on Prompts
 
-Our beta testers all requested we add a new tool called `wit_get_work_items_by_query_wiql` which allows us to fetch items using wiql. Please implement this feature
+# Notes on Prompts
 
+✅ **WIQL Query Tool Implementation Complete** - Our beta testers all requested we add a new tool called `wit_get_work_items_by_query_wiql` which allows us to fetch items using wiql. This feature has been successfully implemented with full REST API support, comprehensive documentation, and testing.
+
+✅ **Tool Service Refactoring Complete** - Extracted tool handlers into separate modules (`handlers/` directory) to eliminate nested if-statements and improve maintainability. Reduced tool-service.ts from 287 lines to 117 lines (-59%).
+- Full WIQL query support via REST API
+- Configurable field selection with `IncludeFields` parameter
+- Result limiting with `MaxResults` parameter (default 200)
+- Comprehensive error handling
+- Documentation and examples in README
+- Test suite for validation
+
+A lot of our beta testers requested we add automatic work item fetching in the various prompts and tools. We should accept a work item ID and then automatically inject in all context needed about that item. That would make it faster and easier for the caller
+
+Our beta testers have requested that we don't require area path etc in our tools if we already have the info. We should auto fill these from our config instead.
 
 
 - Dead item prompt:

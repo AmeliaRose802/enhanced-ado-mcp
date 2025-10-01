@@ -139,6 +139,7 @@ Language model access is managed by VS Code and persists across sessions. To res
 ### Configuration & Discovery Tools
 
 9. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
+10. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, and field selection
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
@@ -149,6 +150,55 @@ The scripts are executed unchanged. The server just validates inputs and streams
 3. `security_items_analyzer` - Analyze security and compliance items within an area path, categorize them, identify AI-suitable items, and create actionable remediation plans
 
 Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
+
+## WIQL Query Examples
+
+The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps work items using WIQL (Work Item Query Language). Here are some common use cases:
+
+### Basic Query - Find Active Work Items
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
+}
+```
+
+### Query by Area Path
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Closed'",
+  "MaxResults": 50
+}
+```
+
+### Query with Additional Fields
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active'",
+  "IncludeFields": [
+    "System.Description",
+    "Microsoft.VSTS.Common.Priority",
+    "Microsoft.VSTS.Common.Severity",
+    "System.Tags"
+  ]
+}
+```
+
+### Complex Query - Recently Changed Tasks
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Task' AND [System.ChangedDate] >= @Today - 7 ORDER BY [System.ChangedDate] DESC",
+  "MaxResults": 100
+}
+```
+
+### Query by Tags
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'technical-debt' AND [System.State] <> 'Removed'"
+}
+```
+
+**WIQL Reference:** For more information on WIQL syntax, see the [official Azure DevOps WIQL documentation](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax).
 
 ## Development
 

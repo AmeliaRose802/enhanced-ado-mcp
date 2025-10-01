@@ -2,12 +2,10 @@ import type { ToolExecutionResult } from "../types/index.js";
 import { toolConfigs } from "../config/tool-configs.js";
 import { executeScript } from "../utils/script-executor.js";
 import { logger } from "../utils/logger.js";
-import { loadConfiguration } from "../config/config.js";
 import { SamplingService } from "./sampling-service.js";
-import { 
-  validateAzureCLI 
-} from "./ado-discovery-service.js";
-import { createWorkItem } from "./ado-work-item-service.js";
+import { handleGetConfiguration } from "./handlers/get-configuration.handler.js";
+import { handleCreateNewItem } from "./handlers/create-new-item.handler.js";
+import { handleWiqlQuery } from "./handlers/wiql-query.handler.js";
 
 // Global server instance for sampling service
 let serverInstance: any = null;
@@ -34,56 +32,7 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
 
   // Get configuration information
   if (name === 'wit-get-configuration') {
-    try {
-      const cfg = loadConfiguration();
-      const section = args?.Section || 'all';
-      const includeSensitive = args?.IncludeSensitive || false;
-      
-      let configData: any = {};
-      
-      if (section === 'all' || section === 'azureDevOps') {
-        configData.azureDevOps = cfg.azureDevOps;
-      }
-      if (section === 'all' || section === 'gitRepository') {
-        configData.gitRepository = cfg.gitRepository;
-      }
-      if (section === 'all' || section === 'gitHubCopilot') {
-        configData.gitHubCopilot = includeSensitive ? cfg.gitHubCopilot : { 
-          defaultGuid: cfg.gitHubCopilot.defaultGuid ? '***' : ''
-        };
-      }
-      
-      return {
-        success: true,
-        data: {
-          configuration: configData,
-          helpText: {
-            areaPath: cfg.azureDevOps.areaPath
-              ? `Default area path is configured as: ${cfg.azureDevOps.areaPath}.` :
-              'No default area path configured.',
-            iterationPath: cfg.azureDevOps.iterationPath
-              ? `Default iteration path is configured as: ${cfg.azureDevOps.iterationPath}.` :
-              'No default iteration path configured.',
-            gitHubCopilot: cfg.gitHubCopilot.defaultGuid ?
-              'GitHub Copilot GUID is configured for automatic assignment.' :
-              'No GitHub Copilot GUID configured. Provide --copilot-guid parameter.'
-          }
-        },
-        raw: { stdout: JSON.stringify(configData, null, 2), stderr: '', exitCode: 0 },
-        metadata: { source: 'internal', section },
-        errors: [],
-        warnings: []
-      };
-    } catch (error) {
-      return {
-        success: false,
-        data: null,
-        raw: { stdout: '', stderr: error instanceof Error ? error.message : String(error), exitCode: 1 },
-        metadata: { source: 'internal' },
-        errors: [error instanceof Error ? error.message : String(error)],
-        warnings: []
-      };
-    }
+    return await handleGetConfiguration(args);
   }
 
 
@@ -131,54 +80,12 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
 
   // Create work item using REST API (TypeScript implementation)
   if (name === 'wit-create-new-item') {
-    try {
-      const azValidation = validateAzureCLI();
-      if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-        throw new Error(azValidation.error || 'Azure CLI validation failed');
-      }
+    return await handleCreateNewItem(config, args);
+  }
 
-      // Parse and validate arguments using the schema
-      const parsed = config.schema.safeParse(args || {});
-      if (!parsed.success) {
-        throw new Error(`Validation error: ${parsed.error.message}`);
-      }
-
-      logger.debug(`Creating work item with REST API: ${parsed.data.Title}`);
-      
-      const result = await createWorkItem(parsed.data);
-      
-      return {
-        success: true,
-        data: {
-          work_item: result
-        },
-        raw: { 
-          stdout: JSON.stringify({ work_item: result }, null, 2), 
-          stderr: '', 
-          exitCode: 0 
-        },
-        metadata: { 
-          source: 'rest-api',
-          workItemId: result.id,
-          parentLinked: result.parent_linked
-        },
-        errors: [],
-        warnings: []
-      };
-    } catch (error) {
-      return {
-        success: false,
-        data: null,
-        raw: { 
-          stdout: '', 
-          stderr: error instanceof Error ? error.message : String(error), 
-          exitCode: 1 
-        },
-        metadata: { source: 'rest-api' },
-        errors: [error instanceof Error ? error.message : String(error)],
-        warnings: []
-      };
-    }
+  // Query work items using WIQL (Work Item Query Language)
+  if (name === 'wit-get-work-items-by-query-wiql') {
+    return await handleWiqlQuery(config, args);
   }
 
   logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);

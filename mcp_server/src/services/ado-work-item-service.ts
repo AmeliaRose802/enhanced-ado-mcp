@@ -264,3 +264,131 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     parent_linked: parentLinked
   };
 }
+
+/**
+ * Query work items using WIQL (Work Item Query Language)
+ */
+interface WiqlQueryArgs {
+  WiqlQuery: string;
+  Organization: string;
+  Project: string;
+  IncludeFields?: string[];
+  MaxResults?: number;
+}
+
+interface WiqlWorkItemResult {
+  id: number;
+  title: string;
+  type: string;
+  state: string;
+  areaPath?: string;
+  iterationPath?: string;
+  assignedTo?: string;
+  url: string;
+  fields: Record<string, any>;
+}
+
+export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
+  workItems: WiqlWorkItemResult[];
+  count: number;
+  query: string;
+}> {
+  const {
+    WiqlQuery,
+    Organization,
+    Project,
+    IncludeFields = [],
+    MaxResults = 200
+  } = args;
+
+  // Get authentication token
+  const token = getAzureDevOpsToken(Organization);
+  
+  const tempFile = join(tmpdir(), `ado-wiql-query-${Date.now()}.json`);
+  
+  try {
+    // Execute WIQL query
+    const wiqlBody = { query: WiqlQuery };
+    const wiqlUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/wiql?api-version=7.1`;
+    
+    writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
+    const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${wiqlUrl}"`;
+    
+    logger.debug(`Executing WIQL query: ${WiqlQuery}`);
+    
+    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const wiqlResult = JSON.parse(response);
+
+    if (!wiqlResult.workItems || wiqlResult.workItems.length === 0) {
+      return {
+        workItems: [],
+        count: 0,
+        query: WiqlQuery
+      };
+    }
+
+    // Limit results
+    const workItemIds = wiqlResult.workItems
+      .slice(0, MaxResults)
+      .map((wi: any) => wi.id);
+
+    logger.debug(`WIQL query returned ${wiqlResult.workItems.length} items, fetching details for first ${workItemIds.length}`);
+
+    // Fetch work item details
+    // Default fields to include
+    const defaultFields = [
+      'System.Id',
+      'System.Title',
+      'System.WorkItemType',
+      'System.State',
+      'System.AreaPath',
+      'System.IterationPath',
+      'System.AssignedTo'
+    ];
+
+    // Combine default fields with user-requested fields
+    const allFields = [...new Set([...defaultFields, ...IncludeFields])];
+    const fieldsParam = allFields.join(',');
+
+    const ids = workItemIds.join(',');
+    const detailsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems?ids=${ids}&fields=${encodeURIComponent(fieldsParam)}&api-version=7.1`;
+
+    const detailsCommand = `curl -s -H "Authorization: Bearer ${token}" "${detailsUrl}"`;
+    const detailsResponse = execSync(detailsCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const detailsResult = JSON.parse(detailsResponse);
+
+    if (!detailsResult.value) {
+      throw new Error('Failed to fetch work item details');
+    }
+
+    // Map work items to result format
+    const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: any) => ({
+      id: wi.id,
+      title: wi.fields['System.Title'] || '',
+      type: wi.fields['System.WorkItemType'] || '',
+      state: wi.fields['System.State'] || '',
+      areaPath: wi.fields['System.AreaPath'],
+      iterationPath: wi.fields['System.IterationPath'],
+      assignedTo: wi.fields['System.AssignedTo']?.displayName || wi.fields['System.AssignedTo']?.uniqueName,
+      url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
+      fields: wi.fields
+    }));
+
+    return {
+      workItems,
+      count: workItems.length,
+      query: WiqlQuery
+    };
+
+  } catch (error) {
+    logger.error('WIQL query execution failed', error);
+    throw new Error(`Failed to execute WIQL query: ${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    // Clean up temporary file
+    try {
+      unlinkSync(tempFile);
+    } catch (cleanupError) {
+      logger.warn(`Failed to delete temporary WIQL file ${tempFile}`, cleanupError);
+    }
+  }
+}
