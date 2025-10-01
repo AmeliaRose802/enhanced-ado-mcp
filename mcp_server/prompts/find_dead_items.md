@@ -26,10 +26,16 @@ Available Tools:
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for identifying stale items by ChangedDate and state)
 
 **Process:**
-1. Use `mcp_ado_search_workitem` to find work items in area path: **{{area_path}}**
-2. Use `mcp_ado_wit_get_work_items_batch_by_ids` to get detailed information
+1. Preferred: Use `wit-get-work-items-by-query-wiql` with a WIQL query such as:
+	```
+	WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.ChangedDate] ASC"
+	```
+	This orders oldest-changed items first for efficient stale detection.
+	Fallback: `mcp_ado_search_workitem` if WIQL tool unavailable.
+2. Retrieve detailed information in batch for the resulting IDs.
 3. Analyze items against dead item criteria using max_inactive_days: **{{max_age_days}}**
 4. Generate structured report with recommendations
 

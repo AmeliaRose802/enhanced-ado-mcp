@@ -17,6 +17,7 @@ You are an **AI Assignment Specialist** with deep expertise in evaluating work i
 - `wit-assign-to-copilot` - Assign work items to GitHub Copilot
 - `wit-create-new-item` - Create new work items
 - `wit-intelligence-analyzer` - Comprehensive work item analysis
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries to pull related, linked, or recently changed items for richer context
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_get_work_item` - Retrieve work item details
@@ -35,6 +36,14 @@ First, use the Azure DevOps MCP tools to fetch complete information for work ite
 - Repository information (if available)
 - Related work items or dependencies
 - Any technical specifications or constraints
+If related dependencies or historical change context are unknown, issue one or more WIQL queries using `wit-get-work-items-by-query-wiql`, for example:
+```
+WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
+```
+or to see recent churn that may elevate risk:
+```
+WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] = {{work_item_id}} AND [System.ChangedDate] >= @Today - 14"
+```
 
 **Step 2: Perform Analysis**
 Once you have the work item details, analyze against the framework below.

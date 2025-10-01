@@ -6,6 +6,8 @@ import { SamplingService } from "./sampling-service.js";
 import { handleGetConfiguration } from "./handlers/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/create-new-item.handler.js";
 import { handleWiqlQuery } from "./handlers/wiql-query.handler.js";
+import { handleGetWorkItemContextPackage } from './handlers/get-work-item-context-package.handler.js';
+import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-context-batch.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: any = null;
@@ -22,10 +24,7 @@ export function setServerInstance(server: any) {
  */
 export async function executeTool(name: string, args: any): Promise<ToolExecutionResult> {
   let config = toolConfigs.find(t => t.name === name);
-  if (!config && name.startsWith('enhanced-ado-msp-')) {
-    const legacy = 'wit-' + name.replace('enhanced-ado-msp-', '');
-    config = toolConfigs.find(t => t.name === legacy);
-  }
+  
   if (!config) {
     throw new Error(`Unknown tool: ${name}`);
   }
@@ -34,9 +33,6 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   if (name === 'wit-get-configuration') {
     return await handleGetConfiguration(args);
   }
-
-
-
 
   // AI-powered intelligence analysis (uses sampling if available)
   if (name === 'wit-intelligence-analyzer') {
@@ -86,6 +82,16 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   // Query work items using WIQL (Work Item Query Language)
   if (name === 'wit-get-work-items-by-query-wiql') {
     return await handleWiqlQuery(config, args);
+  }
+
+  // Full context package (single work item)
+  if (name === 'wit-get-work-item-context-package') {
+    return await handleGetWorkItemContextPackage(args);
+  }
+
+  // Batch context package (graph of work items)
+  if (name === 'wit-get-work-items-context-batch') {
+    return await handleGetWorkItemsContextBatch(args);
   }
 
   logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);

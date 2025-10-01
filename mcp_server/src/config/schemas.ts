@@ -147,6 +147,45 @@ export const wiqlQuerySchema = z.object({
   MaxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return (default 200)")
 });
 
+// Full context package retrieval (single work item)
+export const workItemContextPackageSchema = z.object({
+  WorkItemId: z.number().int().describe("Primary work item ID to retrieve full context for"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  IncludeHistory: z.boolean().optional().default(true).describe("Include recent change history (last 10 changes)"),
+  HistoryCount: z.number().int().optional().default(10).describe("Number of recent history entries to include"),
+  IncludeComments: z.boolean().optional().default(true).describe("Include work item comments/discussion"),
+  IncludeRelations: z.boolean().optional().default(true).describe("Include related links (parent, children, related, attachments, commits, PRs)"),
+  IncludeChildren: z.boolean().optional().default(true).describe("Include all child hierarchy (one level) if item is a Feature/Epic"),
+  IncludeParent: z.boolean().optional().default(true).describe("Include parent work item details if present"),
+  IncludeLinkedPRsAndCommits: z.boolean().optional().default(true).describe("Include linked Git PRs and commits if present in relations"),
+  IncludeExtendedFields: z.boolean().optional().default(false).describe("Include extended field set beyond defaults (all system fields + common custom)"),
+  IncludeHtml: z.boolean().optional().default(false).describe("Return original HTML field values alongside Markdown/plain text"),
+  MaxChildDepth: z.number().int().optional().default(1).describe("Depth of child hierarchy to traverse (1 = immediate children)"),
+  MaxRelatedItems: z.number().int().optional().default(50).describe("Maximum number of related items to expand"),
+  IncludeAttachments: z.boolean().optional().default(false).describe("Include attachment metadata (names, urls, sizes)"),
+  IncludeTags: z.boolean().optional().default(true).describe("Include tags list")
+});
+
+// Batch context package retrieval for multiple work items (returns graph)
+export const workItemsBatchContextSchema = z.object({
+  WorkItemIds: z.array(z.number().int()).min(1).max(50).describe("List of work item IDs to retrieve with relationship context (max 50)"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  IncludeRelations: z.boolean().optional().default(true).describe("Include relationship edges between provided items (parent-child, related, blocks)"),
+  IncludeFields: z.array(z.string()).optional().describe("Additional fields to include per work item"),
+  IncludeExtendedFields: z.boolean().optional().default(false).describe("Include extended field set beyond defaults"),
+  IncludeTags: z.boolean().optional().default(true).describe("Include tags list"),
+  IncludeStateCounts: z.boolean().optional().default(true).describe("Return aggregate counts by state and type"),
+  IncludeStoryPointAggregation: z.boolean().optional().default(true).describe("Aggregate story points / effort fields if present"),
+  IncludeRiskScoring: z.boolean().optional().default(false).describe("Include basic heuristic risk / staleness scoring"),
+  IncludeAIAssignmentHeuristic: z.boolean().optional().default(false).describe("Include lightweight AI suitability heuristic (not full analyzer)"),
+  IncludeParentOutsideSet: z.boolean().optional().default(true).describe("If an item has a parent not in set, include minimal parent reference"),
+  IncludeChildrenOutsideSet: z.boolean().optional().default(false).describe("Include minimal references to children not in requested set"),
+  MaxOutsideReferences: z.number().int().optional().default(50).describe("Cap number of outside references added"),
+  ReturnFormat: z.enum(["graph", "array"]).optional().default("graph").describe("Return as graph (nodes/edges) or simple array")
+});
+
 
 
 

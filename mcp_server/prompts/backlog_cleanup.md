@@ -26,13 +26,19 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for bulk backlog cleanup targeting by area/state/date)
 
 ---
 
 ### Process Steps
 
-1. **Search for work items** using `mcp_ado_search_workitem` with area path filter
-2. **Get detailed information** using `mcp_ado_wit_get_work_items_batch_by_ids` for found items
+1. **Search for work items**:
+	 - Preferred: Use `wit-get-work-items-by-query-wiql` with a WIQL query like:
+		 ```
+		 WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.ChangedDate] ASC"
+		 ```
+	 - Fallback: use `mcp_ado_search_workitem` if WIQL tool unavailable.
+2. **Get detailed information** using batch retrieval for the collected IDs
 3. **Analyze each item** for removal candidate signals
 4. **Generate report** with recommendations (do not modify work items)
 

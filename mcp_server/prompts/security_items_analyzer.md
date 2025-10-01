@@ -22,6 +22,7 @@ Your mission: **Systematically identify, categorize, and create actionable plans
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
 - `wit-get-configuration` - display current MCP server configuration
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for precise security domain filtering and bulk retrieval)
 
 ### Find Security Items  
 **Search Process:**
@@ -34,7 +35,13 @@ Your mission: **Systematically identify, categorize, and create actionable plans
    - Include states: Active, New, Proposed (exclude Done, Removed, Closed)
    - Limit results to {{max_items}} items
 
-2. Use `mcp_ado_wit_get_work_items_batch_by_ids` to get detailed information for found items
+2. Alternatively (preferred for complex filtering), use `wit-get-work-items-by-query-wiql` with targeted WIQL such as:
+  ```
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] <> 'Closed' ORDER BY [System.ChangedDate] DESC"
+  ```
+  You can issue multiple WIQL queries for different domains (auth, dependency, compliance) then merge IDs.
+
+3. Use `mcp_ado_wit_get_work_items_batch_by_ids` (or equivalent batch retrieval) to get detailed information for the collected item IDs.
 
 3. Cross-reference results with additional security-related searches:
    - Search for items with security tags

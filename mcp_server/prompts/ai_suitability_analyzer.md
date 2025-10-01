@@ -21,6 +21,7 @@ Your task: decide whether an incoming software work item is a good fit for **aut
 - `wit-new-copilot-item` - create and immediately assign work items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
 - `wit-get-configuration` - display current MCP server configuration
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (useful for gathering related items, dependencies, or historical patterns to improve suitability analysis)
 
 ---
 
@@ -90,6 +91,11 @@ Your task: decide whether an incoming software work item is a good fit for **aut
 **Instructions:**
 1. **Check for Enhanced Tools First**: If `wit-ai-assignment-analyzer` is available, recommend using that tool instead for more comprehensive analysis
 2. Use the Azure DevOps MCP tools to retrieve complete details for work item ID {{work_item_id}}
+   - If dependency, blocking, or related context is missing, issue a WIQL query via `wit-get-work-items-by-query-wiql` such as:
+     ```
+     WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
+     ```
+     Then pull details for those related items to refine risk and AI suitability.
 3. Extract all relevant information including:
    - Title, description, acceptance criteria
    - Labels, tags, priority, assigned to

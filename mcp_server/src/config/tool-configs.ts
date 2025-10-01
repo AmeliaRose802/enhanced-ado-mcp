@@ -10,6 +10,7 @@ import {
   hierarchyValidatorSchema,
   getConfigurationSchema,
   wiqlQuerySchema
+  , workItemContextPackageSchema, workItemsBatchContextSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -19,49 +20,97 @@ import { z } from 'zod';
 export const toolConfigs: ToolConfig[] = [
   {
     name: "wit-create-new-item",
-    description: "Create a new Azure DevOps work item with optional parent relationship",
+    description: "Create a new Azure DevOps work item with optional parent relationship. Organization, Project, WorkItemType, Priority, AssignedTo, AreaPath, IterationPath, and InheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: createNewItemSchema,
     inputSchema: {
       type: "object",
       properties: {
         Title: { type: "string", description: "Title of the work item (mandatory)" },
-        WorkItemType: { type: "string", description: "Azure DevOps work item type, e.g. 'Task', 'Product Backlog Item', 'Bug'" },
         ParentWorkItemId: { type: "number", description: "Optional parent work item ID" },
         Description: { type: "string", description: "Markdown description / repro steps" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        AreaPath: { type: "string", description: "Area path override" },
-        IterationPath: { type: "string", description: "Iteration path override" },
-        AssignedTo: { type: "string", description: "User email or @me for current user" },
-        Priority: { type: "number", description: "Priority (default 2)" },
         Tags: { type: "string", description: "Semicolon or comma separated tags" },
-        InheritParentPaths: { type: "boolean", description: "Inherit Area/Iteration from parent if not supplied" }
+        // Optional overrides (auto-filled from config if not provided)
+        WorkItemType: { type: "string", description: "Override default work item type from config" },
+        AreaPath: { type: "string", description: "Override default area path from config" },
+        IterationPath: { type: "string", description: "Override default iteration path from config" },
+        AssignedTo: { type: "string", description: "Override default assignee from config" },
+        Priority: { type: "number", description: "Override default priority from config" }
       },
       required: ["Title"]
     }
   },
   {
+    name: "wit-get-work-item-context-package",
+    description: "Retrieve a comprehensive context package for a single work item including core fields, description, acceptance criteria, parent, children, related links, comments, recent history, and optionally PRs/commits and attachments in one call.",
+    script: "", // Handled internally
+    schema: workItemContextPackageSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WorkItemId: { type: "number", description: "Primary work item ID to retrieve full context for" },
+        IncludeHistory: { type: "boolean", description: "Include recent change history (last 10 changes)" },
+        HistoryCount: { type: "number", description: "Number of recent history entries to include" },
+        IncludeComments: { type: "boolean", description: "Include work item comments/discussion" },
+        IncludeRelations: { type: "boolean", description: "Include related links (parent, children, related, attachments, commits, PRs)" },
+        IncludeChildren: { type: "boolean", description: "Include all child hierarchy (one level) if item is a Feature/Epic" },
+        IncludeParent: { type: "boolean", description: "Include parent work item details if present" },
+        IncludeLinkedPRsAndCommits: { type: "boolean", description: "Include linked Git PRs and commits if present in relations" },
+        IncludeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
+        IncludeHtml: { type: "boolean", description: "Return original HTML field values alongside Markdown/plain text" },
+        MaxChildDepth: { type: "number", description: "Depth of child hierarchy to traverse (1 = immediate children)" },
+        MaxRelatedItems: { type: "number", description: "Maximum number of related items to expand" },
+        IncludeAttachments: { type: "boolean", description: "Include attachment metadata (names, urls, sizes)" },
+        IncludeTags: { type: "boolean", description: "Include tags list" }
+      },
+      required: ["WorkItemId"]
+    }
+  },
+  {
+    name: "wit-get-work-items-context-batch",
+    description: "Retrieve multiple work items (10-50) with relationship graph, aggregate metrics, and optional heuristic scoring in one call.",
+    script: "", // Handled internally
+    schema: workItemsBatchContextSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WorkItemIds: { type: "array", items: { type: "number" }, description: "List of work item IDs (max 50)" },
+        IncludeRelations: { type: "boolean", description: "Include relationship edges between provided items" },
+        IncludeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include per work item" },
+        IncludeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
+        IncludeTags: { type: "boolean", description: "Include tags list" },
+        IncludeStateCounts: { type: "boolean", description: "Return aggregate counts by state and type" },
+        IncludeStoryPointAggregation: { type: "boolean", description: "Aggregate story points / effort fields if present" },
+        IncludeRiskScoring: { type: "boolean", description: "Include basic heuristic risk / staleness scoring" },
+        IncludeAIAssignmentHeuristic: { type: "boolean", description: "Include lightweight AI suitability heuristic" },
+        IncludeParentOutsideSet: { type: "boolean", description: "Include minimal parent references outside requested set" },
+        IncludeChildrenOutsideSet: { type: "boolean", description: "Include minimal child references outside requested set" },
+        MaxOutsideReferences: { type: "number", description: "Cap number of outside references added" },
+        ReturnFormat: { type: "string", enum: ["graph", "array"], description: "Return as graph (nodes/edges) or simple array" }
+      },
+      required: ["WorkItemIds"]
+    }
+  },
+  {
     name: "wit-assign-to-copilot",
-    description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link",
+    description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. Organization, Project, Branch, and GitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
     script: "Assign-ItemToCopilot-MCP.ps1",
     schema: assignToCopilotSchema,
     inputSchema: {
       type: "object",
       properties: {
         WorkItemId: { type: "number", description: "Existing work item ID to assign" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
         Repository: { type: "string", description: "Git repository name (required)" },
-        Branch: { type: "string", description: "Git branch name" },
-        GitHubCopilotGuid: { type: "string", description: "GitHub Copilot GUID" }
+        // Optional overrides (auto-filled from config if not provided)
+        Branch: { type: "string", description: "Override default branch from config" },
+        GitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" }
       },
       required: ["WorkItemId", "Repository"]
     }
   },
   {
     name: "wit-new-copilot-item",
-    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot",
+    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Organization, Project, WorkItemType, Branch, GitHubCopilotGuid, AreaPath, IterationPath, Priority, and InheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "New-WorkItemAndAssignToCopilot-MCP.ps1",
     schema: newCopilotItemSchema,
     inputSchema: {
@@ -69,33 +118,29 @@ export const toolConfigs: ToolConfig[] = [
       properties: {
         Title: { type: "string", description: "Title of the work item" },
         ParentWorkItemId: { type: "number", description: "Parent work item ID under which to create the new item" },
-        WorkItemType: { type: "string", description: "Azure DevOps work item type" },
-        Description: { type: "string", description: "Markdown description" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
         Repository: { type: "string", description: "Git repository name (required)" },
-        Branch: { type: "string", description: "Git branch name" },
-        GitHubCopilotGuid: { type: "string", description: "GitHub Copilot GUID" },
-        AreaPath: { type: "string", description: "Area path override" },
-        IterationPath: { type: "string", description: "Iteration path override" },
-        Priority: { type: "number", description: "Priority level" },
+        Description: { type: "string", description: "Markdown description" },
         Tags: { type: "string", description: "Semicolon or comma separated tags" },
-        InheritParentPaths: { type: "boolean", description: "Inherit Area/Iteration from parent" }
+        // Optional overrides (auto-filled from config if not provided)
+        WorkItemType: { type: "string", description: "Override default work item type from config" },
+        Branch: { type: "string", description: "Override default branch from config" },
+        GitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" },
+        AreaPath: { type: "string", description: "Override default area path from config" },
+        IterationPath: { type: "string", description: "Override default iteration path from config" },
+        Priority: { type: "number", description: "Override default priority from config" }
       },
       required: ["Title", "ParentWorkItemId", "Repository"]
     }
   },
   {
     name: "wit-extract-security-links",
-    description: "Extract instruction links from security scan work items",
+    description: "Extract instruction links from security scan work items. Organization and Project are automatically filled from configuration - only provide them to override defaults.",
     script: "Extract-SecurityInstructionLinks-MCP.ps1",
     schema: extractSecurityLinksSchema,
     inputSchema: {
       type: "object",
       properties: {
         WorkItemId: { type: "number", description: "Azure DevOps work item ID to extract instruction links from" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
         ScanType: { type: "string", enum: ["BinSkim", "CodeQL", "CredScan", "General", "All"], description: "Type of security scanner to filter links for" },
         IncludeWorkItemDetails: { type: "boolean", description: "Include detailed work item information in the response" },
         ExtractFromComments: { type: "boolean", description: "Also extract links from work item comments" },

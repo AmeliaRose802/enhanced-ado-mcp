@@ -140,6 +140,7 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 9. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
 10. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, and field selection
+  - Example use cases: fetch parent/child graphs, list stale items (`ORDER BY [System.ChangedDate] ASC`), pull dependency links, scope by AreaPath, or gather related items before AI analysis.
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 

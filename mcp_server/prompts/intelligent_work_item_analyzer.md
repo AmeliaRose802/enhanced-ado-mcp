@@ -21,6 +21,7 @@ You are an **AI Work Item Intelligence Assistant** specializing in analyzing, en
 - `wit-create-new-item` - create enhanced work items  
 - `wit-assign-to-copilot` - assign items to GitHub Copilot
 - `wit-new-copilot-item` - create and assign to Copilot
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (discover related, duplicate, dependency, or stale linked items for richer context)
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_get_work_item` - retrieve existing work item details
@@ -38,6 +39,15 @@ First, use Azure DevOps MCP tools to fetch complete information for work item ID
 - Current state, priority, assigned to
 - Any additional context from related work items or comments
 - Parent work item information if applicable
+
+If related or dependency context appears incomplete, issue a WIQL query via `wit-get-work-items-by-query-wiql`, for example:
+```
+WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
+```
+or to identify possible duplicates by title recency:
+```
+WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS '" + SUBSTRING({{work_item_title}},0,25) + "' AND [System.Id] <> {{work_item_id}} ORDER BY [System.ChangedDate] DESC"
+```
 
 **Step 2: Perform Intelligent Analysis**
 Once you have the work item details, analyze based on the {{analysis_focus}} setting below.

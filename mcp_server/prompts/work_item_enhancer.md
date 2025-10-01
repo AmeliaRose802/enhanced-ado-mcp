@@ -18,9 +18,11 @@ Your goal: **rewrite and expand the work item so it is precise, testable, and se
 - `wit-new-copilot-item` - create and assign items to Copilot 
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (useful for pulling related items to enrich context before enhancement)
 
 **Post-Enhancement Actions:**
 If the user requests automatic creation in Azure DevOps, use the `wit-create-new-item` tool and supply the enhanced content.
+If context is sparse, you may issue a WIQL query via `wit-get-work-items-by-query-wiql` to locate related or parent items and incorporate succinct relevant details (avoid bloating output).
 
 ### Behaviors
 - Expand vague or shorthand language into concrete, actionable requirements.  

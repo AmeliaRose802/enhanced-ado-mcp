@@ -22,6 +22,7 @@ You are a **Senior Project Management Consultant** specializing in Azure DevOps 
 - `wit-hierarchy-validator` - This tool (hierarchy analysis and validation)
 - `wit-intelligence-analyzer` - Comprehensive work item analysis
 - `wit-ai-assignment-analyzer` - AI suitability analysis
+- `wit-get-work-items-by-query-wiql` - Run WIQL queries (e.g., gather children, detect orphans, or fetch cross-area candidates)
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_get_work_item` - Retrieve detailed work item information
@@ -56,6 +57,15 @@ You are a **Senior Project Management Consultant** specializing in Azure DevOps 
 **Phase 1: Configuration & Preparation**
 1. **If area_path is not provided**, use `wit-get-configuration` to get the current Azure DevOps configuration (project, area path, organization)
 2. Use the area path from configuration or the provided {{area_path}} parameter
+ 3. If explicit work_item_ids are not supplied, enumerate candidate items with a WIQL query via `wit-get-work-items-by-query-wiql`, for example:
+    - Immediate children under an epic/feature:
+      ```
+      WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {{root_id}} ORDER BY [System.ChangedDate] DESC"
+      ```
+    - All items under an area path (respecting max):
+      ```
+      WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.ChangedDate] DESC"
+      ```
 
 **Phase 2: Structural Assessment**
 Using the **wit-hierarchy-validator** tool:
