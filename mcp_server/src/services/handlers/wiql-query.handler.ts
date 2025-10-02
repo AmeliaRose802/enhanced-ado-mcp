@@ -20,9 +20,9 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
       throw new Error(`Validation error: ${parsed.error.message}`);
     }
 
-    logger.debug(`Executing WIQL query: ${parsed.data.WiqlQuery}`);
-    if (parsed.data.IncludeSubstantiveChange) {
-      logger.debug(`Substantive change analysis enabled (history depth: ${parsed.data.SubstantiveChangeHistoryCount || 50})`);
+    logger.debug(`Executing WIQL query: ${parsed.data.wiqlQuery}`);
+    if (parsed.data.includeSubstantiveChange) {
+      logger.debug(`Substantive change analysis enabled (history depth: ${parsed.data.substantiveChangeHistoryCount || 50})`);
     }
     
     const result = await queryWorkItemsByWiql(parsed.data);
@@ -34,19 +34,19 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
         count: result.count,
         query: result.query,
         summary: `Found ${result.count} work item(s) matching the query`,
-        ...(parsed.data.IncludeSubstantiveChange && { 
+        ...(parsed.data.includeSubstantiveChange && { 
           substantiveChangeIncluded: true 
         })
       },
       metadata: { 
         source: "rest-api-wiql",
         count: result.count,
-        maxResults: parsed.data.MaxResults,
-        substantiveChangeAnalysis: parsed.data.IncludeSubstantiveChange || false
+        maxResults: parsed.data.maxResults,
+        substantiveChangeAnalysis: parsed.data.includeSubstantiveChange || false
       },
       errors: [],
-      warnings: result.count >= (parsed.data.MaxResults || 200) 
-        ? [`Results limited to ${parsed.data.MaxResults || 200} items. Query may have returned more results.`]
+      warnings: result.count >= (parsed.data.maxResults || 200) 
+        ? [`Results limited to ${parsed.data.maxResults || 200} items. Query may have returned more results.`]
         : []
     };
   } catch (error) {
