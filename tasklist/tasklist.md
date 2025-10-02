@@ -1,5 +1,7 @@
 # Project TODOs
 
+- The team velocity tool still asks for parameters that could be auto filled from configs or defaults. Don't ask for any params for this one
+
 - Create a prompt that analyses the work assigned to each person on the team and reports their velocity and strengths and weaknesses based on what they have completed. Make recommendations to improve team and indivual health based on assignments. Recommend next work for each person based on capacity. Avoid overspecilizing indivuals or assiging all crap work to the same person. Also avoid people being randomized. You may create any additional tools needed to do this.
 
 - The AI sutibiluty prompt should only ask for the work item ID not additional info
@@ -23,3 +25,4 @@
 - All tools should have documentation of schema
 
 - Idea: Would it be feasable to add tools for finding a list of repos/area paths that the current user comonly uses?
+

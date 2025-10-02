@@ -11,11 +11,11 @@ import { curlJson, getAzureDevOpsToken } from '../../utils/ado-token.js';
 import { loadConfiguration } from '../../config/config.js';
 
 interface LastSubstantiveChangeArgs {
-  WorkItemId: number;
-  Organization?: string;
-  Project?: string;
-  HistoryCount?: number;
-  AutomatedPatterns?: string[];
+  workItemId: number;
+  organization?: string;
+  project?: string;
+  historyCount?: number;
+  automatedPatterns?: string[];
 }
 
 interface SubstantiveChangeResult {
@@ -149,28 +149,28 @@ export async function getLastSubstantiveChange(
   args: LastSubstantiveChangeArgs
 ): Promise<SubstantiveChangeResult> {
   const cfg = loadConfiguration();
-  const Organization = args.Organization || cfg.azureDevOps.organization;
-  const Project = args.Project || cfg.azureDevOps.project;
-  const HistoryCount = args.HistoryCount || 50;
-  const automatedPatterns = args.AutomatedPatterns || DEFAULT_AUTOMATION_PATTERNS;
+  const organization = args.organization || cfg.azureDevOps.organization;
+  const project = args.project || cfg.azureDevOps.project;
+  const historyCount = args.historyCount || 50;
+  const automatedPatterns = args.automatedPatterns || DEFAULT_AUTOMATION_PATTERNS;
   
   try {
     const token = getAzureDevOpsToken();
     
     // Get work item to extract created date
-    const wiUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${args.WorkItemId}?$expand=none&api-version=7.1`;
+    const wiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${args.workItemId}?$expand=none&api-version=7.1`;
     const workItem = curlJson(wiUrl, token);
     const createdDate = workItem.fields['System.CreatedDate'];
     const daysSinceCreation = daysBetween(createdDate);
     
     // Get revision history
-    const revsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${args.WorkItemId}/revisions?$top=${HistoryCount}&api-version=7.1`;
+    const revsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${args.workItemId}/revisions?$top=${historyCount}&api-version=7.1`;
     const historyResponse = curlJson(revsUrl, token);
     const revisions = historyResponse.value || [];
     
     if (revisions.length === 0) {
       return {
-        workItemId: args.WorkItemId,
+        workItemId: args.workItemId,
         lastSubstantiveChange: null,
         daysInactive: null,
         lastChangeType: 'No history',
@@ -218,7 +218,7 @@ export async function getLastSubstantiveChange(
     const allChangesWereAutomated = automatedChangesSkipped === revisions.length;
     
     return {
-      workItemId: args.WorkItemId,
+      workItemId: args.workItemId,
       lastSubstantiveChange,
       daysInactive,
       lastChangeType,
@@ -229,7 +229,7 @@ export async function getLastSubstantiveChange(
     };
     
   } catch (error) {
-    logger.error(`Failed to get last substantive change for work item ${args.WorkItemId}:`, error);
+    logger.error(`Failed to get last substantive change for work item ${args.workItemId}:`, error);
     throw error;
   }
 }

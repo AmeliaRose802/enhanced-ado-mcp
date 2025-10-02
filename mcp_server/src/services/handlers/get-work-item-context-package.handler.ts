@@ -27,22 +27,22 @@ function cleanFields(fields: any): any {
 }
 
 interface ContextPackageArgs {
-  WorkItemId: number;
-  Organization?: string;
-  Project?: string;
-  IncludeHistory?: boolean;
-  HistoryCount?: number;
-  IncludeComments?: boolean;
-  IncludeRelations?: boolean;
-  IncludeChildren?: boolean;
-  IncludeParent?: boolean;
-  IncludeLinkedPRsAndCommits?: boolean;
-  IncludeExtendedFields?: boolean;
-  IncludeHtml?: boolean;
-  MaxChildDepth?: number;
-  MaxRelatedItems?: number;
-  IncludeAttachments?: boolean;
-  IncludeTags?: boolean;
+  workItemId: number;
+  organization?: string;
+  project?: string;
+  includeHistory?: boolean;
+  historyCount?: number;
+  includeComments?: boolean;
+  includeRelations?: boolean;
+  includeChildren?: boolean;
+  includeParent?: boolean;
+  includeLinkedPRsAndCommits?: boolean;
+  includeExtendedFields?: boolean;
+  includeHtml?: boolean;
+  maxChildDepth?: number;
+  maxRelatedItems?: number;
+  includeAttachments?: boolean;
+  includeTags?: boolean;
 }
 
 // Basic HTML to markdown/text simplifier (lightweight; not full fidelity)
@@ -64,22 +64,22 @@ function stripHtml(html?: string): string | undefined {
 export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) {
   const cfg = loadConfiguration();
   const {
-    WorkItemId,
-    Organization = cfg.azureDevOps.organization,
-    Project = cfg.azureDevOps.project,
-    IncludeHistory = true,
-    HistoryCount = 10,
-    IncludeComments = true,
-    IncludeRelations = true,
-    IncludeChildren = true,
-    IncludeParent = true,
-    IncludeLinkedPRsAndCommits = true,
-    IncludeExtendedFields = false,
-    IncludeHtml = false,
-    MaxChildDepth = 1,
-    MaxRelatedItems = 50,
-    IncludeAttachments = false,
-    IncludeTags = true
+    workItemId,
+    organization = cfg.azureDevOps.organization,
+    project = cfg.azureDevOps.project,
+    includeHistory = true,
+    historyCount = 10,
+    includeComments = true,
+    includeRelations = true,
+    includeChildren = true,
+    includeParent = true,
+    includeLinkedPRsAndCommits = true,
+    includeExtendedFields = false,
+    includeHtml = false,
+    maxChildDepth = 1,
+    maxRelatedItems = 50,
+    includeAttachments = false,
+    includeTags = true
   } = args;
 
   try {
@@ -94,19 +94,19 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       'Microsoft.VSTS.Common.AcceptanceCriteria','Microsoft.VSTS.Common.Priority','Microsoft.VSTS.Scheduling.StoryPoints',
       'Microsoft.VSTS.Scheduling.RemainingWork','Microsoft.VSTS.Common.Risk','Microsoft.VSTS.Common.ValueArea'
     ];
-    const fields = IncludeExtendedFields ? baseFields.concat(extendedFields) : baseFields;
+    const fields = includeExtendedFields ? baseFields.concat(extendedFields) : baseFields;
     const fieldParam = fields.join(',');
 
     // Note: Azure DevOps API doesn't allow both $expand and fields parameters together
     // Use $expand=all to get both relations and all fields
-    const workItemUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?$expand=all&api-version=7.1`;
+    const workItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?$expand=all&api-version=7.1`;
     
-    logger.debug(`Fetching work item ${WorkItemId} from ${Organization}/${Project}`);
+    logger.debug(`Fetching work item ${workItemId} from ${organization}/${project}`);
     logger.debug(`URL: ${workItemUrl}`);
     
     const wi = curlJson(workItemUrl, token);
     if (!wi || !wi.id) {
-      throw new Error(`Work item ${WorkItemId} not found in organization '${Organization}', project '${Project}'. Verify the work item ID exists and you have access to it.`);
+      throw new Error(`Work item ${workItemId} not found in organization '${organization}', project '${project}'. Verify the work item ID exists and you have access to it.`);
     }
 
     // Parent and children detection
@@ -117,23 +117,23 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     let prLinks: any[] = [];
     let commitLinks: any[] = [];
 
-    if (IncludeRelations && wi.relations) {
+    if (includeRelations && wi.relations) {
       for (const rel of wi.relations) {
         const relRef = rel.rel || '';
-        if (relRef === 'System.LinkTypes.Hierarchy-Reverse' && IncludeParent) {
+        if (relRef === 'System.LinkTypes.Hierarchy-Reverse' && includeParent) {
           parent = { id: parseInt(rel.url.split('/').pop() || '0', 10) };
-        } else if (relRef === 'System.LinkTypes.Hierarchy-Forward' && IncludeChildren) {
+        } else if (relRef === 'System.LinkTypes.Hierarchy-Forward' && includeChildren) {
           children.push({ id: parseInt(rel.url.split('/').pop() || '0', 10) });
         } else if (relRef.startsWith('System.LinkTypes')) {
           related.push({ type: relRef, url: rel.url });
         } else if (relRef === 'ArtifactLink') {
           // Heuristic for commits/PRs: look at attributes.name
           const name = rel.attributes?.name || '';
-            if (IncludeLinkedPRsAndCommits && name.startsWith('PR ')) {
+            if (includeLinkedPRsAndCommits && name.startsWith('PR ')) {
               prLinks.push({ name, url: rel.url });
-            } else if (IncludeLinkedPRsAndCommits && name.startsWith('Commit ')) {
+            } else if (includeLinkedPRsAndCommits && name.startsWith('Commit ')) {
               commitLinks.push({ name, url: rel.url });
-            } else if (IncludeAttachments && name.startsWith('Attached File')) {
+            } else if (includeAttachments && name.startsWith('Attached File')) {
               attachments.push({ name, url: rel.url });
             }
         }
@@ -143,26 +143,26 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     // Expand parent
     if (parent && parent.id) {
       try {
-        const pUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${parent.id}?fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
+        const pUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${parent.id}?fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
         parent = curlJson(pUrl, token);
       } catch (e) { logger.warn(`Failed to expand parent ${parent.id}`, e); }
     }
 
-    // Expand children (one depth only unless MaxChildDepth >1; we only support depth=1 for now to avoid complexity)
+    // Expand children (one depth only unless maxChildDepth >1; we only support depth=1 for now to avoid complexity)
     let expandedChildren: any[] = [];
-    if (children.length && MaxChildDepth > 0) {
+    if (children.length && maxChildDepth > 0) {
       const childIds = children.map(c => c.id).slice(0, 200);
       const idsParam = childIds.join(',');
-      const cUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
+      const cUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
       const cRes = curlJson(cUrl, token);
       if (cRes && cRes.value) expandedChildren = cRes.value;
     }
 
     // Get comments
     let comments: any[] = [];
-    if (IncludeComments) {
+    if (includeComments) {
       try {
-        const commentsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${WorkItemId}/comments?api-version=7.1`;
+        const commentsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${workItemId}/comments?api-version=7.1`;
         const cRes = curlJson(commentsUrl, token);
         comments = cRes.comments?.map((c: any) => ({
           id: c.id,
@@ -170,14 +170,14 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
           createdBy: c.createdBy?.displayName,
           createdDate: c.createdDate
         })) || [];
-      } catch (e) { logger.warn(`Failed to load comments for ${WorkItemId}`, e); }
+      } catch (e) { logger.warn(`Failed to load comments for ${workItemId}`, e); }
     }
 
     // History (recent revisions)
     let history: any[] = [];
-    if (IncludeHistory) {
+    if (includeHistory) {
       try {
-        const revsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${WorkItemId}/revisions?$top=${HistoryCount}&api-version=7.1`;
+        const revsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${workItemId}/revisions?$top=${historyCount}&api-version=7.1`;
         const hRes = curlJson(revsUrl, token);
         history = (hRes.value || []).map((r: any) => {
           const cleanedFields = cleanFields(r.fields);
@@ -194,7 +194,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
             description: cleanedFields?.['System.Description'] ? (cleanedFields['System.Description'].length > 100 ? cleanedFields['System.Description'].substring(0, 100) + '...' : cleanedFields['System.Description']) : undefined
           };
         });
-      } catch (e) { logger.warn(`Failed to load history for ${WorkItemId}`, e); }
+      } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, e); }
     }
 
     // Build normalized core representation
@@ -215,12 +215,12 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       storyPoints: fieldsMap['Microsoft.VSTS.Scheduling.StoryPoints'],
       remainingWork: fieldsMap['Microsoft.VSTS.Scheduling.RemainingWork'],
       acceptanceCriteria: fieldsMap['Microsoft.VSTS.Common.AcceptanceCriteria'],
-      description: IncludeHtml ? {
+      description: includeHtml ? {
         html: fieldsMap['System.Description'],
         text: stripHtml(fieldsMap['System.Description'])
       } : stripHtml(fieldsMap['System.Description']),
-      tags: IncludeTags && fieldsMap['System.Tags'] ? String(fieldsMap['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean) : [],
-      url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
+      tags: includeTags && fieldsMap['System.Tags'] ? String(fieldsMap['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean) : [],
+      url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${wi.id}`,
       parent: parent ? {
         id: parent.id,
         title: parent.fields?.['System.Title'],
@@ -228,13 +228,13 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
         state: parent.fields?.['System.State']
       } : null,
       children: expandedChildren.map(c => ({ id: c.id, title: c.fields['System.Title'], type: c.fields['System.WorkItemType'], state: c.fields['System.State'] })),
-      related: related.slice(0, MaxRelatedItems),
+      related: related.slice(0, maxRelatedItems),
       pullRequests: prLinks,
       commits: commitLinks,
-      attachments: IncludeAttachments ? attachments : undefined,
+      attachments: includeAttachments ? attachments : undefined,
       comments,
       history,
-      _raw: IncludeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
+      _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
     };
 
     return buildSuccessResponse({ contextPackage: result }, { tool: 'wit-get-work-item-context-package' });
