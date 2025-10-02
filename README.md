@@ -140,11 +140,17 @@ Language model access is managed by VS Code and persists across sessions. To res
 ### Configuration & Discovery Tools
 
 9. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
-10. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, and field selection
+10. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
 11. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
 12. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
 13. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
 14. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+
+### Bulk Operations & Backlog Hygiene Tools
+
+15. `wit-bulk-state-transition` - Efficiently transition multiple work items (1-50) to a new state in one call with validation and dry-run mode
+16. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
+17. `wit-find-stale-items` - Purpose-built backlog hygiene tool to find stale/abandoned work items with staleness signals and risk categorization
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
@@ -211,6 +217,173 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 ```
 
 **WIQL Reference:** For more information on WIQL syntax, see the [official Azure DevOps WIQL documentation](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax).
+
+## Bulk Operations Examples
+
+The Enhanced ADO MCP Server provides powerful bulk operation tools for efficient backlog management and hygiene.
+
+### Bulk State Transition
+
+Transition multiple work items to a new state in one call with validation and dry-run support.
+
+**Example: Remove multiple stale items**
+```json
+{
+  "WorkItemIds": [12345, 12346, 12347],
+  "NewState": "Removed",
+  "Comment": "Automated backlog hygiene: Item inactive for >180 days with no substantive changes.",
+  "Reason": "Abandoned",
+  "DryRun": true
+}
+```
+
+**Dry-Run Response:**
+```json
+{
+  "dryRun": true,
+  "summary": {
+    "total": 3,
+    "valid": 2,
+    "invalid": 1,
+    "wouldUpdate": 2
+  },
+  "validations": [
+    {
+      "workItemId": 12345,
+      "valid": true,
+      "currentState": "Active",
+      "workItemType": "Task",
+      "title": "Old task"
+    },
+    {
+      "workItemId": 12346,
+      "valid": false,
+      "error": "Already in state 'Removed'"
+    }
+  ]
+}
+```
+
+### Bulk Add Comments
+
+Add comments to multiple work items with template support.
+
+**Example: Notify about backlog review**
+```json
+{
+  "Items": [
+    {
+      "WorkItemId": 12345,
+      "Comment": "This item was reviewed during backlog hygiene on 2025-10-01. Last activity: 250 days ago."
+    },
+    {
+      "WorkItemId": 12346,
+      "Comment": "This item was reviewed during backlog hygiene on 2025-10-01. Last activity: 180 days ago."
+    }
+  ]
+}
+```
+
+**Using Templates:**
+```json
+{
+  "Items": [
+    {"WorkItemId": 12345, "Comment": "placeholder"},
+    {"WorkItemId": 12346, "Comment": "placeholder"}
+  ],
+  "Template": "Backlog hygiene review: {{analysisDate}}. Days inactive: {{daysInactive}}. Status: {{status}}",
+  "TemplateVariables": {
+    "analysisDate": "2025-10-01",
+    "status": "Under review"
+  }
+}
+```
+
+### Find Stale Items
+
+Purpose-built tool for backlog hygiene with staleness signals.
+
+**Example: Find stale items in area path**
+```json
+{
+  "AreaPath": "MyProject\\MyTeam",
+  "MinInactiveDays": 180,
+  "IncludeSubAreas": true,
+  "IncludeSubstantiveChange": true,
+  "IncludeSignals": true
+}
+```
+
+**Response with Signals:**
+```json
+{
+  "summary": {
+    "total": 150,
+    "stale": 25,
+    "healthy": 125,
+    "byRiskLevel": {
+      "high": 8,
+      "medium": 12,
+      "low": 5
+    }
+  },
+  "staleItems": [
+    {
+      "id": 12345,
+      "title": "Old task",
+      "state": "To Do",
+      "daysInactive": 250,
+      "signals": {
+        "reasons": [
+          "Inactive for 250 days",
+          "Created 1000+ days ago",
+          "In passive state (To Do)",
+          "Unassigned",
+          "No description"
+        ],
+        "riskLevel": "high"
+      }
+    }
+  ],
+  "categorized": {
+    "high": [...],
+    "medium": [...],
+    "low": [...]
+  }
+}
+```
+
+### Computed Metrics in WIQL
+
+Add computed metrics to WIQL queries for efficient analysis.
+
+**Example: Query with computed metrics**
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Done'",
+  "ComputeMetrics": true,
+  "StaleThresholdDays": 180,
+  "IncludeFields": ["System.Description"]
+}
+```
+
+**Response with Metrics:**
+```json
+{
+  "work_items": [
+    {
+      "id": 12345,
+      "title": "Some task",
+      "computedMetrics": {
+        "daysSinceCreated": 500,
+        "daysSinceChanged": 200,
+        "hasDescription": false,
+        "isStale": true
+      }
+    }
+  ]
+}
+```
 
 ## Available Prompts
 
