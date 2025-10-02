@@ -1,7 +1,7 @@
 ---
 name: feature_decomposer
 description: Intelligently decompose large features into smaller, assignable work items with AI suitability analysis and automatic work item creation using VS Code sampling
-version: 3
+version: 4
 arguments:
   work_item_id: { type: string, required: true, description: "Feature or Epic work item ID to decompose" }
   target_complexity: { type: string, required: false, enum: ["simple", "medium"], default: "medium" }
@@ -37,27 +37,45 @@ You are a **Senior Feature Architect** specializing in intelligent feature decom
 
 ## Decomposition Process
 
-**Step 1: Retrieve Feature/Epic Details**
-First, use Azure DevOps MCP tools to fetch complete information for work item ID {{work_item_id}}:
+**Step 1: Automatically Retrieve Feature/Epic Details**
+
+IMMEDIATELY use the `wit-get-work-item-context-package` tool to fetch complete information for work item ID {{work_item_id}}:
+
+```
+Tool: wit-get-work-item-context-package
+Arguments: {
+  "WorkItemId": {{work_item_id}}
+}
+```
+
+This will automatically provide:
 - Feature/Epic title, description, and acceptance criteria
 - Technical context and business requirements from description
-- Existing components mentioned in the work item
-- Dependencies noted in related work items
+- Existing child work items (if any) with their states
+- Related work items and dependencies with relationship context
+- Area path, iteration path, and team context
+- Story points, priority, and risk assessment
 - Time constraints from iteration path
-- Quality requirements from acceptance criteria
+- Quality requirements from description
+- Repository information and linked PRs/commits
 
-If related/child items aren't already known, issue a WIQL query with `wit-get-work-items-by-query-wiql` such as:
-```
-WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
-```
-or to pull immediate children only:
-```
-WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {{work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC"
-```
-Then fetch those IDs' details if needed.
+**Do NOT ask the user to provide these details manually.** The tool call above will retrieve everything needed.
 
-**Step 2: Analyze and Break Down**
-Once you have the feature details, perform decomposition analysis below.
+**Step 2: Analyze Existing Children (if any)**
+
+If the context package shows existing child work items, optionally use `wit-get-work-items-context-batch` to retrieve detailed context for all children:
+
+```
+Tool: wit-get-work-items-context-batch
+Arguments: {
+  "WorkItemIds": [child_id_1, child_id_2, ...]
+}
+```
+
+This provides relationship context, comment counts, linked PRs, and helps avoid duplicating already-created work items.
+
+**Step 3: Perform Decomposition Analysis**
+Once you have the feature details from Step 1-2, perform decomposition analysis below.
 
 ## Decomposition Framework
 

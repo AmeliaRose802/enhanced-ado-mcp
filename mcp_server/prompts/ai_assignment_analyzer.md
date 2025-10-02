@@ -1,7 +1,7 @@
 ---
 name: ai_assignment_analyzer
 description: Comprehensive AI vs human assignment suitability analysis with enhanced reasoning, confidence scoring, risk assessment, and actionable recommendations. Provides both detailed narrative and structured JSON output. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.
-version: 4
+version: 5
 arguments:
   work_item_id: { type: string, required: true, description: "Azure DevOps work item ID to analyze for AI assignment suitability" }
   output_format: { type: string, required: false, description: "Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)", default: "detailed" }
@@ -38,16 +38,33 @@ You are a **Senior AI Assignment Specialist & Triage Reviewer** with deep expert
 
 ## Analysis Process
 
-**Step 1: Retrieve Work Item Details**
-First, use the Azure DevOps MCP tools to fetch complete information for work item ID {{work_item_id}}:
-- Title, description, acceptance criteria
-- Work item type, priority, state
-- Labels, tags, assigned to
-- Repository information (if available)
-- Related work items or dependencies
-- Any technical specifications or constraints
+**Step 1: Automatically Retrieve Work Item Details**
 
-If related dependencies, blocking items, or historical change context are unknown, issue one or more WIQL queries using `wit-get-work-items-by-query-wiql`, for example:
+IMMEDIATELY use the `wit-get-work-item-context-package` tool to fetch complete information for work item ID {{work_item_id}}:
+
+```
+Tool: wit-get-work-item-context-package
+Arguments: {
+  "WorkItemId": {{work_item_id}}
+}
+```
+
+This will automatically provide:
+- Title, description, acceptance criteria
+- Work item type, priority, state, assigned to
+- Labels, tags, story points, risk
+- Repository information (if available)
+- Related work items and dependencies with relationship context
+- Parent/child relationships with counts
+- Linked PRs and commits
+- Comment count and discussion activity
+- Area path, iteration path, and team context
+
+**Do NOT ask the user to provide these details manually.** The tool call above will retrieve everything needed.
+
+**Step 2: Analyze Related Dependencies (if needed)**
+
+If the context package reveals related dependencies, blocking items, or uncertain complexity, you MAY optionally issue a WIQL query using `wit-get-work-items-by-query-wiql` to check for additional context:
 
 **To find linked/related items:**
 ```
@@ -59,10 +76,10 @@ WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = 
 WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] = {{work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') AND [System.ChangedDate] >= @Today - 14"
 ```
 
-Then pull details for those related items to refine risk and AI suitability assessment.
+Then use `wit-get-work-items-context-batch` to pull details for those related items (limit to 10-15 items max to avoid context overflow).
 
-**Step 2: Perform Analysis**
-Once you have the work item details, analyze against the comprehensive framework below.
+**Step 3: Perform Analysis**
+Once you have the work item details from Step 1, analyze against the comprehensive framework below.
 
 ## Analysis Framework
 
