@@ -28,14 +28,14 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: any):
     const requiredConfig = getRequiredConfig();
     
     const extractArgs = {
-      WorkItemId: input.WorkItemId,
-      Organization: input.Organization || requiredConfig.organization,
-      Project: input.Project || requiredConfig.project,
-      ScanType: input.ScanType || 'All',
-      IncludeWorkItemDetails: input.IncludeWorkItemDetails || false
+      workItemId: input.workItemId,
+      organization: input.organization || requiredConfig.organization,
+      project: input.project || requiredConfig.project,
+      scanType: input.scanType || 'All',
+      includeWorkItemDetails: input.includeWorkItemDetails || false
     };
 
-    logger.debug(`Extracting security links from work item ${extractArgs.WorkItemId}`);
+    logger.debug(`Extracting security links from work item ${extractArgs.workItemId}`);
     
     const result = await extractSecurityInstructionLinks(extractArgs);
     

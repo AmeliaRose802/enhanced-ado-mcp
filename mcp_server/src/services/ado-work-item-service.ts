@@ -441,11 +441,11 @@ export async function deleteWorkItem(args: DeleteWorkItemArgs): Promise<{
  * Extract instruction links from work item body
  */
 interface ExtractSecurityLinksArgs {
-  WorkItemId: number;
-  Organization: string;
-  Project: string;
-  ScanType?: 'BinSkim' | 'CodeQL' | 'CredScan' | 'General' | 'All';
-  IncludeWorkItemDetails?: boolean;
+  workItemId: number;
+  organization: string;
+  project: string;
+  scanType?: 'BinSkim' | 'CodeQL' | 'CredScan' | 'General' | 'All';
+  includeWorkItemDetails?: boolean;
 }
 
 interface InstructionLink {
@@ -466,23 +466,23 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
   };
 }> {
   const {
-    WorkItemId,
-    Organization,
-    Project,
-    ScanType = 'All',
-    IncludeWorkItemDetails = false
+    workItemId,
+    organization,
+    project,
+    scanType = 'All',
+    includeWorkItemDetails = false
   } = args;
 
-  const token = getAzureDevOpsToken(Organization);
+  const token = getAzureDevOpsToken(organization);
   
   // Get work item details
-  const workItemUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1`;
+  const workItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
   const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${workItemUrl}"`;
   const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
   const workItem = JSON.parse(response);
   
   if (!workItem.id) {
-    throw new Error(`Work item ${WorkItemId} not found`);
+    throw new Error(`Work item ${workItemId} not found`);
   }
   
   // Extract links from fields
@@ -532,14 +532,14 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
   );
   
   const result: any = {
-    work_item_id: WorkItemId,
+    work_item_id: workItemId,
     title: workItem.fields['System.Title'],
     instruction_links: uniqueLinks,
     links_found: uniqueLinks.length,
-    work_item_url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${WorkItemId}`
+    work_item_url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${workItemId}`
   };
   
-  if (IncludeWorkItemDetails) {
+  if (includeWorkItemDetails) {
     result.work_item_details = {
       assigned_to: workItem.fields['System.AssignedTo']?.displayName,
       state: workItem.fields['System.State'],
@@ -607,15 +607,15 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
  * Query work items using WIQL (Work Item Query Language)
  */
 interface WiqlQueryArgs {
-  WiqlQuery: string;
-  Organization: string;
-  Project: string;
-  IncludeFields?: string[];
-  MaxResults?: number;
-  IncludeSubstantiveChange?: boolean;
-  SubstantiveChangeHistoryCount?: number;
-  ComputeMetrics?: boolean;
-  StaleThresholdDays?: number;
+  wiqlQuery: string;
+  organization: string;
+  project: string;
+  includeFields?: string[];
+  maxResults?: number;
+  includeSubstantiveChange?: boolean;
+  substantiveChangeHistoryCount?: number;
+  computeMetrics?: boolean;
+  staleThresholdDays?: number;
 }
 
 // Fields that indicate substantive changes
@@ -769,31 +769,31 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   query: string;
 }> {
   const {
-    WiqlQuery,
-    Organization,
-    Project,
-    IncludeFields = [],
-    MaxResults = 200,
-    IncludeSubstantiveChange = false,
-    SubstantiveChangeHistoryCount = 50,
-    ComputeMetrics = false,
-    StaleThresholdDays = 180
+    wiqlQuery,
+    organization,
+    project,
+    includeFields = [],
+    maxResults = 200,
+    includeSubstantiveChange = false,
+    substantiveChangeHistoryCount = 50,
+    computeMetrics = false,
+    staleThresholdDays = 180
   } = args;
 
   // Get authentication token
-  const token = getAzureDevOpsToken(Organization);
+  const token = getAzureDevOpsToken(organization);
   
   const tempFile = join(tmpdir(), `ado-wiql-query-${Date.now()}.json`);
   
   try {
     // Execute WIQL query
-    const wiqlBody = { query: WiqlQuery };
-    const wiqlUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/wiql?api-version=7.1`;
+    const wiqlBody = { query: wiqlQuery };
+    const wiqlUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/wiql?api-version=7.1`;
     
     writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
     const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${wiqlUrl}"`;
     
-    logger.debug(`Executing WIQL query: ${WiqlQuery}`);
+    logger.debug(`Executing WIQL query: ${wiqlQuery}`);
     
     const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
     const wiqlResult = JSON.parse(response);
@@ -802,13 +802,13 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       return {
         workItems: [],
         count: 0,
-        query: WiqlQuery
+        query: wiqlQuery
       };
     }
 
     // Limit results
     const workItemIds = wiqlResult.workItems
-      .slice(0, MaxResults)
+      .slice(0, maxResults)
       .map((wi: any) => wi.id);
 
     logger.debug(`WIQL query returned ${wiqlResult.workItems.length} items, fetching details for first ${workItemIds.length}`);
@@ -826,16 +826,16 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     ];
 
     // Add date fields if needed for substantive change analysis or computed metrics
-    if (IncludeSubstantiveChange || ComputeMetrics) {
+    if (includeSubstantiveChange || computeMetrics) {
       defaultFields.push('System.CreatedDate', 'System.ChangedDate');
     }
 
     // Combine default fields with user-requested fields
-    const allFields = [...new Set([...defaultFields, ...IncludeFields])];
+    const allFields = [...new Set([...defaultFields, ...includeFields])];
     const fieldsParam = allFields.join(',');
 
     const ids = workItemIds.join(',');
-    const detailsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems?ids=${ids}&fields=${encodeURIComponent(fieldsParam)}&api-version=7.1`;
+    const detailsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${ids}&fields=${encodeURIComponent(fieldsParam)}&api-version=7.1`;
 
     const detailsCommand = `curl -s -H "Authorization: Bearer ${token}" "${detailsUrl}"`;
     const detailsResponse = execSync(detailsCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
@@ -864,7 +864,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       ]);
       
       // Only include fields that were explicitly requested and not already extracted
-      for (const field of IncludeFields) {
+      for (const field of includeFields) {
         if (!extractedFields.has(field) && wi.fields[field] !== undefined) {
           // Simplify AssignedTo-like objects to just displayName
           if (typeof wi.fields[field] === 'object' && wi.fields[field]?.displayName) {
@@ -885,12 +885,12 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         assignedTo: wi.fields['System.AssignedTo']?.displayName || wi.fields['System.AssignedTo']?.uniqueName,
         createdDate: wi.fields['System.CreatedDate'],
         changedDate: wi.fields['System.ChangedDate'],
-        url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
+        url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${wi.id}`,
         ...(Object.keys(additionalFields).length > 0 && { additionalFields })
       };
 
       // Compute basic metrics if requested
-      if (ComputeMetrics) {
+      if (computeMetrics) {
         const description = wi.fields['System.Description'] || '';
         const descriptionText = description.replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
         const hasDescription = descriptionText.length > 50;
@@ -901,7 +901,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         
         const daysSinceCreated = createdDate ? Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
         const daysSinceChanged = changedDate ? Math.floor((now.getTime() - changedDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
-        const isStale = daysSinceChanged !== undefined && daysSinceChanged > StaleThresholdDays;
+        const isStale = daysSinceChanged !== undefined && daysSinceChanged > staleThresholdDays;
         
         workItem.computedMetrics = {
           daysSinceCreated,
@@ -915,7 +915,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     });
 
     // If substantive change analysis is requested, calculate it for each work item
-    if (IncludeSubstantiveChange) {
+    if (includeSubstantiveChange) {
       logger.debug(`Calculating substantive change data for ${workItems.length} work items`);
       
       // Process work items in parallel for efficiency
@@ -927,9 +927,9 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         const result = await calculateSubstantiveChange(
           workItem.id,
           workItem.createdDate,
-          Organization,
-          Project,
-          SubstantiveChangeHistoryCount,
+          organization,
+          project,
+          substantiveChangeHistoryCount,
           token
         );
         
@@ -953,7 +953,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     return {
       workItems,
       count: workItems.length,
-      query: WiqlQuery
+      query: wiqlQuery
     };
 
   } catch (error) {

@@ -10,14 +10,14 @@ import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
 
 interface ValidateHierarchyArgs {
-  WorkItemIds?: number[];
-  AreaPath?: string;
-  Organization: string;
-  Project: string;
-  MaxResults?: number;
-  IncludeSubAreas?: boolean;
-  ValidateTypes?: boolean;
-  ValidateStates?: boolean;
+  workItemIds?: number[];
+  areaPath?: string;
+  organization: string;
+  project: string;
+  maxResults?: number;
+  includeSubAreas?: boolean;
+  validateTypes?: boolean;
+  validateStates?: boolean;
 }
 
 interface HierarchyViolation {
@@ -120,42 +120,42 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
     }
 
     const {
-      WorkItemIds,
-      AreaPath,
-      Organization,
-      Project,
-      MaxResults = 500,
-      IncludeSubAreas = true,
-      ValidateTypes = true,
-      ValidateStates = true
+      workItemIds,
+      areaPath,
+      organization,
+      project,
+      maxResults = 500,
+      includeSubAreas = true,
+      validateTypes = true,
+      validateStates = true
     } = parsed.data as ValidateHierarchyArgs;
 
-    logger.debug(`Validating hierarchy (types=${ValidateTypes}, states=${ValidateStates})`);
+    logger.debug(`Validating hierarchy (types=${validateTypes}, states=${validateStates})`);
 
     let workItems: any[] = [];
 
     // Get work items either by IDs or area path
-    if (WorkItemIds && WorkItemIds.length > 0) {
+    if (workItemIds && workItemIds.length > 0) {
       const result = await queryWorkItemsByWiql({
-        WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${WorkItemIds.join(',')})`,
-        Organization,
-        Project,
-        IncludeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        MaxResults: WorkItemIds.length
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${workItemIds.join(',')})`,
+        organization,
+        project,
+        includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
+        maxResults: workItemIds.length
       });
       workItems = result.workItems;
-    } else if (AreaPath) {
-      const areaClause = IncludeSubAreas ? `[System.AreaPath] UNDER '${AreaPath}'` : `[System.AreaPath] = '${AreaPath}'`;
+    } else if (areaPath) {
+      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${areaPath}'` : `[System.AreaPath] = '${areaPath}'`;
       const result = await queryWorkItemsByWiql({
-        WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed') ORDER BY [System.WorkItemType], [System.Id]`,
-        Organization,
-        Project,
-        IncludeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        MaxResults
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed') ORDER BY [System.WorkItemType], [System.Id]`,
+        organization,
+        project,
+        includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
+        maxResults
       });
       workItems = result.workItems;
     } else {
-      throw new Error('Either WorkItemIds or AreaPath must be provided');
+      throw new Error('Either workItemIds or areaPath must be provided');
     }
 
     logger.debug(`Analyzing ${workItems.length} work items for hierarchy violations`);
@@ -173,18 +173,18 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
 
     // Fetch parent work items in batch if needed
     const parentMap = new Map<number, any>();
-    if (parentIds.size > 0 && (ValidateTypes || ValidateStates)) {
+    if (parentIds.size > 0 && (validateTypes || validateStates)) {
       const parentIdArray = Array.from(parentIds);
       
       // Fetch in batches of 200 to avoid URL length limits
       for (let i = 0; i < parentIdArray.length; i += 200) {
         const batch = parentIdArray.slice(i, i + 200);
         const result = await queryWorkItemsByWiql({
-          WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${batch.join(',')})`,
-          Organization,
-          Project,
-          IncludeFields: ['System.State', 'System.WorkItemType', 'System.Title'],
-          MaxResults: batch.length
+          wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${batch.join(',')})`,
+          organization,
+          project,
+          includeFields: ['System.State', 'System.WorkItemType', 'System.Title'],
+          maxResults: batch.length
         });
         
         for (const parent of result.workItems) {
@@ -217,7 +217,7 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
         }
 
         // Validate parent-child type relationship
-        if (ValidateTypes) {
+        if (validateTypes) {
           if (!isValidChildType(parent.type, item.type)) {
             violations.push({
               workItemId: item.id,
@@ -237,7 +237,7 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
         }
 
         // Validate state progression
-        if (ValidateStates) {
+        if (validateStates) {
           const stateCheck = isValidStateProgression(parent.state, item.state);
           if (!stateCheck.valid) {
             violations.push({

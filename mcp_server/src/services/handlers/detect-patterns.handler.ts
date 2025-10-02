@@ -9,13 +9,13 @@ import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
 
 interface DetectPatternsArgs {
-  WorkItemIds?: number[];
-  AreaPath?: string;
-  Organization: string;
-  Project: string;
-  Patterns?: string[];
-  MaxResults?: number;
-  IncludeSubAreas?: boolean;
+  workItemIds?: number[];
+  areaPath?: string;
+  organization: string;
+  project: string;
+  patterns?: string[];
+  maxResults?: number;
+  includeSubAreas?: boolean;
 }
 
 interface PatternMatch {
@@ -39,50 +39,50 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     }
 
     const {
-      WorkItemIds,
-      AreaPath,
-      Organization,
-      Project,
-      Patterns = ['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation'],
-      MaxResults = 200,
-      IncludeSubAreas = true
+      workItemIds,
+      areaPath,
+      organization,
+      project,
+      patterns = ['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation'],
+      maxResults = 200,
+      includeSubAreas = true
     } = parsed.data as DetectPatternsArgs;
 
-    logger.debug(`Detecting patterns: ${Patterns.join(', ')}`);
+    logger.debug(`Detecting patterns: ${patterns.join(', ')}`);
 
     let workItems: any[] = [];
 
     // Get work items either by IDs or area path
-    if (WorkItemIds && WorkItemIds.length > 0) {
+    if (workItemIds && workItemIds.length > 0) {
       // Fetch specific work items
       const result = await queryWorkItemsByWiql({
-        WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${WorkItemIds.join(',')})`,
-        Organization,
-        Project,
-        IncludeFields: ['System.Description', 'System.State', 'System.CreatedDate', 'System.ChangedDate', 'System.Parent'],
-        MaxResults: WorkItemIds.length
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${workItemIds.join(',')})`,
+        organization,
+        project,
+        includeFields: ['System.Description', 'System.State', 'System.CreatedDate', 'System.ChangedDate', 'System.Parent'],
+        maxResults: workItemIds.length
       });
       workItems = result.workItems;
-    } else if (AreaPath) {
+    } else if (areaPath) {
       // Query by area path
-      const areaClause = IncludeSubAreas ? `[System.AreaPath] UNDER '${AreaPath}'` : `[System.AreaPath] = '${AreaPath}'`;
+      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${areaPath}'` : `[System.AreaPath] = '${areaPath}'`;
       const result = await queryWorkItemsByWiql({
-        WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')`,
-        Organization,
-        Project,
-        IncludeFields: ['System.Description', 'System.State', 'System.CreatedDate', 'System.ChangedDate', 'System.Parent'],
-        MaxResults
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')`,
+        organization,
+        project,
+        includeFields: ['System.Description', 'System.State', 'System.CreatedDate', 'System.ChangedDate', 'System.Parent'],
+        maxResults
       });
       workItems = result.workItems;
     } else {
-      throw new Error('Either WorkItemIds or AreaPath must be provided');
+      throw new Error('Either workItemIds or areaPath must be provided');
     }
 
     const matches: PatternMatch[] = [];
     const patternSummary: Record<string, number> = {};
 
     // Pattern: Placeholder titles
-    if (Patterns.includes('placeholder_titles')) {
+    if (patterns.includes('placeholder_titles')) {
       const placeholderPatterns = [
         { regex: /\b(TBD|TODO|FIXME|XXX)\b/i, name: 'TBD/TODO markers' },
         { regex: /\b(test|testing|temp|temporary)\b/i, name: 'Test/temporary indicators' },
@@ -113,7 +113,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     }
 
     // Pattern: Duplicates (similar titles)
-    if (Patterns.includes('duplicates')) {
+    if (patterns.includes('duplicates')) {
       const titleMap = new Map<string, number[]>();
       
       for (const item of workItems) {
@@ -144,7 +144,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     }
 
     // Pattern: Unassigned items in committed state
-    if (Patterns.includes('unassigned_committed')) {
+    if (patterns.includes('unassigned_committed')) {
       const committedStates = ['Active', 'Committed', 'In Progress', 'Doing'];
       for (const item of workItems) {
         if (committedStates.includes(item.state) && !item.assignedTo) {
@@ -161,7 +161,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     }
 
     // Pattern: Missing descriptions
-    if (Patterns.includes('no_description')) {
+    if (patterns.includes('no_description')) {
       for (const item of workItems) {
         const description = item.additionalFields?.['System.Description'] || '';
         const descriptionText = description.replace(/<[^>]*>/g, '').trim();
@@ -179,7 +179,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     }
 
     // Pattern: Stale automation items (created by automation, not touched in 180+ days)
-    if (Patterns.includes('stale_automation')) {
+    if (patterns.includes('stale_automation')) {
       const automationPatterns = [/\[S360\]/i, /\[automated\]/i, /\[bot\]/i, /\[scan\]/i];
       const now = new Date();
       
@@ -226,7 +226,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
         },
         matches: matches,
         categorized: categorized,
-        patternsSearched: Patterns,
+        patternsSearched: patterns,
         message: `Found ${matches.length} pattern matches across ${workItems.length} work items`
       },
       metadata: {

@@ -9,16 +9,16 @@ import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
 
 interface FindStaleItemsArgs {
-  AreaPath: string;
-  Organization: string;
-  Project: string;
-  MinInactiveDays?: number;
-  ExcludeStates?: string[];
-  IncludeSubAreas?: boolean;
-  WorkItemTypes?: string[];
-  MaxResults?: number;
-  IncludeSubstantiveChange?: boolean;
-  IncludeSignals?: boolean;
+  areaPath: string;
+  organization: string;
+  project: string;
+  minInactiveDays?: number;
+  excludeStates?: string[];
+  includeSubAreas?: boolean;
+  workItemTypes?: string[];
+  maxResults?: number;
+  includeSubstantiveChange?: boolean;
+  includeSignals?: boolean;
 }
 
 interface StaleItemSignals {
@@ -40,64 +40,64 @@ export async function handleFindStaleItems(config: any, args: any): Promise<Tool
     }
 
     const {
-      AreaPath,
-      Organization,
-      Project,
-      MinInactiveDays = 180,
-      ExcludeStates = ['Done', 'Completed', 'Closed', 'Resolved', 'Removed'],
-      IncludeSubAreas = true,
-      WorkItemTypes = [],
-      MaxResults = 200,
-      IncludeSubstantiveChange = true,
-      IncludeSignals = true
+      areaPath,
+      organization,
+      project,
+      minInactiveDays = 180,
+      excludeStates = ['Done', 'Completed', 'Closed', 'Resolved', 'Removed'],
+      includeSubAreas = true,
+      workItemTypes = [],
+      maxResults = 200,
+      includeSubstantiveChange = true,
+      includeSignals = true
     } = parsed.data as FindStaleItemsArgs;
 
-    logger.debug(`Finding stale items in ${AreaPath} (min ${MinInactiveDays} days inactive)`);
+    logger.debug(`Finding stale items in ${areaPath} (min ${minInactiveDays} days inactive)`);
 
     // Build WIQL query
     let wiqlQuery = `SELECT [System.Id] FROM WorkItems WHERE `;
     
     // Area path clause
-    if (IncludeSubAreas) {
-      wiqlQuery += `[System.AreaPath] UNDER '${AreaPath}' `;
+    if (includeSubAreas) {
+      wiqlQuery += `[System.AreaPath] UNDER '${areaPath}' `;
     } else {
-      wiqlQuery += `[System.AreaPath] = '${AreaPath}' `;
+      wiqlQuery += `[System.AreaPath] = '${areaPath}' `;
     }
 
     // Exclude states
-    if (ExcludeStates.length > 0) {
-      wiqlQuery += `AND [System.State] NOT IN (${ExcludeStates.map(s => `'${s}'`).join(', ')}) `;
+    if (excludeStates.length > 0) {
+      wiqlQuery += `AND [System.State] NOT IN (${excludeStates.map(s => `'${s}'`).join(', ')}) `;
     }
 
     // Filter by work item types if specified
-    if (WorkItemTypes.length > 0) {
-      wiqlQuery += `AND [System.WorkItemType] IN (${WorkItemTypes.map(t => `'${t}'`).join(', ')}) `;
+    if (workItemTypes.length > 0) {
+      wiqlQuery += `AND [System.WorkItemType] IN (${workItemTypes.map(t => `'${t}'`).join(', ')}) `;
     }
 
     wiqlQuery += `ORDER BY [System.ChangedDate] ASC`;
 
     // Execute query with computed metrics
     const result = await queryWorkItemsByWiql({
-      WiqlQuery: wiqlQuery,
-      Organization,
-      Project,
-      IncludeFields: ['System.Description', 'System.CreatedDate', 'System.ChangedDate'],
-      MaxResults,
-      ComputeMetrics: true,
-      StaleThresholdDays: MinInactiveDays,
-      IncludeSubstantiveChange,
-      SubstantiveChangeHistoryCount: 50
+      wiqlQuery: wiqlQuery,
+      organization,
+      project,
+      includeFields: ['System.Description', 'System.CreatedDate', 'System.ChangedDate'],
+      maxResults,
+      computeMetrics: true,
+      staleThresholdDays: minInactiveDays,
+      includeSubstantiveChange,
+      substantiveChangeHistoryCount: 50
     });
 
     // Filter to only stale items and categorize
     const staleItems = result.workItems.filter(wi => {
       // Use substantive change if available, otherwise use changed date
       const daysInactive = wi.daysInactive ?? wi.computedMetrics?.daysSinceChanged ?? 0;
-      return daysInactive >= MinInactiveDays;
+      return daysInactive >= minInactiveDays;
     });
 
     // Add signals if requested
-    if (IncludeSignals) {
+    if (includeSignals) {
       for (const item of staleItems) {
         const signals: StaleItemSignals = {
           reasons: [],
@@ -111,7 +111,7 @@ export async function handleFindStaleItems(config: any, args: any): Promise<Tool
         if (daysInactive > 365) {
           signals.reasons.push(`Inactive for ${daysInactive} days (>1 year)`);
           signals.riskLevel = 'high';
-        } else if (daysInactive > MinInactiveDays) {
+        } else if (daysInactive > minInactiveDays) {
           signals.reasons.push(`Inactive for ${daysInactive} days`);
           signals.riskLevel = 'medium';
         }
@@ -169,21 +169,21 @@ export async function handleFindStaleItems(config: any, args: any): Promise<Tool
           }
         },
         staleItems: staleItems,
-        categorized: IncludeSignals ? categorized : undefined,
+        categorized: includeSignals ? categorized : undefined,
         criteria: {
-          areaPath: AreaPath,
-          includeSubAreas: IncludeSubAreas,
-          minInactiveDays: MinInactiveDays,
-          excludeStates: ExcludeStates,
-          workItemTypes: WorkItemTypes.length > 0 ? WorkItemTypes : 'All types'
+          areaPath: areaPath,
+          includeSubAreas: includeSubAreas,
+          minInactiveDays: minInactiveDays,
+          excludeStates: excludeStates,
+          workItemTypes: workItemTypes.length > 0 ? workItemTypes : 'All types'
         },
-        message: `Found ${staleItems.length} stale items out of ${result.count} active items in ${AreaPath}`
+        message: `Found ${staleItems.length} stale items out of ${result.count} active items in ${areaPath}`
       },
       metadata: {
         source: "find-stale-items",
         totalItems: result.count,
         staleCount: staleItems.length,
-        minInactiveDays: MinInactiveDays
+        minInactiveDays: minInactiveDays
       },
       errors: [],
       warnings: staleItems.length === 0 ? ["No stale items found"] : []

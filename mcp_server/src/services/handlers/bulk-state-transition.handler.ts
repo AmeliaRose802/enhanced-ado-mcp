@@ -10,13 +10,13 @@ import { execSync } from 'child_process';
 import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/config.js';
 
 interface BulkStateTransitionArgs {
-  WorkItemIds: number[];
-  NewState: string;
-  Comment?: string;
-  Reason?: string;
-  DryRun?: boolean;
-  Organization: string;
-  Project: string;
+  workItemIds: number[];
+  newState: string;
+  comment?: string;
+  reason?: string;
+  dryRun?: boolean;
+  organization: string;
+  project: string;
 }
 
 interface TransitionResult {
@@ -179,28 +179,28 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
     }
 
     const {
-      WorkItemIds,
-      NewState,
-      Comment,
-      Reason,
-      DryRun = false,
-      Organization,
-      Project
+      workItemIds,
+      newState,
+      comment,
+      reason,
+      dryRun = false,
+      organization,
+      project
     } = parsed.data as BulkStateTransitionArgs;
 
-    logger.debug(`Bulk state transition: ${WorkItemIds.length} items to '${NewState}' (dry-run: ${DryRun})`);
+    logger.debug(`Bulk state transition: ${workItemIds.length} items to '${newState}' (dry-run: ${dryRun})`);
 
     const token = getAzureDevOpsToken();
     const results: TransitionResult[] = [];
     const validationResults: any[] = [];
 
     // Validate all items first
-    for (const workItemId of WorkItemIds) {
+    for (const workItemId of workItemIds) {
       const validation = await validateStateTransition(
-        Organization,
-        Project,
+        organization,
+        project,
         workItemId,
-        NewState,
+        newState,
         token
       );
 
@@ -219,7 +219,7 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
     }
 
     // If dry-run, return validation results only
-    if (DryRun) {
+    if (dryRun) {
       const validCount = validationResults.filter(v => v.valid).length;
       const invalidCount = validationResults.filter(v => !v.valid).length;
 
@@ -228,13 +228,13 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
         data: {
           dryRun: true,
           summary: {
-            total: WorkItemIds.length,
+            total: workItemIds.length,
             valid: validCount,
             invalid: invalidCount,
             wouldUpdate: validCount
           },
           validations: validationResults,
-          message: `Dry-run complete. ${validCount} of ${WorkItemIds.length} items can be transitioned to '${NewState}'.`
+          message: `Dry-run complete. ${validCount} of ${workItemIds.length} items can be transitioned to '${newState}'.`
         },
         metadata: { 
           source: "bulk-state-transition",
@@ -250,12 +250,12 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
       if (validation.valid) {
         try {
           const updated = await updateWorkItemState(
-            Organization,
-            Project,
+            organization,
+            project,
             validation.workItemId,
-            NewState,
-            Reason,
-            Comment,
+            newState,
+            reason,
+            comment,
             token
           );
 
@@ -282,7 +282,7 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
       success: successCount > 0,
       data: {
         summary: {
-          total: WorkItemIds.length,
+          total: workItemIds.length,
           succeeded: successCount,
           failed: failureCount
         },

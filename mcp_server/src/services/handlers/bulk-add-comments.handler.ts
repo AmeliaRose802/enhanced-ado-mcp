@@ -10,16 +10,16 @@ import { execSync } from 'child_process';
 import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/config.js';
 
 interface CommentItem {
-  WorkItemId: number;
-  Comment: string;
+  workItemId: number;
+  comment: string;
 }
 
 interface BulkAddCommentsArgs {
-  Items: CommentItem[];
-  Template?: string;
-  TemplateVariables?: Record<string, string>;
-  Organization: string;
-  Project: string;
+  items: CommentItem[];
+  template?: string;
+  templateVariables?: Record<string, string>;
+  organization: string;
+  project: string;
 }
 
 interface CommentResult {
@@ -95,40 +95,40 @@ export async function handleBulkAddComments(config: any, args: any): Promise<Too
     }
 
     const {
-      Items,
-      Template,
-      TemplateVariables,
-      Organization,
-      Project
+      items,
+      template,
+      templateVariables,
+      organization,
+      project
     } = parsed.data as BulkAddCommentsArgs;
 
-    logger.debug(`Bulk add comments: ${Items.length} items`);
+    logger.debug(`Bulk add comments: ${items.length} items`);
 
     const token = getAzureDevOpsToken();
     const results: CommentResult[] = [];
 
     // Process each item
-    for (const item of Items) {
+    for (const item of items) {
       try {
-        let commentText = item.Comment;
+        let commentText = item.comment;
 
         // Apply template if provided
-        if (Template && TemplateVariables) {
-          commentText = applyTemplate(Template, {
-            ...TemplateVariables,
-            workItemId: String(item.WorkItemId)
+        if (template && templateVariables) {
+          commentText = applyTemplate(template, {
+            ...templateVariables,
+            workItemId: String(item.workItemId)
           });
         }
 
-        await addComment(Organization, Project, item.WorkItemId, commentText, token);
+        await addComment(organization, project, item.workItemId, commentText, token);
 
         results.push({
-          workItemId: item.WorkItemId,
+          workItemId: item.workItemId,
           success: true
         });
       } catch (error) {
         results.push({
-          workItemId: item.WorkItemId,
+          workItemId: item.workItemId,
           success: false,
           error: error instanceof Error ? error.message : String(error)
         });
@@ -142,7 +142,7 @@ export async function handleBulkAddComments(config: any, args: any): Promise<Too
       success: successCount > 0,
       data: {
         summary: {
-          total: Items.length,
+          total: items.length,
           succeeded: successCount,
           failed: failureCount
         },
