@@ -67,7 +67,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
   try {
     const token = getAzureDevOpsToken();
     const baseFields = [
-      'System.Id','System.Title','System.WorkItemType','System.State','System.AreaPath','System.IterationPath','System.AssignedTo','System.Tags'
+      'System.Id','System.Title','System.WorkItemType','System.State','System.AreaPath','System.IterationPath','System.AssignedTo','System.Tags','System.CommentCount'
     ];
     const extendedFields = [
       'Microsoft.VSTS.Scheduling.StoryPoints','Microsoft.VSTS.Common.Priority','Microsoft.VSTS.Common.Risk','Microsoft.VSTS.Scheduling.RemainingWork'
@@ -92,6 +92,44 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
 
     for (const wi of details.value) {
       const f = wi.fields || {};
+      
+      // Analyze relationships for this work item
+      let parentCount = 0;
+      let childCount = 0;
+      let relatedCount = 0;
+      let linkedPRCount = 0;
+      let linkedCommitCount = 0;
+      let parentId: number | undefined;
+      let childIds: number[] = [];
+      
+      if (wi.relations) {
+        for (const rel of wi.relations) {
+          const relType = rel.rel || '';
+          const targetId = parseInt(rel.url.split('/').pop() || '0', 10);
+          
+          if (relType === 'System.LinkTypes.Hierarchy-Forward') {
+            childCount++;
+            childIds.push(targetId);
+          } else if (relType === 'System.LinkTypes.Hierarchy-Reverse') {
+            parentCount++;
+            parentId = targetId;
+          } else if (relType === 'System.LinkTypes.Related') {
+            relatedCount++;
+          } else if (relType === 'ArtifactLink') {
+            // Check if it's a PR or commit link
+            const artifactUrl = rel.url || '';
+            if (artifactUrl.includes('/pullrequest/') || artifactUrl.includes('vstfs:///Git/PullRequestId')) {
+              linkedPRCount++;
+            } else if (artifactUrl.includes('/commit/') || artifactUrl.includes('vstfs:///Git/Commit')) {
+              linkedCommitCount++;
+            }
+          }
+        }
+      }
+      
+      // Calculate comment count from CommentCount field if available
+      const commentCount = f['System.CommentCount'] || 0;
+      
       const node = {
         id: wi.id,
         title: f['System.Title'],
@@ -104,6 +142,18 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
         remainingWork: f['Microsoft.VSTS.Scheduling.RemainingWork'],
         tags: IncludeTags && f['System.Tags'] ? String(f['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean) : [],
         url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
+        relationshipContext: {
+          parentId: parentId,
+          childIds: childIds,
+          childCount: childCount,
+          relatedCount: relatedCount,
+          linkedPRs: linkedPRCount,
+          linkedCommits: linkedCommitCount,
+          commentCount: commentCount,
+          hasParent: parentCount > 0,
+          hasChildren: childCount > 0,
+          isOrphaned: parentCount === 0 && childCount === 0 && relatedCount === 0
+        },
         _raw: IncludeExtendedFields ? { fields: cleanFields(f) } : undefined
       };
       nodes.push(node);
