@@ -13,7 +13,6 @@ import {
   workItemContextPackageSchema,
   workItemsBatchContextSchema,
   getLastSubstantiveChangeSchema,
-  getLastSubstantiveChangeBulkSchema,
   bulkStateTransitionSchema,
   bulkAddCommentsSchema,
   findStaleItemsSchema,
@@ -308,23 +307,6 @@ export const toolConfigs: ToolConfig[] = [
         AutomatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
       },
       required: ["WorkItemId"]
-    }
-  },
-  {
-    name: "wit-get-last-substantive-change-bulk",
-    description: "Bulk version: Efficiently analyze last substantive changes for multiple work items (1-100) in a single call. Processes revision history server-side, filters automated changes, and returns minimal data with summary statistics. Ideal for backlog hygiene analysis.",
-    script: "", // Handled internally
-    schema: getLastSubstantiveChangeBulkSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        WorkItemIds: { type: "array", items: { type: "number" }, description: "Array of work item IDs to analyze (1-100 items)" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        HistoryCount: { type: "number", description: "Number of revisions to analyze per item (default 50)" },
-        AutomatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
-      },
-      required: ["WorkItemIds"]
     }
   },
   {

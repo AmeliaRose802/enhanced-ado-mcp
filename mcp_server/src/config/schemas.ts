@@ -198,14 +198,6 @@ export const getLastSubstantiveChangeSchema = z.object({
   AutomatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
 });
 
-export const getLastSubstantiveChangeBulkSchema = z.object({
-  WorkItemIds: z.array(z.number().int()).min(1).max(100).describe("Array of work item IDs to analyze (1-100 items)"),
-  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  Project: z.string().optional().default(() => cfg().azureDevOps.project),
-  HistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze per item (default 50)"),
-  AutomatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
-});
-
 export const bulkStateTransitionSchema = z.object({
   WorkItemIds: z.array(z.number().int()).min(1).max(50).describe("Array of work item IDs to transition (1-50 items)"),
   NewState: z.string().describe("Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')"),

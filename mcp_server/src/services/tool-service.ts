@@ -115,20 +115,6 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     };
   }
 
-  // Get last substantive change for multiple work items (bulk)
-  if (name === 'wit-get-last-substantive-change-bulk') {
-    const { getLastSubstantiveChangeBulk } = await import('./handlers/get-last-substantive-change-bulk.handler.js');
-    const result = await getLastSubstantiveChangeBulk(args);
-    return { 
-      success: true, 
-      data: result, 
-      raw: { stdout: JSON.stringify(result, null, 2), stderr: '', exitCode: 0 },
-      metadata: { tool: name },
-      errors: [],
-      warnings: []
-    };
-  }
-
   // Assign work item to GitHub Copilot with branch link
   if (name === 'wit-assign-to-copilot') {
     return await handleAssignToCopilot(config, args);

@@ -30,16 +30,14 @@ Your mission: **Systematically identify, categorize, and create actionable plans
 - `wit-assign-to-copilot` - assign items to GitHub Copilot  
 - `wit-new-copilot-item` - create and assign items to Copilot
 - `wit-extract-security-links` - extract security instruction links from work items
-- `wit-get-configuration` - display current MCP server configuration
 - `wit-get-work-items-by-query-wiql` - Run WIQL queries (precise security domain filtering and bulk retrieval)
 - `wit-get-work-item-context-package` - Retrieve enriched context for a single security item (linked dependencies, related findings) before remediation classification
 - `wit-get-work-items-context-batch` - Retrieve a graph of related security items (duplicate findings, dependency clusters) to inform consolidation and prioritization
 
 ### Find Security Items  
 **Search Process:**
-1. **First, run `wit-get-configuration`** to get the current Azure DevOps configuration (project, area path, organization)
-2. Use the area path from configuration (or {{area_path}} if specified) as the search scope
-3. Use `mcp_ado_search_workitem` with area path filter and security-related search terms:
+1. Use the area path from {{area_path}} (auto-populated from configuration) as the search scope
+2. Use `mcp_ado_search_workitem` with area path filter and security-related search terms:
    - Search text: "Security Scanner OR automated security OR Compliance OR vulnerability"
    - Filter by area path from configuration or parameter
    - Include child areas: {{include_child_areas}}
@@ -225,8 +223,8 @@ For each human item:
 
 ## Context Information
 
-**Area Path**: {{area_path}} (use `wit-get-configuration` to get current if not specified)
+**Area Path**: {{area_path}}
 **Include Child Areas**: {{include_child_areas}}
 **Max Items to Analyze**: {{max_items}}
 
-**Important**: Always fetch the current Azure DevOps configuration first using `wit-get-configuration` to determine the project, organization, and default area path to use for the analysis. 
+**Note**: Configuration values (project, organization, area path) are auto-populated from the MCP server configuration. 
