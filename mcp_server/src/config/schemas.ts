@@ -3,10 +3,29 @@ import { loadConfiguration } from './config.js';
 
 /**
  * Zod schemas for tool inputs based on PowerShell parameters
+ * All schemas include parameter descriptions, defaults from configuration, and validation rules.
  */
 
 const cfg = () => loadConfiguration();
 
+/**
+ * Schema for creating a new Azure DevOps work item
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   title: "Implement login feature",
+ *   workItemType: "Task",
+ *   parentWorkItemId: 12345,
+ *   description: "Add OAuth authentication...",
+ *   tags: "auth,security"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Most fields (organization, project, workItemType, areaPath, etc.) are auto-filled from configuration.
+ * Only override them when you need to deviate from defaults.
+ */
 export const createNewItemSchema = z.object({
   title: z.string().describe("Title of the work item (mandatory)"),
   workItemType: z.string().optional().describe("Azure DevOps work item type, e.g. 'Task', 'Product Backlog Item', 'Bug'").default(() => cfg().azureDevOps.defaultWorkItemType),
@@ -22,6 +41,22 @@ export const createNewItemSchema = z.object({
   inheritParentPaths: z.boolean().optional().describe("Inherit Area/Iteration from parent if not supplied").default(() => cfg().azureDevOps.inheritParentPaths)
 });
 
+/**
+ * Schema for assigning an existing work item to GitHub Copilot
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   workItemId: 12345,
+ *   repository: "my-repo",
+ *   branch: "feature/auth"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Creates a hyperlink from the work item to a Git branch, making it assignable to GitHub Copilot.
+ * Requires gitHubCopilotGuid to be configured or provided.
+ */
 export const assignToCopilotSchema = z.object({
   workItemId: z.number().int().describe("Existing work item ID to assign"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
@@ -33,6 +68,23 @@ export const assignToCopilotSchema = z.object({
   })
 });
 
+/**
+ * Schema for creating a new work item and immediately assigning it to GitHub Copilot
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   title: "Implement API endpoint",
+ *   parentWorkItemId: 12345,
+ *   repository: "backend-api",
+ *   description: "Create /users endpoint..."
+ * }
+ * ```
+ * 
+ * @remarks
+ * Combines work item creation and Copilot assignment in one atomic operation.
+ * Inherits configuration defaults for most fields.
+ */
 export const newCopilotItemSchema = z.object({
   title: z.string(),
   parentWorkItemId: z.number().int().describe("Parent work item ID under which to create the new item"),
@@ -52,6 +104,22 @@ export const newCopilotItemSchema = z.object({
   inheritParentPaths: z.boolean().optional().default(() => cfg().azureDevOps.inheritParentPaths)
 });
 
+/**
+ * Schema for extracting security instruction links from Azure DevOps work items
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   workItemId: 12345,
+ *   scanType: "CodeQL",
+ *   extractFromComments: true
+ * }
+ * ```
+ * 
+ * @remarks
+ * Useful for analyzing security scan results and extracting remediation guidance URLs.
+ * Supports multiple security scanners (BinSkim, CodeQL, CredScan).
+ */
 export const extractSecurityLinksSchema = z.object({
   workItemId: z.number().int().describe("Azure DevOps work item ID to extract instruction links from"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
@@ -62,6 +130,23 @@ export const extractSecurityLinksSchema = z.object({
   dryRun: z.boolean().optional().default(false).describe("Run in dry-run mode without making actual API calls")
 });
 
+/**
+ * Schema for AI-powered work item intelligence analysis
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   title: "Add user authentication",
+ *   description: "Users need to log in...",
+ *   analysisType: "full",
+ *   enhanceDescription: true
+ * }
+ * ```
+ * 
+ * @remarks
+ * Provides AI-powered analysis including completeness scoring, AI readiness, categorization,
+ * and enhancement suggestions. Requires VS Code sampling support.
+ */
 export const workItemIntelligenceSchema = z.object({
   title: z.string().describe("Work item title to analyze"),
   description: z.string().optional().describe("Work item description/content to analyze"),
@@ -76,23 +161,28 @@ export const workItemIntelligenceSchema = z.object({
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
 
+/**
+ * Schema for AI-powered assignment suitability analysis
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   workItemId: 12345,
+ *   outputFormat: "json"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Analyzes whether a work item is suitable for GitHub Copilot assignment.
+ * Automatically fetches work item details from Azure DevOps.
+ * Provides confidence scores, risk assessment, and recommendations.
+ * Requires VS Code sampling support.
+ */
 export const aiAssignmentAnalyzerSchema = z.object({
-  title: z.string().describe("Work item title to analyze for AI assignment suitability"),
-  description: z.string().optional().describe("Work item description/content to analyze"),
-  workItemType: z.string().optional().describe("Type of work item (Task, Bug, Feature, etc.)"),
-  acceptanceCriteria: z.string().optional().describe("Acceptance criteria if available"),
-  priority: z.string().optional().describe("Priority level (Critical, High, Medium, Low)"),
-  labels: z.string().optional().describe("Comma-separated labels or tags"),
-  estimatedFiles: z.string().optional().describe("Estimated number of files that might be touched"),
-  technicalContext: z.string().optional().describe("Technical context: languages, frameworks, architectural areas"),
-  externalDependencies: z.string().optional().describe("External dependencies or approvals needed"),
-  timeConstraints: z.string().optional().describe("Deadline or time constraints"),
-  riskFactors: z.string().optional().describe("Known risk factors or sensitive areas"),
-  testingRequirements: z.string().optional().describe("Testing requirements and existing coverage"),
+  workItemId: z.number().int().describe("Azure DevOps work item ID to analyze for AI assignment suitability"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
-  autoAssignToAI: z.boolean().optional().default(false).describe("Automatically assign to AI if suitable"),
-  workItemId: z.number().int().optional().describe("Existing work item ID if updating existing item")
+  outputFormat: z.enum(["detailed", "json"]).optional().default("detailed").describe("Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)")
 });
 
 export const featureDecomposerSchema = z.object({
@@ -119,6 +209,22 @@ export const featureDecomposerSchema = z.object({
   tags: z.string().optional().describe("Additional tags to apply to created work items")
 });
 
+/**
+ * Schema for AI-powered hierarchy validation and parenting suggestions
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   areaPath: "Project\\Team\\Component",
+ *   analysisDepth: "deep",
+ *   maxItemsToAnalyze: 50
+ * }
+ * ```
+ * 
+ * @remarks
+ * Analyzes work item parent-child relationships, identifies misparented or orphaned items,
+ * and provides intelligent parenting suggestions. Requires VS Code sampling support.
+ */
 export const hierarchyValidatorSchema = z.object({
   workItemIds: z.array(z.number().int()).optional().describe("Specific work item IDs to validate (if not provided, will analyze area path)"),
   areaPath: z.string().optional().describe("Area path to analyze all work items within (used if workItemIds not provided)"),
@@ -139,6 +245,22 @@ export const getConfigurationSchema = z.object({
   section: z.enum(["all", "azureDevOps", "gitRepository", "gitHubCopilot"]).optional().default("all").describe("Specific configuration section to retrieve")
 });
 
+/**
+ * Schema for querying Azure DevOps work items using WIQL (Work Item Query Language)
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+ *   maxResults: 100,
+ *   includeSubstantiveChange: true
+ * }
+ * ```
+ * 
+ * @remarks
+ * Supports complex WIQL queries with filtering, sorting, and field selection.
+ * Can optionally compute metrics like daysInactive and substantive change dates.
+ */
 export const wiqlQuerySchema = z.object({
   wiqlQuery: z.string().describe("WIQL (Work Item Query Language) query string to execute. Example: SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = 'Active'"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
@@ -198,6 +320,23 @@ export const getLastSubstantiveChangeSchema = z.object({
   automatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
 });
 
+/**
+ * Schema for transitioning multiple work items to a new state in bulk
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   workItemIds: [123, 456, 789],
+ *   newState: "Removed",
+ *   comment: "Closing obsolete items",
+ *   dryRun: true
+ * }
+ * ```
+ * 
+ * @remarks
+ * Efficiently transitions 1-50 work items to a new state with validation.
+ * Supports dry-run mode for safety before making actual changes.
+ */
 export const bulkStateTransitionSchema = z.object({
   workItemIds: z.array(z.number().int()).min(1).max(50).describe("Array of work item IDs to transition (1-50 items)"),
   newState: z.string().describe("Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')"),

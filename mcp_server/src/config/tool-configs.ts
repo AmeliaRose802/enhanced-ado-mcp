@@ -27,7 +27,7 @@ import { z } from 'zod';
 export const toolConfigs: ToolConfig[] = [
   {
     name: "wit-create-new-item",
-    description: "Create a new Azure DevOps work item with optional parent relationship. Organization, Project, WorkItemType, Priority, AssignedTo, AreaPath, IterationPath, and InheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
+    description: "Create a new Azure DevOps work item with optional parent relationship. organization, project, workItemType, priority, assignedTo, areaPath, iterationPath, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: createNewItemSchema,
     inputSchema: {
@@ -100,7 +100,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-assign-to-copilot",
-    description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. Organization, Project, Branch, and GitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
+    description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: assignToCopilotSchema,
     inputSchema: {
@@ -117,7 +117,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-new-copilot-item",
-    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Organization, Project, WorkItemType, Branch, GitHubCopilotGuid, AreaPath, IterationPath, Priority, and InheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
+    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. organization, project, workItemType, branch, gitHubCopilotGuid, areaPath, iterationPath, priority, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: newCopilotItemSchema,
     inputSchema: {
@@ -141,7 +141,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-extract-security-links",
-    description: "Extract instruction links from security scan work items. Organization and Project are automatically filled from configuration - only provide them to override defaults.",
+    description: "Extract instruction links from security scan work items. organization and project are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: extractSecurityLinksSchema,
     inputSchema: {
@@ -181,30 +181,23 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-ai-assignment-analyzer",
-    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
+    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. Automatically retrieves work item details from Azure DevOps. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
     script: "", // Handled internally with sampling
     schema: aiAssignmentAnalyzerSchema,
     inputSchema: {
       type: "object",
       properties: {
-        title: { type: "string", description: "Work item title to analyze for AI assignment suitability" },
-        description: { type: "string", description: "Work item description/content to analyze" },
-        workItemType: { type: "string", description: "Type of work item (Task, Bug, Feature, etc.)" },
-        acceptanceCriteria: { type: "string", description: "Acceptance criteria if available" },
-        priority: { type: "string", description: "Priority level (Critical, High, Medium, Low)" },
-        labels: { type: "string", description: "Comma-separated labels or tags" },
-        estimatedFiles: { type: "string", description: "Estimated number of files that might be touched" },
-        technicalContext: { type: "string", description: "Technical context: languages, frameworks, architectural areas" },
-        externalDependencies: { type: "string", description: "External dependencies or approvals needed" },
-        timeConstraints: { type: "string", description: "Deadline or time constraints" },
-        riskFactors: { type: "string", description: "Known risk factors or sensitive areas" },
-        testingRequirements: { type: "string", description: "Testing requirements and existing coverage" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
+        workItemId: { type: "number", description: "Azure DevOps work item ID to analyze for AI assignment suitability" },
+        outputFormat: { type: "string", enum: ["detailed", "json"], description: "Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)" }
       },
-      required: ["title"]
+      required: ["workItemId"]
     }
   },
+  // DISABLED: wit-feature-decomposer
+  // Reason: Consistent timeout failures (100% failure rate) during beta testing
+  // Status: Temporarily removed from production pending performance fixes
+  // See: tasklist/backlog_cleanup_beta_tests/SYNTHESIS_REPORT.md - Issue 2: Performance Failures
+  /*
   {
     name: "wit-feature-decomposer",
     description: "Intelligently decompose large features into smaller, assignable work items with AI suitability analysis using VS Code sampling",
@@ -238,6 +231,7 @@ export const toolConfigs: ToolConfig[] = [
       required: ["title"]
     }
   },
+  */
   {
     name: "wit-hierarchy-validator",
     description: "Analyze work item parent-child relationships and provide intelligent parenting suggestions using VS Code sampling",
@@ -426,6 +420,37 @@ export const toolConfigs: ToolConfig[] = [
     }
   }
 ];
+
+/**
+ * AI-powered tools that require VS Code sampling support
+ */
+export const AI_POWERED_TOOLS = [
+  'wit-intelligence-analyzer',
+  'wit-ai-assignment-analyzer',
+  'wit-hierarchy-validator'
+  // wit-feature-decomposer is commented out - disabled due to timeout issues
+];
+
+/**
+ * Check if a tool requires sampling support
+ */
+export function isAIPoweredTool(toolName: string): boolean {
+  return AI_POWERED_TOOLS.includes(toolName);
+}
+
+/**
+ * Filter tool configs based on sampling availability
+ * @param hasSampling Whether sampling is supported
+ * @returns Filtered tool configurations
+ */
+export function getAvailableToolConfigs(hasSampling: boolean): ToolConfig[] {
+  if (hasSampling) {
+    return toolConfigs; // All tools available
+  }
+  
+  // Filter out AI-powered tools when sampling not available
+  return toolConfigs.filter(tool => !isAIPoweredTool(tool.name));
+}
 
 /**
  * Export as Tool[] for MCP listing

@@ -17,20 +17,10 @@ export interface WorkItemIntelligenceArgs {
 }
 
 export interface AIAssignmentAnalyzerArgs {
-  Title: string;
-  Description?: string;
-  WorkItemType?: string;
-  AcceptanceCriteria?: string;
-  Priority?: string;
-  Labels?: string;
-  EstimatedFiles?: string;
-  TechnicalContext?: string;
-  ExternalDependencies?: string;
-  TimeConstraints?: string;
-  RiskFactors?: string;
-  TestingRequirements?: string;
-  Organization?: string;
-  Project?: string;
+  workItemId: number;
+  organization?: string;
+  project?: string;
+  outputFormat?: "detailed" | "json";
 }
 
 export interface FeatureDecomposerArgs {

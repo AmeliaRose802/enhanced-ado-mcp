@@ -11,9 +11,10 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { HybridStdioServerTransport } from "./hybridTransport.js";
 import { logger } from "./utils/logger.js";
-import { tools } from "./config/tool-configs.js";
+import { tools, getAvailableToolConfigs } from "./config/tool-configs.js";
 import { loadPrompts, getPromptContent } from "./services/prompt-service.js";
 import { executeTool, setServerInstance } from "./services/tool-service.js";
+import { checkSamplingSupport } from "./utils/sampling-client.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { loadConfiguration, updateConfigFromCLI } from "./config/config.js";
@@ -37,7 +38,20 @@ server.fallbackRequestHandler = async (request: any) => {
   logger.debug(`Handling request: ${request.method}`, JSON.stringify(request.params));
   
   if (request.method === "tools/list") {
-    return { tools };
+    // Check sampling support and filter tools accordingly
+    const hasSampling = checkSamplingSupport(server);
+    const availableToolConfigs = getAvailableToolConfigs(hasSampling);
+    const availableTools = availableToolConfigs.map(tc => ({
+      name: tc.name,
+      description: tc.description,
+      inputSchema: tc.inputSchema
+    }));
+    
+    if (!hasSampling) {
+      logger.info('Sampling not supported - AI-powered tools disabled');
+    }
+    
+    return { tools: availableTools };
   }
   
   if (request.method === "prompts/list") {

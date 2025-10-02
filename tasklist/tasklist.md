@@ -1,8 +1,10 @@
 # Project TODOs
 
+- Create a prompt that analyses the work assigned to each person on the team and reports their velocity and strengths and weaknesses based on what they have completed. Make recommendations to improve team and indivual health based on assignments. Recommend next work for each person based on capacity. Avoid overspecilizing indivuals or assiging all crap work to the same person. Also avoid people being randomized. You may create any additional tools needed to do this.
+
 - The AI sutibiluty prompt should only ask for the work item ID not additional info
 
-- Context not auto filling in AI sutabilty prompt
+- Context not auto filling in AI sutabilty prompt. Check all prompts for parameters that are incorrect or not auto filling.
 
 - Create an additional prompt that takes a item, and analyses each of it's children:
     - If too big, split up
@@ -10,9 +12,7 @@
     - If should be dead, remove
     
     - Analysis child items and come up with a parall exicution plan that maximizes how many things can be done at once
-    - Assign items in first block to AI if they are AI sutable
-
-- Create a prompt that analyses the work assigned to each person on the team and reports their velocity and strengths and weaknesses based on what they have completed. Make recommendations to improve team health based on assignments. You may create any additional tools needed to do this.
+    - Assign items in first block to AI if they are AI sutable. Only PBI's and tasks may be assigned to AI
 
 - Update the readme to include instructions with info on configuring access to sampling. You will need to check the latest VSCode docs as this is a very new feature
 

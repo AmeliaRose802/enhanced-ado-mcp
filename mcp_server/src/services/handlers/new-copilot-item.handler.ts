@@ -28,23 +28,23 @@ export async function handleNewCopilotItem(config: ToolConfig, args: any): Promi
     const requiredConfig = getRequiredConfig();
     
     const createArgs = {
-      Title: input.Title,
-      ParentWorkItemId: input.ParentWorkItemId,
-      WorkItemType: input.WorkItemType || requiredConfig.defaultWorkItemType || 'Product Backlog Item',
-      Description: input.Description || '',
-      Organization: input.Organization || requiredConfig.organization,
-      Project: input.Project || requiredConfig.project,
-      Repository: input.Repository, // Required
-      Branch: input.Branch || requiredConfig.gitRepository?.defaultBranch || 'main',
-      GitHubCopilotGuid: input.GitHubCopilotGuid || requiredConfig.gitHubCopilot?.guid || '',
-      AreaPath: input.AreaPath || requiredConfig.defaultAreaPath || '',
-      IterationPath: input.IterationPath || requiredConfig.defaultIterationPath || '',
-      Priority: input.Priority !== undefined ? input.Priority : (requiredConfig.defaultPriority || 2),
-      Tags: input.Tags || '',
-      InheritParentPaths: input.InheritParentPaths !== undefined ? input.InheritParentPaths : true
+      title: input.title,
+      parentWorkItemId: input.parentWorkItemId,
+      workItemType: input.workItemType || requiredConfig.defaultWorkItemType || 'Product Backlog Item',
+      description: input.description || '',
+      organization: input.organization || requiredConfig.organization,
+      project: input.project || requiredConfig.project,
+      repository: input.repository, // Required
+      branch: input.branch || requiredConfig.gitRepository?.defaultBranch || 'main',
+      gitHubCopilotGuid: input.gitHubCopilotGuid || requiredConfig.gitHubCopilot?.guid || '',
+      areaPath: input.areaPath || requiredConfig.defaultAreaPath || '',
+      iterationPath: input.iterationPath || requiredConfig.defaultIterationPath || '',
+      priority: input.priority !== undefined ? input.priority : (requiredConfig.defaultPriority || 2),
+      tags: input.tags || '',
+      inheritParentPaths: input.inheritParentPaths !== undefined ? input.inheritParentPaths : true
     };
 
-    if (!createArgs.GitHubCopilotGuid) {
+    if (!createArgs.gitHubCopilotGuid) {
       return {
         success: false,
         data: null,
@@ -54,7 +54,7 @@ export async function handleNewCopilotItem(config: ToolConfig, args: any): Promi
       };
     }
 
-    logger.debug(`Creating work item '${createArgs.Title}' and assigning to GitHub Copilot`);
+    logger.debug(`Creating work item '${createArgs.title}' and assigning to GitHub Copilot`);
     
     const result = await createWorkItemAndAssignToCopilot(createArgs);
     

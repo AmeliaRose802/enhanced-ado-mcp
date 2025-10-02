@@ -95,6 +95,17 @@ When you first use an AI-powered tool (tools 5-8 below), VS Code will prompt you
 2. Click **"Allow"** to grant access
 3. The permission is remembered for future requests
 
+### Model Selection for Performance
+
+**New in v1.5.0:** All AI-powered tools now automatically request **GPT-4o mini** or **o3-mini** for faster performance. These smaller, efficient models provide:
+- ⚡ **2-5x faster response times** (1-3 seconds vs 5-10 seconds)
+- 💰 **Lower token costs** for bulk operations
+- ✅ **Excellent quality** for structured work item analysis
+
+The model preferences use VS Code's model selection API with fallback options, so the system will automatically use the best available fast model based on your GitHub Copilot subscription.
+
+**See [Model Selection Guide](docs/MODEL_SELECTION.md)** for customization options and detailed information.
+
 ### Checking Language Model Access Status
 
 You can verify if your MCP server has language model access:
@@ -134,25 +145,24 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
 6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning (analysis only - use `wit-assign-to-copilot` separately to perform assignment)
-7. `wit-feature-decomposer` - Intelligently decompose large features into smaller, assignable work items
-8. `wit-hierarchy-validator` - Analyze work item parent-child relationships and provide suggestions
+7. `wit-hierarchy-validator` - Analyze work item parent-child relationships and provide suggestions
 
 ### Configuration & Discovery Tools
 
-9. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
-10. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
-11. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
-12. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
-13. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
-14. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
+9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
+10. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
+11. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
+12. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
+13. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
 
 ### Bulk Operations & Backlog Hygiene Tools
 
-15. `wit-bulk-state-transition` - Efficiently transition multiple work items (1-50) to a new state in one call with validation and dry-run mode
-16. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
-17. `wit-find-stale-items` - Purpose-built backlog hygiene tool to find stale/abandoned work items with staleness signals and risk categorization
-18. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
-19. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
+14. `wit-bulk-state-transition` - Efficiently transition multiple work items (1-50) to a new state in one call with validation and dry-run mode
+15. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
+16. `wit-find-stale-items` - Purpose-built backlog hygiene tool to find stale/abandoned work items with staleness signals and risk categorization
+17. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
+18. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
@@ -161,13 +171,15 @@ The scripts are executed unchanged. The server just validates inputs and streams
 1. `intelligent_work_item_analyzer` - AI-powered comprehensive work item analysis (completeness, AI-readiness, categorization)
 2. `ai_assignment_analyzer` - Enhanced AI assignment suitability analysis with confidence scoring and detailed reasoning
 3. `work_item_enhancer` - Improve work item descriptions for clarity, scope, and acceptance criteria
-4. `feature_decomposer` - Intelligently decompose large features into smaller work items with AI suitability analysis
-5. `hierarchy_validator` - Analyze and validate work item parent-child relationships
-6. `parallel_fit_planner` - Analyze child work items for parallel execution and AI/human assignment strategy
-7. `find_dead_items` - Identify stale/abandoned work items using substantive change analysis (filters iteration path churn)
-8. `backlog_cleanup` - Comprehensive backlog hygiene and removal candidate identification
-9. `security_items_analyzer` - Analyze security and compliance items, categorize, and create remediation plans
-10. ~~`ai_suitability_analyzer`~~ - **DEPRECATED:** Use `ai_assignment_analyzer` instead for enhanced capabilities
+4. `team_velocity_analyzer` - Analyze team member performance, velocity, workload and provide assignment recommendations (NEW)
+5. `child_item_optimizer` - Analyze and optimize child work items with classification and parallel execution planning (NEW)
+6. `hierarchy_validator` - Analyze and validate work item parent-child relationships
+7. `parallel_fit_planner` - Analyze child work items for parallel execution and AI/human assignment strategy
+8. `find_dead_items` - Identify stale/abandoned work items using substantive change analysis (filters iteration path churn)
+9. `backlog_cleanup` - Comprehensive backlog hygiene and removal candidate identification
+10. `security_items_analyzer` - Analyze security and compliance items, categorize, and create remediation plans
+11. ~~`feature_decomposer`~~ - **DEPRECATED:** Removed due to performance issues (60+ second timeouts)
+12. ~~`ai_suitability_analyzer`~~ - **DEPRECATED:** Use `ai_assignment_analyzer` instead for enhanced capabilities
 
 Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
 

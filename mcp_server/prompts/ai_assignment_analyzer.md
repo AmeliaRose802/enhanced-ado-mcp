@@ -1,9 +1,9 @@
 ---
 name: ai_assignment_analyzer
 description: Comprehensive AI vs human assignment suitability analysis with enhanced reasoning, confidence scoring, risk assessment, and actionable recommendations. Provides both detailed narrative and structured JSON output. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.
-version: 5
+version: 6
 arguments:
-  work_item_id: { type: string, required: true, description: "Azure DevOps work item ID to analyze for AI assignment suitability" }
+  work_item_id: { type: string, required: true, description: "Azure DevOps work item ID to analyze for AI assignment suitability (automatically fetched)" }
   output_format: { type: string, required: false, description: "Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)", default: "detailed" }
 ---
 

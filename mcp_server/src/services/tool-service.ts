@@ -1,7 +1,8 @@
 import type { ToolExecutionResult } from "../types/index.js";
-import { toolConfigs } from "../config/tool-configs.js";
+import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
 import { executeScript } from "../utils/script-executor.js";
 import { logger } from "../utils/logger.js";
+import { checkSamplingSupport } from "../utils/sampling-client.js";
 import { SamplingService } from "./sampling-service.js";
 import { handleGetConfiguration } from "./handlers/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/create-new-item.handler.js";
@@ -37,6 +38,18 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     throw new Error(`Unknown tool: ${name}`);
   }
 
+  // Check if this is an AI-powered tool and sampling is available
+  if (isAIPoweredTool(name)) {
+    if (!serverInstance) {
+      throw new Error(`Tool '${name}' requires sampling support but no server instance is available. This tool uses AI-powered analysis and requires VS Code language model access.`);
+    }
+    
+    const hasSampling = checkSamplingSupport(serverInstance);
+    if (!hasSampling) {
+      throw new Error(`Tool '${name}' requires sampling support. This tool uses AI-powered analysis via VS Code's language model API. Please ensure you are using this MCP server within VS Code with language model access enabled, or use alternative non-AI tools for your task.`);
+    }
+  }
+
   // Get configuration information
   if (name === 'wit-get-configuration') {
     return await handleGetConfiguration(args);
@@ -62,7 +75,10 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     return await samplingService.analyzeAIAssignment(args);
   }
 
+  // DISABLED: wit-feature-decomposer
   // Feature decomposition with intelligent breakdown (uses sampling if available)
+  // Disabled due to consistent timeout failures in beta testing
+  /*
   if (name === 'wit-feature-decomposer') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
@@ -71,6 +87,7 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     const samplingService = new SamplingService(serverInstance);
     return await samplingService.decomposeFeature(args);
   }
+  */
 
   // Hierarchy validation with intelligent parenting suggestions (uses sampling if available)
   if (name === 'wit-hierarchy-validator') {

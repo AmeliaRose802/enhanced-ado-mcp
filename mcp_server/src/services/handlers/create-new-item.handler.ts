@@ -20,7 +20,7 @@ export async function handleCreateNewItem(config: any, args: any): Promise<ToolE
       throw new Error(`Validation error: ${parsed.error.message}`);
     }
 
-    logger.debug(`Creating work item with REST API: ${parsed.data.Title}`);
+    logger.debug(`Creating work item with REST API: ${parsed.data.title}`);
     
     const result = await createWorkItem(parsed.data);
     

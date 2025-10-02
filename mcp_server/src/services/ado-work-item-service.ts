@@ -18,18 +18,18 @@ interface WorkItemField {
 }
 
 interface CreateWorkItemArgs {
-  Title: string;
-  WorkItemType: string;
-  ParentWorkItemId?: number;
-  Description?: string;
-  Organization: string;
-  Project: string;
-  AreaPath?: string;
-  IterationPath?: string;
-  AssignedTo?: string;
-  Priority?: number;
-  Tags?: string;
-  InheritParentPaths?: boolean;
+  title: string;
+  workItemType: string;
+  parentWorkItemId?: number;
+  description?: string;
+  organization: string;
+  project: string;
+  areaPath?: string;
+  iterationPath?: string;
+  assignedTo?: string;
+  priority?: number;
+  tags?: string;
+  inheritParentPaths?: boolean;
 }
 
 interface WorkItemResult {
@@ -140,32 +140,32 @@ function executeRestApiCall(url: string, method: string, token: string, payload:
  */
 export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItemResult> {
   const {
-    Title,
-    WorkItemType,
-    ParentWorkItemId,
-    Description,
-    Organization,
-    Project,
-    AreaPath,
-    IterationPath,
-    AssignedTo,
-    Priority,
-    Tags,
-    InheritParentPaths = true
+    title,
+    workItemType,
+    parentWorkItemId,
+    description,
+    organization,
+    project,
+    areaPath,
+    iterationPath,
+    assignedTo,
+    priority,
+    tags,
+    inheritParentPaths = true
   } = args;
 
   // Get authentication token
-  const token = getAzureDevOpsToken(Organization);
+  const token = getAzureDevOpsToken(organization);
   
   // Resolve @me assignment
-  const resolvedAssignedTo = resolveAssignedTo(AssignedTo);
+  const resolvedAssignedTo = resolveAssignedTo(assignedTo);
   
   // Get parent paths if inheriting
-  let effectiveAreaPath = AreaPath;
-  let effectiveIterationPath = IterationPath;
+  let effectiveAreaPath = areaPath;
+  let effectiveIterationPath = iterationPath;
   
-  if (ParentWorkItemId && InheritParentPaths) {
-    const parentData = await getParentWorkItem(Organization, Project, ParentWorkItemId, token);
+  if (parentWorkItemId && inheritParentPaths) {
+    const parentData = await getParentWorkItem(organization, project, parentWorkItemId, token);
     if (parentData) {
       if (!effectiveAreaPath && parentData.areaPath) {
         effectiveAreaPath = parentData.areaPath;
@@ -178,11 +178,11 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   
   // Build JSON Patch document for work item creation
   const fields: WorkItemField[] = [
-    { op: 'add', path: '/fields/System.Title', value: Title }
+    { op: 'add', path: '/fields/System.Title', value: title }
   ];
   
-  if (Description) {
-    fields.push({ op: 'add', path: '/fields/System.Description', value: Description });
+  if (description) {
+    fields.push({ op: 'add', path: '/fields/System.Description', value: description });
   }
   
   if (effectiveAreaPath) {
@@ -197,20 +197,20 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     fields.push({ op: 'add', path: '/fields/System.AssignedTo', value: resolvedAssignedTo });
   }
   
-  if (Priority !== undefined && Priority !== null) {
-    fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.Priority', value: Priority });
+  if (priority !== undefined && priority !== null) {
+    fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.Priority', value: priority });
   }
   
-  if (Tags) {
-    fields.push({ op: 'add', path: '/fields/System.Tags', value: Tags });
+  if (tags) {
+    fields.push({ op: 'add', path: '/fields/System.Tags', value: tags });
   }
   
   // Create work item via REST API
   // URL-encode the work item type to handle types with spaces like "Product Backlog Item"
-  const encodedWorkItemType = encodeURIComponent(WorkItemType);
-  const createUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/$${encodedWorkItemType}?api-version=7.1`;
+  const encodedWorkItemType = encodeURIComponent(workItemType);
+  const createUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/$${encodedWorkItemType}?api-version=7.1`;
   
-  logger.debug(`Creating work item: ${Title} (${WorkItemType})`);
+  logger.debug(`Creating work item: ${title} (${workItemType})`);
   
   let workItem: any;
   try {
@@ -228,7 +228,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   
   // Link to parent if specified
   let parentLinked = false;
-  if (ParentWorkItemId) {
+  if (parentWorkItemId) {
     try {
       const linkFields = [
         {
@@ -236,7 +236,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
           path: '/relations/-',
           value: {
             rel: 'System.LinkTypes.Hierarchy-Reverse',
-            url: `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${ParentWorkItemId}`,
+            url: `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${parentWorkItemId}`,
             attributes: {
               comment: 'Parent link'
             }
@@ -244,14 +244,14 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
         }
       ];
       
-      const linkUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${workItem.id}?api-version=7.1`;
+      const linkUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItem.id}?api-version=7.1`;
       
       executeRestApiCall(linkUrl, 'PATCH', token, linkFields);
       parentLinked = true;
       
-      logger.debug(`Linked work item ${workItem.id} to parent ${ParentWorkItemId}`);
+      logger.debug(`Linked work item ${workItem.id} to parent ${parentWorkItemId}`);
     } catch (error) {
-      logger.warn(`Failed to link work item ${workItem.id} to parent ${ParentWorkItemId}`, error);
+      logger.warn(`Failed to link work item ${workItem.id} to parent ${parentWorkItemId}`, error);
     }
   }
   
@@ -260,7 +260,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     title: workItem.fields['System.Title'],
     type: workItem.fields['System.WorkItemType'],
     state: workItem.fields['System.State'],
-    url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${workItem.id}`,
+    url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${workItem.id}`,
     parent_linked: parentLinked
   };
 }
@@ -269,12 +269,12 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
  * Assign work item to GitHub Copilot and link to branch
  */
 interface AssignToCopilotArgs {
-  WorkItemId: number;
-  Organization: string;
-  Project: string;
-  Repository: string;
-  Branch?: string;
-  GitHubCopilotGuid: string;
+  workItemId: number;
+  organization: string;
+  project: string;
+  repository: string;
+  branch?: string;
+  gitHubCopilotGuid: string;
 }
 
 export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promise<{
@@ -285,15 +285,15 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   warnings?: string[];
 }> {
   const {
-    WorkItemId,
-    Organization,
-    Project,
-    Repository,
-    Branch = 'main',
-    GitHubCopilotGuid
+    workItemId,
+    organization,
+    project,
+    repository,
+    branch = 'main',
+    gitHubCopilotGuid
   } = args;
 
-  const token = getAzureDevOpsToken(Organization);
+  const token = getAzureDevOpsToken(organization);
   const warnings: string[] = [];
   
   // Get repository information
@@ -301,27 +301,27 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   let projectId: string;
   
   try {
-    const repoUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/git/repositories/${Repository}?api-version=7.1`;
+    const repoUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repository}?api-version=7.1`;
     const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${repoUrl}"`;
     const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
     const repoInfo = JSON.parse(response);
     
     if (!repoInfo.id) {
       // Try listing all repos to find it
-      const listUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/git/repositories?api-version=7.1`;
+      const listUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories?api-version=7.1`;
       const listCommand = `curl -s -H "Authorization: Bearer ${token}" "${listUrl}"`;
       const listResponse = execSync(listCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
       const reposList = JSON.parse(listResponse);
       
       const repo = reposList.value?.find((r: any) => 
-        r.name === Repository || 
-        r.id === Repository || 
-        r.name.toLowerCase() === Repository.toLowerCase()
+        r.name === repository || 
+        r.id === repository || 
+        r.name.toLowerCase() === repository.toLowerCase()
       );
       
       if (!repo) {
         const availableRepos = reposList.value?.map((r: any) => r.name).join(', ') || 'none';
-        throw new Error(`Repository '${Repository}' not found. Available: ${availableRepos}`);
+        throw new Error(`Repository '${repository}' not found. Available: ${availableRepos}`);
       }
       
       repositoryId = repo.id;
@@ -337,7 +337,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   // Create branch artifact link
   let branchLinkCreated = false;
   try {
-    const vstfsUrl = `vstfs:///Git/Ref/${projectId}%2F${repositoryId}%2FGB${Branch}`;
+    const vstfsUrl = `vstfs:///Git/Ref/${projectId}%2F${repositoryId}%2FGB${branch}`;
     const linkFields = [
       {
         op: 'add',
@@ -347,17 +347,17 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
           url: vstfsUrl,
           attributes: {
             name: 'Branch',
-            comment: `GitHub Copilot branch link: ${Repository}/${Branch}`
+            comment: `GitHub Copilot branch link: ${repository}/${branch}`
           }
         }
       }
     ];
     
-    const linkUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1`;
+    const linkUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
     executeRestApiCall(linkUrl, 'PATCH', token, linkFields);
     branchLinkCreated = true;
     
-    logger.debug(`Created branch artifact link for work item ${WorkItemId}`);
+    logger.debug(`Created branch artifact link for work item ${workItemId}`);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     if (errorMsg.includes('RelationAlreadyExistsException') || errorMsg.includes('already exists')) {
@@ -374,23 +374,23 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
       {
         op: 'add',
         path: '/fields/System.AssignedTo',
-        value: GitHubCopilotGuid
+        value: gitHubCopilotGuid
       }
     ];
     
-    const assignUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1`;
+    const assignUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
     executeRestApiCall(assignUrl, 'PATCH', token, assignFields);
     
-    logger.debug(`Assigned work item ${WorkItemId} to GitHub Copilot`);
+    logger.debug(`Assigned work item ${workItemId} to GitHub Copilot`);
   } catch (error) {
     throw new Error(`Failed to assign work item: ${error instanceof Error ? error.message : String(error)}`);
   }
   
   return {
-    work_item_id: WorkItemId,
+    work_item_id: workItemId,
     assigned_to: 'GitHub Copilot',
     repository_linked: branchLinkCreated,
-    human_friendly_url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${WorkItemId}`,
+    human_friendly_url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${workItemId}`,
     warnings: warnings.length > 0 ? warnings : undefined
   };
 }
@@ -554,9 +554,9 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
  * Create work item and immediately assign to GitHub Copilot
  */
 interface CreateAndAssignToCopilotArgs extends CreateWorkItemArgs {
-  Repository: string;
-  Branch?: string;
-  GitHubCopilotGuid: string;
+  repository: string;
+  branch?: string;
+  gitHubCopilotGuid: string;
 }
 
 export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCopilotArgs): Promise<{
@@ -568,16 +568,16 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
   human_friendly_url: string;
 }> {
   const {
-    Repository,
-    Branch = 'main',
-    GitHubCopilotGuid,
+    repository,
+    branch = 'main',
+    gitHubCopilotGuid,
     ...createArgs
   } = args;
 
   // First create the work item (unassigned)
   const createResult = await createWorkItem({
     ...createArgs,
-    AssignedTo: '' // Create unassigned initially
+    assignedTo: '' // Create unassigned initially
   });
   
   // Small delay to let work item initialize
@@ -585,12 +585,12 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
   
   // Then assign to Copilot
   const assignResult = await assignWorkItemToCopilot({
-    WorkItemId: createResult.id,
-    Organization: args.Organization,
-    Project: args.Project,
-    Repository,
-    Branch,
-    GitHubCopilotGuid
+    workItemId: createResult.id,
+    organization: args.organization,
+    project: args.project,
+    repository,
+    branch,
+    gitHubCopilotGuid
   });
   
   return {

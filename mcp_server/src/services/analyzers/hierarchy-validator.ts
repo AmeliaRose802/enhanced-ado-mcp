@@ -422,7 +422,7 @@ export class HierarchyValidatorAnalyzer {
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
-      maxTokens: 2000,
+      maxTokens: 1500,  // Reduced from 2000 for better sampling efficiency
       temperature: 0.3
     });
 

@@ -28,15 +28,15 @@ export async function handleAssignToCopilot(config: ToolConfig, args: any): Prom
     const requiredConfig = getRequiredConfig();
     
     const assignArgs = {
-      WorkItemId: input.WorkItemId,
-      Organization: input.Organization || requiredConfig.organization,
-      Project: input.Project || requiredConfig.project,
-      Repository: input.Repository, // Required
-      Branch: input.Branch || requiredConfig.gitRepository?.defaultBranch || 'main',
-      GitHubCopilotGuid: input.GitHubCopilotGuid || requiredConfig.gitHubCopilot?.guid || ''
+      workItemId: input.workItemId,
+      organization: input.organization || requiredConfig.organization,
+      project: input.project || requiredConfig.project,
+      repository: input.repository, // Required
+      branch: input.branch || requiredConfig.gitRepository?.defaultBranch || 'main',
+      gitHubCopilotGuid: input.gitHubCopilotGuid || requiredConfig.gitHubCopilot?.guid || ''
     };
 
-    if (!assignArgs.GitHubCopilotGuid) {
+    if (!assignArgs.gitHubCopilotGuid) {
       return {
         success: false,
         data: null,
@@ -46,7 +46,7 @@ export async function handleAssignToCopilot(config: ToolConfig, args: any): Prom
       };
     }
 
-    logger.debug(`Assigning work item ${assignArgs.WorkItemId} to GitHub Copilot`);
+    logger.debug(`Assigning work item ${assignArgs.workItemId} to GitHub Copilot`);
     
     const result = await assignWorkItemToCopilot(assignArgs);
     

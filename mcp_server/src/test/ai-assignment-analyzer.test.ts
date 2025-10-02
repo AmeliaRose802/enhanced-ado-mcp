@@ -45,17 +45,10 @@ The task involves fixing a specific bug with clear reproduction steps and accept
   const samplingService = new SamplingService(mockServer);
   
   const testArgs: AIAssignmentAnalyzerArgs = {
-    Title: "Fix pagination bug in user dashboard",
-    Description: "Users report that pagination controls are not working correctly on the dashboard. When clicking 'Next Page', the data doesn't update and the page number doesn't increment.",
-    WorkItemType: "Bug",
-    AcceptanceCriteria: "1. Pagination controls work correctly\n2. Data updates when navigating pages\n3. Page numbers display accurately\n4. No console errors",
-    Priority: "High",
-    Labels: "bug, ui, dashboard",
-    EstimatedFiles: "2-3",
-    TechnicalContext: "React, TypeScript, REST API",
-    TestingRequirements: "Unit tests and integration tests required",
-    Organization: "test-org",
-    Project: "test-project"
+    workItemId: 12345,  // Mock work item ID
+    organization: "test-org",
+    project: "test-project",
+    outputFormat: "detailed"
   };
 
   try {
