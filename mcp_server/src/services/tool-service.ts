@@ -14,6 +14,7 @@ import { handleExtractSecurityLinks } from './handlers/extract-security-links.ha
 import { handleBulkStateTransition } from './handlers/bulk-state-transition.handler.js';
 import { handleBulkAddComments } from './handlers/bulk-add-comments.handler.js';
 import { handleFindStaleItems } from './handlers/find-stale-items.handler.js';
+import { handleDetectPatterns } from './handlers/detect-patterns.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: any = null;
@@ -156,6 +157,11 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   // Find stale/abandoned work items
   if (name === 'wit-find-stale-items') {
     return await handleFindStaleItems(config, args);
+  }
+
+  // Detect common patterns and issues
+  if (name === 'wit-detect-patterns') {
+    return await handleDetectPatterns(config, args);
   }
 
   logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);

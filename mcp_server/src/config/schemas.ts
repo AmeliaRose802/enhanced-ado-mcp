@@ -240,6 +240,16 @@ export const findStaleItemsSchema = z.object({
   IncludeSignals: z.boolean().optional().default(true).describe("Include signals explaining why each item is considered stale")
 });
 
+export const detectPatternsSchema = z.object({
+  WorkItemIds: z.array(z.number().int()).optional().describe("Specific work item IDs to analyze (if not provided, uses AreaPath)"),
+  AreaPath: z.string().optional().describe("Area path to search for work items (if WorkItemIds not provided)"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  Patterns: z.array(z.enum(['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation', 'no_description'])).optional().default(['duplicates', 'placeholder_titles', 'unassigned_committed', 'no_description']).describe("Patterns to detect"),
+  MaxResults: z.number().int().optional().default(200).describe("Maximum number of results when using AreaPath"),
+  IncludeSubAreas: z.boolean().optional().default(true).describe("Include sub-area paths when using AreaPath")
+});
+
 
 
 

@@ -16,7 +16,8 @@ import {
   getLastSubstantiveChangeBulkSchema,
   bulkStateTransitionSchema,
   bulkAddCommentsSchema,
-  findStaleItemsSchema
+  findStaleItemsSchema,
+  detectPatternsSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -393,6 +394,32 @@ export const toolConfigs: ToolConfig[] = [
         IncludeSignals: { type: "boolean", description: "Include signals explaining why each item is considered stale" }
       },
       required: ["AreaPath"]
+    }
+  },
+  {
+    name: "wit-detect-patterns",
+    description: "Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned committed items, and stale automation. Returns categorized matches by severity.",
+    script: "", // Handled internally
+    schema: detectPatternsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WorkItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to analyze (if not provided, uses AreaPath)" },
+        AreaPath: { type: "string", description: "Area path to search for work items (if WorkItemIds not provided)" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" },
+        Patterns: { 
+          type: "array", 
+          items: { 
+            type: "string",
+            enum: ["duplicates", "placeholder_titles", "orphaned_children", "unassigned_committed", "stale_automation", "no_description"]
+          }, 
+          description: "Patterns to detect" 
+        },
+        MaxResults: { type: "number", description: "Maximum number of results when using AreaPath" },
+        IncludeSubAreas: { type: "boolean", description: "Include sub-area paths when using AreaPath" }
+      },
+      required: []
     }
   }
 ];
