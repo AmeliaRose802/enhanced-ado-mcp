@@ -1,7 +1,7 @@
 ---
 name: parallel_fit_planner
-description: Analyze child items under a parent work item, determine parallel execution strategy, and assess AI vs Human suitability.
-version: 4
+description: Analyze child items under a parent work item, determine parallel execution strategy, and assess AI vs Human suitability
+version: 5
 arguments:
   parent_work_item_id: { type: string, required: true, description: "Parent work item ID to analyze" }
 ---

@@ -227,6 +227,19 @@ export const bulkAddCommentsSchema = z.object({
   Project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
 
+export const findStaleItemsSchema = z.object({
+  AreaPath: z.string().describe("Area path to search for stale items"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  MinInactiveDays: z.number().int().optional().default(180).describe("Minimum days of inactivity to consider an item stale (default 180)"),
+  ExcludeStates: z.array(z.string()).optional().default(['Done', 'Completed', 'Closed', 'Resolved', 'Removed']).describe("States to exclude from search"),
+  IncludeSubAreas: z.boolean().optional().default(true).describe("Include items from sub-area paths"),
+  WorkItemTypes: z.array(z.string()).optional().default([]).describe("Filter by specific work item types (empty = all types)"),
+  MaxResults: z.number().int().optional().default(200).describe("Maximum number of results to return"),
+  IncludeSubstantiveChange: z.boolean().optional().default(true).describe("Include substantive change analysis for more accurate staleness detection"),
+  IncludeSignals: z.boolean().optional().default(true).describe("Include signals explaining why each item is considered stale")
+});
+
 
 
 

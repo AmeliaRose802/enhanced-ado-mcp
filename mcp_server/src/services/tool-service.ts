@@ -13,6 +13,7 @@ import { handleNewCopilotItem } from './handlers/new-copilot-item.handler.js';
 import { handleExtractSecurityLinks } from './handlers/extract-security-links.handler.js';
 import { handleBulkStateTransition } from './handlers/bulk-state-transition.handler.js';
 import { handleBulkAddComments } from './handlers/bulk-add-comments.handler.js';
+import { handleFindStaleItems } from './handlers/find-stale-items.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: any = null;
@@ -150,6 +151,11 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   // Bulk add comments to multiple work items
   if (name === 'wit-bulk-add-comments') {
     return await handleBulkAddComments(config, args);
+  }
+
+  // Find stale/abandoned work items
+  if (name === 'wit-find-stale-items') {
+    return await handleFindStaleItems(config, args);
   }
 
   logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);

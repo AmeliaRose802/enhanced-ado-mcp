@@ -15,7 +15,8 @@ import {
   getLastSubstantiveChangeSchema,
   getLastSubstantiveChangeBulkSchema,
   bulkStateTransitionSchema,
-  bulkAddCommentsSchema
+  bulkAddCommentsSchema,
+  findStaleItemsSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -370,6 +371,28 @@ export const toolConfigs: ToolConfig[] = [
         Project: { type: "string", description: "Azure DevOps project name" }
       },
       required: ["Items"]
+    }
+  },
+  {
+    name: "wit-find-stale-items",
+    description: "Purpose-built backlog hygiene tool to find stale/abandoned work items using date arithmetic and configurable thresholds. Returns items with staleness signals and risk categorization.",
+    script: "", // Handled internally
+    schema: findStaleItemsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        AreaPath: { type: "string", description: "Area path to search for stale items" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" },
+        MinInactiveDays: { type: "number", description: "Minimum days of inactivity to consider an item stale (default 180)" },
+        ExcludeStates: { type: "array", items: { type: "string" }, description: "States to exclude from search" },
+        IncludeSubAreas: { type: "boolean", description: "Include items from sub-area paths" },
+        WorkItemTypes: { type: "array", items: { type: "string" }, description: "Filter by specific work item types (empty = all types)" },
+        MaxResults: { type: "number", description: "Maximum number of results to return" },
+        IncludeSubstantiveChange: { type: "boolean", description: "Include substantive change analysis for more accurate staleness detection" },
+        IncludeSignals: { type: "boolean", description: "Include signals explaining why each item is considered stale" }
+      },
+      required: ["AreaPath"]
     }
   }
 ];
