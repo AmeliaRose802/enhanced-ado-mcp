@@ -149,11 +149,6 @@ export async function handleBulkAddComments(config: any, args: any): Promise<Too
         results: results,
         message: `Bulk comment addition complete. ${successCount} succeeded, ${failureCount} failed.`
       },
-      raw: {
-        stdout: JSON.stringify({ results }, null, 2),
-        stderr: failureCount > 0 ? `${failureCount} items failed to add comment` : "",
-        exitCode: failureCount > 0 ? 1 : 0
-      },
       metadata: { 
         source: "bulk-add-comments",
         successCount,
@@ -166,11 +161,6 @@ export async function handleBulkAddComments(config: any, args: any): Promise<Too
     return {
       success: false,
       data: null,
-      raw: {
-        stdout: "",
-        stderr: error instanceof Error ? error.message : String(error),
-        exitCode: 1
-      },
       metadata: { source: "bulk-add-comments" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

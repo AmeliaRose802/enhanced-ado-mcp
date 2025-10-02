@@ -52,7 +52,7 @@ export class WorkItemIntelligenceAnalyzer {
     const userContent = formatForAI(args);
 
     // Add timeout wrapper to prevent hanging
-    const timeoutMs = 180000; // 180 seconds (3 minutes)
+    const timeoutMs = 90000; // 90 seconds (1.5 minutes)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
@@ -60,8 +60,13 @@ export class WorkItemIntelligenceAnalyzer {
       temperature: this.getTemperature(analysisType)
     });
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI sampling timeout after 180 seconds')), timeoutMs);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          `Work item intelligence analysis (${analysisType}) exceeded 90 second timeout. ` +
+          'The AI model may be overloaded. Try again in a moment or use a simpler AnalysisType.'
+        ));
+      }, timeoutMs);
     });
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);

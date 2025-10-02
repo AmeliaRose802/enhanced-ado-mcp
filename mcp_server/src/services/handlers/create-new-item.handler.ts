@@ -29,11 +29,6 @@ export async function handleCreateNewItem(config: any, args: any): Promise<ToolE
       data: {
         work_item: result
       },
-      raw: { 
-        stdout: JSON.stringify({ work_item: result }, null, 2), 
-        stderr: "", 
-        exitCode: 0 
-      },
       metadata: { 
         source: "rest-api",
         workItemId: result.id,
@@ -46,11 +41,6 @@ export async function handleCreateNewItem(config: any, args: any): Promise<ToolE
     return {
       success: false,
       data: null,
-      raw: { 
-        stdout: "", 
-        stderr: error instanceof Error ? error.message : String(error), 
-        exitCode: 1 
-      },
       metadata: { source: "rest-api" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

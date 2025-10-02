@@ -417,8 +417,8 @@ export class HierarchyValidatorAnalyzer {
     const systemPromptName = 'hierarchy-validator';
     const userContent = formatForAI({ workItems, ...args });
 
-    // Add timeout wrapper to prevent hanging
-    const timeoutMs = 180000; // 180 seconds (3 minutes)
+    // Add timeout wrapper to prevent hanging - use shorter timeout for better UX
+    const timeoutMs = 60000; // 60 seconds (1 minute)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
@@ -426,8 +426,13 @@ export class HierarchyValidatorAnalyzer {
       temperature: 0.3
     });
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI sampling timeout after 180 seconds')), timeoutMs);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          `Hierarchy validation exceeded 60 second timeout while analyzing ${workItems.length} items. ` +
+          'Try reducing MaxItemsToAnalyze or use validate-hierarchy-fast for large datasets.'
+        ));
+      }, timeoutMs);
     });
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);

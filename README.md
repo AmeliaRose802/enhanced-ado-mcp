@@ -151,6 +151,8 @@ Language model access is managed by VS Code and persists across sessions. To res
 15. `wit-bulk-state-transition` - Efficiently transition multiple work items (1-50) to a new state in one call with validation and dry-run mode
 16. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
 17. `wit-find-stale-items` - Purpose-built backlog hygiene tool to find stale/abandoned work items with staleness signals and risk categorization
+18. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
+19. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 

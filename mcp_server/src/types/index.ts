@@ -33,11 +33,6 @@ export interface ToolConfig {
 export interface ToolExecutionResult {
   success: boolean;
   data?: any;
-  raw: {
-    stdout: string;
-    stderr: string;
-    exitCode: number | null;
-  };
   metadata: Record<string, any>;
   errors: string[];
   warnings: string[];

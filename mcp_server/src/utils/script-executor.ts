@@ -70,11 +70,6 @@ export async function executeScript(toolName: string, script: string, input: any
   return {
     success,
     data: parsed?.data ?? parsed ?? undefined,
-    raw: {
-      stdout: result.stdout,
-      stderr: result.stderr,
-      exitCode: result.exitCode
-    },
     metadata: parsed?.metadata ?? {},
     errors: parsed?.errors ?? (success ? [] : [result.stderr || "Script failed"]),
     warnings: parsed?.warnings ?? []

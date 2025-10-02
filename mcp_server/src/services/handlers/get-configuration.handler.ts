@@ -41,7 +41,6 @@ export async function handleGetConfiguration(args: any): Promise<ToolExecutionRe
             : "No GitHub Copilot GUID configured. Provide --copilot-guid parameter."
         }
       },
-      raw: { stdout: JSON.stringify(configData, null, 2), stderr: "", exitCode: 0 },
       metadata: { source: "internal", section },
       errors: [],
       warnings: []
@@ -50,7 +49,6 @@ export async function handleGetConfiguration(args: any): Promise<ToolExecutionRe
     return {
       success: false,
       data: null,
-      raw: { stdout: "", stderr: error instanceof Error ? error.message : String(error), exitCode: 1 },
       metadata: { source: "internal" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

@@ -27,7 +27,7 @@ export class AIAssignmentAnalyzer {
 
   private async performAnalysis(args: AIAssignmentAnalyzerArgs): Promise<AIAssignmentResult> {
     // Add timeout wrapper to prevent hanging
-    const timeoutMs = 120000; // 120 seconds (2 minutes)
+    const timeoutMs = 30000; // 30 seconds (AI assignment should be fast)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'ai-assignment-analyzer',
       userContent: formatForAI(args),
@@ -35,8 +35,13 @@ export class AIAssignmentAnalyzer {
       temperature: 0.2
     });
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI sampling timeout after 120 seconds')), timeoutMs);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          'AI assignment analysis exceeded 30 second timeout. ' +
+          'The AI model may be overloaded. Try again in a moment.'
+        ));
+      }, timeoutMs);
     });
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);

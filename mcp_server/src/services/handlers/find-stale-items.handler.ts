@@ -179,11 +179,6 @@ export async function handleFindStaleItems(config: any, args: any): Promise<Tool
         },
         message: `Found ${staleItems.length} stale items out of ${result.count} active items in ${AreaPath}`
       },
-      raw: {
-        stdout: JSON.stringify({ staleItems, summary: { total: result.count, stale: staleItems.length } }, null, 2),
-        stderr: "",
-        exitCode: 0
-      },
       metadata: {
         source: "find-stale-items",
         totalItems: result.count,
@@ -198,11 +193,6 @@ export async function handleFindStaleItems(config: any, args: any): Promise<Tool
     return {
       success: false,
       data: null,
-      raw: {
-        stdout: "",
-        stderr: error instanceof Error ? error.message : String(error),
-        exitCode: 1
-      },
       metadata: { source: "find-stale-items" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

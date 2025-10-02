@@ -236,11 +236,6 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
           validations: validationResults,
           message: `Dry-run complete. ${validCount} of ${WorkItemIds.length} items can be transitioned to '${NewState}'.`
         },
-        raw: {
-          stdout: JSON.stringify({ validations: validationResults }, null, 2),
-          stderr: "",
-          exitCode: 0
-        },
         metadata: { 
           source: "bulk-state-transition",
           dryRun: true
@@ -294,11 +289,6 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
         results: results,
         message: `Bulk state transition complete. ${successCount} succeeded, ${failureCount} failed.`
       },
-      raw: {
-        stdout: JSON.stringify({ results }, null, 2),
-        stderr: failureCount > 0 ? `${failureCount} items failed to transition` : "",
-        exitCode: failureCount > 0 ? 1 : 0
-      },
       metadata: { 
         source: "bulk-state-transition",
         successCount,
@@ -311,11 +301,6 @@ export async function handleBulkStateTransition(config: any, args: any): Promise
     return {
       success: false,
       data: null,
-      raw: {
-        stdout: "",
-        stderr: error instanceof Error ? error.message : String(error),
-        exitCode: 1
-      },
       metadata: { source: "bulk-state-transition" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

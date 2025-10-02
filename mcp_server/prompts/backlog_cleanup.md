@@ -1,13 +1,13 @@
 ---
 name: backlog_cleanup
-description: Identify Azure DevOps backlog removal candidates under a specific Area Path using wit-* search tooling.
-version: 2
+description: Assess Azure DevOps backlog health and identify improvement opportunities under a specific Area Path using wit-* search tooling.
+version: 3
 arguments: {}
 ---
 
-You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is to search the backlog for removal candidates within a specific Area Path, then produce a structured report. Do not delete or change any work items.
+You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is to assess the overall health of the backlog within a specific Area Path and identify opportunities for improvement. This analysis helps teams maintain a healthy, actionable backlog by surfacing quality issues, stale items, and areas needing attention. Do not delete or change any work items.
 
-**Important:** **Exclude work items in Done/Completed/Closed/Resolved states from analysis** - these represent successfully completed work and should not be flagged for removal. Focus only on active, stale, or abandoned work items.
+**Important:** **Exclude work items in Done/Completed/Closed/Resolved states from analysis** - these represent successfully completed work. Focus on active work items to understand their health, clarity, and actionability.
 
 **Inputs (auto-populated where possible):**
 - org_url: {{org_url}}
@@ -39,10 +39,10 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 		 }
 		 ```
 	 - This returns items with computed `lastSubstantiveChangeDate` and `daysInactive` fields (server-side filtering of automated updates)
-	 - **Benefits**: 50% fewer API calls, automatic filtering of system changes, immediate staleness categorization
+	 - **Benefits**: 50% fewer API calls, automatic filtering of system changes, immediate activity insights
 2. **Optionally get additional context** (only if needed): Use `wit-get-work-items-context-batch` for descriptions, tags, or detailed relationships
-3. **Analyze each item** using the `daysInactive` field for removal candidate signals
-4. **Generate report** with recommendations (do not modify work items)
+3. **Analyze each item** using the `daysInactive` field and quality indicators to assess backlog health
+4. **Generate comprehensive health report** with improvement recommendations (do not modify work items)
 
 ---
 
@@ -118,26 +118,56 @@ Arguments: {
 
 **Usage Tip:** All queries above include `IncludeSubstantiveChange: true` to automatically provide `daysInactive` and `lastSubstantiveChangeDate` fields. Run these queries individually to create focused cleanup reports by issue type, or combine results for comprehensive analysis.
 
-### Removal candidate signals
-Mark a work item as a `removal_candidate` if ANY apply (else classify as `needs_review`, `keep_but_fix`, or `keep`):
+### Backlog Health Indicators
 
-1. **True Inactivity** – `daysInactive` field (from WIQL with `IncludeSubstantiveChange: true`) is greater than `max_age_days`. This automatically excludes automated system changes.
-2. **Stale Passive State** – Remains in initial state (e.g., New/Proposed/To Do) for > 50% of `max_age_days` with no substantive progress.
-3. **No Clear Owner** – Unassigned OR assigned but no substantive change activity in `max_age_days`.
-4. **Placeholder Quality** – Title or description is obviously placeholder (e.g., contains only TBD / test / spike / TODO / placeholder) or trivially short (< ~15 chars meaningful content), or description is completely empty.
-5. **Obvious Duplication** – High lexical similarity (title+core description fragment) with a more recent active item (basic fuzzy match acceptable). Prefer anchor to newer item ID.
-6. **Out of Scope / Deprecated** – Area path or tags indicate decommissioned component or superseded initiative.
-7. **Missing Critical Fields** – Empty description AND no acceptance criteria (for User Stories/PBIs) AND older than 30 days with no substantive updates.
+Assess work items across multiple dimensions to understand backlog health. Consider these indicators when categorizing items:
 
-### Secondary hygiene bucket (`keep_but_fix`)
-Use when the item is still relevant but needs improvement (e.g., missing acceptance criteria, vague description, empty description, outdated tags) yet shows some recent substantive activity (< 30 days). Common issues:
-- Missing or inadequate description
-- Missing acceptance criteria (User Stories/PBIs)
-- Vague or unclear title
-- Unassigned but actively discussed
-- Missing priority or effort estimation
+#### Quality & Clarity Issues
+- **Missing or inadequate descriptions** – Work items without clear context or explanation
+- **Missing acceptance criteria** – User Stories/PBIs lacking success criteria
+- **Vague or placeholder titles** – Titles containing TBD, TODO, test, placeholder, or < ~15 chars meaningful content
+- **Missing ownership** – Unassigned items in active states
+- **Missing priority/effort** – Items lacking estimation or priority fields
 
-### Classification Output (per item)
-Include: `ID | Type | State | DaysInactive | Category (removal_candidate|keep_but_fix|needs_review|keep) | Signals | LastSubstantiveChange`
+#### Activity & Engagement Signals
+- **Extended inactivity** – `daysInactive` field (from WIQL with `IncludeSubstantiveChange: true`) exceeding thresholds (e.g., > `max_age_days`)
+- **Stalled in initial state** – Remains in New/Proposed/To Do for extended periods (> 50% of `max_age_days`) without progression
+- **Limited ownership engagement** – Assigned but showing no substantive activity
+
+#### Organizational Health
+- **Potential duplicates** – Similar titles or descriptions that may indicate redundant work
+- **Aging items in early states** – Old items still in initial workflow stages
+- **Possible scope drift** – Items with outdated area paths or deprecated tags
+
+### Health Categories
+
+Classify each work item into one of these categories based on the indicators above:
+
+1. **Healthy** – Well-defined, actively maintained, clear ownership and direction
+2. **Needs Enhancement** – Valid work item but could benefit from improved descriptions, acceptance criteria, or clarity
+3. **Requires Attention** – Shows concerning signals (extended inactivity, missing critical information, unclear purpose)
+4. **Consider for Review** – Multiple indicators suggest this may need team discussion (potential duplicate, out of scope, or abandonment candidate)
+
+**Note**: The goal is improvement, not removal. Even items in "Consider for Review" should be evaluated collaboratively with the team.
+
+### Report Output Format
+
+For each work item, include: `[ID]({{org_url}}/{{project}}/_workitems/edit/{ID}) | Type | State | DaysInactive | Health Category | Improvement Opportunities | LastSubstantiveChange`
+
+**Note**: Format work item IDs as clickable links using the pattern `[ID]({{org_url}}/{{project}}/_workitems/edit/{ID})` so reviewers can quickly navigate to items.
+
+**Summary Section**: Provide an executive overview including:
+- Total items analyzed
+- Distribution across health categories
+- Top improvement themes (e.g., "25% of items missing descriptions")
+- Suggested next steps for team discussion
+
+**Detailed Findings**: Group items by health category with specific, actionable recommendations:
+- **Healthy**: Acknowledge well-maintained items (no action needed)
+- **Needs Enhancement**: Specific improvements to increase clarity/value
+- **Requires Attention**: Priority items needing team review
+- **Consider for Review**: Items that may benefit from team discussion about relevance
 
 **Note**: Use `daysInactive` and `lastSubstantiveChangeDate` fields directly from the WIQL response - no additional tool calls needed.
+
+**Tone**: Constructive and focused on continuous improvement. Frame findings as opportunities to strengthen the backlog rather than criticisms.

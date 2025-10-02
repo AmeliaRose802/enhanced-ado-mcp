@@ -18,7 +18,6 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: any):
         data: null,
         errors: [parsed.error.message],
         warnings: [],
-        raw: { stdout: '', stderr: parsed.error.message, exitCode: 1 },
         metadata: { timestamp: new Date().toISOString() }
       };
     }
@@ -45,7 +44,6 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: any):
       data: result,
       errors: [],
       warnings: [],
-      raw: { stdout: JSON.stringify(result), stderr: '', exitCode: 0 },
       metadata: {
         timestamp: new Date().toISOString(),
         tool: 'wit-extract-security-links'
@@ -58,7 +56,6 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: any):
       data: null,
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: [],
-      raw: { stdout: '', stderr: error instanceof Error ? error.message : String(error), exitCode: 1 },
       metadata: { timestamp: new Date().toISOString() }
     };
   }

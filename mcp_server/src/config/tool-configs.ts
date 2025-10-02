@@ -16,7 +16,8 @@ import {
   bulkStateTransitionSchema,
   bulkAddCommentsSchema,
   findStaleItemsSchema,
-  detectPatternsSchema
+  detectPatternsSchema,
+  validateHierarchyFastSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -32,18 +33,18 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        Title: { type: "string", description: "Title of the work item (mandatory)" },
-        ParentWorkItemId: { type: "number", description: "Optional parent work item ID" },
-        Description: { type: "string", description: "Markdown description / repro steps" },
-        Tags: { type: "string", description: "Semicolon or comma separated tags" },
+        title: { type: "string", description: "Title of the work item (mandatory)" },
+        parentWorkItemId: { type: "number", description: "Optional parent work item ID" },
+        description: { type: "string", description: "Markdown description / repro steps" },
+        tags: { type: "string", description: "Semicolon or comma separated tags" },
         // Optional overrides (auto-filled from config if not provided)
-        WorkItemType: { type: "string", description: "Override default work item type from config" },
-        AreaPath: { type: "string", description: "Override default area path from config" },
-        IterationPath: { type: "string", description: "Override default iteration path from config" },
-        AssignedTo: { type: "string", description: "Override default assignee from config" },
-        Priority: { type: "number", description: "Override default priority from config" }
+        workItemType: { type: "string", description: "Override default work item type from config" },
+        areaPath: { type: "string", description: "Override default area path from config" },
+        iterationPath: { type: "string", description: "Override default iteration path from config" },
+        assignedTo: { type: "string", description: "Override default assignee from config" },
+        priority: { type: "number", description: "Override default priority from config" }
       },
-      required: ["Title"]
+      required: ["title"]
     }
   },
   {
@@ -54,22 +55,22 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemId: { type: "number", description: "Primary work item ID to retrieve full context for" },
-        IncludeHistory: { type: "boolean", description: "Include recent change history (last 10 changes)" },
-        HistoryCount: { type: "number", description: "Number of recent history entries to include" },
-        IncludeComments: { type: "boolean", description: "Include work item comments/discussion" },
-        IncludeRelations: { type: "boolean", description: "Include related links (parent, children, related, attachments, commits, PRs)" },
-        IncludeChildren: { type: "boolean", description: "Include all child hierarchy (one level) if item is a Feature/Epic" },
-        IncludeParent: { type: "boolean", description: "Include parent work item details if present" },
-        IncludeLinkedPRsAndCommits: { type: "boolean", description: "Include linked Git PRs and commits if present in relations" },
-        IncludeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
-        IncludeHtml: { type: "boolean", description: "Return original HTML field values alongside Markdown/plain text" },
-        MaxChildDepth: { type: "number", description: "Depth of child hierarchy to traverse (1 = immediate children)" },
-        MaxRelatedItems: { type: "number", description: "Maximum number of related items to expand" },
-        IncludeAttachments: { type: "boolean", description: "Include attachment metadata (names, urls, sizes)" },
-        IncludeTags: { type: "boolean", description: "Include tags list" }
+        workItemId: { type: "number", description: "Primary work item ID to retrieve full context for" },
+        includeHistory: { type: "boolean", description: "Include recent change history (last 10 changes)" },
+        historyCount: { type: "number", description: "Number of recent history entries to include" },
+        includeComments: { type: "boolean", description: "Include work item comments/discussion" },
+        includeRelations: { type: "boolean", description: "Include related links (parent, children, related, attachments, commits, PRs)" },
+        includeChildren: { type: "boolean", description: "Include all child hierarchy (one level) if item is a Feature/Epic" },
+        includeParent: { type: "boolean", description: "Include parent work item details if present" },
+        includeLinkedPRsAndCommits: { type: "boolean", description: "Include linked Git PRs and commits if present in relations" },
+        includeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
+        includeHtml: { type: "boolean", description: "Return original HTML field values alongside Markdown/plain text" },
+        maxChildDepth: { type: "number", description: "Depth of child hierarchy to traverse (1 = immediate children)" },
+        maxRelatedItems: { type: "number", description: "Maximum number of related items to expand" },
+        includeAttachments: { type: "boolean", description: "Include attachment metadata (names, urls, sizes)" },
+        includeTags: { type: "boolean", description: "Include tags list" }
       },
-      required: ["WorkItemId"]
+      required: ["workItemId"]
     }
   },
   {
@@ -80,21 +81,21 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemIds: { type: "array", items: { type: "number" }, description: "List of work item IDs (max 50)" },
-        IncludeRelations: { type: "boolean", description: "Include relationship edges between provided items" },
-        IncludeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include per work item" },
-        IncludeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
-        IncludeTags: { type: "boolean", description: "Include tags list" },
-        IncludeStateCounts: { type: "boolean", description: "Return aggregate counts by state and type" },
-        IncludeStoryPointAggregation: { type: "boolean", description: "Aggregate story points / effort fields if present" },
-        IncludeRiskScoring: { type: "boolean", description: "Include basic heuristic risk / staleness scoring" },
-        IncludeAIAssignmentHeuristic: { type: "boolean", description: "Include lightweight AI suitability heuristic" },
-        IncludeParentOutsideSet: { type: "boolean", description: "Include minimal parent references outside requested set" },
-        IncludeChildrenOutsideSet: { type: "boolean", description: "Include minimal child references outside requested set" },
-        MaxOutsideReferences: { type: "number", description: "Cap number of outside references added" },
-        ReturnFormat: { type: "string", enum: ["graph", "array"], description: "Return as graph (nodes/edges) or simple array" }
+        workItemIds: { type: "array", items: { type: "number" }, description: "List of work item IDs (max 50)" },
+        includeRelations: { type: "boolean", description: "Include relationship edges between provided items" },
+        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include per work item" },
+        includeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
+        includeTags: { type: "boolean", description: "Include tags list" },
+        includeStateCounts: { type: "boolean", description: "Return aggregate counts by state and type" },
+        includeStoryPointAggregation: { type: "boolean", description: "Aggregate story points / effort fields if present" },
+        includeRiskScoring: { type: "boolean", description: "Include basic heuristic risk / staleness scoring" },
+        includeAIAssignmentHeuristic: { type: "boolean", description: "Include lightweight AI suitability heuristic" },
+        includeParentOutsideSet: { type: "boolean", description: "Include minimal parent references outside requested set" },
+        includeChildrenOutsideSet: { type: "boolean", description: "Include minimal child references outside requested set" },
+        maxOutsideReferences: { type: "number", description: "Cap number of outside references added" },
+        returnFormat: { type: "string", enum: ["graph", "array"], description: "Return as graph (nodes/edges) or simple array" }
       },
-      required: ["WorkItemIds"]
+      required: ["workItemIds"]
     }
   },
   {
@@ -105,13 +106,13 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemId: { type: "number", description: "Existing work item ID to assign" },
-        Repository: { type: "string", description: "Git repository name (required)" },
+        workItemId: { type: "number", description: "Existing work item ID to assign" },
+        repository: { type: "string", description: "Git repository name (required)" },
         // Optional overrides (auto-filled from config if not provided)
-        Branch: { type: "string", description: "Override default branch from config" },
-        GitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" }
+        branch: { type: "string", description: "Override default branch from config" },
+        gitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" }
       },
-      required: ["WorkItemId", "Repository"]
+      required: ["workItemId", "repository"]
     }
   },
   {
@@ -122,20 +123,20 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        Title: { type: "string", description: "Title of the work item" },
-        ParentWorkItemId: { type: "number", description: "Parent work item ID under which to create the new item" },
-        Repository: { type: "string", description: "Git repository name (required)" },
-        Description: { type: "string", description: "Markdown description" },
-        Tags: { type: "string", description: "Semicolon or comma separated tags" },
+        title: { type: "string", description: "Title of the work item" },
+        parentWorkItemId: { type: "number", description: "Parent work item ID under which to create the new item" },
+        repository: { type: "string", description: "Git repository name (required)" },
+        description: { type: "string", description: "Markdown description" },
+        tags: { type: "string", description: "Semicolon or comma separated tags" },
         // Optional overrides (auto-filled from config if not provided)
-        WorkItemType: { type: "string", description: "Override default work item type from config" },
-        Branch: { type: "string", description: "Override default branch from config" },
-        GitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" },
-        AreaPath: { type: "string", description: "Override default area path from config" },
-        IterationPath: { type: "string", description: "Override default iteration path from config" },
-        Priority: { type: "number", description: "Override default priority from config" }
+        workItemType: { type: "string", description: "Override default work item type from config" },
+        branch: { type: "string", description: "Override default branch from config" },
+        gitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" },
+        areaPath: { type: "string", description: "Override default area path from config" },
+        iterationPath: { type: "string", description: "Override default iteration path from config" },
+        priority: { type: "number", description: "Override default priority from config" }
       },
-      required: ["Title", "ParentWorkItemId", "Repository"]
+      required: ["title", "parentWorkItemId", "repository"]
     }
   },
   {
@@ -146,13 +147,13 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemId: { type: "number", description: "Azure DevOps work item ID to extract instruction links from" },
-        ScanType: { type: "string", enum: ["BinSkim", "CodeQL", "CredScan", "General", "All"], description: "Type of security scanner to filter links for" },
-        IncludeWorkItemDetails: { type: "boolean", description: "Include detailed work item information in the response" },
-        ExtractFromComments: { type: "boolean", description: "Also extract links from work item comments" },
-        DryRun: { type: "boolean", description: "Run in dry-run mode without making actual API calls" }
+        workItemId: { type: "number", description: "Azure DevOps work item ID to extract instruction links from" },
+        scanType: { type: "string", enum: ["BinSkim", "CodeQL", "CredScan", "General", "All"], description: "Type of security scanner to filter links for" },
+        includeWorkItemDetails: { type: "boolean", description: "Include detailed work item information in the response" },
+        extractFromComments: { type: "boolean", description: "Also extract links from work item comments" },
+        dryRun: { type: "boolean", description: "Run in dry-run mode without making actual API calls" }
       },
-      required: ["WorkItemId"]
+      required: ["workItemId"]
     }
   },
   {
@@ -163,19 +164,19 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        Title: { type: "string", description: "Work item title to analyze" },
-        Description: { type: "string", description: "Work item description/content to analyze" },
-        WorkItemType: { type: "string", description: "Type of work item (Task, Bug, PBI, etc.)" },
-        AcceptanceCriteria: { type: "string", description: "Current acceptance criteria if any" },
-        AnalysisType: { type: "string", enum: ["completeness", "ai-readiness", "enhancement", "categorization", "full"], description: "Type of analysis to perform" },
-        ContextInfo: { type: "string", description: "Additional context about the project, team, or requirements" },
-        EnhanceDescription: { type: "boolean", description: "Generate an enhanced, AI-ready description" },
-        CreateInADO: { type: "boolean", description: "Automatically create the enhanced item in Azure DevOps" },
-        ParentWorkItemId: { type: "number", description: "Parent work item ID if creating in ADO" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" }
+        title: { type: "string", description: "Work item title to analyze" },
+        description: { type: "string", description: "Work item description/content to analyze" },
+        workItemType: { type: "string", description: "Type of work item (Task, Bug, PBI, etc.)" },
+        acceptanceCriteria: { type: "string", description: "Current acceptance criteria if any" },
+        analysisType: { type: "string", enum: ["completeness", "ai-readiness", "enhancement", "categorization", "full"], description: "Type of analysis to perform" },
+        contextInfo: { type: "string", description: "Additional context about the project, team, or requirements" },
+        enhanceDescription: { type: "boolean", description: "Generate an enhanced, AI-ready description" },
+        createInADO: { type: "boolean", description: "Automatically create the enhanced item in Azure DevOps" },
+        parentWorkItemId: { type: "number", description: "Parent work item ID if creating in ADO" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
       },
-      required: ["Title"]
+      required: ["title"]
     }
   },
   {
@@ -186,22 +187,22 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        Title: { type: "string", description: "Work item title to analyze for AI assignment suitability" },
-        Description: { type: "string", description: "Work item description/content to analyze" },
-        WorkItemType: { type: "string", description: "Type of work item (Task, Bug, Feature, etc.)" },
-        AcceptanceCriteria: { type: "string", description: "Acceptance criteria if available" },
-        Priority: { type: "string", description: "Priority level (Critical, High, Medium, Low)" },
-        Labels: { type: "string", description: "Comma-separated labels or tags" },
-        EstimatedFiles: { type: "string", description: "Estimated number of files that might be touched" },
-        TechnicalContext: { type: "string", description: "Technical context: languages, frameworks, architectural areas" },
-        ExternalDependencies: { type: "string", description: "External dependencies or approvals needed" },
-        TimeConstraints: { type: "string", description: "Deadline or time constraints" },
-        RiskFactors: { type: "string", description: "Known risk factors or sensitive areas" },
-        TestingRequirements: { type: "string", description: "Testing requirements and existing coverage" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" }
+        title: { type: "string", description: "Work item title to analyze for AI assignment suitability" },
+        description: { type: "string", description: "Work item description/content to analyze" },
+        workItemType: { type: "string", description: "Type of work item (Task, Bug, Feature, etc.)" },
+        acceptanceCriteria: { type: "string", description: "Acceptance criteria if available" },
+        priority: { type: "string", description: "Priority level (Critical, High, Medium, Low)" },
+        labels: { type: "string", description: "Comma-separated labels or tags" },
+        estimatedFiles: { type: "string", description: "Estimated number of files that might be touched" },
+        technicalContext: { type: "string", description: "Technical context: languages, frameworks, architectural areas" },
+        externalDependencies: { type: "string", description: "External dependencies or approvals needed" },
+        timeConstraints: { type: "string", description: "Deadline or time constraints" },
+        riskFactors: { type: "string", description: "Known risk factors or sensitive areas" },
+        testingRequirements: { type: "string", description: "Testing requirements and existing coverage" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
       },
-      required: ["Title"]
+      required: ["title"]
     }
   },
   {
@@ -212,29 +213,29 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        Title: { type: "string", description: "Feature title to decompose into smaller work items" },
-        Description: { type: "string", description: "Feature description with requirements and context" },
-        ParentWorkItemId: { type: "number", description: "Parent work item ID to create child items under" },
-        WorkItemType: { type: "string", description: "Type of work items to create (Task, User Story, etc.)" },
-        TargetComplexity: { type: "string", enum: ["simple", "medium"], description: "Target complexity for generated work items" },
-        MaxItems: { type: "number", description: "Maximum number of work items to generate" },
-        TechnicalContext: { type: "string", description: "Technical context: architecture, frameworks, constraints" },
-        BusinessContext: { type: "string", description: "Business context: user needs, goals, success criteria" },
-        ExistingComponents: { type: "string", description: "Existing components or systems to consider" },
-        Dependencies: { type: "string", description: "Known dependencies or integration points" },
-        TimeConstraints: { type: "string", description: "Timeline or milestone constraints" },
-        QualityRequirements: { type: "string", description: "Quality, performance, or security requirements" },
-        GenerateAcceptanceCriteria: { type: "boolean", description: "Generate acceptance criteria for each work item" },
-        AnalyzeAISuitability: { type: "boolean", description: "Analyze AI assignment suitability for each item" },
-        AutoCreateWorkItems: { type: "boolean", description: "Automatically create work items in Azure DevOps" },
-        AutoAssignAISuitable: { type: "boolean", description: "Automatically assign AI-suitable items to GitHub Copilot" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        AreaPath: { type: "string", description: "Area path for created work items" },
-        IterationPath: { type: "string", description: "Iteration path for created work items" },
-        Tags: { type: "string", description: "Additional tags to apply to created work items" }
+        title: { type: "string", description: "Feature title to decompose into smaller work items" },
+        description: { type: "string", description: "Feature description with requirements and context" },
+        parentWorkItemId: { type: "number", description: "Parent work item ID to create child items under" },
+        workItemType: { type: "string", description: "Type of work items to create (Task, User Story, etc.)" },
+        targetComplexity: { type: "string", enum: ["simple", "medium"], description: "Target complexity for generated work items" },
+        maxItems: { type: "number", description: "Maximum number of work items to generate" },
+        technicalContext: { type: "string", description: "Technical context: architecture, frameworks, constraints" },
+        businessContext: { type: "string", description: "Business context: user needs, goals, success criteria" },
+        existingComponents: { type: "string", description: "Existing components or systems to consider" },
+        dependencies: { type: "string", description: "Known dependencies or integration points" },
+        timeConstraints: { type: "string", description: "Timeline or milestone constraints" },
+        qualityRequirements: { type: "string", description: "Quality, performance, or security requirements" },
+        generateAcceptanceCriteria: { type: "boolean", description: "Generate acceptance criteria for each work item" },
+        analyzeAISuitability: { type: "boolean", description: "Analyze AI assignment suitability for each item" },
+        autoCreateWorkItems: { type: "boolean", description: "Automatically create work items in Azure DevOps" },
+        autoAssignAISuitable: { type: "boolean", description: "Automatically assign AI-suitable items to GitHub Copilot" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        areaPath: { type: "string", description: "Area path for created work items" },
+        iterationPath: { type: "string", description: "Iteration path for created work items" },
+        tags: { type: "string", description: "Additional tags to apply to created work items" }
       },
-      required: ["Title"]
+      required: ["title"]
     }
   },
   {
@@ -245,17 +246,17 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to validate (if not provided, will analyze area path)" },
-        AreaPath: { type: "string", description: "Area path to analyze all work items within (used if WorkItemIds not provided)" },
-        IncludeChildAreas: { type: "boolean", description: "Include child area paths in analysis" },
-        MaxItemsToAnalyze: { type: "number", description: "Maximum number of work items to analyze" },
-        AnalysisDepth: { type: "string", enum: ["shallow", "deep"], description: "Analysis depth: shallow (basic) or deep (comprehensive with content analysis)" },
-        SuggestAlternatives: { type: "boolean", description: "Generate alternative parent suggestions" },
-        IncludeConfidenceScores: { type: "boolean", description: "Include confidence scores for recommendations" },
-        FilterByWorkItemType: { type: "array", items: { type: "string" }, description: "Filter analysis to specific work item types" },
-        ExcludeStates: { type: "array", items: { type: "string" }, description: "Exclude work items in these states from analysis" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" }
+        workItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to validate (if not provided, will analyze area path)" },
+        areaPath: { type: "string", description: "Area path to analyze all work items within (used if workItemIds not provided)" },
+        includeChildAreas: { type: "boolean", description: "Include child area paths in analysis" },
+        maxItemsToAnalyze: { type: "number", description: "Maximum number of work items to analyze" },
+        analysisDepth: { type: "string", enum: ["shallow", "deep"], description: "Analysis depth: shallow (basic) or deep (comprehensive with content analysis)" },
+        suggestAlternatives: { type: "boolean", description: "Generate alternative parent suggestions" },
+        includeConfidenceScores: { type: "boolean", description: "Include confidence scores for recommendations" },
+        filterByWorkItemType: { type: "array", items: { type: "string" }, description: "Filter analysis to specific work item types" },
+        excludeStates: { type: "array", items: { type: "string" }, description: "Exclude work items in these states from analysis" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
       },
       required: []
     }
@@ -269,8 +270,8 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        IncludeSensitive: { type: "boolean", description: "Include potentially sensitive configuration values" },
-        Section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot"], description: "Specific configuration section to retrieve" }
+        includeSensitive: { type: "boolean", description: "Include potentially sensitive configuration values" },
+        section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot"], description: "Specific configuration section to retrieve" }
       },
       required: []
     }
@@ -283,13 +284,13 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WiqlQuery: { type: "string", description: "WIQL query string. Examples: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'' or 'SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'ProjectName\\AreaName' ORDER BY [System.ChangedDate] DESC'" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        IncludeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include (e.g., 'System.Description', 'Microsoft.VSTS.Common.Priority')" },
-        MaxResults: { type: "number", description: "Maximum number of results to return (default 200)" }
+        wiqlQuery: { type: "string", description: "WIQL query string. Examples: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'' or 'SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'ProjectName\\AreaName' ORDER BY [System.ChangedDate] DESC'" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include (e.g., 'System.Description', 'Microsoft.VSTS.Common.Priority')" },
+        maxResults: { type: "number", description: "Maximum number of results to return (default 200)" }
       },
-      required: ["WiqlQuery"]
+      required: ["wiqlQuery"]
     }
   },
   {
@@ -300,13 +301,13 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemId: { type: "number", description: "Work item ID to analyze" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        HistoryCount: { type: "number", description: "Number of revisions to analyze (default 50)" },
-        AutomatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
+        workItemId: { type: "number", description: "Work item ID to analyze" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        historyCount: { type: "number", description: "Number of revisions to analyze (default 50)" },
+        automatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
       },
-      required: ["WorkItemId"]
+      required: ["workItemId"]
     }
   },
   {
@@ -317,15 +318,15 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemIds: { type: "array", items: { type: "number" }, description: "Array of work item IDs to transition (1-50 items)" },
-        NewState: { type: "string", description: "Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')" },
-        Comment: { type: "string", description: "Comment to add to work item history when transitioning" },
-        Reason: { type: "string", description: "Reason for state change (e.g., 'Abandoned', 'Obsolete')" },
-        DryRun: { type: "boolean", description: "If true, validates transitions without making changes" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" }
+        workItemIds: { type: "array", items: { type: "number" }, description: "Array of work item IDs to transition (1-50 items)" },
+        newState: { type: "string", description: "Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')" },
+        comment: { type: "string", description: "Comment to add to work item history when transitioning" },
+        reason: { type: "string", description: "Reason for state change (e.g., 'Abandoned', 'Obsolete')" },
+        dryRun: { type: "boolean", description: "If true, validates transitions without making changes" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
       },
-      required: ["WorkItemIds", "NewState"]
+      required: ["workItemIds", "newState"]
     }
   },
   {
@@ -336,24 +337,24 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        Items: { 
+        items: { 
           type: "array", 
           items: { 
             type: "object",
             properties: {
-              WorkItemId: { type: "number", description: "Work item ID to add comment to" },
-              Comment: { type: "string", description: "Comment text to add (supports Markdown)" }
+              workItemId: { type: "number", description: "Work item ID to add comment to" },
+              comment: { type: "string", description: "Comment text to add (supports Markdown)" }
             },
-            required: ["WorkItemId", "Comment"]
+            required: ["workItemId", "comment"]
           }, 
           description: "Array of work items and their comments (1-50 items)" 
         },
-        Template: { type: "string", description: "Comment template with {{variable}} placeholders" },
-        TemplateVariables: { type: "object", description: "Variables to substitute in template" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" }
+        template: { type: "string", description: "Comment template with {{variable}} placeholders" },
+        templateVariables: { type: "object", description: "Variables to substitute in template" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
       },
-      required: ["Items"]
+      required: ["items"]
     }
   },
   {
@@ -364,18 +365,18 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        AreaPath: { type: "string", description: "Area path to search for stale items" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        MinInactiveDays: { type: "number", description: "Minimum days of inactivity to consider an item stale (default 180)" },
-        ExcludeStates: { type: "array", items: { type: "string" }, description: "States to exclude from search" },
-        IncludeSubAreas: { type: "boolean", description: "Include items from sub-area paths" },
-        WorkItemTypes: { type: "array", items: { type: "string" }, description: "Filter by specific work item types (empty = all types)" },
-        MaxResults: { type: "number", description: "Maximum number of results to return" },
-        IncludeSubstantiveChange: { type: "boolean", description: "Include substantive change analysis for more accurate staleness detection" },
-        IncludeSignals: { type: "boolean", description: "Include signals explaining why each item is considered stale" }
+        areaPath: { type: "string", description: "Area path to search for stale items" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        minInactiveDays: { type: "number", description: "Minimum days of inactivity to consider an item stale (default 180)" },
+        excludeStates: { type: "array", items: { type: "string" }, description: "States to exclude from search" },
+        includeSubAreas: { type: "boolean", description: "Include items from sub-area paths" },
+        workItemTypes: { type: "array", items: { type: "string" }, description: "Filter by specific work item types (empty = all types)" },
+        maxResults: { type: "number", description: "Maximum number of results to return" },
+        includeSubstantiveChange: { type: "boolean", description: "Include substantive change analysis for more accurate staleness detection" },
+        includeSignals: { type: "boolean", description: "Include signals explaining why each item is considered stale" }
       },
-      required: ["AreaPath"]
+      required: ["areaPath"]
     }
   },
   {
@@ -386,11 +387,11 @@ export const toolConfigs: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        WorkItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to analyze (if not provided, uses AreaPath)" },
-        AreaPath: { type: "string", description: "Area path to search for work items (if WorkItemIds not provided)" },
-        Organization: { type: "string", description: "Azure DevOps organization name" },
-        Project: { type: "string", description: "Azure DevOps project name" },
-        Patterns: { 
+        workItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to analyze (if not provided, uses areaPath)" },
+        areaPath: { type: "string", description: "Area path to search for work items (if workItemIds not provided)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        patterns: { 
           type: "array", 
           items: { 
             type: "string",
@@ -398,8 +399,28 @@ export const toolConfigs: ToolConfig[] = [
           }, 
           description: "Patterns to detect" 
         },
-        MaxResults: { type: "number", description: "Maximum number of results when using AreaPath" },
-        IncludeSubAreas: { type: "boolean", description: "Include sub-area paths when using AreaPath" }
+        maxResults: { type: "number", description: "Maximum number of results when using areaPath" },
+        includeSubAreas: { type: "boolean", description: "Include sub-area paths when using areaPath" }
+      },
+      required: []
+    }
+  },
+  {
+    name: "wit-validate-hierarchy-fast",
+    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis.",
+    script: "", // Handled internally
+    schema: validateHierarchyFastSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        workItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to validate (if not provided, uses areaPath)" },
+        areaPath: { type: "string", description: "Area path to validate all work items within (if workItemIds not provided)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        maxResults: { type: "number", description: "Maximum number of work items to analyze when using areaPath (default 500)" },
+        includeSubAreas: { type: "boolean", description: "Include child area paths in analysis (default true)" },
+        validateTypes: { type: "boolean", description: "Validate parent-child type relationships (default true)" },
+        validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" }
       },
       required: []
     }

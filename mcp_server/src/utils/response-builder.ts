@@ -8,7 +8,6 @@ export function buildSuccessResponse(data: any, metadata: Record<string, any> = 
   return {
     success: true,
     data,
-    raw: { stdout: JSON.stringify(data, null, 2), stderr: '', exitCode: 0 },
     metadata: { ...metadata, samplingAvailable: true },
     errors: [],
     warnings: []
@@ -20,7 +19,6 @@ export function buildErrorResponse(error: string | Error, metadata: Record<strin
   return {
     success: false,
     data: null,
-    raw: { stdout: '', stderr: errorMsg, exitCode: 1 },
     metadata: { ...metadata, samplingAvailable: true },
     errors: [errorMsg],
     warnings: []
@@ -32,7 +30,6 @@ export function buildSamplingUnavailableResponse(): ToolExecutionResult {
   return {
     success: false,
     data: null,
-    raw: { stdout: '', stderr: error, exitCode: 1 },
     metadata: { source: 'sampling-check-failed', samplingAvailable: false },
     errors: [error],
     warnings: []

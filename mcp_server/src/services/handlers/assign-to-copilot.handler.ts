@@ -18,7 +18,6 @@ export async function handleAssignToCopilot(config: ToolConfig, args: any): Prom
         data: null,
         errors: [parsed.error.message],
         warnings: [],
-        raw: { stdout: '', stderr: parsed.error.message, exitCode: 1 },
         metadata: { timestamp: new Date().toISOString() }
       };
     }
@@ -43,7 +42,6 @@ export async function handleAssignToCopilot(config: ToolConfig, args: any): Prom
         data: null,
         errors: ['GitHub Copilot GUID not configured and not provided in arguments'],
         warnings: [],
-        raw: { stdout: '', stderr: 'GitHub Copilot GUID not configured', exitCode: 1 },
         metadata: { timestamp: new Date().toISOString() }
       };
     }
@@ -57,7 +55,6 @@ export async function handleAssignToCopilot(config: ToolConfig, args: any): Prom
       data: result,
       errors: [],
       warnings: result.warnings || [],
-      raw: { stdout: JSON.stringify(result), stderr: '', exitCode: 0 },
       metadata: {
         timestamp: new Date().toISOString(),
         tool: 'wit-assign-to-copilot'
@@ -70,7 +67,6 @@ export async function handleAssignToCopilot(config: ToolConfig, args: any): Prom
       data: null,
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: [],
-      raw: { stdout: '', stderr: error instanceof Error ? error.message : String(error), exitCode: 1 },
       metadata: { timestamp: new Date().toISOString() }
     };
   }

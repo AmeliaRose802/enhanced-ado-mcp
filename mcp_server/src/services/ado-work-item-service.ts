@@ -825,6 +825,11 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       'System.AssignedTo'
     ];
 
+    // Add date fields if needed for substantive change analysis or computed metrics
+    if (IncludeSubstantiveChange || ComputeMetrics) {
+      defaultFields.push('System.CreatedDate', 'System.ChangedDate');
+    }
+
     // Combine default fields with user-requested fields
     const allFields = [...new Set([...defaultFields, ...IncludeFields])];
     const fieldsParam = allFields.join(',');

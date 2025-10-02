@@ -229,11 +229,6 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
         patternsSearched: Patterns,
         message: `Found ${matches.length} pattern matches across ${workItems.length} work items`
       },
-      raw: {
-        stdout: JSON.stringify({ matches, summary: patternSummary }, null, 2),
-        stderr: "",
-        exitCode: 0
-      },
       metadata: {
         source: "detect-patterns",
         itemsAnalyzed: workItems.length,
@@ -247,11 +242,6 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     return {
       success: false,
       data: null,
-      raw: {
-        stdout: "",
-        stderr: error instanceof Error ? error.message : String(error),
-        exitCode: 1
-      },
       metadata: { source: "detect-patterns" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

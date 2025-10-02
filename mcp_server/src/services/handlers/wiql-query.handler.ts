@@ -38,15 +38,6 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
           substantiveChangeIncluded: true 
         })
       },
-      raw: { 
-        stdout: JSON.stringify({ 
-          work_items: result.workItems, 
-          count: result.count,
-          query: result.query 
-        }, null, 2), 
-        stderr: "", 
-        exitCode: 0 
-      },
       metadata: { 
         source: "rest-api-wiql",
         count: result.count,
@@ -63,11 +54,6 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
     return {
       success: false,
       data: null,
-      raw: { 
-        stdout: "", 
-        stderr: error instanceof Error ? error.message : String(error), 
-        exitCode: 1 
-      },
       metadata: { source: "rest-api-wiql" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []

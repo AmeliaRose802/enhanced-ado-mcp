@@ -37,7 +37,7 @@ export class FeatureDecomposerAnalyzer {
     const userContent = formatForAI(args);
 
     // Add timeout wrapper to prevent hanging
-    const timeoutMs = 180000; // 180 seconds (3 minutes)
+    const timeoutMs = 45000; // 45 seconds (reduced for user experience)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
@@ -45,8 +45,14 @@ export class FeatureDecomposerAnalyzer {
       temperature: 0.4
     });
 
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('AI sampling timeout after 180 seconds')), timeoutMs);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(
+          'Feature decomposition exceeded 45 second timeout. ' +
+          'This typically indicates the feature is too complex. ' +
+          'Try simplifying the description or breaking it into smaller features first.'
+        ));
+      }, timeoutMs);
     });
 
     const aiResult = await Promise.race([aiResultPromise, timeoutPromise]);
