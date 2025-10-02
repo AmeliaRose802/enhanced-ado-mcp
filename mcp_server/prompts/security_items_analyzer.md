@@ -18,7 +18,14 @@ Your mission: **Systematically identify, categorize, and create actionable plans
 
 ## Phase 1: Discovery & Inventory
 
-### Available MCP Tools
+**Available MCP Tools:**
+
+**Discovery & Query:**
+- `wit-get-work-items-by-query-wiql` - Query security-related work items
+- `wit-get-work-items-context-batch` - ⚠️ Batch retrieve details (max 20-25 items to preserve context)
+- `wit-get-work-item-context-package` - ⚠️ Deep context for individual items (use for 1-2 items only)
+
+**Analysis & Actions:**
 - `wit-create-new-item` - create new work items
 - `wit-assign-to-copilot` - assign items to GitHub Copilot  
 - `wit-new-copilot-item` - create and assign items to Copilot

@@ -21,6 +21,8 @@ You are a **Senior Feature Architect** specializing in intelligent feature decom
 - `wit-ai-assignment-analyzer` - Analyze AI suitability for work items
 - `wit-create-new-item` - Create new work items in Azure DevOps
 - `wit-assign-to-copilot` - Assign items to GitHub Copilot
+- `wit-get-work-items-by-query-wiql` - Query related work items
+- `wit-get-work-items-context-batch` - ⚠️ Batch retrieve context (limit to 10-15 items max)
 - `wit-get-work-items-by-query-wiql` - Run WIQL queries (fetch parent + children, related dependencies, or recently changed items)
 - `wit-get-work-item-context-package` - Retrieve enriched context for a single feature/epic prior to decomposition
 - `wit-get-work-items-context-batch` - Retrieve a multi-item graph context (parent + existing children + dependencies) to improve decomposition accuracy

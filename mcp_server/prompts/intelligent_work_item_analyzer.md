@@ -19,13 +19,15 @@ You are an **AI Work Item Intelligence Assistant** specializing in analyzing, en
 ## Available MCP Tools
 
 **Enhanced ADO MCP Server:**
-- `wit-intelligence-analyzer` - AI-powered work item analysis (NEW SAMPLING FEATURE!)
+- `wit-intelligence-analyzer` - AI-powered work item analysis
 - `wit-create-new-item` - create enhanced work items  
 - `wit-assign-to-copilot` - assign items to GitHub Copilot
 - `wit-new-copilot-item` - create and assign to Copilot
 - `wit-get-work-items-by-query-wiql` - Run WIQL queries (discover related, duplicate, dependency, or stale linked items)
-- `wit-get-work-item-context-package` - Retrieve a comprehensive enriched context package for a single work item (linked items, relationships, metadata)
-- `wit-get-work-items-context-batch` - Retrieve a batch/graph context package for multiple related work items (ideal prior to categorization or duplication analysis)
+- `wit-get-work-item-context-package` - ⚠️ Retrieve comprehensive context for ONE work item (returns large payload - use sparingly)
+- `wit-get-work-items-context-batch` - ⚠️ Batch retrieve up to 50 items (WARNING: Can consume significant context - use only when analyzing specific sets, not exploratory queries)
+- `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area changes)
+- `wit-get-last-substantive-change-bulk` - Bulk analysis for multiple work items' true activity levels (lightweight, safe for large sets)
 
 **Standard ADO MCP Server:**
 - `mcp_ado_wit_get_work_item` - retrieve existing work item details

@@ -21,6 +21,9 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
     }
 
     logger.debug(`Executing WIQL query: ${parsed.data.WiqlQuery}`);
+    if (parsed.data.IncludeSubstantiveChange) {
+      logger.debug(`Substantive change analysis enabled (history depth: ${parsed.data.SubstantiveChangeHistoryCount || 50})`);
+    }
     
     const result = await queryWorkItemsByWiql(parsed.data);
     
@@ -30,7 +33,10 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
         work_items: result.workItems,
         count: result.count,
         query: result.query,
-        summary: `Found ${result.count} work item(s) matching the query`
+        summary: `Found ${result.count} work item(s) matching the query`,
+        ...(parsed.data.IncludeSubstantiveChange && { 
+          substantiveChangeIncluded: true 
+        })
       },
       raw: { 
         stdout: JSON.stringify({ 
@@ -44,7 +50,8 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
       metadata: { 
         source: "rest-api-wiql",
         count: result.count,
-        maxResults: parsed.data.MaxResults
+        maxResults: parsed.data.MaxResults,
+        substantiveChangeAnalysis: parsed.data.IncludeSubstantiveChange || false
       },
       errors: [],
       warnings: result.count >= (parsed.data.MaxResults || 200) 
@@ -52,6 +59,7 @@ export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecu
         : []
     };
   } catch (error) {
+    logger.error('WIQL query handler error:', error);
     return {
       success: false,
       data: null,

@@ -1,7 +1,6 @@
 # Project TODOs
 
-- Split up tool service so each tool is in it;s own repo
-
+- Split up tool service so each tool is in it's own file
 
 - Perform a general cleanup to make the project more clean and AI friendly. Split up large files, clean up unused code, use common methods instead of reinventing the wheel
 

@@ -11,6 +11,8 @@ import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-contex
 import { handleAssignToCopilot } from './handlers/assign-to-copilot.handler.js';
 import { handleNewCopilotItem } from './handlers/new-copilot-item.handler.js';
 import { handleExtractSecurityLinks } from './handlers/extract-security-links.handler.js';
+import { handleBulkStateTransition } from './handlers/bulk-state-transition.handler.js';
+import { handleBulkAddComments } from './handlers/bulk-add-comments.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: any = null;
@@ -97,6 +99,34 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     return await handleGetWorkItemsContextBatch(args);
   }
 
+  // Get last substantive change for a work item
+  if (name === 'wit-get-last-substantive-change') {
+    const { getLastSubstantiveChange } = await import('./handlers/get-last-substantive-change.handler.js');
+    const result = await getLastSubstantiveChange(args);
+    return { 
+      success: true, 
+      data: result, 
+      raw: { stdout: JSON.stringify(result, null, 2), stderr: '', exitCode: 0 },
+      metadata: { tool: name },
+      errors: [],
+      warnings: []
+    };
+  }
+
+  // Get last substantive change for multiple work items (bulk)
+  if (name === 'wit-get-last-substantive-change-bulk') {
+    const { getLastSubstantiveChangeBulk } = await import('./handlers/get-last-substantive-change-bulk.handler.js');
+    const result = await getLastSubstantiveChangeBulk(args);
+    return { 
+      success: true, 
+      data: result, 
+      raw: { stdout: JSON.stringify(result, null, 2), stderr: '', exitCode: 0 },
+      metadata: { tool: name },
+      errors: [],
+      warnings: []
+    };
+  }
+
   // Assign work item to GitHub Copilot with branch link
   if (name === 'wit-assign-to-copilot') {
     return await handleAssignToCopilot(config, args);
@@ -110,6 +140,16 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
   // Extract security instruction links from work item
   if (name === 'wit-extract-security-links') {
     return await handleExtractSecurityLinks(config, args);
+  }
+
+  // Bulk state transition for multiple work items
+  if (name === 'wit-bulk-state-transition') {
+    return await handleBulkStateTransition(config, args);
+  }
+
+  // Bulk add comments to multiple work items
+  if (name === 'wit-bulk-add-comments') {
+    return await handleBulkAddComments(config, args);
   }
 
   logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);

@@ -17,7 +17,9 @@ Your goal: **rewrite and expand the work item so it is precise, testable, and se
 **Available MCP tools:**
 - `wit-create-new-item` - create new work items with enhanced features
 - `wit-assign-to-copilot` - assign items to GitHub Copilot
-- `wit-new-copilot-item` - create and assign items to Copilot 
+- `wit-new-copilot-item` - create and assign items to Copilot
+- `wit-get-work-items-by-query-wiql` - Query for similar or related work items
+- `wit-get-work-items-context-batch` - ⚠️ Check for duplicates (limit to 5-10 items for comparison) 
 - `wit-extract-security-links` - extract security instruction links
 - `wit-get-configuration` - display current MCP server configuration
 - `wit-get-work-items-by-query-wiql` - Run WIQL queries (pull related items to enrich context before enhancement)

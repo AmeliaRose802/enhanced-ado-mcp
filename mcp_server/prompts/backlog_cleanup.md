@@ -9,28 +9,21 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 
 **Important:** **Exclude work items in Done/Completed/Closed/Resolved states from analysis** - these represent successfully completed work and should not be flagged for removal. Focus only on active, stale, or abandoned work items.
 
-**Inputs:**
+**Inputs (auto-populated where possible):**
 - org_url: {{org_url}}
 - project: {{project}}
 - area_path: {{area_path}}
-- max_age_days: {{max_age_days}}
-- include_states: {{include_states}}
-- exclude_states: {{exclude_states}}
-- label_patterns_remove: {{label_patterns_remove}}
-- owner_signal_days: {{owner_signal_days}}
-- min_signal_fields: {{min_signal_fields}}
-- max_duplicates_window_days: {{max_duplicates_window_days}}
-- dry_run: {{dry_run}}
+- max_age_days: {{max_age_days}} (default 180)
+- dry_run: {{dry_run}} (analysis only)
 
 **Available MCP tools:**
-- `wit-create-new-item` - create new work items
-- `wit-assign-to-copilot` - assign items to GitHub Copilot
-- `wit-new-copilot-item` - create and assign items to Copilot
-- `wit-extract-security-links` - extract security instruction links
-- `wit-get-configuration` - display current MCP server configuration
-- `wit-get-work-items-by-query-wiql` - Run WIQL queries (preferred for bulk backlog cleanup targeting by area/state/date)
-- `wit-get-work-item-context-package` - Retrieve enriched context for an individual candidate prior to removal recommendation (helps avoid deleting items with hidden dependencies)
-- `wit-get-work-items-context-batch` - Retrieve a batched context graph to detect clusters of related stale items vs. isolated or dependent ones
+- `wit-get-work-items-by-query-wiql` – primary retrieval (IDs by area/state/date)
+- `wit-get-work-items-context-batch` – ⚠️ batch enrichment (LIMIT: 20-30 items per call to avoid context overflow)
+- `wit-get-work-item-context-package` – ⚠️ deep dive for edge cases (use sparingly, returns large payload)
+- `wit-get-last-substantive-change-bulk` – derive true inactivity (lightweight, safe for 50-100 items)
+- `wit-get-last-substantive-change` – single item refinement
+- `wit-get-configuration` – show server configuration context
+- (Create/assign tools available but not used for removal analysis): `wit-create-new-item`, `wit-assign-to-copilot`, `wit-new-copilot-item`, `wit-extract-security-links`
 
 ---
 
@@ -47,16 +40,17 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 4. **Generate report** with recommendations (do not modify work items)
 
 ### Removal candidate signals
-Mark a work item for removal if any of the following apply (otherwise mark as `needs_review`):
+Mark a work item as a `removal_candidate` if ANY apply (else classify as `needs_review`, `keep_but_fix`, or `keep`):
 
-1. **Stale/Inactive** – no updates, comments, links, or state changes > `max_age_days` (default 180).
-2. **Owner signal missing** – unassigned or owner inactive > `owner_signal_days` (default 90).
-3. **Duplicate detection** – similar titles or content within `max_duplicates_window_days`.
-4. **Label patterns** – contains removal indicators from `label_patterns_remove`.
-5. **Missing required fields** – lacks content in `min_signal_fields`.
-3. **Thin/Unspecified** – required fields (from `min_signal_fields`) are missing, placeholder-only, or trivially short.
-4. **Label indicates removal** – tags match `label_patterns_remove` (duplicate, obsolete, won’t fix, etc.).
-5. **Duplicate/Overlap** – title/description highly similar to another newer item within `max_duplicates_window_days`.
-6. **Out of scope** – Area Path deprecated or clearly mismatched.
+1. **True Inactivity** – Last substantive change (from `wit-get-last-substantive-change(-bulk)`) older than `max_age_days`.
+2. **Stale Passive State** – Remains in initial state (e.g., New/Proposed/To Do) for > 50% of `max_age_days` with no substantive progress.
+3. **No Clear Owner** – Unassigned OR assigned but no substantive change activity in `max_age_days`.
+4. **Placeholder Quality** – Title or description is obviously placeholder (e.g., contains only TBD / test / spike) or trivially short (< ~15 chars meaningful content).
+5. **Obvious Duplication** – High lexical similarity (title+core description fragment) with a more recent active item (basic fuzzy match acceptable). Prefer anchor to newer item ID.
+6. **Out of Scope / Deprecated** – Area path or tags indicate decommissioned component or superseded initiative.
 
-Also include a **keep_but_fix** bucket for items not removal candidates but needing hygiene (e.g., missing Acceptance Criteria but recently updated).
+### Secondary hygiene bucket (`keep_but_fix`)
+Use when the item is still relevant but needs improvement (e.g., missing acceptance criteria, vague description, outdated tags) yet shows some recent substantive activity.
+
+### Classification Output (per item)
+Include: `ID | Type | State | DaysInactiveTrue | Category (removal_candidate|keep_but_fix|needs_review|keep) | Signals | LastSubstantiveChange`

@@ -3,6 +3,29 @@ import { loadConfiguration } from '../../config/config.js';
 import { logger } from '../../utils/logger.js';
 import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
 
+/**
+ * Clean up verbose fields from work item data to reduce context window usage.
+ * Simplifies user objects to just displayName and removes redundant metadata.
+ */
+function cleanFields(fields: any): any {
+  if (!fields || typeof fields !== 'object') return fields;
+  
+  const cleaned: any = {};
+  
+  for (const [key, value] of Object.entries(fields)) {
+    // Simplify user objects (System.CreatedBy, System.ChangedBy, System.AssignedTo, etc.)
+    if (value && typeof value === 'object' && 'displayName' in value) {
+      cleaned[key] = value.displayName;
+    }
+    // Keep other fields as-is
+    else {
+      cleaned[key] = value;
+    }
+  }
+  
+  return cleaned;
+}
+
 interface BatchArgs {
   WorkItemIds: number[];
   Organization?: string;
@@ -81,7 +104,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
         remainingWork: f['Microsoft.VSTS.Scheduling.RemainingWork'],
         tags: IncludeTags && f['System.Tags'] ? String(f['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean) : [],
         url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
-        _raw: IncludeExtendedFields ? { fields: f } : undefined
+        _raw: IncludeExtendedFields ? { fields: cleanFields(f) } : undefined
       };
       nodes.push(node);
 

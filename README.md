@@ -141,15 +141,25 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 9. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
 10. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, and field selection
-  - Example use cases: fetch parent/child graphs, list stale items (`ORDER BY [System.ChangedDate] ASC`), pull dependency links, scope by AreaPath, or gather related items before AI analysis.
+11. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
+12. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
+13. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
+14. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
 ## Prompts Available
 
-1. `work_item_enhancer` - Improve a work item description so it has enough clarity, scope, and acceptance criteria for automated handling by an AI coding agent
-2. `ai_suitability_analyzer` - Decide whether a software work item is a good fit for automated completion by an AI coding agent or should be assigned to a human
-3. `security_items_analyzer` - Analyze security and compliance items within an area path, categorize them, identify AI-suitable items, and create actionable remediation plans
+1. `intelligent_work_item_analyzer` - AI-powered comprehensive work item analysis (completeness, AI-readiness, categorization)
+2. `ai_assignment_analyzer` - Enhanced AI assignment suitability analysis with confidence scoring and detailed reasoning
+3. `work_item_enhancer` - Improve work item descriptions for clarity, scope, and acceptance criteria
+4. `feature_decomposer` - Intelligently decompose large features into smaller work items with AI suitability analysis
+5. `hierarchy_validator` - Analyze and validate work item parent-child relationships
+6. `parallel_fit_planner` - Analyze child work items for parallel execution and AI/human assignment strategy
+7. `find_dead_items` - Identify stale/abandoned work items using substantive change analysis (filters iteration path churn)
+8. `backlog_cleanup` - Comprehensive backlog hygiene and removal candidate identification
+9. `security_items_analyzer` - Analyze security and compliance items, categorize, and create remediation plans
+10. ~~`ai_suitability_analyzer`~~ - **DEPRECATED:** Use `ai_assignment_analyzer` instead for enhanced capabilities
 
 Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
 

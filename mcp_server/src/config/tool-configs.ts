@@ -9,8 +9,13 @@ import {
   featureDecomposerSchema,
   hierarchyValidatorSchema,
   getConfigurationSchema,
-  wiqlQuerySchema
-  , workItemContextPackageSchema, workItemsBatchContextSchema
+  wiqlQuerySchema,
+  workItemContextPackageSchema,
+  workItemsBatchContextSchema,
+  getLastSubstantiveChangeSchema,
+  getLastSubstantiveChangeBulkSchema,
+  bulkStateTransitionSchema,
+  bulkAddCommentsSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -284,6 +289,87 @@ export const toolConfigs: ToolConfig[] = [
         MaxResults: { type: "number", description: "Maximum number of results to return (default 200)" }
       },
       required: ["WiqlQuery"]
+    }
+  },
+  {
+    name: "wit-get-last-substantive-change",
+    description: "Efficiently determine the last substantive (meaningful) change to a work item by analyzing revision history server-side and filtering out automated changes like iteration path bulk updates. Returns minimal data to avoid context window bloat.",
+    script: "", // Handled internally
+    schema: getLastSubstantiveChangeSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WorkItemId: { type: "number", description: "Work item ID to analyze" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" },
+        HistoryCount: { type: "number", description: "Number of revisions to analyze (default 50)" },
+        AutomatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
+      },
+      required: ["WorkItemId"]
+    }
+  },
+  {
+    name: "wit-get-last-substantive-change-bulk",
+    description: "Bulk version: Efficiently analyze last substantive changes for multiple work items (1-100) in a single call. Processes revision history server-side, filters automated changes, and returns minimal data with summary statistics. Ideal for backlog hygiene analysis.",
+    script: "", // Handled internally
+    schema: getLastSubstantiveChangeBulkSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WorkItemIds: { type: "array", items: { type: "number" }, description: "Array of work item IDs to analyze (1-100 items)" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" },
+        HistoryCount: { type: "number", description: "Number of revisions to analyze per item (default 50)" },
+        AutomatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
+      },
+      required: ["WorkItemIds"]
+    }
+  },
+  {
+    name: "wit-bulk-state-transition",
+    description: "Efficiently transition multiple work items (1-50) to a new state in a single call. Includes validation, dry-run mode for safety, and detailed per-item results. Ideal for backlog hygiene operations like bulk removal or closure.",
+    script: "", // Handled internally
+    schema: bulkStateTransitionSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        WorkItemIds: { type: "array", items: { type: "number" }, description: "Array of work item IDs to transition (1-50 items)" },
+        NewState: { type: "string", description: "Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')" },
+        Comment: { type: "string", description: "Comment to add to work item history when transitioning" },
+        Reason: { type: "string", description: "Reason for state change (e.g., 'Abandoned', 'Obsolete')" },
+        DryRun: { type: "boolean", description: "If true, validates transitions without making changes" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["WorkItemIds", "NewState"]
+    }
+  },
+  {
+    name: "wit-bulk-add-comments",
+    description: "Add comments to multiple work items (1-50) efficiently in a single call. Supports templates with variable substitution for consistent messaging. Ideal for bulk notifications or status updates.",
+    script: "", // Handled internally
+    schema: bulkAddCommentsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        Items: { 
+          type: "array", 
+          items: { 
+            type: "object",
+            properties: {
+              WorkItemId: { type: "number", description: "Work item ID to add comment to" },
+              Comment: { type: "string", description: "Comment text to add (supports Markdown)" }
+            },
+            required: ["WorkItemId", "Comment"]
+          }, 
+          description: "Array of work items and their comments (1-50 items)" 
+        },
+        Template: { type: "string", description: "Comment template with {{variable}} placeholders" },
+        TemplateVariables: { type: "object", description: "Variables to substitute in template" },
+        Organization: { type: "string", description: "Azure DevOps organization name" },
+        Project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["Items"]
     }
   }
 ];

@@ -3,6 +3,29 @@ import { buildSuccessResponse, buildErrorResponse } from '../../utils/response-b
 import { loadConfiguration } from '../../config/config.js';
 import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
 
+/**
+ * Clean up verbose fields from work item data to reduce context window usage.
+ * Simplifies user objects to just displayName and removes redundant metadata.
+ */
+function cleanFields(fields: any): any {
+  if (!fields || typeof fields !== 'object') return fields;
+  
+  const cleaned: any = {};
+  
+  for (const [key, value] of Object.entries(fields)) {
+    // Simplify user objects (System.CreatedBy, System.ChangedBy, System.AssignedTo, etc.)
+    if (value && typeof value === 'object' && 'displayName' in value) {
+      cleaned[key] = value.displayName;
+    }
+    // Keep other fields as-is
+    else {
+      cleaned[key] = value;
+    }
+  }
+  
+  return cleaned;
+}
+
 interface ContextPackageArgs {
   WorkItemId: number;
   Organization?: string;
@@ -156,14 +179,21 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       try {
         const revsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${WorkItemId}/revisions?$top=${HistoryCount}&api-version=7.1`;
         const hRes = curlJson(revsUrl, token);
-        history = (hRes.value || []).map((r: any) => ({
-          id: r.id,
+        history = (hRes.value || []).map((r: any) => {
+          const cleanedFields = cleanFields(r.fields);
+          return {
+            id: r.id,
             rev: r.rev,
-            changedDate: r.fields?.['System.ChangedDate'],
-            changedBy: r.fields?.['System.ChangedBy']?.displayName || r.fields?.['System.ChangedBy'],
-            state: r.fields?.['System.State'],
-            title: r.fields?.['System.Title']
-        }));
+            changedDate: cleanedFields?.['System.ChangedDate'],
+            changedBy: cleanedFields?.['System.ChangedBy'],
+            state: cleanedFields?.['System.State'],
+            title: cleanedFields?.['System.Title'],
+            iterationPath: cleanedFields?.['System.IterationPath'],
+            areaPath: cleanedFields?.['System.AreaPath'],
+            assignedTo: cleanedFields?.['System.AssignedTo'],
+            description: cleanedFields?.['System.Description'] ? (cleanedFields['System.Description'].length > 100 ? cleanedFields['System.Description'].substring(0, 100) + '...' : cleanedFields['System.Description']) : undefined
+          };
+        });
       } catch (e) { logger.warn(`Failed to load history for ${WorkItemId}`, e); }
     }
 
@@ -178,8 +208,8 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       iterationPath: fieldsMap['System.IterationPath'],
       assignedTo: fieldsMap['System.AssignedTo']?.displayName || fieldsMap['System.AssignedTo']?.uniqueName,
       createdDate: fieldsMap['System.CreatedDate'],
-      changedDate: fieldsMap['System.ChangedDate'],
       createdBy: fieldsMap['System.CreatedBy']?.displayName || fieldsMap['System.CreatedBy']?.uniqueName,
+      changedDate: fieldsMap['System.ChangedDate'],
       changedBy: fieldsMap['System.ChangedBy']?.displayName || fieldsMap['System.ChangedBy']?.uniqueName,
       priority: fieldsMap['Microsoft.VSTS.Common.Priority'],
       storyPoints: fieldsMap['Microsoft.VSTS.Scheduling.StoryPoints'],
@@ -204,7 +234,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       attachments: IncludeAttachments ? attachments : undefined,
       comments,
       history,
-      _raw: IncludeExtendedFields ? { fields: fieldsMap } : undefined
+      _raw: IncludeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
     };
 
     return buildSuccessResponse({ contextPackage: result }, { tool: 'wit-get-work-item-context-package' });

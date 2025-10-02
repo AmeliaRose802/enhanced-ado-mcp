@@ -144,7 +144,11 @@ export const wiqlQuerySchema = z.object({
   Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   Project: z.string().optional().default(() => cfg().azureDevOps.project),
   IncludeFields: z.array(z.string()).optional().describe("Additional fields to include in work item details (default includes Id, Title, Type, State, AreaPath, IterationPath, AssignedTo)"),
-  MaxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return (default 200)")
+  MaxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return (default 200)"),
+  IncludeSubstantiveChange: z.boolean().optional().default(false).describe("Include computed fields lastSubstantiveChangeDate and daysInactive for each work item - automatically filters out automated changes like iteration path updates. Minimal overhead: only 2 fields per item."),
+  SubstantiveChangeHistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze when computing substantive change (default 50)"),
+  ComputeMetrics: z.boolean().optional().default(false).describe("Include computed metrics: daysInactive (from changed date), daysSinceCreated, hasDescription (>50 chars), isStale (inactive >180 days)"),
+  StaleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)")
 });
 
 // Full context package retrieval (single work item)
@@ -186,7 +190,42 @@ export const workItemsBatchContextSchema = z.object({
   ReturnFormat: z.enum(["graph", "array"]).optional().default("graph").describe("Return as graph (nodes/edges) or simple array")
 });
 
+export const getLastSubstantiveChangeSchema = z.object({
+  WorkItemId: z.number().int().describe("Work item ID to analyze"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  HistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze (default 50)"),
+  AutomatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
+});
 
+export const getLastSubstantiveChangeBulkSchema = z.object({
+  WorkItemIds: z.array(z.number().int()).min(1).max(100).describe("Array of work item IDs to analyze (1-100 items)"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project),
+  HistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze per item (default 50)"),
+  AutomatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
+});
+
+export const bulkStateTransitionSchema = z.object({
+  WorkItemIds: z.array(z.number().int()).min(1).max(50).describe("Array of work item IDs to transition (1-50 items)"),
+  NewState: z.string().describe("Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')"),
+  Comment: z.string().optional().describe("Comment to add to work item history when transitioning"),
+  Reason: z.string().optional().describe("Reason for state change (e.g., 'Abandoned', 'Obsolete')"),
+  DryRun: z.boolean().optional().default(false).describe("If true, validates transitions without making changes"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const bulkAddCommentsSchema = z.object({
+  Items: z.array(z.object({
+    WorkItemId: z.number().int().describe("Work item ID to add comment to"),
+    Comment: z.string().describe("Comment text to add (supports Markdown)")
+  })).min(1).max(50).describe("Array of work items and their comments (1-50 items)"),
+  Template: z.string().optional().describe("Comment template with {{variable}} placeholders"),
+  TemplateVariables: z.record(z.string()).optional().describe("Variables to substitute in template"),
+  Organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  Project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
 
 
 

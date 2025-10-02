@@ -612,6 +612,133 @@ interface WiqlQueryArgs {
   Project: string;
   IncludeFields?: string[];
   MaxResults?: number;
+  IncludeSubstantiveChange?: boolean;
+  SubstantiveChangeHistoryCount?: number;
+  ComputeMetrics?: boolean;
+  StaleThresholdDays?: number;
+}
+
+// Fields that indicate substantive changes
+const SUBSTANTIVE_FIELDS = [
+  'System.Description',
+  'System.Title',
+  'System.State',
+  'System.AssignedTo',
+  'Microsoft.VSTS.Common.Priority',
+  'Microsoft.VSTS.Common.AcceptanceCriteria',
+  'System.Tags',
+  'Microsoft.VSTS.Common.ReproSteps',
+];
+
+// Fields that are typically automated/bulk updates
+const AUTOMATED_FIELDS = [
+  'System.IterationPath',
+  'System.AreaPath',
+  'Microsoft.VSTS.Common.StackRank',
+  'Microsoft.VSTS.Common.BacklogPriority',
+  'Microsoft.VSTS.Scheduling.StoryPoints',
+];
+
+function daysBetween(dateString: string): number {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function isSubstantiveChange(
+  currentRev: any,
+  previousRev: any
+): { isSubstantive: boolean; changeType: string } {
+  if (!previousRev) {
+    return { isSubstantive: false, changeType: 'Creation' };
+  }
+
+  // Check what fields changed
+  const changedFields: string[] = [];
+  for (const field of SUBSTANTIVE_FIELDS) {
+    if (currentRev.fields[field] !== previousRev.fields[field]) {
+      changedFields.push(field);
+    }
+  }
+
+  const automatedFieldsChanged: string[] = [];
+  for (const field of AUTOMATED_FIELDS) {
+    if (currentRev.fields[field] !== previousRev.fields[field]) {
+      automatedFieldsChanged.push(field);
+    }
+  }
+
+  // If only automated fields changed and NO substantive fields changed, treat as non-substantive
+  if (changedFields.length === 0 && automatedFieldsChanged.length > 0) {
+    return {
+      isSubstantive: false,
+      changeType: `Automated: ${automatedFieldsChanged.join(', ')}`,
+    };
+  }
+
+  // If any substantive field changed, it's substantive
+  if (changedFields.length > 0) {
+    return {
+      isSubstantive: true,
+      changeType: changedFields.map((f) => f.split('.').pop()).join(', '),
+    };
+  }
+
+  return { isSubstantive: false, changeType: 'No significant changes' };
+}
+
+async function calculateSubstantiveChange(
+  workItemId: number,
+  createdDate: string,
+  Organization: string,
+  Project: string,
+  historyCount: number,
+  token: string
+): Promise<{
+  lastSubstantiveChangeDate: string;
+  daysInactive: number;
+}> {
+  try {
+    // Get revision history
+    const revsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${workItemId}/revisions?$top=${historyCount}&api-version=7.1`;
+    const revsCommand = `curl -s -H "Authorization: Bearer ${token}" "${revsUrl}"`;
+    const revsResponse = execSync(revsCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    const revsData = JSON.parse(revsResponse);
+    const revisions = revsData.value || [];
+
+    // Sort revisions by rev number descending (newest first)
+    revisions.sort((a: any, b: any) => b.rev - a.rev);
+
+    let lastSubstantiveChangeDate: string = createdDate;
+
+    // Walk through revisions from newest to oldest
+    for (let i = 0; i < revisions.length; i++) {
+      const currentRev = revisions[i];
+      const previousRev = i < revisions.length - 1 ? revisions[i + 1] : null;
+
+      const analysis = isSubstantiveChange(currentRev, previousRev);
+
+      if (analysis.isSubstantive) {
+        lastSubstantiveChangeDate = currentRev.fields['System.ChangedDate'];
+        break;
+      }
+    }
+
+    const daysInactive = daysBetween(lastSubstantiveChangeDate);
+
+    return {
+      lastSubstantiveChangeDate,
+      daysInactive,
+    };
+  } catch (error) {
+    logger.warn(`Failed to calculate substantive change for work item ${workItemId}`, error);
+    // Return default values on error
+    return {
+      lastSubstantiveChangeDate: createdDate,
+      daysInactive: daysBetween(createdDate),
+    };
+  }
 }
 
 interface WiqlWorkItemResult {
@@ -622,8 +749,18 @@ interface WiqlWorkItemResult {
   areaPath?: string;
   iterationPath?: string;
   assignedTo?: string;
+  createdDate?: string;
+  changedDate?: string;
   url: string;
-  fields: Record<string, any>;
+  additionalFields?: Record<string, any>;  // Only fields explicitly requested via IncludeFields
+  lastSubstantiveChangeDate?: string;  // Computed: date of last substantive change (filters automated updates)
+  daysInactive?: number;  // Computed: days since last substantive change
+  computedMetrics?: {  // Additional computed metrics
+    daysSinceCreated?: number;
+    daysSinceChanged?: number;
+    hasDescription: boolean;
+    isStale: boolean;
+  };
 }
 
 export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
@@ -636,7 +773,11 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     Organization,
     Project,
     IncludeFields = [],
-    MaxResults = 200
+    MaxResults = 200,
+    IncludeSubstantiveChange = false,
+    SubstantiveChangeHistoryCount = 50,
+    ComputeMetrics = false,
+    StaleThresholdDays = 180
   } = args;
 
   // Get authentication token
@@ -700,17 +841,109 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     }
 
     // Map work items to result format
-    const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: any) => ({
-      id: wi.id,
-      title: wi.fields['System.Title'] || '',
-      type: wi.fields['System.WorkItemType'] || '',
-      state: wi.fields['System.State'] || '',
-      areaPath: wi.fields['System.AreaPath'],
-      iterationPath: wi.fields['System.IterationPath'],
-      assignedTo: wi.fields['System.AssignedTo']?.displayName || wi.fields['System.AssignedTo']?.uniqueName,
-      url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
-      fields: wi.fields
-    }));
+    const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: any) => {
+      // Extract additional fields not already in the top-level structure
+      // Filter out redundant and verbose fields to save context window space
+      const additionalFields: Record<string, any> = {};
+      const extractedFields = new Set([
+        'System.Id',
+        'System.Title',
+        'System.WorkItemType',
+        'System.State',
+        'System.AreaPath',
+        'System.IterationPath',
+        'System.AssignedTo',
+        'System.CreatedDate',
+        'System.ChangedDate',
+        'System.Description'
+      ]);
+      
+      // Only include fields that were explicitly requested and not already extracted
+      for (const field of IncludeFields) {
+        if (!extractedFields.has(field) && wi.fields[field] !== undefined) {
+          // Simplify AssignedTo-like objects to just displayName
+          if (typeof wi.fields[field] === 'object' && wi.fields[field]?.displayName) {
+            additionalFields[field] = wi.fields[field].displayName;
+          } else {
+            additionalFields[field] = wi.fields[field];
+          }
+        }
+      }
+      
+      const workItem: WiqlWorkItemResult = {
+        id: wi.id,
+        title: wi.fields['System.Title'] || '',
+        type: wi.fields['System.WorkItemType'] || '',
+        state: wi.fields['System.State'] || '',
+        areaPath: wi.fields['System.AreaPath'],
+        iterationPath: wi.fields['System.IterationPath'],
+        assignedTo: wi.fields['System.AssignedTo']?.displayName || wi.fields['System.AssignedTo']?.uniqueName,
+        createdDate: wi.fields['System.CreatedDate'],
+        changedDate: wi.fields['System.ChangedDate'],
+        url: `https://dev.azure.com/${Organization}/${Project}/_workitems/edit/${wi.id}`,
+        ...(Object.keys(additionalFields).length > 0 && { additionalFields })
+      };
+
+      // Compute basic metrics if requested
+      if (ComputeMetrics) {
+        const description = wi.fields['System.Description'] || '';
+        const descriptionText = description.replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
+        const hasDescription = descriptionText.length > 50;
+        
+        const createdDate = workItem.createdDate ? new Date(workItem.createdDate) : null;
+        const changedDate = workItem.changedDate ? new Date(workItem.changedDate) : null;
+        const now = new Date();
+        
+        const daysSinceCreated = createdDate ? Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
+        const daysSinceChanged = changedDate ? Math.floor((now.getTime() - changedDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
+        const isStale = daysSinceChanged !== undefined && daysSinceChanged > StaleThresholdDays;
+        
+        workItem.computedMetrics = {
+          daysSinceCreated,
+          daysSinceChanged,
+          hasDescription,
+          isStale
+        };
+      }
+
+      return workItem;
+    });
+
+    // If substantive change analysis is requested, calculate it for each work item
+    if (IncludeSubstantiveChange) {
+      logger.debug(`Calculating substantive change data for ${workItems.length} work items`);
+      
+      // Process work items in parallel for efficiency
+      const substantiveChangePromises = workItems.map(async (workItem) => {
+        if (!workItem.createdDate) {
+          return null;
+        }
+        
+        const result = await calculateSubstantiveChange(
+          workItem.id,
+          workItem.createdDate,
+          Organization,
+          Project,
+          SubstantiveChangeHistoryCount,
+          token
+        );
+        
+        return { id: workItem.id, ...result };
+      });
+
+      const substantiveChangeResults = await Promise.all(substantiveChangePromises);
+
+      // Merge substantive change data into work items
+      for (const result of substantiveChangeResults) {
+        if (result) {
+          const workItem = workItems.find(wi => wi.id === result.id);
+          if (workItem) {
+            workItem.lastSubstantiveChangeDate = result.lastSubstantiveChangeDate;
+            workItem.daysInactive = result.daysInactive;
+          }
+        }
+      }
+    }
 
     return {
       workItems,
