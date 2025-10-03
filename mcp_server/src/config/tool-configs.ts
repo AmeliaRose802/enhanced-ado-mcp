@@ -8,6 +8,7 @@ import {
   aiAssignmentAnalyzerSchema,
   getConfigurationSchema,
   wiqlQuerySchema,
+  odataAnalyticsQuerySchema,
   workItemContextPackageSchema,
   workItemsBatchContextSchema,
   getLastSubstantiveChangeSchema,
@@ -219,6 +220,34 @@ export const toolConfigs: ToolConfig[] = [
         maxResults: { type: "number", description: "Maximum number of results to return (default 200)" }
       },
       required: ["wiqlQuery"]
+    }
+  },
+  {
+    name: "wit-query-analytics-odata",
+    description: "Query Azure DevOps Analytics using OData for efficient aggregations, metrics, and trend analysis. Supports work item counts, grouping by state/type/assignee, velocity metrics, and cycle time analysis. Use this for analytics and reporting instead of WIQL when you need aggregated data.",
+    script: "", // Handled internally
+    schema: odataAnalyticsQuerySchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryType: { type: "string", enum: ["workItemCount", "groupByState", "groupByType", "groupByAssignee", "velocityMetrics", "cycleTimeMetrics", "customQuery"], description: "Type of analytics query to execute" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" },
+        filters: { type: "object", description: "Filter conditions (e.g., { State: 'Active', WorkItemType: 'Bug' })" },
+        groupBy: { type: "array", items: { type: "string" }, description: "Fields to group by for aggregation" },
+        select: { type: "array", items: { type: "string" }, description: "Specific fields to return" },
+        orderBy: { type: "string", description: "Field to order results by (e.g., 'Count desc')" },
+        customODataQuery: { type: "string", description: "Custom OData query string for advanced scenarios" },
+        dateRangeField: { type: "string", enum: ["CreatedDate", "ChangedDate", "CompletedDate", "ClosedDate"], description: "Date field to filter by" },
+        dateRangeStart: { type: "string", description: "Start date (ISO 8601: YYYY-MM-DD)" },
+        dateRangeEnd: { type: "string", description: "End date (ISO 8601: YYYY-MM-DD)" },
+        areaPath: { type: "string", description: "Filter by Area Path" },
+        iterationPath: { type: "string", description: "Filter by Iteration Path" },
+        top: { type: "number", description: "Maximum number of results (default 100)" },
+        computeCycleTime: { type: "boolean", description: "Compute cycle time for completed items" },
+        includeMetadata: { type: "boolean", description: "Include OData metadata in response" }
+      },
+      required: ["queryType"]
     }
   },
   {

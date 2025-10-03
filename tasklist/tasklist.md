@@ -1,5 +1,7 @@
 - Add an intellegent tool for assigning story points to an item.
 
+- The dead item query should not be doing repeated calls to get the last substantive change. Instead, it should be using the feature already in the wiql tool to get it in one call.
+
 - See package response.md. Don't include assocated items in a removed or done state since they aren't very useful
     - Make this response as minimal and useful as you can
 

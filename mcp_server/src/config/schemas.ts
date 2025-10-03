@@ -249,6 +249,48 @@ export const wiqlQuerySchema = z.object({
   staleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)")
 });
 
+/**
+ * Schema for querying Azure DevOps Analytics using OData
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   queryType: "workItemCount",
+ *   filters: { State: "Active", WorkItemType: "Bug" }
+ * }
+ * ```
+ * 
+ * @remarks
+ * Provides efficient analytics queries using OData for aggregations, metrics, and trend analysis.
+ * Supports grouping, filtering, and computed fields like cycle time.
+ */
+export const odataAnalyticsQuerySchema = z.object({
+  queryType: z.enum([
+    "workItemCount",
+    "groupByState",
+    "groupByType",
+    "groupByAssignee",
+    "velocityMetrics",
+    "cycleTimeMetrics",
+    "customQuery"
+  ]).describe("Type of analytics query to execute"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  filters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().describe("Filter conditions (e.g., { State: 'Active', WorkItemType: 'Bug' })"),
+  groupBy: z.array(z.string()).optional().describe("Fields to group by for aggregation (e.g., ['State', 'AssignedTo'])"),
+  select: z.array(z.string()).optional().describe("Specific fields to return in results"),
+  orderBy: z.string().optional().describe("Field to order results by (e.g., 'Count desc')"),
+  customODataQuery: z.string().optional().describe("Custom OData query string for advanced scenarios (used when queryType is 'customQuery')"),
+  dateRangeField: z.enum(["CreatedDate", "ChangedDate", "CompletedDate", "ClosedDate"]).optional().describe("Date field to filter by"),
+  dateRangeStart: z.string().optional().describe("Start date for date range filter (ISO 8601 format: YYYY-MM-DD)"),
+  dateRangeEnd: z.string().optional().describe("End date for date range filter (ISO 8601 format: YYYY-MM-DD)"),
+  areaPath: z.string().optional().describe("Filter by Area Path"),
+  iterationPath: z.string().optional().describe("Filter by Iteration Path"),
+  top: z.number().int().optional().default(100).describe("Maximum number of results to return (default 100)"),
+  computeCycleTime: z.boolean().optional().default(false).describe("Compute cycle time (CompletedDate - CreatedDate) for completed items"),
+  includeMetadata: z.boolean().optional().default(false).describe("Include OData metadata in response")
+});
+
 // Full context package retrieval (single work item)
 export const workItemContextPackageSchema = z.object({
   workItemId: z.number().int().describe("Primary work item ID to retrieve full context for"),

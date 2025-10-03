@@ -7,6 +7,7 @@ import { SamplingService } from "./sampling-service.js";
 import { handleGetConfiguration } from "./handlers/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/create-new-item.handler.js";
 import { handleWiqlQuery } from "./handlers/wiql-query.handler.js";
+import { handleODataAnalytics } from "./handlers/odata-analytics.handler.js";
 import { handleGetWorkItemContextPackage } from './handlers/get-work-item-context-package.handler.js';
 import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-context-batch.handler.js';
 import { handleAssignToCopilot } from './handlers/assign-to-copilot.handler.js';
@@ -82,6 +83,11 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   // Query work items using WIQL (Work Item Query Language)
   if (name === 'wit-get-work-items-by-query-wiql') {
     return await handleWiqlQuery(config, args);
+  }
+
+  // Query Analytics using OData for aggregations and metrics
+  if (name === 'wit-query-analytics-odata') {
+    return await handleODataAnalytics(config, args);
   }
 
   // Full context package (single work item)

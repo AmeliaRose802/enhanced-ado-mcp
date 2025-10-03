@@ -17,6 +17,7 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 **Note:** This prompt provides hierarchical analysis only and does not modify work items.
 
 **Available MCP tools:**
+- `wit-query-analytics-odata` – ⭐ PREFERRED for aggregated metrics (counts by state/type/assignee, distributions)
 - `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
   - **Important**: Use simple `SELECT [System.Id] FROM WorkItems WHERE...` queries, NOT `WorkItemLinks` queries
   - WorkItemLinks queries are not fully supported by this tool and will return empty results
@@ -189,19 +190,24 @@ Arguments: {
 
 #### Missing Descriptions (Within Hierarchy Context)
 
-Query by area path to find items missing descriptions, then filter in your analysis to only include items in the hierarchy you're analyzing:
+**IMPORTANT: System.Description is a long-text field and cannot be queried with equality operators in WIQL.**
+
+Instead, query by area path to get all items first, then check descriptions using `wit-get-work-items-context-batch`:
 
 ```
+Step 1: Get all work items in the hierarchy
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.Description] = '' ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
   includeSubstantiveChange: true,
   maxResults: 200
 }
-```
 
-Then filter the results to only include items whose `[System.Parent]` chains back to the Key Result you're analyzing, or use the results to identify patterns across all hierarchies.
+Step 2: Use wit-get-work-items-context-batch (max 20-30 items per call) to retrieve descriptions
+Step 3: Filter results client-side for empty or missing descriptions
+Step 4: Filter to only include items whose [System.Parent] chains back to the Key Result you're analyzing
+```
 
 ### Backlog Health Indicators
 
@@ -247,126 +253,131 @@ Classify each work item into one of these categories based on the indicators abo
 
 ### Hierarchical Report Output Format
 
-Present your findings in a hierarchical tree structure that mirrors the work item relationships. This makes it easy to see how issues cascade and where entire branches need attention.
-
-#### Overall Summary Section
-
-Start with an executive overview:
-- **Total Key Results analyzed**: X
-- **Total work items in scope**: Y (breakdown by type)
-- **Hierarchy health distribution**: 
-  - Healthy branches: X%
-  - Branches needing enhancement: Y%
-  - Branches requiring attention: Z%
-  - Branches for review: W%
-- **Top themes across all hierarchies**: List 3-5 most common patterns (e.g., "40% of Features missing descriptions", "3 branches show complete inactivity")
-- **Orphaned items**: Count of work items with no parent (except Key Results)
-- **Suggested next steps**: Priority actions for team discussion
+Present your findings in a **clean, scannable format** using tables and structured sections. Prioritize readability over exhaustive detail.
 
 ---
 
-#### Hierarchical Findings: Walk Through Each Key Result
+## 📊 Executive Summary
 
-For each Key Result, present a tree-structured report showing all descendants:
+| Metric | Value |
+|--------|-------|
+| **Key Results Analyzed** | X |
+| **Total Active Work Items** | Y (X Key Results, Y Epics, Z Features, A Stories, B Tasks) |
+| **Overall Health** | X% Healthy, Y% Need Enhancement, Z% Require Attention, W% Need Review |
+| **Orphaned Items** | X items with no parent link |
+| **Critical Issues** | X high-priority items requiring immediate attention |
 
-**Format**:
-```
-### Key Result: [ID](link) - Title
-**Status**: Healthy Branch | Branch Needs Enhancement | Branch Requires Attention | Branch for Review
-**Health Summary**: Brief assessment of overall branch health
-**DaysInactive**: X | **LastSubstantiveChange**: date
-
-**Issues Found**:
-- List any concerns at the Key Result level
-- Cascading issues affecting multiple children
-- Branch-level patterns
-
-**Descendants** (Total: X items):
-
-├─ Epic: [ID](link) - Title
-│  **Status**: Category | **Type**: Epic | **State**: State | **DaysInactive**: X
-│  **Issues**: List specific concerns or "None - Healthy"
-│  **Improvement Opportunities**: Specific actionable suggestions
-│  │
-│  ├─ Feature: [ID](link) - Title
-│  │  **Status**: Category | **Type**: Feature | **State**: State | **DaysInactive**: X
-│  │  **Issues**: List specific concerns or "None - Healthy"
-│  │  **Improvement Opportunities**: Specific actionable suggestions
-│  │  │
-│  │  ├─ User Story: [ID](link) - Title
-│  │  │  **Status**: Category | **Type**: User Story | **State**: State | **DaysInactive**: X
-│  │  │  **Issues**: List specific concerns or "None - Healthy"
-│  │  │  **Improvement Opportunities**: Specific actionable suggestions
-│  │  │  │
-│  │  │  └─ Task: [ID](link) - Title
-│  │  │     **Status**: Category | **Type**: Task | **State**: State | **DaysInactive**: X
-│  │  │     **Issues**: List specific concerns or "None - Healthy"
-│  │  │
-│  │  └─ User Story: [ID](link) - Title
-│  │     **Status**: Category | **Type**: User Story | **State**: State | **DaysInactive**: X
-│  │     **Issues**: List specific concerns or "None - Healthy"
-│  │
-│  └─ Feature: [ID](link) - Title
-│     **Status**: Category | **Type**: Feature | **State**: State | **DaysInactive**: X
-│     **Issues**: List specific concerns or "None - Healthy"
-│
-└─ Epic: [ID](link) - Title
-   **Status**: Category | **Type**: Epic | **State**: State | **DaysInactive**: X
-   **Issues**: List specific concerns or "None - Healthy"
-
-**Branch-Level Recommendations**:
-1. Specific actions to improve this Key Result and its descendants
-2. Priority items requiring immediate team discussion
-3. Opportunities for consolidation or clarification
-```
-
-**Key Principles**:
-- **Walk depth-first**: Complete each branch before moving to the next sibling
-- **Show full hierarchy**: Include all active descendant items (not just direct children)
-- **Use tree visualization**: Indent and use box-drawing characters (├─, │, └─) to show parent-child relationships
-- **Link all items**: Format IDs as `[ID]({{org_url}}/{{project}}/_workitems/edit/{ID})` for easy navigation
-- **Highlight patterns**: Call out when multiple items in a branch share the same issue
-- **Branch-level summaries**: After showing all descendants, provide recommendations for the entire branch
+### 🎯 Top 3 Priorities
+1. **[Brief description]** - Affects X items across Y branches
+2. **[Brief description]** - Affects X items across Y branches
+3. **[Brief description]** - Affects X items across Y branches
 
 ---
 
-#### Orphaned Items Section
+## 🌳 Hierarchy Analysis by Key Result
 
-If you found items with no parent linkage (excluding Key Results), list them separately:
+For each Key Result, present findings in a **compact, table-based format**:
 
-```
-### Orphaned Work Items (No Parent Link)
+### Key Result [12345](link): Brief Title ⚠️ Status Icon
+> **Branch Health**: Healthy Branch | Needs Enhancement | Requires Attention | For Review  
+> **Activity**: Last change X days ago | **Children**: Y total (Z healthy, W need work)
 
-These items are not connected to any Key Result hierarchy and should be reviewed for proper placement:
+#### 📋 Issues at This Level
+- Brief bullet point summary of Key Result-level concerns (if any)
+- Use **bold** for critical issues
+- Keep to 1-3 most important items
 
-- [ID](link) - Title | Type | State | DaysInactive: X | **Issue**: No parent linkage
-  **Suggested Action**: Review and link to appropriate parent or mark for review
+#### 📂 Direct Children Summary
 
-(List all orphaned items)
-```
+| ID | Type | Title | Status | Days Inactive | Issues |
+|----|------|-------|--------|---------------|--------|
+| [123](link) | Epic | Brief Title | 🟢 Healthy | 5 | None |
+| [124](link) | Epic | Brief Title | 🟡 Needs Work | 45 | Missing description |
+| [125](link) | Feature | Brief Title | 🔴 Attention | 120 | No children, stale |
+
+**Status Legend**: 🟢 Healthy | 🟡 Needs Enhancement | 🟠 Requires Attention | 🔴 For Review
+
+#### 🔍 Items Requiring Attention (Priority Order)
+
+Only list items with issues - skip healthy items to reduce noise.
+
+**1. [ID](link) - Title** (Type | State | X days inactive)
+- **Issue**: Brief description of primary concern
+- **Action**: Specific, actionable recommendation
+
+**2. [ID](link) - Title** (Type | State | X days inactive)
+- **Issue**: Brief description of primary concern
+- **Action**: Specific, actionable recommendation
+
+*(Continue for items needing attention only)*
+
+#### ✅ Branch Recommendations
+1. **[Action]** - Brief justification (affects X items)
+2. **[Action]** - Brief justification
+3. **[Action]** - Brief justification
 
 ---
 
-#### Cross-Cutting Issues Summary
-
-After walking through all Key Results, summarize patterns that appear across multiple hierarchies:
-
-```
-### Cross-Cutting Patterns
-
-**Missing Descriptions**: Found in X items across Y branches
-- Key Result A → Epic B → Feature C
-- Key Result D → Feature E
-**Recommended Action**: Establish description standards for all work item types
-
-**Extended Inactivity (> {{max_age_days}} days)**: Found in X items across Y branches
-- Entire branch under Key Result F appears abandoned (last activity Z days ago)
-- Key Result G has 3 inactive Features
-**Recommended Action**: Team review session to determine if these initiatives are still relevant
-
-(Add other cross-cutting patterns as needed)
-```
+*(Repeat above format for each Key Result)*
 
 ---
 
-**Tone**: Constructive and focused on continuous improvement. Frame findings as opportunities to strengthen the backlog rather than criticisms. Emphasize how hierarchical organization helps teams see patterns and take coordinated action on entire branches rather than scattered individual items.
+## 🚨 Critical Issues Across All Branches
+
+### Orphaned Items (No Parent Link)
+
+| ID | Type | Title | State | Days Inactive | Suggested Action |
+|----|------|-------|-------|---------------|------------------|
+| [123](link) | Feature | Title | Active | 30 | Link to Key Result ABC |
+| [124](link) | Story | Title | New | 60 | Archive or link to parent |
+
+---
+
+### Cross-Branch Patterns
+
+| Pattern | Count | Affected Branches | Recommended Action |
+|---------|-------|-------------------|-------------------|
+| Missing descriptions | X items | KR-A, KR-B, KR-C | Create description template |
+| Stale (>{{max_age_days}} days) | X items | KR-B (entire branch) | Team review meeting |
+| No acceptance criteria | X stories | KR-A, KR-D | Add AC to stories |
+| Unassigned items | X items | All branches | Assignment review |
+
+---
+
+## 📈 Health Breakdown by Work Item Type
+
+| Type | Total | 🟢 Healthy | 🟡 Needs Enhancement | 🟠 Requires Attention | 🔴 For Review |
+|------|-------|-----------|---------------------|----------------------|---------------|
+| Key Result | X | X% | X% | X% | X% |
+| Epic | X | X% | X% | X% | X% |
+| Feature | X | X% | X% | X% | X% |
+| Story | X | X% | X% | X% | X% |
+| Task | X | X% | X% | X% | X% |
+
+---
+
+## 🎯 Recommended Next Steps
+
+**Immediate Actions (Next Sprint)**
+1. **[Specific action]** - Brief justification
+2. **[Specific action]** - Brief justification
+3. **[Specific action]** - Brief justification
+
+**Longer Term Improvements**
+1. **[Strategic improvement]** - Brief justification
+2. **[Process change]** - Brief justification
+
+---
+
+**Formatting Guidelines**:
+- **Use tables** for lists of work items - far more readable than nested text
+- **Use status icons** (🟢🟡🟠🔴) for quick visual scanning
+- **Skip healthy items** in detailed sections - only show what needs attention
+- **Keep descriptions brief** - 1-2 sentences max per item
+- **Link all work item IDs** as `[ID]({{org_url}}/{{project}}/_workitems/edit/{ID})`
+- **Prioritize by severity** - critical issues first
+- **Group similar issues** - don't repeat the same problem X times
+- **Use hierarchy only where needed** - tables are clearer than deep trees
+- **Be concise** - teams need actionable insights, not exhaustive catalogs
+
+**Tone**: Constructive and focused on continuous improvement. Frame findings as opportunities to strengthen the backlog rather than criticisms. Emphasize how hierarchical organization helps teams see patterns and take coordinated action.

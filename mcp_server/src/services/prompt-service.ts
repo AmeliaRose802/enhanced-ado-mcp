@@ -10,11 +10,22 @@ import type { MCPServerConfig } from "../config/config.js";
 /**
  * Create template variables object from config
  */
-function createTemplateVariables(config: MCPServerConfig): Record<string, string | number | boolean> {
+function createTemplateVariables(config: MCPServerConfig, args: Record<string, unknown> = {}): Record<string, string | number | boolean> {
   const now = new Date();
   const month = now.getMonth();
   const quarter = Math.floor(month / 3) + 1;
   const semester = `Q${quarter}`;
+  
+  // Calculate date ranges based on analysis_period_days parameter
+  const analysisPeriodDays = typeof args.analysis_period_days === 'number' ? args.analysis_period_days : 90;
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - analysisPeriodDays);
+  
+  // Format dates as YYYY-MM-DD for OData queries
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
   
   return {
     // Core config variables
@@ -38,6 +49,12 @@ function createTemplateVariables(config: MCPServerConfig): Record<string, string
     default_priority: config.azureDevOps.defaultPriority?.toString(),
     default_assigned_to: config.azureDevOps.defaultAssignedTo,
     default_branch: config.gitRepository.defaultBranch,
+    
+    // Date range variables (auto-calculated)
+    start_date: formatDate(startDate),
+    end_date: formatDate(endDate),
+    today: formatDate(now),
+    analysis_period_days: analysisPeriodDays,
     
     // Computed values
     semester: semester,
@@ -258,21 +275,24 @@ export async function getPromptContent(name: string, args: Record<string, unknow
         const { loadConfiguration } = await import('../config/config.js');
         const config = loadConfiguration();
 
-        // Create comprehensive template variables from config
-        const configVars = createTemplateVariables(config);
+        // Apply argument defaults from prompt definition first
+        const argsWithDefaults = { ...args };
+        for (const [argName, argDef] of Object.entries(parsed.arguments)) {
+          if (!(argName in argsWithDefaults) && argDef.default !== undefined) {
+            argsWithDefaults[argName] = argDef.default;
+          }
+        }
+
+        // Create comprehensive template variables from config (pass args for date calculation)
+        const configVars = createTemplateVariables(config, argsWithDefaults);
         
         // Merge with user-provided args (args override config defaults)
-        const allVars = { ...configVars, ...args };
+        const allVars = { ...configVars, ...argsWithDefaults };
         
-        // Apply argument defaults from prompt definition
+        // Apply template variables to defaults that contain template syntax
         for (const [argName, argDef] of Object.entries(parsed.arguments)) {
-          if (!(argName in allVars) && argDef.default !== undefined) {
-            // If default contains template variables, resolve them first
-            if (typeof argDef.default === 'string' && argDef.default.includes('{{')) {
-              allVars[argName] = applyTemplateVariables(argDef.default, configVars);
-            } else {
-              allVars[argName] = argDef.default;
-            }
+          if (argName in allVars && typeof allVars[argName] === 'string' && (allVars[argName] as string).includes('{{')) {
+            allVars[argName] = applyTemplateVariables(allVars[argName] as string, configVars);
           }
         }
         

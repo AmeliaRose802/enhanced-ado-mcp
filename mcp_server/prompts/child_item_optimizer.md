@@ -16,6 +16,7 @@ You are a **Work Item Portfolio Optimizer & Execution Planner** with expertise i
 ## Available MCP Tools
 
 **Enhanced ADO MCP Server:**
+- `wit-query-analytics-odata` - ⭐ Get aggregated metrics for child items (states, types, distributions)
 - `wit-get-work-item-context-package` - Get comprehensive details for a single work item
 - `wit-get-work-items-context-batch` - Get details for multiple work items with relationships
 - `wit-ai-assignment-analyzer` - Analyze work items for AI assignment suitability

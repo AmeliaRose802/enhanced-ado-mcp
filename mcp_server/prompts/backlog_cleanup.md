@@ -17,6 +17,7 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 **Note:** This prompt provides analysis only and does not modify work items.
 
 **Available MCP tools:**
+- `wit-query-analytics-odata` – ⭐ PREFERRED for aggregated metrics (counts by state/type/assignee, distributions)
 - `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
 - `wit-get-work-items-context-batch` – ⚠️ batch enrichment (LIMIT: 20-30 items per call to avoid context overflow)
 - `wit-get-work-item-context-package` – ⚠️ deep dive for edge cases (use sparingly, returns large payload)
@@ -26,7 +27,29 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 
 ### Process Steps
 
-1. **Search for work items with substantive change analysis**:
+1. **Get high-level metrics (RECOMMENDED FIRST STEP)**:
+	 - Use `wit-query-analytics-odata` to get aggregated counts and distributions BEFORE querying individual items:
+	 ```
+	 Tool: wit-query-analytics-odata
+	 Arguments: {
+	   queryType: "groupByState",
+	   filters: { },
+	   areaPath: "{{area_path}}"
+	 }
+	 ```
+	 This gives you the overall state distribution (New, Active, Done, etc.) efficiently.
+	 
+	 Get work item type distribution:
+	 ```
+	 Tool: wit-query-analytics-odata
+	 Arguments: {
+	   queryType: "groupByType",
+	   filters: { State: { ne: "Done" }, State: { ne: "Completed" }, State: { ne: "Closed" }, State: { ne: "Resolved" }, State: { ne: "Removed" } },
+	   areaPath: "{{area_path}}"
+	 }
+	 ```
+
+2. **Search for work items with substantive change analysis**:
 	 - **PRIMARY METHOD**: Use `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true` to get work items AND their last substantive change dates in ONE call:
 		 ```
 		 Tool: wit-get-work-items-by-query-wiql
@@ -40,9 +63,9 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 		 ```
 	 - This returns items with computed `lastSubstantiveChangeDate` and `daysInactive` fields (server-side filtering of automated updates)
 	 - **Benefits**: 50% fewer API calls, automatic filtering of system changes, immediate activity insights
-2. **Optionally get additional context** (only if needed): Use `wit-get-work-items-context-batch` for descriptions, tags, or detailed relationships
-3. **Analyze each item** using the `daysInactive` field and quality indicators to assess backlog health
-4. **Generate comprehensive health report** with improvement recommendations (do not modify work items)
+3. **Optionally get additional context** (only if needed): Use `wit-get-work-items-context-batch` for descriptions, tags, or detailed relationships
+4. **Analyze each item** using the `daysInactive` field and quality indicators to assess backlog health
+5. **Generate comprehensive health report** with improvement recommendations (do not modify work items)
 
 ---
 
@@ -51,31 +74,43 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 Use these targeted queries to identify specific quality issues in the backlog. **Remember to include `includeSubstantiveChange: true` in your tool calls to get activity data.**
 
 #### Missing or Empty Descriptions
+
+**IMPORTANT: System.Description is a long-text field and cannot be queried with equality operators in WIQL.**
+
+Instead, retrieve all work items first, then check descriptions using `wit-get-work-items-context-batch`:
+
 ```
+Step 1: Get all work items
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Description] = '' OR [System.Description] IS NULL) ORDER BY [System.CreatedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.Description"],
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
   includeSubstantiveChange: true,
-  maxResults: 100
+  maxResults: 200
 }
+
+Step 2: Use wit-get-work-items-context-batch (max 20-30 items per call) to get descriptions
+Step 3: Filter results client-side for empty or missing descriptions
 ```
 
 **Missing Acceptance Criteria** (User Stories/PBIs only):
+
+**IMPORTANT: Microsoft.VSTS.Common.AcceptanceCriteria is a long-text field and cannot be queried with equality operators in WIQL.**
+
+Instead, retrieve User Stories/PBIs first, then check acceptance criteria using `wit-get-work-items-context-batch`:
+
 ```
+Step 1: Get all User Stories and PBIs
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([Microsoft.VSTS.Common.AcceptanceCriteria] = '' OR [Microsoft.VSTS.Common.AcceptanceCriteria] IS NULL) ORDER BY [System.CreatedDate] DESC",
-  includeFields: ["System.Title"],
-  maxResults: 100
-```
-Tool: wit-get-work-items-by-query-wiql
-Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([Microsoft.VSTS.Common.AcceptanceCriteria] = '' OR [Microsoft.VSTS.Common.AcceptanceCriteria] IS NULL) ORDER BY [System.CreatedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.WorkItemType", "Microsoft.VSTS.Common.AcceptanceCriteria"],
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.WorkItemType"],
   includeSubstantiveChange: true,
   maxResults: 100
 }
+
+Step 2: Use wit-get-work-items-context-batch (max 20-30 items per call) with includeFields: ["Microsoft.VSTS.Common.AcceptanceCriteria"]
+Step 3: Filter results client-side for empty or missing acceptance criteria
 ```
 
 #### Unassigned Items in Active States
