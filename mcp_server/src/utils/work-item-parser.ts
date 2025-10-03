@@ -4,6 +4,16 @@
 
 import type { WorkItemHierarchyInfo } from '../services/sampling-types.js';
 
+/**
+ * Escape area path for use in WIQL and OData queries
+ * Handles single quotes by doubling them (SQL/WIQL escaping)
+ */
+export function escapeAreaPath(areaPath: string): string {
+  if (!areaPath) return '';
+  // Replace single quotes with two single quotes (SQL/WIQL escaping)
+  return areaPath.replace(/'/g, "''");
+}
+
 export function parseWorkItemForHierarchy(workItemData: any): WorkItemHierarchyInfo | null {
   try {
     const fields = workItemData.fields || {};

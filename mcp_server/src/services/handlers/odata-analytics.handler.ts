@@ -8,6 +8,7 @@ import { validateAzureCLI } from "../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
 import { logger } from "../../utils/logger.js";
 import { getAzureDevOpsToken } from "../../utils/ado-token.js";
+import { escapeAreaPath } from "../../utils/work-item-parser.js";
 
 interface ODataAnalyticsArgs {
   queryType: "workItemCount" | "groupByState" | "groupByType" | "groupByAssignee" | "velocityMetrics" | "cycleTimeMetrics" | "customQuery";
@@ -84,13 +85,13 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
   // Add area path filter - use 'startswith' for hierarchical filtering
   // Analytics API uses Area/AreaPath navigation property
   if (areaPath) {
-    filterClauses.push(`startswith(Area/AreaPath, '${areaPath}')`);
+    filterClauses.push(`startswith(Area/AreaPath, '${escapeAreaPath(areaPath)}')`);
   }
 
   // Add iteration path filter - use 'startswith' for hierarchical filtering  
   // Analytics API uses Iteration/IterationPath navigation property
   if (iterationPath) {
-    filterClauses.push(`startswith(Iteration/IterationPath, '${iterationPath}')`);
+    filterClauses.push(`startswith(Iteration/IterationPath, '${escapeAreaPath(iterationPath)}')`);
   }
 
   switch (queryType) {
@@ -162,14 +163,26 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       cycleTimeFilter.push("CreatedDate ne null");
       
       if (computeCycleTime) {
-        query = `$apply=filter(${cycleTimeFilter.join(' and ')})/compute((CompletedDate sub CreatedDate) div duration'P1D' as CycleTimeDays)/groupby((AssignedTo/UserName), aggregate(CycleTimeDays with average as AvgCycleTime, CycleTimeDays with max as MaxCycleTime))`;
+        // Compute cycle time in days using totaloffsetminutes to convert Duration to numeric
+        // totaloffsetminutes returns the duration in minutes, divide by 1440 to get days
+        query = `$apply=filter(${cycleTimeFilter.join(' and ')})/compute(totaloffsetminutes(CompletedDate sub CreatedDate) div 1440 as CycleTimeDays)/groupby((AssignedTo/UserName), aggregate(CycleTimeDays with average as AvgCycleTime, CycleTimeDays with max as MaxCycleTime, $count as CompletedCount))`;
+        
+        // Order by the computed aggregation field
+        if (orderBy) {
+          query += `&$orderby=${orderBy}`;
+        } else {
+          query += "&$orderby=AvgCycleTime asc";
+        }
       } else {
+        // Just count completed items by assignee without cycle time computation
         query = `$apply=filter(${cycleTimeFilter.join(' and ')})/groupby((AssignedTo/UserName), aggregate($count as CompletedCount))`;
-      }
-      if (orderBy) {
-        query += `&$orderby=${orderBy}`;
-      } else {
-        query += "&$orderby=AvgCycleTime";
+        
+        // Order by count
+        if (orderBy) {
+          query += `&$orderby=${orderBy}`;
+        } else {
+          query += "&$orderby=CompletedCount desc";
+        }
       }
       break;
 

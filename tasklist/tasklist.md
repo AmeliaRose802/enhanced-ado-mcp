@@ -1,4 +1,34 @@
+- ✅ **FIXED** - The area path is now properly escaped when filled into prompts and queries:
+  - Added `escapeAreaPath()` utility function that escapes single quotes (doubles them for SQL/WIQL)
+  - Applied escaping in OData Analytics handler for OData queries
+  - Applied escaping in detect-patterns handler for WIQL queries  
+  - Applied escaping in hierarchy-validator analyzer for WIQL queries
+  - Applied escaping in validate-hierarchy handler for WIQL queries
+  - Applied escaping in prompt-service for template variable substitution
+  - Area paths with single quotes (e.g., `Team's Area`) or backslashes now work correctly
+
 - Add an intellegent tool for assigning story points to an item.
+
+- ✅ **FIXED** - The cycle time metrics type of the odata tool now works correctly:
+  - Fixed: Conditional ordering based on `computeCycleTime` flag
+  - Fixed: Added `CompletedCount` to aggregation when computing cycle time
+  - Fixed: Proper `$orderby` clause that doesn't reference non-existent fields
+  - See: `docs/ODATA_QUERY_OPTIMIZATION.md` for details
+
+~~Old error (now fixed):~~
+```json
+{
+  "success": false,
+  "data": null,
+  "metadata": {
+    "source": "odata-analytics"
+  },
+  "errors": [
+    "Analytics API error: 400 Bad Request - {\"error\":{\"code\":\"0\",\"message\":\"VS403483: The query specified in the URI is not valid: $apply/groupby grouping expression 'AvgCycleTime' must evaluate to a property access value..\",\"innererror\":{\"message\":\"$apply/groupby grouping expression 'AvgCycleTime' must evaluate to a property access value.\",\"type\":\"Microsoft.OData.ODataException\",\"stacktrace\":\"\"}}}"
+  ],
+  "warnings": []
+}
+```
 
 - The dead item query should not be doing repeated calls to get the last substantive change. Instead, it should be using the feature already in the wiql tool to get it in one call.
 

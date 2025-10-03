@@ -8,6 +8,7 @@ import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
+import { escapeAreaPath } from "../../utils/work-item-parser.js";
 
 interface ValidateHierarchyArgs {
   workItemIds?: number[];
@@ -145,7 +146,8 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       });
       workItems = result.workItems;
     } else if (areaPath) {
-      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${areaPath}'` : `[System.AreaPath] = '${areaPath}'`;
+      const escapedAreaPath = escapeAreaPath(areaPath);
+      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${escapedAreaPath}'` : `[System.AreaPath] = '${escapedAreaPath}'`;
       const result = await queryWorkItemsByWiql({
         wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed', 'Done', 'Completed', 'Resolved') ORDER BY [System.WorkItemType], [System.Id]`,
         organization,

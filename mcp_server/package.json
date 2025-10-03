@@ -24,6 +24,7 @@
   "files": [
     "dist/**/*",
     "prompts/**/*",
+    "resources/**/*",
     "README.md"
   ],
   "engines": {

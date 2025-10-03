@@ -39,15 +39,16 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 	 ```
 	 This gives you the overall state distribution (New, Active, Done, etc.) efficiently.
 	 
-	 Get work item type distribution:
+	 Get work item type distribution (excluding completed items):
 	 ```
 	 Tool: wit-query-analytics-odata
 	 Arguments: {
-	   queryType: "groupByType",
-	   filters: { State: { ne: "Done" }, State: { ne: "Completed" }, State: { ne: "Closed" }, State: { ne: "Resolved" }, State: { ne: "Removed" } },
-	   areaPath: "{{area_path}}"
+	   queryType: "customQuery",
+	   customODataQuery: "$apply=filter(State ne 'Done' and State ne 'Completed' and State ne 'Closed' and State ne 'Resolved' and State ne 'Removed' and startswith(Area/AreaPath, '{{area_path}}'))/groupby((WorkItemType), aggregate($count as Count))&$orderby=Count desc"
 	 }
 	 ```
+	 
+	 **Note:** Filters in OData only support equality (`eq`). For negation (`ne`) or multiple conditions, use a custom query as shown above.
 
 2. **Search for work items with substantive change analysis**:
 	 - **PRIMARY METHOD**: Use `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true` to get work items AND their last substantive change dates in ONE call:

@@ -143,7 +143,8 @@ Calculate average and max cycle time by assignee.
     { 
       "AssignedTo": { "UserName": "john@example.com" },
       "AvgCycleTime": 3.5,
-      "MaxCycleTime": 15.0
+      "MaxCycleTime": 15.0,
+      "CompletedCount": 25
     }
   ]
 }

@@ -7,6 +7,7 @@ import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
+import { escapeAreaPath } from "../../utils/work-item-parser.js";
 
 interface WorkItemFromQuery {
   id: number;
@@ -78,8 +79,9 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
       });
       workItems = result.workItems;
     } else if (areaPath) {
-      // Query by area path
-      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${areaPath}'` : `[System.AreaPath] = '${areaPath}'`;
+      // Query by area path (escape for WIQL)
+      const escapedAreaPath = escapeAreaPath(areaPath);
+      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${escapedAreaPath}'` : `[System.AreaPath] = '${escapedAreaPath}'`;
       const result = await queryWorkItemsByWiql({
         wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')`,
         organization,

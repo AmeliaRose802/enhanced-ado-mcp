@@ -12,17 +12,19 @@ import { getAvailableToolConfigs } from "./config/tool-configs.js";
 import { loadPrompts, getPromptContent } from "./services/prompt-service.js";
 import { executeTool, setServerInstance } from "./services/tool-service.js";
 import { checkSamplingSupport } from "./utils/sampling-client.js";
+import { listResources, getResourceContent } from "./services/resource-service.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { updateConfigFromCLI } from "./config/config.js";
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
-  version: "1.2.2"
+  version: "1.2.3"
 }, {
   capabilities: {
     tools: {},
     prompts: {},
+    resources: {},
     sampling: {}
   }
 });
@@ -59,6 +61,23 @@ server.fallbackRequestHandler = async (request: any) => {
       messages: [{
         role: "user",
         content: { type: "text", text: content }
+      }]
+    };
+  }
+  
+  if (request.method === "resources/list") {
+    const resources = listResources();
+    return { resources };
+  }
+  
+  if (request.method === "resources/read") {
+    const { uri } = request.params || {};
+    const content = await getResourceContent(uri);
+    return {
+      contents: [{
+        uri: content.uri,
+        mimeType: content.mimeType,
+        text: content.text
       }]
     };
   }
@@ -130,7 +149,8 @@ async function main() {
     
     logger.info(`enhanced-ado-msp MCP server starting (${useHybrid ? "hybrid" : "stdio"})`);
     
-    setServerInstance(server);
+    // Set server instance with type assertion to handle SDK generic complexity
+    setServerInstance(server as any);
     
     const transport = useHybrid ? new HybridStdioServerTransport() : new StdioServerTransport();
     await server.connect(transport as any);

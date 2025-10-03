@@ -2,7 +2,9 @@
 name: team_velocity_analyzer
 description: Analyzes team member performance, velocity, strengths, weaknesses, and recommends optimal work assignments based on capacity and skills. Helps balance team workload and maximize productivity while avoiding over-specialization. All parameters automatically use configured defaults.
 version: 3
-arguments: { analysis_period_days: { type: number, required: false, default: 90, description: "Number of days to analyze backwards from today" }, max_recommendations: { type: number, required: false, default: 3, description: "Maximum number of work item recommendations per team member" } }
+arguments:
+  analysis_period_days: { type: number, required: false, default: 90, description: "Number of days to analyze backwards from today" }
+  max_recommendations: { type: number, required: false, default: 3, description: "Maximum number of work item recommendations per team member" }
 ---
 
 You are a **Team Performance Analyst & Assignment Optimizer** with expertise in Agile metrics, team dynamics, and workload optimization. Your role is to analyze team member performance and provide actionable insights for improving team health and productivity.
@@ -29,8 +31,11 @@ Start with aggregated metrics for efficient analysis:
 ```
 Tool: wit-query-analytics-odata
 Arguments: {
-  customODataQuery: "$apply=filter(CompletedDate ge {{start_date}}Z and CompletedDate le {{end_date}}Z)/groupby((CompletedDate), aggregate($count as Count))&$orderby=CompletedDate asc",
-  queryType: "customQuery"
+  queryType: "velocityMetrics",
+  dateRangeField: "CompletedDate",
+  dateRangeStart: "{{start_date}}",
+  dateRangeEnd: "{{end_date}}",
+  orderBy: "CompletedDate asc"
 }
 ```
 
@@ -47,6 +52,16 @@ Arguments: {
 ```
 Tool: wit-query-analytics-odata
 Arguments: {
+  queryType: "groupByAssignee",
+  filters: { State: "Active" },
+  orderBy: "Count desc"
+}
+```
+
+**Note:** This groups only by assignee. If you need breakdown by WorkItemType per assignee, use a custom query:
+```
+Tool: wit-query-analytics-odata
+Arguments: {
   customODataQuery: "$apply=filter(State eq 'Active')/groupby((AssignedTo/UserName, WorkItemType), aggregate($count as Count))&$orderby=Count desc",
   queryType: "customQuery"
 }
@@ -56,8 +71,12 @@ Arguments: {
 ```
 Tool: wit-query-analytics-odata
 Arguments: {
-  customODataQuery: "$apply=filter(CompletedDate ge {{start_date}}Z and State eq 'Done')/groupby((AssignedTo/UserName), aggregate(CycleTimeDays with average as AvgCycleTime, $count as CompletedCount))&$orderby=AvgCycleTime desc",
-  queryType: "customQuery"
+  queryType: "cycleTimeMetrics",
+  computeCycleTime: true,
+  filters: { State: "Done" },
+  dateRangeField: "CompletedDate",
+  dateRangeStart: "{{start_date}}",
+  orderBy: "AvgCycleTime desc"
 }
 ```
 
@@ -160,6 +179,16 @@ Calculate **Team Member Health Score** (0-100):
 
 First get aggregated counts:
 
+```
+Tool: wit-query-analytics-odata
+Arguments: {
+  queryType: "groupByType",
+  filters: { State: "New" },
+  orderBy: "Count desc"
+}
+```
+
+**Note:** This includes all items in New state. To filter only unassigned items, you need to use WIQL in the next step or use a custom query:
 ```
 Tool: wit-query-analytics-odata
 Arguments: {

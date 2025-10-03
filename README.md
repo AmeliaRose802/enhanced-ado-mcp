@@ -190,6 +190,38 @@ The scripts are executed unchanged. The server just validates inputs and streams
 
 Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
 
+## Resources Available
+
+**New in v1.4.1:** The server now exposes focused documentation resources via MCP that agents can access for quick reference without using prompts.
+
+### Quick Reference Resources
+
+1. **WIQL Quick Reference** (`ado://docs/wiql-quick-reference`) - Common WIQL query patterns and examples
+2. **OData Quick Reference** (`ado://docs/odata-quick-reference`) - OData Analytics query examples for metrics and aggregations
+3. **Hierarchy Query Patterns** (`ado://docs/hierarchy-patterns`) - Patterns for querying work item hierarchies
+4. **Common Workflow Examples** (`ado://docs/common-workflows`) - End-to-end workflow examples combining multiple tools
+5. **Tool Selection Guide** (`ado://docs/tool-selection-guide`) - Decision guide for choosing the right tool
+
+### How Agents Use Resources
+
+Resources provide tight, focused documentation that agents can access on-demand:
+
+```typescript
+// List available resources
+const resources = await mcp.listResources();
+
+// Read specific resource
+const content = await mcp.readResource("ado://docs/wiql-quick-reference");
+```
+
+**Benefits:**
+- ✅ Faster than using prompts for simple lookups
+- ✅ Reduces context size vs full documentation
+- ✅ Contains working, tested query examples
+- ✅ Tool selection guidance prevents wrong tool usage
+
+See the [Resources README](mcp_server/resources/README.md) for detailed documentation.
+
 ## WIQL Query Examples
 
 The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps work items using WIQL (Work Item Query Language). Here are some common use cases:

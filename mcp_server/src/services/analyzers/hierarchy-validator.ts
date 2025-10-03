@@ -14,6 +14,7 @@ import type {
 import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/ado.js';
 import { logger } from '../../utils/logger.js';
 import { getRequiredConfig } from '../../config/config.js';
+import { escapeAreaPath } from '../../utils/work-item-parser.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
@@ -229,10 +230,11 @@ export class HierarchyValidatorAnalyzer {
     try {
       const httpClient = createADOHttpClient(organization, project);
       
-      // Build WIQL query
+      // Build WIQL query (escape area path for WIQL)
+      const escapedAreaPath = escapeAreaPath(areaPath);
       const areaClause = includeChildAreas 
-        ? `[System.AreaPath] UNDER '${areaPath}'` 
-        : `[System.AreaPath] = '${areaPath}'`;
+        ? `[System.AreaPath] UNDER '${escapedAreaPath}'` 
+        : `[System.AreaPath] = '${escapedAreaPath}'`;
       
       const typeFilter = filterByType && filterByType.length > 0
         ? ` AND [System.WorkItemType] IN (${filterByType.map(t => `'${t}'`).join(',')})`

@@ -46,7 +46,7 @@ afterAll(() => {
 });
 
 // Global test utilities
-global.testUtils = {
+(global as any).testUtils = {
   // Wait for async operations
   sleep: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
   

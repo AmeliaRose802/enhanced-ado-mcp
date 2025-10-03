@@ -4,6 +4,7 @@ import type { Prompt, ParsedPrompt, PromptArgument } from "../types/index.js";
 import { promptsDir } from "../utils/paths.js";
 import { logger } from "../utils/logger.js";
 import { applyTemplateVariables } from "../utils/prompt-loader.js";
+import { escapeAreaPath } from "../utils/work-item-parser.js";
 
 import type { MCPServerConfig } from "../config/config.js";
 
@@ -28,13 +29,13 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
   };
   
   return {
-    // Core config variables
-    area_path: config.azureDevOps.areaPath || '',
+    // Core config variables (escape area paths for use in WIQL/OData queries)
+    area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
     project: config.azureDevOps.project || '',
     project_name: config.azureDevOps.project || '',
     org_url: `https://dev.azure.com/${config.azureDevOps.organization}`,
     organization: config.azureDevOps.organization || '',
-    iteration_path: config.azureDevOps.iterationPath || '',
+    iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ''),
     assigned_to: config.azureDevOps.defaultAssignedTo || '',
     work_item_type: config.azureDevOps.defaultWorkItemType || '',
     priority: config.azureDevOps.defaultPriority?.toString() || '',
@@ -43,8 +44,8 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     // Config defaults with prefix
     default_organization: config.azureDevOps.organization,
     default_project: config.azureDevOps.project,
-    default_area_path: config.azureDevOps.areaPath || '',
-    default_iteration_path: config.azureDevOps.iterationPath || '',
+    default_area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
+    default_iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ''),
     default_work_item_type: config.azureDevOps.defaultWorkItemType,
     default_priority: config.azureDevOps.defaultPriority?.toString(),
     default_assigned_to: config.azureDevOps.defaultAssignedTo,
