@@ -39,8 +39,7 @@ export default {
   // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/dist/',
-    '/ado_scripts/'
+    '/dist/'
   ],
   
   // Coverage configuration

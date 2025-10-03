@@ -7,8 +7,17 @@
  */
 
 import { logger } from '../../utils/logger.js';
-import { curlJson, getAzureDevOpsToken } from '../../utils/ado-token.js';
+import { createADOHttpClient } from '../../utils/ado-http-client.js';
 import { loadConfiguration } from '../../config/config.js';
+import type { ADOWorkItem, ADOApiResponse, ADOWorkItemRevision } from '../../types/ado.js';
+
+interface WorkItemRevision {
+  id?: number;
+  rev?: number;
+  fields?: Record<string, unknown>;
+  url?: string;
+  revisedDate?: string;
+}
 
 interface LastSubstantiveChangeArgs {
   workItemId: number;
@@ -69,14 +78,16 @@ const DEFAULT_AUTOMATION_PATTERNS = [
  * Determine if a revision represents a substantive change
  */
 function isSubstantiveChange(
-  revision: any,
-  previousRevision: any,
+  revision: WorkItemRevision,
+  previousRevision: WorkItemRevision | null,
   automatedPatterns: string[]
 ): { isSubstantive: boolean; changeType: string } {
   
   // Check if changed by known automation account
-  const changedBy = revision.fields?.['System.ChangedBy']?.displayName || 
-                    revision.fields?.['System.ChangedBy'] || '';
+  const changedByValue = revision.fields?.['System.ChangedBy'];
+  const changedBy = (typeof changedByValue === 'object' && changedByValue !== null && 'displayName' in changedByValue) 
+    ? (changedByValue as {displayName: string}).displayName 
+    : (typeof changedByValue === 'string' ? changedByValue : '');
   
   const isAutomatedUser = automatedPatterns.some(pattern => 
     changedBy.toLowerCase().includes(pattern.toLowerCase())
@@ -155,18 +166,18 @@ export async function getLastSubstantiveChange(
   const automatedPatterns = args.automatedPatterns || DEFAULT_AUTOMATION_PATTERNS;
   
   try {
-    const token = getAzureDevOpsToken();
+    const httpClient = createADOHttpClient(organization, project);
     
     // Get work item to extract created date
-    const wiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${args.workItemId}?$expand=none&api-version=7.1`;
-    const workItem = curlJson(wiUrl, token);
-    const createdDate = workItem.fields['System.CreatedDate'];
+    const wiResponse = await httpClient.get<ADOWorkItem>(`wit/workItems/${args.workItemId}?$expand=none`);
+    const workItem = wiResponse.data;
+    const createdDate = workItem.fields['System.CreatedDate'] || new Date().toISOString();
     const daysSinceCreation = daysBetween(createdDate);
     
     // Get revision history
-    const revsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${args.workItemId}/revisions?$top=${historyCount}&api-version=7.1`;
-    const historyResponse = curlJson(revsUrl, token);
-    const revisions = historyResponse.value || [];
+    const historyResponse = await httpClient.get<ADOApiResponse<ADOWorkItemRevision[]>>(`wit/workItems/${args.workItemId}/revisions?$top=${historyCount}`);
+    const historyData = historyResponse.data;
+    const revisions = historyData.value || [];
     
     if (revisions.length === 0) {
       return {
@@ -182,10 +193,12 @@ export async function getLastSubstantiveChange(
     }
     
     // Sort revisions by date descending (newest first)
-    revisions.sort((a: any, b: any) => {
-      const dateA = new Date(a.fields['System.ChangedDate']).getTime();
-      const dateB = new Date(b.fields['System.ChangedDate']).getTime();
-      return dateB - dateA;
+    revisions.sort((a: WorkItemRevision, b: WorkItemRevision) => {
+      const dateA = a.fields?.['System.ChangedDate'];
+      const dateB = b.fields?.['System.ChangedDate'];
+      const timeA = typeof dateA === 'string' || typeof dateA === 'number' ? new Date(dateA).getTime() : 0;
+      const timeB = typeof dateB === 'string' || typeof dateB === 'number' ? new Date(dateB).getTime() : 0;
+      return timeB - timeA;
     });
     
     let automatedChangesSkipped = 0;
@@ -200,7 +213,7 @@ export async function getLastSubstantiveChange(
       const analysis = isSubstantiveChange(currentRev, previousRev, automatedPatterns);
       
       if (analysis.isSubstantive) {
-        lastSubstantiveChange = currentRev.fields['System.ChangedDate'];
+        lastSubstantiveChange = currentRev.fields['System.ChangedDate'] || createdDate;
         lastChangeType = analysis.changeType;
         break;
       } else {

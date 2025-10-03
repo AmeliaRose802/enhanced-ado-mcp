@@ -5,13 +5,16 @@
 import type { ToolExecutionResult } from "../../types/index.js";
 import { loadConfiguration } from "../../config/config.js";
 
-export async function handleGetConfiguration(args: any): Promise<ToolExecutionResult> {
+export async function handleGetConfiguration(args: unknown): Promise<ToolExecutionResult> {
   try {
     const cfg = loadConfiguration();
-    const section = args?.Section || "all";
-    const includeSensitive = args?.IncludeSensitive || false;
     
-    let configData: any = {};
+    // Type guard for args
+    const parsedArgs = args as { Section?: string; IncludeSensitive?: boolean } | undefined;
+    const section = parsedArgs?.Section || "all";
+    const includeSensitive = parsedArgs?.IncludeSensitive || false;
+    
+    let configData: Record<string, unknown> = {};
     
     if (section === "all" || section === "azureDevOps") {
       configData.azureDevOps = cfg.azureDevOps;

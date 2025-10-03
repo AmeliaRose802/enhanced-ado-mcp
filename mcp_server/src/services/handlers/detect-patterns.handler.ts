@@ -3,10 +3,24 @@
  * Identifies common issues: duplicates, placeholders, orphans, etc.
  */
 
-import type { ToolExecutionResult } from "../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
+
+interface WorkItemFromQuery {
+  id: number;
+  title: string;
+  type: string;
+  state: string;
+  areaPath?: string;
+  iterationPath?: string;
+  assignedTo?: string;
+  createdDate?: string;
+  changedDate?: string;
+  url: string;
+  additionalFields?: Record<string, unknown>;
+}
 
 interface DetectPatternsArgs {
   workItemIds?: number[];
@@ -26,7 +40,7 @@ interface PatternMatch {
   details: string;
 }
 
-export async function handleDetectPatterns(config: any, args: any): Promise<ToolExecutionResult> {
+export async function handleDetectPatterns(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -50,7 +64,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
 
     logger.debug(`Detecting patterns: ${patterns.join(', ')}`);
 
-    let workItems: any[] = [];
+    let workItems: WorkItemFromQuery[] = [];
 
     // Get work items either by IDs or area path
     if (workItemIds && workItemIds.length > 0) {
@@ -164,7 +178,7 @@ export async function handleDetectPatterns(config: any, args: any): Promise<Tool
     if (patterns.includes('no_description')) {
       for (const item of workItems) {
         const description = item.additionalFields?.['System.Description'] || '';
-        const descriptionText = description.replace(/<[^>]*>/g, '').trim();
+        const descriptionText = typeof description === 'string' ? description.replace(/<[^>]*>/g, '').trim() : '';
         if (descriptionText.length < 50 && item.type !== 'Epic') { // Epics often have minimal descriptions
           matches.push({
             workItemId: item.id,

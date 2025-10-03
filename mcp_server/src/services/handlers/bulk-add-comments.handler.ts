@@ -3,11 +3,10 @@
  * Allows adding comments to multiple work items efficiently
  */
 
-import type { ToolExecutionResult } from "../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { logger } from "../../utils/logger.js";
-import { execSync } from 'child_process';
-import { getAzureDevOpsToken } from '../../utils/ado-token.js';
+import { createADOHttpClient } from '../../utils/ado-http-client.js';
 
 interface CommentItem {
   workItemId: number;
@@ -46,10 +45,9 @@ async function addComment(
   organization: string,
   project: string,
   workItemId: number,
-  comment: string,
-  token: string
+  comment: string
 ): Promise<void> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
+  const httpClient = createADOHttpClient(organization, project);
   
   const operations = [
     {
@@ -59,13 +57,10 @@ async function addComment(
     }
   ];
 
-  const payload = JSON.stringify(operations);
-  const curlCommand = `curl -s -X PATCH -H "Authorization: Bearer ${token}" -H "Content-Type: application/json-patch+json" -d '${payload.replace(/'/g, "'\\''")}' "${url}"`;
-  
-  execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+  await httpClient.patch(`wit/workitems/${workItemId}`, operations);
 }
 
-export async function handleBulkAddComments(config: any, args: any): Promise<ToolExecutionResult> {
+export async function handleBulkAddComments(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -88,7 +83,6 @@ export async function handleBulkAddComments(config: any, args: any): Promise<Too
 
     logger.debug(`Bulk add comments: ${items.length} items`);
 
-    const token = getAzureDevOpsToken();
     const results: CommentResult[] = [];
 
     // Process each item
@@ -104,7 +98,7 @@ export async function handleBulkAddComments(config: any, args: any): Promise<Too
           });
         }
 
-        await addComment(organization, project, item.workItemId, commentText, token);
+        await addComment(organization, project, item.workItemId, commentText);
 
         results.push({
           workItemId: item.workItemId,

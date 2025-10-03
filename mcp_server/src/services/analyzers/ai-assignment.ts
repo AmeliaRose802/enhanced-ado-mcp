@@ -5,8 +5,8 @@ import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
-import { execSync } from 'child_process';
-import { getAzureDevOpsToken } from '../../utils/ado-token.js';
+import { createADOHttpClient } from '../../utils/ado-http-client.js';
+import type { ADOWorkItem } from '../../types/ado.js';
 
 /**
  * Get work item details from Azure DevOps
@@ -14,14 +14,11 @@ import { getAzureDevOpsToken } from '../../utils/ado-token.js';
 async function getWorkItem(
   organization: string,
   project: string,
-  workItemId: number,
-  token: string
-): Promise<any> {
-  const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
-  
-  const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${url}"`;
-  const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-  return JSON.parse(response);
+  workItemId: number
+): Promise<ADOWorkItem> {
+  const httpClient = createADOHttpClient(organization, project);
+  const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}`);
+  return response.data;
 }
 
 export class AIAssignmentAnalyzer {
@@ -41,11 +38,10 @@ export class AIAssignmentAnalyzer {
       const config = loadConfiguration();
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
-      const token = getAzureDevOpsToken();
       
       logger.debug(`Fetching work item ${args.workItemId} for AI assignment analysis`);
       
-      const workItem = await getWorkItem(org, project, args.workItemId, token);
+      const workItem = await getWorkItem(org, project, args.workItemId);
       
       if (!workItem || !workItem.fields) {
         return buildErrorResponse(`Work item ${args.workItemId} not found`, { source: 'work-item-not-found' });

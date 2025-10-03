@@ -1,24 +1,71 @@
 import { logger } from '../../utils/logger.js';
 import { buildSuccessResponse, buildErrorResponse } from '../../utils/response-builder.js';
 import { loadConfiguration } from '../../config/config.js';
-import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
+import { createADOHttpClient } from '../../utils/ado-http-client.js';
+import type { ADOWorkItem, ADOApiResponse } from '../../types/ado.js';
+
+interface CleanedFields {
+  [key: string]: string | number | boolean | undefined;
+}
+
+interface SimplifiedWorkItem {
+  id: number;
+  title?: string;
+  type?: string;
+  state?: string;
+  fields?: Record<string, unknown>;
+}
+
+interface LinkReference {
+  type: string;
+  url: string;
+}
+
+interface ArtifactLink {
+  name: string;
+  url: string;
+}
+
+interface WorkItemComment {
+  id: number;
+  text: string;
+  createdBy?: string;
+  createdDate?: string;
+}
+
+interface ADOCommentsResponse {
+  comments?: Array<{
+    id: number;
+    text: string;
+    createdBy?: { displayName?: string };
+    createdDate?: string;
+  }>;
+}
+
+interface ADORevisionsResponse {
+  value?: Array<{
+    id?: number;
+    rev?: number;
+    fields?: Record<string, unknown>;
+  }>;
+}
 
 /**
  * Clean up verbose fields from work item data to reduce context window usage.
  * Simplifies user objects to just displayName and removes redundant metadata.
  */
-function cleanFields(fields: any): any {
-  if (!fields || typeof fields !== 'object') return fields;
+function cleanFields(fields: Record<string, unknown>): CleanedFields {
+  if (!fields || typeof fields !== 'object') return {};
   
-  const cleaned: any = {};
+  const cleaned: CleanedFields = {};
   
   for (const [key, value] of Object.entries(fields)) {
     // Simplify user objects (System.CreatedBy, System.ChangedBy, System.AssignedTo, etc.)
     if (value && typeof value === 'object' && 'displayName' in value) {
-      cleaned[key] = value.displayName;
+      cleaned[key] = (value as {displayName: string}).displayName;
     }
     // Keep other fields as-is
-    else {
+    else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === undefined) {
       cleaned[key] = value;
     }
   }
@@ -83,7 +130,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
   } = args;
 
   try {
-    const token = getAzureDevOpsToken();
+    const httpClient = createADOHttpClient(organization, project);
 
     // Build field list
     const baseFields = [
@@ -102,20 +149,20 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     const workItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?$expand=all&api-version=7.1`;
     
     logger.debug(`Fetching work item ${workItemId} from ${organization}/${project}`);
-    logger.debug(`URL: ${workItemUrl}`);
     
-    const wi = curlJson(workItemUrl, token);
+    const wiResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}?$expand=all`);
+    const wi = wiResponse.data;
     if (!wi || !wi.id) {
       throw new Error(`Work item ${workItemId} not found in organization '${organization}', project '${project}'. Verify the work item ID exists and you have access to it.`);
     }
 
     // Parent and children detection
-    let parent: any = null;
-    const children: any[] = [];
-    let related: any[] = [];
-    let attachments: any[] = [];
-    let prLinks: any[] = [];
-    let commitLinks: any[] = [];
+    let parent: SimplifiedWorkItem | null = null;
+    const children: SimplifiedWorkItem[] = [];
+    let related: LinkReference[] = [];
+    let attachments: ArtifactLink[] = [];
+    let prLinks: ArtifactLink[] = [];
+    let commitLinks: ArtifactLink[] = [];
 
     if (includeRelations && wi.relations) {
       for (const rel of wi.relations) {
@@ -143,28 +190,27 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     // Expand parent
     if (parent && parent.id) {
       try {
-        const pUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${parent.id}?fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
-        parent = curlJson(pUrl, token);
+        const pResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${parent.id}?fields=System.Id,System.Title,System.WorkItemType,System.State`);
+        parent = pResponse.data;
       } catch (e) { logger.warn(`Failed to expand parent ${parent.id}`, e); }
     }
 
     // Expand children (one depth only unless maxChildDepth >1; we only support depth=1 for now to avoid complexity)
-    let expandedChildren: any[] = [];
+    let expandedChildren: SimplifiedWorkItem[] = [];
     if (children.length && maxChildDepth > 0) {
       const childIds = children.map(c => c.id).slice(0, 200);
       const idsParam = childIds.join(',');
-      const cUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
-      const cRes = curlJson(cUrl, token);
-      if (cRes && cRes.value) expandedChildren = cRes.value;
+      const cResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(`wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State`);
+      if (cResponse.data && cResponse.data.value) expandedChildren = cResponse.data.value;
     }
 
     // Get comments
-    let comments: any[] = [];
+    let comments: Array<{id: number; text: string; createdBy?: string; createdDate?: string}> = [];
     if (includeComments) {
       try {
-        const commentsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${workItemId}/comments?api-version=7.1`;
-        const cRes = curlJson(commentsUrl, token);
-        comments = cRes.comments?.map((c: any) => ({
+        const commentsResponse = await httpClient.get<ADOCommentsResponse>(`wit/workItems/${workItemId}/comments`);
+        const cRes = commentsResponse.data;
+        comments = cRes.comments?.map((c) => ({
           id: c.id,
           text: c.text,
           createdBy: c.createdBy?.displayName,
@@ -174,24 +220,18 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     }
 
     // History (recent revisions)
-    let history: any[] = [];
+    let history: Array<{rev: number; changedDate: string; changedBy?: string; fields: CleanedFields}> = [];
     if (includeHistory) {
       try {
-        const revsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${workItemId}/revisions?$top=${historyCount}&api-version=7.1`;
-        const hRes = curlJson(revsUrl, token);
-        history = (hRes.value || []).map((r: any) => {
-          const cleanedFields = cleanFields(r.fields);
+        const hResponse = await httpClient.get<ADORevisionsResponse>(`wit/workItems/${workItemId}/revisions?$top=${historyCount}`);
+        const hRes = hResponse.data;
+        history = (hRes.value || []).map((r) => {
+          const cleanedFields = cleanFields(r.fields || {});
           return {
-            id: r.id,
-            rev: r.rev,
-            changedDate: cleanedFields?.['System.ChangedDate'],
-            changedBy: cleanedFields?.['System.ChangedBy'],
-            state: cleanedFields?.['System.State'],
-            title: cleanedFields?.['System.Title'],
-            iterationPath: cleanedFields?.['System.IterationPath'],
-            areaPath: cleanedFields?.['System.AreaPath'],
-            assignedTo: cleanedFields?.['System.AssignedTo'],
-            description: cleanedFields?.['System.Description'] ? (cleanedFields['System.Description'].length > 100 ? cleanedFields['System.Description'].substring(0, 100) + '...' : cleanedFields['System.Description']) : undefined
+            rev: r.rev || 0,
+            changedDate: typeof cleanedFields?.['System.ChangedDate'] === 'string' ? cleanedFields['System.ChangedDate'] : '',
+            changedBy: typeof cleanedFields?.['System.ChangedBy'] === 'string' ? cleanedFields['System.ChangedBy'] : undefined,
+            fields: cleanedFields
           };
         });
       } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, e); }
@@ -227,7 +267,12 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
         type: parent.fields?.['System.WorkItemType'],
         state: parent.fields?.['System.State']
       } : null,
-      children: expandedChildren.map(c => ({ id: c.id, title: c.fields['System.Title'], type: c.fields['System.WorkItemType'], state: c.fields['System.State'] })),
+      children: expandedChildren
+        .filter(c => {
+          const state = c.fields?.['System.State'];
+          return state !== 'Done' && state !== 'Removed' && state !== 'Closed';
+        })
+        .map(c => ({ id: c.id, title: c.fields?.['System.Title'], type: c.fields?.['System.WorkItemType'], state: c.fields?.['System.State'] })),
       related: related.slice(0, maxRelatedItems),
       pullRequests: prLinks,
       commits: commitLinks,

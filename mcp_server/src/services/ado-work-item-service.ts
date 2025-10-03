@@ -4,17 +4,16 @@
  * Provides functionality to create and manage work items using Azure DevOps REST API
  */
 
-import { execSync } from 'child_process';
-import { writeFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
 import { logger } from '../utils/logger.js';
 import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
+
+import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult } from '../types/ado.js';
+import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
 
 interface WorkItemField {
   op: string;
   path: string;
-  value: any;
+  value: unknown;
 }
 
 interface CreateWorkItemArgs {
@@ -52,6 +51,7 @@ function getAzureDevOpsToken(organization?: string): string {
 
 /**
  * Resolve @me to current user email
+ * Note: @me resolution now requires an explicit email/UPN instead
  */
 function resolveAssignedTo(assignedTo?: string): string | undefined {
   if (!assignedTo || assignedTo === '') {
@@ -59,76 +59,15 @@ function resolveAssignedTo(assignedTo?: string): string | undefined {
   }
   
   if (assignedTo === '@me') {
-    try {
-      const account = execSync('az account show --output json', { 
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      });
-      const accountData = JSON.parse(account);
-      return accountData.user.name;
-    } catch (error) {
-      logger.warn('Failed to resolve @me assignment, skipping assignment', error);
-      return undefined;
-    }
+    logger.warn('@me assignment is no longer supported. Please provide explicit user email/UPN.');
+    return undefined;
   }
   
   return assignedTo;
 }
 
 /**
- * Get parent work item details to inherit paths
- */
-async function getParentWorkItem(
-  organization: string,
-  project: string,
-  parentId: number,
-  token: string
-): Promise<{ areaPath?: string; iterationPath?: string } | null> {
-  try {
-    const url = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${parentId}?api-version=7.1`;
-    
-    const curlCommand = `curl -s -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" "${url}"`;
-    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    const workItem = JSON.parse(response);
-    
-    return {
-      areaPath: workItem.fields?.['System.AreaPath'],
-      iterationPath: workItem.fields?.['System.IterationPath']
-    };
-  } catch (error) {
-    logger.warn(`Failed to get parent work item ${parentId}`, error);
-    return null;
-  }
-}
-
-/**
- * Execute REST API call using temporary file for JSON payload
- */
-function executeRestApiCall(url: string, method: string, token: string, payload: any): any {
-  const tempFile = join(tmpdir(), `ado-api-${Date.now()}.json`);
-  
-  try {
-    // Write payload to temporary file
-    writeFileSync(tempFile, JSON.stringify(payload), 'utf8');
-    
-    // Execute curl with file input
-    const contentType = method === 'POST' ? 'application/json-patch+json' : 'application/json-patch+json';
-    const curlCommand = `curl -s -X ${method} -H "Authorization: Bearer ${token}" -H "Content-Type: ${contentType}" -d @${tempFile} "${url}"`;
-    
-    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    return JSON.parse(response);
-  } finally {
-    // Clean up temporary file
-    try {
-      unlinkSync(tempFile);
-    } catch (error) {
-      logger.warn(`Failed to delete temporary file ${tempFile}`, error);
-    }
-  }
-}
-
-/**
- * Create a work item using Azure DevOps REST API
+ * Create a work item using Azure DevOps REST API (using HTTP client)
  */
 export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItemResult> {
   const {
@@ -146,8 +85,8 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     inheritParentPaths = true
   } = args;
 
-  // Get authentication token
-  const token = getAzureDevOpsToken(organization);
+  // Create HTTP client
+  const httpClient = createADOHttpClient(organization, project);
   
   // Resolve @me assignment
   const resolvedAssignedTo = resolveAssignedTo(assignedTo);
@@ -157,14 +96,20 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   let effectiveIterationPath = iterationPath;
   
   if (parentWorkItemId && inheritParentPaths) {
-    const parentData = await getParentWorkItem(organization, project, parentWorkItemId, token);
-    if (parentData) {
-      if (!effectiveAreaPath && parentData.areaPath) {
-        effectiveAreaPath = parentData.areaPath;
+    try {
+      const parentResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${parentWorkItemId}`);
+      const parentData = parentResponse.data;
+      
+      if (parentData.fields) {
+        if (!effectiveAreaPath && parentData.fields['System.AreaPath']) {
+          effectiveAreaPath = parentData.fields['System.AreaPath'] as string;
+        }
+        if (!effectiveIterationPath && parentData.fields['System.IterationPath']) {
+          effectiveIterationPath = parentData.fields['System.IterationPath'] as string;
+        }
       }
-      if (!effectiveIterationPath && parentData.iterationPath) {
-        effectiveIterationPath = parentData.iterationPath;
-      }
+    } catch (error) {
+      logger.warn(`Failed to get parent work item ${parentWorkItemId}`, error);
     }
   }
   
@@ -197,16 +142,19 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     fields.push({ op: 'add', path: '/fields/System.Tags', value: tags });
   }
   
-  // Create work item via REST API
-  // URL-encode the work item type to handle types with spaces like "Product Backlog Item"
-  const encodedWorkItemType = encodeURIComponent(workItemType);
-  const createUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/$${encodedWorkItemType}?api-version=7.1`;
-  
   logger.debug(`Creating work item: ${title} (${workItemType})`);
   
-  let workItem: any;
+  let workItem: ADOWorkItem;
   try {
-    workItem = executeRestApiCall(createUrl, 'POST', token, fields);
+    // Create work item via HTTP client
+    // URL-encode the work item type to handle types with spaces like "Product Backlog Item"
+    const encodedWorkItemType = encodeURIComponent(workItemType);
+    const response = await httpClient.post<ADOWorkItem>(
+      `wit/workitems/$${encodedWorkItemType}`,
+      fields
+    );
+    
+    workItem = response.data;
     
     if (!workItem.id) {
       throw new Error(`Failed to create work item: ${JSON.stringify(workItem)}`);
@@ -214,7 +162,10 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     
     logger.debug(`Created work item ${workItem.id}`);
   } catch (error) {
-    logger.error('Failed to create work item', error);
+    if (error instanceof ADOHttpError) {
+      logger.error('Failed to create work item', { status: error.status, message: error.message });
+      throw new Error(`Failed to create work item: ${error.message}`);
+    }
     throw new Error(`Failed to create work item: ${error instanceof Error ? error.message : String(error)}`);
   }
   
@@ -236,9 +187,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
         }
       ];
       
-      const linkUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItem.id}?api-version=7.1`;
-      
-      executeRestApiCall(linkUrl, 'PATCH', token, linkFields);
+      await httpClient.patch(`wit/workitems/${workItem.id}`, linkFields);
       parentLinked = true;
       
       logger.debug(`Linked work item ${workItem.id} to parent ${parentWorkItemId}`);
@@ -285,7 +234,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
     gitHubCopilotGuid
   } = args;
 
-  const token = getAzureDevOpsToken(organization);
+  const httpClient = createADOHttpClient(organization, project);
   const warnings: string[] = [];
   
   // Get repository information
@@ -293,35 +242,32 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   let projectId: string;
   
   try {
-    const repoUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${repository}?api-version=7.1`;
-    const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${repoUrl}"`;
-    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    const repoInfo = JSON.parse(response);
+    let repoInfo: ADORepository;
     
-    if (!repoInfo.id) {
-      // Try listing all repos to find it
-      const listUrl = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories?api-version=7.1`;
-      const listCommand = `curl -s -H "Authorization: Bearer ${token}" "${listUrl}"`;
-      const listResponse = execSync(listCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-      const reposList = JSON.parse(listResponse);
+    try {
+      const response = await httpClient.get<ADORepository>(`git/repositories/${repository}`);
+      repoInfo = response.data;
+    } catch (error) {
+      // Repository not found by exact match, try listing all repos
+      const listResponse = await httpClient.get<ADOApiResponse<ADORepository[]>>('git/repositories');
+      const reposList = listResponse.data;
       
-      const repo = reposList.value?.find((r: any) => 
+      const repo = reposList.value?.find((r: ADORepository) => 
         r.name === repository || 
         r.id === repository || 
         r.name.toLowerCase() === repository.toLowerCase()
       );
       
       if (!repo) {
-        const availableRepos = reposList.value?.map((r: any) => r.name).join(', ') || 'none';
+        const availableRepos = reposList.value?.map((r: ADORepository) => r.name).join(', ') || 'none';
         throw new Error(`Repository '${repository}' not found. Available: ${availableRepos}`);
       }
       
-      repositoryId = repo.id;
-      projectId = repo.project.id;
-    } else {
-      repositoryId = repoInfo.id;
-      projectId = repoInfo.project.id;
+      repoInfo = repo;
     }
+    
+    repositoryId = repoInfo.id;
+    projectId = repoInfo.project.id;
   } catch (error) {
     throw new Error(`Failed to retrieve repository information: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -345,8 +291,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
       }
     ];
     
-    const linkUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
-    executeRestApiCall(linkUrl, 'PATCH', token, linkFields);
+    await httpClient.patch(`wit/workitems/${workItemId}`, linkFields);
     branchLinkCreated = true;
     
     logger.debug(`Created branch artifact link for work item ${workItemId}`);
@@ -370,8 +315,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
       }
     ];
     
-    const assignUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
-    executeRestApiCall(assignUrl, 'PATCH', token, assignFields);
+    await httpClient.patch(`wit/workitems/${workItemId}`, assignFields);
     
     logger.debug(`Assigned work item ${workItemId} to GitHub Copilot`);
   } catch (error) {
@@ -409,13 +353,14 @@ export async function deleteWorkItem(args: DeleteWorkItemArgs): Promise<{
     HardDelete = false
   } = args;
 
-  const token = getAzureDevOpsToken(Organization);
+  const httpClient = createADOHttpClient(Organization, Project);
   
   try {
-    const deleteUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workitems/${WorkItemId}?api-version=7.1${HardDelete ? '&destroy=true' : ''}`;
-    const curlCommand = `curl -s -X DELETE -H "Authorization: Bearer ${token}" "${deleteUrl}"`;
+    const endpoint = HardDelete 
+      ? `wit/workitems/${WorkItemId}?destroy=true`
+      : `wit/workitems/${WorkItemId}`;
     
-    execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+    await httpClient.delete(endpoint);
     
     logger.debug(`Deleted work item ${WorkItemId} (hard delete: ${HardDelete})`);
     
@@ -465,15 +410,14 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
     includeWorkItemDetails = false
   } = args;
 
-  const token = getAzureDevOpsToken(organization);
+  const httpClient = createADOHttpClient(organization, project);
   
   // Get work item details
-  const workItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?api-version=7.1`;
-  const curlCommand = `curl -s -H "Authorization: Bearer ${token}" "${workItemUrl}"`;
-  const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-  const workItem = JSON.parse(response);
-  
-  if (!workItem.id) {
+  let workItem: ADOWorkItem;
+  try {
+    const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}`);
+    workItem = response.data;
+  } catch (error) {
     throw new Error(`Work item ${workItemId} not found`);
   }
   
@@ -523,7 +467,18 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
     new Map(allLinks.map(link => [link.Url, link])).values()
   );
   
-  const result: any = {
+  const result: {
+    work_item_id: number;
+    title: string;
+    instruction_links: InstructionLink[];
+    links_found: number;
+    work_item_url: string;
+    work_item_details?: {
+      assigned_to?: string;
+      state: string;
+      type: string;
+    };
+  } = {
     work_item_id: workItemId,
     title: workItem.fields['System.Title'],
     instruction_links: uniqueLinks,
@@ -639,8 +594,8 @@ function daysBetween(dateString: string): number {
 }
 
 function isSubstantiveChange(
-  currentRev: any,
-  previousRev: any
+  currentRev: ADOWorkItemRevision,
+  previousRev: ADOWorkItemRevision | null
 ): { isSubstantive: boolean; changeType: string } {
   if (!previousRev) {
     return { isSubstantive: false, changeType: 'Creation' };
@@ -686,21 +641,20 @@ async function calculateSubstantiveChange(
   Organization: string,
   Project: string,
   historyCount: number,
-  token: string
+  httpClient: ADOHttpClient
 ): Promise<{
   lastSubstantiveChangeDate: string;
   daysInactive: number;
 }> {
   try {
     // Get revision history
-    const revsUrl = `https://dev.azure.com/${Organization}/${Project}/_apis/wit/workItems/${workItemId}/revisions?$top=${historyCount}&api-version=7.1`;
-    const revsCommand = `curl -s -H "Authorization: Bearer ${token}" "${revsUrl}"`;
-    const revsResponse = execSync(revsCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    const revsData = JSON.parse(revsResponse);
-    const revisions = revsData.value || [];
+    const response = await httpClient.get<ADOApiResponse<ADOWorkItemRevision[]>>(
+      `wit/workItems/${workItemId}/revisions?$top=${historyCount}`
+    );
+    const revisions = response.data.value || [];
 
     // Sort revisions by rev number descending (newest first)
-    revisions.sort((a: any, b: any) => b.rev - a.rev);
+    revisions.sort((a: ADOWorkItemRevision, b: ADOWorkItemRevision) => b.rev - a.rev);
 
     let lastSubstantiveChangeDate: string = createdDate;
 
@@ -712,7 +666,7 @@ async function calculateSubstantiveChange(
       const analysis = isSubstantiveChange(currentRev, previousRev);
 
       if (analysis.isSubstantive) {
-        lastSubstantiveChangeDate = currentRev.fields['System.ChangedDate'];
+        lastSubstantiveChangeDate = currentRev.fields['System.ChangedDate'] || createdDate;
         break;
       }
     }
@@ -773,22 +727,16 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   } = args;
 
   // Get authentication token
-  const token = getAzureDevOpsToken(organization);
-  
-  const tempFile = join(tmpdir(), `ado-wiql-query-${Date.now()}.json`);
+  const httpClient = createADOHttpClient(organization, project);
   
   try {
     // Execute WIQL query
     const wiqlBody = { query: wiqlQuery };
-    const wiqlUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/wiql?api-version=7.1`;
-    
-    writeFileSync(tempFile, JSON.stringify(wiqlBody), 'utf8');
-    const curlCommand = `curl -s -X POST -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" -d @${tempFile} "${wiqlUrl}"`;
     
     logger.debug(`Executing WIQL query: ${wiqlQuery}`);
     
-    const response = execSync(curlCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    const wiqlResult = JSON.parse(response);
+    const wiqlResponse = await httpClient.post<ADOWiqlResult>('wit/wiql', wiqlBody);
+    const wiqlResult = wiqlResponse.data;
 
     if (!wiqlResult.workItems || wiqlResult.workItems.length === 0) {
       return {
@@ -801,7 +749,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     // Limit results
     const workItemIds = wiqlResult.workItems
       .slice(0, maxResults)
-      .map((wi: any) => wi.id);
+      .map((wi: { id: number }) => wi.id);
 
     logger.debug(`WIQL query returned ${wiqlResult.workItems.length} items, fetching details for first ${workItemIds.length}`);
 
@@ -827,18 +775,17 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     const fieldsParam = allFields.join(',');
 
     const ids = workItemIds.join(',');
-    const detailsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${ids}&fields=${encodeURIComponent(fieldsParam)}&api-version=7.1`;
-
-    const detailsCommand = `curl -s -H "Authorization: Bearer ${token}" "${detailsUrl}"`;
-    const detailsResponse = execSync(detailsCommand, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
-    const detailsResult = JSON.parse(detailsResponse);
+    const detailsResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+      `wit/workitems?ids=${ids}&fields=${encodeURIComponent(fieldsParam)}`
+    );
+    const detailsResult = detailsResponse.data;
 
     if (!detailsResult.value) {
       throw new Error('Failed to fetch work item details');
     }
 
     // Map work items to result format
-    const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: any) => {
+    const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: ADOWorkItem) => {
       // Extract additional fields not already in the top-level structure
       // Filter out redundant and verbose fields to save context window space
       const additionalFields: Record<string, any> = {};
@@ -858,11 +805,12 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       // Only include fields that were explicitly requested and not already extracted
       for (const field of includeFields) {
         if (!extractedFields.has(field) && wi.fields[field] !== undefined) {
+          const fieldValue = wi.fields[field];
           // Simplify AssignedTo-like objects to just displayName
-          if (typeof wi.fields[field] === 'object' && wi.fields[field]?.displayName) {
-            additionalFields[field] = wi.fields[field].displayName;
+          if (typeof fieldValue === 'object' && fieldValue !== null && 'displayName' in fieldValue) {
+            additionalFields[field] = (fieldValue as { displayName: string }).displayName;
           } else {
-            additionalFields[field] = wi.fields[field];
+            additionalFields[field] = fieldValue;
           }
         }
       }
@@ -922,7 +870,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
           organization,
           project,
           substantiveChangeHistoryCount,
-          token
+          httpClient
         );
         
         return { id: workItem.id, ...result };
@@ -951,12 +899,5 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   } catch (error) {
     logger.error('WIQL query execution failed', error);
     throw new Error(`Failed to execute WIQL query: ${error instanceof Error ? error.message : String(error)}`);
-  } finally {
-    // Clean up temporary file
-    try {
-      unlinkSync(tempFile);
-    } catch (cleanupError) {
-      logger.warn(`Failed to delete temporary WIQL file ${tempFile}`, cleanupError);
-    }
   }
 }

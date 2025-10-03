@@ -5,10 +5,12 @@ import { promptsDir } from "../utils/paths.js";
 import { logger } from "../utils/logger.js";
 import { applyTemplateVariables } from "../utils/prompt-loader.js";
 
+import type { MCPServerConfig } from "../config/config.js";
+
 /**
  * Create template variables object from config
  */
-function createTemplateVariables(config: any): Record<string, any> {
+function createTemplateVariables(config: MCPServerConfig): Record<string, string | number | boolean> {
   const now = new Date();
   const month = now.getMonth();
   const quarter = Math.floor(month / 3) + 1;
@@ -47,6 +49,16 @@ function createTemplateVariables(config: any): Record<string, any> {
 }
 
 /**
+ * Frontmatter structure parsed from prompt files
+ */
+interface PromptFrontmatter {
+  name?: string;
+  description?: string;
+  version?: string;
+  arguments?: Record<string, PromptArgument>;
+}
+
+/**
  * Parse a prompt file with YAML frontmatter
  */
 export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | null> {
@@ -74,7 +86,7 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
     
     // Parse frontmatter
     const frontmatterLines = lines.slice(1, frontmatterEnd);
-    const frontmatter: any = {};
+    const frontmatter: PromptFrontmatter = {};
     let inArguments = false;
     let argumentsObject: Record<string, PromptArgument> = {};
     
@@ -161,7 +173,14 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
         const keyValueMatch = trimmed.match(/^(\w+):\s*(.+)$/);
         if (keyValueMatch) {
           const [, key, value] = keyValueMatch;
-          frontmatter[key] = value;
+          // Explicitly handle known keys
+          if (key === 'name') {
+            frontmatter.name = value;
+          } else if (key === 'description') {
+            frontmatter.description = value;
+          } else if (key === 'version') {
+            frontmatter.version = value;
+          }
         }
       }
     }
@@ -174,7 +193,7 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
     return {
       name: frontmatter.name || basename(filePath, '.md'),
       description: frontmatter.description || '',
-      version: parseInt(frontmatter.version) || 1,
+      version: parseInt(frontmatter.version || '') || 1,
       arguments: argumentsObject,
       content: promptContent
     };
@@ -223,7 +242,7 @@ export async function loadPrompts(): Promise<Prompt[]> {
 /**
  * Get prompt content with template substitution
  */
-export async function getPromptContent(name: string, args: Record<string, any> = {}): Promise<string> {
+export async function getPromptContent(name: string, args: Record<string, unknown> = {}): Promise<string> {
   try {
     const files = await readdir(promptsDir);
     const promptFiles = files.filter((f: string) => f.endsWith('.md'));

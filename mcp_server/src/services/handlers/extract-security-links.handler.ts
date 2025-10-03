@@ -8,7 +8,7 @@ import { extractSecurityInstructionLinks } from "../ado-work-item-service.js";
 import { getRequiredConfig } from "../../config/config.js";
 import { logger } from "../../utils/logger.js";
 
-export async function handleExtractSecurityLinks(config: ToolConfig, args: any): Promise<ToolExecutionResult> {
+export async function handleExtractSecurityLinks(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     // Parse and validate input
     const parsed = config.schema.safeParse(args || {});

@@ -4,7 +4,7 @@
  * Non-intelligent: applies strict rules for parent-child types and state progression
  */
 
-import type { ToolExecutionResult } from "../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { logger } from "../../utils/logger.js";
@@ -107,7 +107,7 @@ function isValidStateProgression(parentState: string, childState: string): { val
   return { valid: true };
 }
 
-export async function handleValidateHierarchy(config: any, args: any): Promise<ToolExecutionResult> {
+export async function handleValidateHierarchy(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -132,7 +132,7 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
 
     logger.debug(`Validating hierarchy (types=${validateTypes}, states=${validateStates})`);
 
-    let workItems: any[] = [];
+    let workItems: Array<{id: number; title: string; type: string; state: string; additionalFields?: Record<string, unknown>}> = [];
 
     // Get work items either by IDs or area path
     if (workItemIds && workItemIds.length > 0) {
@@ -166,13 +166,13 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
     // Collect all parent IDs that need to be fetched
     for (const item of workItems) {
       const parentId = item.additionalFields?.['System.Parent'];
-      if (parentId) {
+      if (typeof parentId === 'number') {
         parentIds.add(parentId);
       }
     }
 
     // Fetch parent work items in batch if needed
-    const parentMap = new Map<number, any>();
+    const parentMap = new Map<number, {id: number; title: string; type: string; state: string}>();
     if (parentIds.size > 0 && (validateTypes || validateStates)) {
       const parentIdArray = Array.from(parentIds);
       
@@ -197,7 +197,7 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
     for (const item of workItems) {
       const parentId = item.additionalFields?.['System.Parent'];
       
-      if (parentId) {
+      if (typeof parentId === 'number') {
         const parent = parentMap.get(parentId);
         
         if (!parent) {

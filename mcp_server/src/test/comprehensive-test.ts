@@ -220,54 +220,8 @@ async function runComprehensiveTests() {
     }
 }
 
-// Test the individual PowerShell scripts
-async function testPowerShellScripts() {
-    console.log('\n🔧 Testing PowerShell Scripts');
-    console.log('==============================');
-
-    const scriptDir = join(__dirname, '..', '..', 'ado_scripts');
-    const scripts = [
-        'New-WorkItemAndAssignToCopilot-MCP.ps1',
-        'Assign-ItemToCopilot-MCP.ps1',
-        'New-WorkItemWithParent-MCP.ps1',
-        'Extract-SecurityInstructionLinks-MCP.ps1',
-        'Delete-WorkItem-MCP.ps1'
-    ];
-
-    for (const script of scripts) {
-        const scriptPath = join(scriptDir, script);
-        if (fs.existsSync(scriptPath)) {
-            console.log(`✅ Script exists: ${script}`);
-            
-            // Test script syntax
-            try {
-                const syntaxTest = spawn('powershell', ['-NoProfile', '-Command', `Get-Command "${scriptPath}" -Syntax`], {
-                    stdio: 'pipe'
-                });
-                
-                let syntaxOutput = '';
-                syntaxTest.stdout.on('data', (data) => {
-                    syntaxOutput += data.toString();
-                });
-
-                await new Promise((resolve) => {
-                    syntaxTest.on('close', (code) => {
-                        if (code === 0 && syntaxOutput.trim()) {
-                            console.log(`   ✅ Syntax valid for ${script}`);
-                        } else {
-                            console.log(`   ❌ Syntax check failed for ${script}`);
-                        }
-                        resolve(void 0);
-                    });
-                });
-            } catch (error) {
-                console.log(`   ❌ Error testing ${script}:`, error instanceof Error ? error.message : String(error));
-            }
-        } else {
-            console.log(`❌ Script missing: ${script}`);
-        }
-    }
-}
+// PowerShell scripts have been fully deprecated - all functionality moved to TypeScript handlers
+// This test function has been removed as part of tech debt cleanup
 
 // Test configuration files
 function testConfigurationFiles() {
@@ -330,8 +284,7 @@ async function main() {
         // Run configuration tests first (they're quick)
         testConfigurationFiles();
         
-        // Test PowerShell scripts
-        await testPowerShellScripts();
+        // PowerShell scripts have been deprecated - removed testPowerShellScripts()
         
         // Run comprehensive MCP tests
         await runComprehensiveTests();

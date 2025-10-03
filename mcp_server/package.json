@@ -3,7 +3,7 @@
   "version": "1.4.0",
   "private": false,
   "type": "module",
-  "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol with AI-powered tools and automation",
+  "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol with AI-powered tools, REST API integration, and intelligent automation",
   "main": "dist/index.js",
   "bin": {
     "enhanced-ado-msp": "./dist/index.js"
@@ -23,7 +23,6 @@
   "license": "MIT",
   "files": [
     "dist/**/*",
-    "ado_scripts/**/*",
     "prompts/**/*",
     "README.md"
   ],
@@ -48,7 +47,8 @@
     "devops",
     "project-management",
     "ai-agent",
-    "powershell"
+    "rest-api",
+    "typescript"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

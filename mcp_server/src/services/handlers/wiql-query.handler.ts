@@ -2,13 +2,13 @@
  * Handler for wit-get-work-items-by-query-wiql tool
  */
 
-import type { ToolExecutionResult } from "../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
 import { logger } from "../../utils/logger.js";
 
-export async function handleWiqlQuery(config: any, args: any): Promise<ToolExecutionResult> {
+export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {

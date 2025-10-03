@@ -1,6 +1,6 @@
 import type { ToolExecutionResult } from "../types/index.js";
+import type { MCPServer } from "../types/mcp.js";
 import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
-import { executeScript } from "../utils/script-executor.js";
 import { logger } from "../utils/logger.js";
 import { checkSamplingSupport } from "../utils/sampling-client.js";
 import { SamplingService } from "./sampling-service.js";
@@ -17,19 +17,20 @@ import { handleDetectPatterns } from './handlers/detect-patterns.handler.js';
 import { handleValidateHierarchy } from './handlers/validate-hierarchy.handler.js';
 
 // Global server instance for sampling service
-let serverInstance: any = null;
+let serverInstance: MCPServer | null = null;
 
 /**
  * Set the server instance for sampling capabilities
+ * Accepts MCPServer or any mock for testing (use 'any' for test mocks to avoid complex type gymnastics)
  */
-export function setServerInstance(server: any) {
+export function setServerInstance(server: MCPServer | null | any): void {
   serverInstance = server;
 }
 
 /**
  * Execute a tool by name with the given arguments
  */
-export async function executeTool(name: string, args: any): Promise<ToolExecutionResult> {
+export async function executeTool(name: string, args: unknown): Promise<ToolExecutionResult> {
   let config = toolConfigs.find(t => t.name === name);
   
   if (!config) {
@@ -60,7 +61,7 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     }
     
     const samplingService = new SamplingService(serverInstance);
-    return await samplingService.analyzeWorkItem(args);
+    return await samplingService.analyzeWorkItem(args as Parameters<typeof samplingService.analyzeWorkItem>[0]);
   }
 
   // Enhanced AI assignment analysis (uses sampling if available)
@@ -70,7 +71,7 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     }
     
     const samplingService = new SamplingService(serverInstance);
-    return await samplingService.analyzeAIAssignment(args);
+    return await samplingService.analyzeAIAssignment(args as Parameters<typeof samplingService.analyzeAIAssignment>[0]);
   }
 
   // Create work item using REST API (TypeScript implementation)
@@ -85,18 +86,18 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
 
   // Full context package (single work item)
   if (name === 'wit-get-work-item-context-package') {
-    return await handleGetWorkItemContextPackage(args);
+    return await handleGetWorkItemContextPackage(args as Parameters<typeof handleGetWorkItemContextPackage>[0]);
   }
 
   // Batch context package (graph of work items)
   if (name === 'wit-get-work-items-context-batch') {
-    return await handleGetWorkItemsContextBatch(args);
+    return await handleGetWorkItemsContextBatch(args as Parameters<typeof handleGetWorkItemsContextBatch>[0]);
   }
 
   // Get last substantive change for a work item
   if (name === 'wit-get-last-substantive-change') {
     const { getLastSubstantiveChange } = await import('./handlers/get-last-substantive-change.handler.js');
-    const result = await getLastSubstantiveChange(args);
+    const result = await getLastSubstantiveChange(args as Parameters<typeof getLastSubstantiveChange>[0]);
     return { 
       success: true, 
       data: result, 
@@ -136,17 +137,10 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     return await handleValidateHierarchy(config, args);
   }
 
-  logger.debug(`Executing tool '${name}' with args: ${JSON.stringify(args)}`);
-  
-  const parsed = config.schema.safeParse(args || {});
-  if (!parsed.success) {
-    throw new Error(`Validation error: ${parsed.error.message}`);
-  }
-
-  const result = await executeScript(name, config.script, parsed.data);
-  logger.debug(`Tool '${name}' completed (success=${result.success}).`);
-  
-  return result;
+  // All tools should be handled by the cases above
+  // PowerShell script execution has been fully deprecated
+  logger.error(`Tool '${name}' reached fallback handler. This tool is not properly registered.`);
+  throw new Error(`Tool '${name}' is not properly registered. PowerShell script execution has been deprecated - all tools must be handled via TypeScript handlers.`);
 }
 
 /**

@@ -1,7 +1,79 @@
 import { buildSuccessResponse, buildErrorResponse } from '../../utils/response-builder.js';
 import { loadConfiguration } from '../../config/config.js';
 import { logger } from '../../utils/logger.js';
-import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
+import { createADOHttpClient } from '../../utils/ado-http-client.js';
+import type { ADOApiResponse, ADOWorkItem } from '../../types/ado.js';
+
+interface GraphNode {
+  id: number;
+  title: string;
+  type: string;
+  state: string;
+  assignedTo?: string;
+  url: string;
+  areaPath?: string;
+  iterationPath?: string;
+  tags?: string[];
+  storyPoints?: number;
+  priority?: number;
+  risk?: string;
+  remainingWork?: number;
+  commentCount?: number;
+  relationshipCounts?: {
+    parents: number;
+    children: number;
+    related: number;
+    linkedPRs: number;
+    linkedCommits: number;
+  };
+  hasParentInSet?: boolean;
+  hasChildrenInSet?: boolean;
+  parentId?: number;
+  childIds?: number[];
+  riskScore?: number;
+  aiAssignmentScore?: number;
+  relationships?: RelationContext;
+}
+
+interface GraphEdge {
+  from: number;
+  to: number;
+  type: string;
+}
+
+interface OutsideReference {
+  id: number;
+  title?: string;
+  type?: string;
+  state?: string;
+  url?: string;
+}
+
+interface RelationContext {
+  parentOutsideSet?: OutsideReference;
+  childrenOutsideSet?: OutsideReference[];
+  parentId?: number;
+  childIds?: number[];
+  relatedCount?: number;
+  linkedPRs?: number;
+  linkedCommits?: number;
+  commentCount?: number;
+}
+
+interface Aggregates {
+  stateCounts?: Record<string, number>;
+  typeCounts?: Record<string, number>;
+  storyPoints?: {
+    total: number;
+    average: number;
+    max: number;
+    count: number;
+  };
+  riskHeuristic?: {
+    highAttentionCount: number;
+  };
+  aiAssignmentCandidates?: number[];
+}
 
 interface BatchArgs {
   workItemIds: number[];
@@ -42,7 +114,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
   } = args;
 
   try {
-    const token = getAzureDevOpsToken();
+    const httpClient = createADOHttpClient(organization, project);
     const baseFields = [
       'System.Id','System.Title','System.WorkItemType','System.State','System.AreaPath','System.IterationPath','System.AssignedTo','System.Tags','System.CommentCount'
     ];
@@ -56,16 +128,18 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
     // Note: Azure DevOps API doesn't allow both $expand and fields parameters together
     // Use $expand=all to get both relations and all fields when includeRelations is true
     const expandParam = includeRelations ? '$expand=all' : '';
-    const detailsUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${idsParam}${expandParam ? '&' + expandParam : ''}&api-version=7.1`;
-    const details = curlJson(detailsUrl, token);
+    const detailsResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+      `wit/workitems?ids=${idsParam}${expandParam ? '&' + expandParam : ''}`
+    );
+    const details = detailsResponse.data;
     if (!details.value) {
       throw new Error('Failed to fetch work items');
     }
 
     const insideSet = new Set(workItemIds);
-    const nodes: any[] = [];
-    const edges: any[] = [];
-    const outsideRefs: Map<number, any> = new Map();
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+    const outsideRefs: Map<number, OutsideReference> = new Map();
 
     for (const wi of details.value) {
       const f = wi.fields || {};
@@ -105,9 +179,9 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
       }
       
       // Calculate comment count from CommentCount field if available
-      const commentCount = f['System.CommentCount'] || 0;
+      const commentCount: number = (typeof f['System.CommentCount'] === 'number' ? f['System.CommentCount'] : 0);
       
-      const node: any = {
+      const node: GraphNode = {
         id: wi.id,
         title: f['System.Title'],
         type: f['System.WorkItemType'],
@@ -123,7 +197,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
       if (f['Microsoft.VSTS.Common.Priority'] !== undefined) {
         node.priority = f['Microsoft.VSTS.Common.Priority'];
       }
-      if (f['Microsoft.VSTS.Common.Risk']) {
+      if (f['Microsoft.VSTS.Common.Risk'] && typeof f['Microsoft.VSTS.Common.Risk'] === 'string') {
         node.risk = f['Microsoft.VSTS.Common.Risk'];
       }
       if (f['Microsoft.VSTS.Scheduling.RemainingWork'] !== undefined) {
@@ -135,7 +209,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
 
       // Add relationship context only if there are relationships
       if (parentId || childIds.length > 0 || relatedCount > 0 || linkedPRCount > 0 || linkedCommitCount > 0 || commentCount > 0) {
-        const relContext: any = {};
+        const relContext: RelationContext = {};
         if (parentId) relContext.parentId = parentId;
         if (childIds.length > 0) relContext.childIds = childIds;
         if (relatedCount > 0) relContext.relatedCount = relatedCount;
@@ -178,7 +252,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
 
     // Deduplicate edges (for related)
     const seen = new Set<string>();
-    const dedupedEdges: any[] = [];
+    const dedupedEdges: GraphEdge[] = [];
     for (const e of edges) {
       const key = `${e.from}-${e.to}-${e.type}`;
       if (!seen.has(key)) { seen.add(key); dedupedEdges.push(e); }
@@ -188,8 +262,10 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
     if (outsideRefs.size) {
       try {
         const refIds = Array.from(outsideRefs.keys());
-        const refUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems?ids=${refIds.join(',')}&fields=System.Id,System.Title,System.WorkItemType,System.State&api-version=7.1`;
-        const refRes = curlJson(refUrl, token);
+        const refResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+          `wit/workitems?ids=${refIds.join(',')}&fields=System.Id,System.Title,System.WorkItemType,System.State`
+        );
+        const refRes = refResponse.data;
         if (refRes.value) {
           for (const r of refRes.value) {
             const entry = outsideRefs.get(r.id);
@@ -205,14 +281,19 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
     }
 
     // Aggregations
-    const aggregates: any = {};
+    const aggregates: Aggregates = {};
     if (includeStateCounts) {
-      aggregates.stateCounts = nodes.reduce((acc: any, n) => { acc[n.state] = (acc[n.state] || 0) + 1; return acc; }, {});
-      aggregates.typeCounts = nodes.reduce((acc: any, n) => { acc[n.type] = (acc[n.type] || 0) + 1; return acc; }, {});
+      aggregates.stateCounts = nodes.reduce((acc: Record<string, number>, n) => { acc[n.state] = (acc[n.state] || 0) + 1; return acc; }, {});
+      aggregates.typeCounts = nodes.reduce((acc: Record<string, number>, n) => { acc[n.type] = (acc[n.type] || 0) + 1; return acc; }, {});
     }
     if (includeStoryPointAggregation) {
-      const points = nodes.map(n => n.storyPoints).filter((p: any) => typeof p === 'number');
-      aggregates.storyPoints = { total: points.reduce((a: number,b: number)=>a+b,0), count: points.length };
+      const points = nodes.map(n => n.storyPoints).filter((p: number | undefined): p is number => typeof p === 'number');
+      aggregates.storyPoints = { 
+        total: points.reduce((a: number,b: number)=>a+b,0), 
+        count: points.length,
+        average: points.length > 0 ? points.reduce((a: number,b: number)=>a+b,0) / points.length : 0,
+        max: points.length > 0 ? Math.max(...points) : 0
+      };
     }
 
     if (includeRiskScoring) {

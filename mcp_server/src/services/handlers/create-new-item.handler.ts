@@ -2,13 +2,13 @@
  * Handler for wit-create-new-item tool
  */
 
-import type { ToolExecutionResult } from "../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { createWorkItem } from "../ado-work-item-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
 import { logger } from "../../utils/logger.js";
 
-export async function handleCreateNewItem(config: any, args: any): Promise<ToolExecutionResult> {
+export async function handleCreateNewItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
