@@ -9,7 +9,7 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../utils/logger.js';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../config/config.js';
+import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
 
 interface WorkItemField {
   op: string;
@@ -42,20 +42,12 @@ interface WorkItemResult {
 }
 
 /**
- * Get Azure DevOps PAT token from Azure CLI
+ * Get Azure DevOps PAT token from Azure CLI (wrapper for consistency)
  */
-function getAzureDevOpsToken(organization: string): string {
-  try {
-    // Use Azure CLI to get a token for Azure DevOps
-    const result = execSync(
-      `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`,
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-    return result.trim();
-  } catch (error) {
-    logger.error('Failed to get Azure DevOps token from Azure CLI', error);
-    throw new Error('Failed to authenticate with Azure DevOps. Please ensure you are logged in with: az login');
-  }
+function getAzureDevOpsToken(organization?: string): string {
+  // organization parameter kept for API compatibility but not used
+  // Token is valid for all orgs in the Azure DevOps resource
+  return getToken();
 }
 
 /**

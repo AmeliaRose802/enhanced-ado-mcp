@@ -185,30 +185,6 @@ export const aiAssignmentAnalyzerSchema = z.object({
   outputFormat: z.enum(["detailed", "json"]).optional().default("detailed").describe("Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)")
 });
 
-export const featureDecomposerSchema = z.object({
-  title: z.string().describe("Feature title to decompose into smaller work items"),
-  description: z.string().optional().describe("Feature description with requirements and context"),
-  parentWorkItemId: z.number().int().optional().describe("Parent work item ID to create child items under"),
-  workItemType: z.string().optional().default(() => cfg().azureDevOps.defaultWorkItemType).describe("Type of work items to create (Task, User Story, etc.)"),
-  targetComplexity: z.enum(["simple", "medium"]).optional().default("medium").describe("Target complexity for generated work items"),
-  maxItems: z.number().int().optional().default(8).describe("Maximum number of work items to generate"),
-  technicalContext: z.string().optional().describe("Technical context: architecture, frameworks, constraints"),
-  businessContext: z.string().optional().describe("Business context: user needs, goals, success criteria"),
-  existingComponents: z.string().optional().describe("Existing components or systems to consider"),
-  dependencies: z.string().optional().describe("Known dependencies or integration points"),
-  timeConstraints: z.string().optional().describe("Timeline or milestone constraints"),
-  qualityRequirements: z.string().optional().describe("Quality, performance, or security requirements"),
-  generateAcceptanceCriteria: z.boolean().optional().default(true).describe("Generate acceptance criteria for each work item"),
-  analyzeAISuitability: z.boolean().optional().default(true).describe("Analyze AI assignment suitability for each item"),
-  autoCreateWorkItems: z.boolean().optional().default(false).describe("Automatically create work items in Azure DevOps"),
-  autoAssignAISuitable: z.boolean().optional().default(false).describe("Automatically assign AI-suitable items to GitHub Copilot"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project),
-  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Area path for created work items"),
-  iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Iteration path for created work items"),
-  tags: z.string().optional().describe("Additional tags to apply to created work items")
-});
-
 /**
  * Schema for AI-powered hierarchy validation and parenting suggestions
  * 
@@ -320,33 +296,6 @@ export const getLastSubstantiveChangeSchema = z.object({
   automatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
 });
 
-/**
- * Schema for transitioning multiple work items to a new state in bulk
- * 
- * @example
- * ```typescript
- * {
- *   workItemIds: [123, 456, 789],
- *   newState: "Removed",
- *   comment: "Closing obsolete items",
- *   dryRun: true
- * }
- * ```
- * 
- * @remarks
- * Efficiently transitions 1-50 work items to a new state with validation.
- * Supports dry-run mode for safety before making actual changes.
- */
-export const bulkStateTransitionSchema = z.object({
-  workItemIds: z.array(z.number().int()).min(1).max(50).describe("Array of work item IDs to transition (1-50 items)"),
-  newState: z.string().describe("Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')"),
-  comment: z.string().optional().describe("Comment to add to work item history when transitioning"),
-  reason: z.string().optional().describe("Reason for state change (e.g., 'Abandoned', 'Obsolete')"),
-  dryRun: z.boolean().optional().default(false).describe("If true, validates transitions without making changes"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
-
 export const bulkAddCommentsSchema = z.object({
   items: z.array(z.object({
     workItemId: z.number().int().describe("Work item ID to add comment to"),
@@ -356,19 +305,6 @@ export const bulkAddCommentsSchema = z.object({
   templateVariables: z.record(z.string()).optional().describe("Variables to substitute in template"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
-
-export const findStaleItemsSchema = z.object({
-  areaPath: z.string().describe("Area path to search for stale items"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project),
-  minInactiveDays: z.number().int().optional().default(180).describe("Minimum days of inactivity to consider an item stale (default 180)"),
-  excludeStates: z.array(z.string()).optional().default(['Done', 'Completed', 'Closed', 'Resolved', 'Removed']).describe("States to exclude from search"),
-  includeSubAreas: z.boolean().optional().default(true).describe("Include items from sub-area paths"),
-  workItemTypes: z.array(z.string()).optional().default([]).describe("Filter by specific work item types (empty = all types)"),
-  maxResults: z.number().int().optional().default(200).describe("Maximum number of results to return"),
-  includeSubstantiveChange: z.boolean().optional().default(true).describe("Include substantive change analysis for more accurate staleness detection"),
-  includeSignals: z.boolean().optional().default(true).describe("Include signals explaining why each item is considered stale")
 });
 
 export const detectPatternsSchema = z.object({

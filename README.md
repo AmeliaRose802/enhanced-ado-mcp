@@ -145,24 +145,33 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
 6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning (analysis only - use `wit-assign-to-copilot` separately to perform assignment)
-7. `wit-hierarchy-validator` - Analyze work item parent-child relationships and provide suggestions
 
 ### Configuration & Discovery Tools
 
-8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
-9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
-10. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
-11. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
-12. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
-13. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+7. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
+8. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
+9. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
+10. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
+11. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
+12. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
 
 ### Bulk Operations & Backlog Hygiene Tools
 
-14. `wit-bulk-state-transition` - Efficiently transition multiple work items (1-50) to a new state in one call with validation and dry-run mode
-15. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
-16. `wit-find-stale-items` - Purpose-built backlog hygiene tool to find stale/abandoned work items with staleness signals and risk categorization
-17. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
-18. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
+13. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
+14. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
+15. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
+
+**Bulk State Transitions:** Use the official **Azure DevOps MCP server** `ado_update-workitems` tool for bulk state updates, which provides native ADO integration and better performance.
+
+**Finding Stale Work Items:** Use `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true` to find stale items:
+```wiql
+SELECT [System.Id], [System.Title], [System.State] 
+FROM WorkItems 
+WHERE [System.AreaPath] UNDER 'YourProject\YourArea' 
+AND [System.State] NOT IN ('Done', 'Closed', 'Removed') 
+AND [System.ChangedDate] < @Today - 180
+```
+The `includeSubstantiveChange` flag automatically filters out non-substantive updates like iteration path changes.
 
 The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
 
@@ -171,15 +180,13 @@ The scripts are executed unchanged. The server just validates inputs and streams
 1. `intelligent_work_item_analyzer` - AI-powered comprehensive work item analysis (completeness, AI-readiness, categorization)
 2. `ai_assignment_analyzer` - Enhanced AI assignment suitability analysis with confidence scoring and detailed reasoning
 3. `work_item_enhancer` - Improve work item descriptions for clarity, scope, and acceptance criteria
-4. `team_velocity_analyzer` - Analyze team member performance, velocity, workload and provide assignment recommendations (NEW)
-5. `child_item_optimizer` - Analyze and optimize child work items with classification and parallel execution planning (NEW)
+4. `team_velocity_analyzer` - Analyze team member performance, velocity, workload and provide assignment recommendations
+5. `child_item_optimizer` - Analyze and optimize child work items with classification and parallel execution planning
 6. `hierarchy_validator` - Analyze and validate work item parent-child relationships
 7. `parallel_fit_planner` - Analyze child work items for parallel execution and AI/human assignment strategy
 8. `find_dead_items` - Identify stale/abandoned work items using substantive change analysis (filters iteration path churn)
 9. `backlog_cleanup` - Comprehensive backlog hygiene and removal candidate identification
 10. `security_items_analyzer` - Analyze security and compliance items, categorize, and create remediation plans
-11. ~~`feature_decomposer`~~ - **DEPRECATED:** Removed due to performance issues (60+ second timeouts)
-12. ~~`ai_suitability_analyzer`~~ - **DEPRECATED:** Use `ai_assignment_analyzer` instead for enhanced capabilities
 
 Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
 
@@ -190,14 +197,14 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 ### Basic Query - Find Active Work Items
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
 }
 ```
 
 ### Query by Area Path
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Closed'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Closed'",
   "MaxResults": 50
 }
 ```
@@ -205,7 +212,7 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 ### Query with Additional Fields
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active'",
   "IncludeFields": [
     "System.Description",
     "Microsoft.VSTS.Common.Priority",
@@ -218,7 +225,7 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 ### Complex Query - Recently Changed Tasks
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Task' AND [System.ChangedDate] >= @Today - 7 ORDER BY [System.ChangedDate] DESC",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Task' AND [System.ChangedDate] >= @Today - 7 ORDER BY [System.ChangedDate] DESC",
   "MaxResults": 100
 }
 ```
@@ -226,7 +233,7 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 ### Query by Tags
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'technical-debt' AND [System.State] <> 'Removed'"
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'technical-debt' AND [System.State] <> 'Removed'"
 }
 ```
 
@@ -374,7 +381,7 @@ Add computed metrics to WIQL queries for efficient analysis.
 **Example: Query with computed metrics**
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Done'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Done'",
   "ComputeMetrics": true,
   "StaleThresholdDays": 180,
   "IncludeFields": ["System.Description"]

@@ -155,8 +155,6 @@ All AI-powered tools now use model preferences:
 
 1. ✅ `wit-intelligence-analyzer` - Work item quality analysis
 2. ✅ `wit-ai-assignment-analyzer` - AI suitability scoring
-3. ✅ `wit-feature-decomposer` - Feature breakdown
-4. ✅ `wit-hierarchy-validator` - Hierarchy validation
 
 ## User Experience
 

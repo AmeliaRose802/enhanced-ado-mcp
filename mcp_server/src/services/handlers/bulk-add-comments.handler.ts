@@ -7,7 +7,7 @@ import type { ToolExecutionResult } from "../../types/index.js";
 import { validateAzureCLI } from "../ado-discovery-service.js";
 import { logger } from "../../utils/logger.js";
 import { execSync } from 'child_process';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/config.js';
+import { getAzureDevOpsToken } from '../../utils/ado-token.js';
 
 interface CommentItem {
   workItemId: number;
@@ -26,22 +26,6 @@ interface CommentResult {
   workItemId: number;
   success: boolean;
   error?: string;
-}
-
-/**
- * Get Azure DevOps PAT token from Azure CLI
- */
-function getAzureDevOpsToken(): string {
-  try {
-    const result = execSync(
-      `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`,
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-    return result.trim();
-  } catch (error) {
-    logger.error('Failed to get Azure DevOps token from Azure CLI', error);
-    throw new Error('Failed to authenticate with Azure DevOps. Please ensure you are logged in with: az login');
-  }
 }
 
 /**

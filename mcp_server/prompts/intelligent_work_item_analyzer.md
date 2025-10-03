@@ -1,7 +1,7 @@
 ---
 name: intelligent_work_item_analyzer  
 description: AI-powered work item analysis using VS Code sampling for completeness, AI-readiness assessment, enhancement suggestions, and smart categorization.
-version: 3
+version: 4
 arguments:
   work_item_id: { type: string, required: true, description: "Azure DevOps work item ID to analyze" }
   analysis_focus: { type: string, required: false, enum: ["completeness", "ai-readiness", "enhancement", "categorization", "full"], default: "full" }
@@ -46,12 +46,25 @@ First, use Azure DevOps MCP tools to fetch complete information for work item ID
 - Parent work item information if applicable
 
 If related or dependency context appears incomplete, issue a WIQL query via `wit-get-work-items-by-query-wiql`, for example:
+
+**To find linked work items:**
 ```
-WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
+Tool: wit-get-work-items-by-query-wiql
+Arguments: {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (SELECT [System.LinkedWorkItemId] FROM WorkItemLinks WHERE [System.Id] = {{work_item_id}})",
+  includeFields: ["System.Title", "System.State", "System.WorkItemType"],
+  maxResults: 20
+}
 ```
-or to identify possible duplicates by title recency:
+
+**To identify possible duplicates by title similarity:**
 ```
-WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS '" + SUBSTRING({{work_item_title}},0,25) + "' AND [System.Id] <> {{work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC"
+Tool: wit-get-work-items-by-query-wiql  
+Arguments: {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Title] CONTAINS 'key words from title' AND [System.Id] <> {{work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.WorkItemType"],
+  maxResults: 10
+}
 ```
 
 **Step 2: Perform Intelligent Analysis**
@@ -77,7 +90,7 @@ Parameters:
 - ContextInfo: {{context_info}}
 - EnhanceDescription: {{enhance_and_create}}
 - CreateInADO: {{enhance_and_create}}
-- ParentWorkItemId: {{parent_work_item_id}}
+- parentWorkItemId: {{parent_work_item_id}}
 ```
 
 This will provide:

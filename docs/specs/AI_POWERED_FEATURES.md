@@ -276,92 +276,6 @@ Decomposition principles:
 
 ---
 
-### 4. Hierarchy Validator (`wit-hierarchy-validator`)
-
-**Purpose:** Analyze and validate work item parent-child relationships
-
-#### Capabilities
-
-- **Relationship Analysis**: Validate parent-child links
-- **Orphan Detection**: Find unlinked items
-- **Misparent Detection**: Identify incorrect hierarchies
-- **Alternative Suggestions**: Recommend better parents
-- **Confidence Scoring**: Score relationship quality
-
-#### Input Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `WorkItemIds` | number[] | ❌ | Specific IDs to validate |
-| `AreaPath` | string | ❌ | Analyze all in area path |
-| `IncludeChildAreas` | boolean | ❌ | Include child areas |
-| `MaxItemsToAnalyze` | number | ❌ | Max items to process |
-| `AnalysisDepth` | enum | ❌ | `shallow`, `deep` |
-| `SuggestAlternatives` | boolean | ❌ | Generate alternatives |
-| `IncludeConfidenceScores` | boolean | ❌ | Include scores |
-| `FilterByWorkItemType` | string[] | ❌ | Filter by types |
-| `ExcludeStates` | string[] | ❌ | Exclude states |
-
-#### Output Structure
-
-```typescript
-{
-  success: boolean;
-  data: {
-    validation_results: [
-      {
-        work_item_id: number;
-        title: string;
-        current_parent_id: number;
-        current_parent_title: string;
-        validation_status: "valid" | "questionable" | "invalid";
-        confidence: number;        // 0-100
-        issues: string[];
-        suggestions: [
-          {
-            suggested_parent_id: number;
-            suggested_parent_title: string;
-            reasoning: string;
-            confidence: number;
-          }
-        ];
-      }
-    ];
-    orphans: number[];             // Items without parents
-    misparented: number[];         // Items with wrong parents
-    hierarchy_health: {
-      total_analyzed: number;
-      valid_count: number;
-      questionable_count: number;
-      invalid_count: number;
-      overall_score: number;
-    };
-  };
-}
-```
-
-#### Validation Rules
-
-**Valid Parent-Child Relationships:**
-- Epic → Feature → PBI/User Story → Task
-- Feature → Bug (direct bugs)
-- PBI → Task (implementation tasks)
-
-**Invalid Relationships:**
-- Task → Feature (wrong direction)
-- Bug → Epic (wrong level)
-- Circular relationships
-
-#### System Prompt
-
-Located in: `mcp_server/prompts/system/hierarchy-validator.md`
-
-Validation criteria:
-- Type compatibility
-- Scope alignment
-- Logical grouping
-- Domain coherence
-
 ## Technical Implementation
 
 ### Architecture
@@ -437,16 +351,6 @@ await executeTool('wit-feature-decomposer', {
   GenerateAcceptanceCriteria: true,
   AnalyzeAISuitability: true,
   AutoCreateWorkItems: true
-});
-```
-
-### Example 4: Validate Hierarchy
-
-```typescript
-await executeTool('wit-hierarchy-validator', {
-  AreaPath: "MyProject\\Authentication",
-  AnalysisDepth: "deep",
-  SuggestAlternatives: true
 });
 ```
 

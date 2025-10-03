@@ -16,7 +16,8 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { logger } from '../../utils/logger.js';
-import { AZURE_DEVOPS_RESOURCE_ID, getRequiredConfig } from '../../config/config.js';
+import { getRequiredConfig } from '../../config/config.js';
+import { getAzureDevOpsToken } from '../../utils/ado-token.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
@@ -76,7 +77,7 @@ export class HierarchyValidatorAnalyzer {
 
     try {
       // Get Azure DevOps access token
-      const token = this.getAzureDevOpsToken();
+      const token = getAzureDevOpsToken();
       
       let workItemIds: number[] = [];
 
@@ -240,21 +241,6 @@ export class HierarchyValidatorAnalyzer {
     const descendantIds = Array.from(allDescendants);
     logger.debug(`Found ${descendantIds.length} total descendants across ${visited.size} levels`);
     return descendantIds;
-  }
-
-  /**
-   * Get Azure DevOps PAT token from Azure CLI
-   */
-  private getAzureDevOpsToken(): string {
-    try {
-      const result = execSync(
-        `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`,
-        { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-      );
-      return result.trim();
-    } catch (error) {
-      throw new Error('Failed to authenticate with Azure DevOps. Please ensure you are logged in with: az login');
-    }
   }
 
   /**

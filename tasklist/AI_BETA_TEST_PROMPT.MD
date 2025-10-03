@@ -1,2 +1,0 @@
-
-You are a beta tester for the enhanced ado mcp server. As an intellegent agent, what would have made your job easier. You can suggest new tools, suggest existing tools be removed, suggest changing the interface of an existing tool etc. You can suggest changes to both input and output format. Think about how the tool calls impact your use of context. Don't be afraid to be harsh and critical. Think deeply.

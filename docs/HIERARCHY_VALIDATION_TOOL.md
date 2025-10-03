@@ -261,20 +261,9 @@ Identifies items that should have parent links but don't:
 
 ## Integration with Other Tools
 
-- Use `wit-bulk-state-transition` to fix state inconsistencies in bulk
 - Use `wit-get-work-item-context-package` to get full details on flagged items
-- Use `wit-hierarchy-validator` (AI-powered) for intelligent parenting suggestions
 - Combine with `backlog_cleanup-by-hierarchy` prompt for comprehensive analysis
-
-## Differences from wit-hierarchy-validator
-
-| Feature | wit-validate-hierarchy-fast | wit-hierarchy-validator (AI) |
-|---------|----------------------------|------------------------------|
-| Speed | Very fast | Slower (AI processing) |
-| Accuracy | Rule-based, 100% consistent | AI-based, contextual |
-| Suggestions | Generic rules | Intelligent alternatives |
-| Context Window | Minimal | Large (uses sampling) |
-| Use Case | Quick validation | Deep analysis with suggestions |
+- Use Azure DevOps tools to fix identified violations
 
 ## Error Handling
 
@@ -285,7 +274,7 @@ Identifies items that should have parent links but don't:
 
 ## Notes
 
-- Removed and Closed items are excluded from child queries to avoid false orphan detection
+- Removed, Closed, Done, Completed, and Resolved items are excluded from area path queries to focus on active work
 - Unknown states are skipped during state validation to avoid false positives
 - The tool returns validation rules in response for transparency and documentation
 - All violations include both the issue description and expected correction guidance

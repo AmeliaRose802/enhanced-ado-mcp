@@ -147,7 +147,7 @@ export async function handleValidateHierarchy(config: any, args: any): Promise<T
     } else if (areaPath) {
       const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${areaPath}'` : `[System.AreaPath] = '${areaPath}'`;
       const result = await queryWorkItemsByWiql({
-        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed') ORDER BY [System.WorkItemType], [System.Id]`,
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed', 'Done', 'Completed', 'Resolved') ORDER BY [System.WorkItemType], [System.Id]`,
         organization,
         project,
         includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],

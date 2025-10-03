@@ -67,12 +67,12 @@ If the context package reveals related dependencies, blocking items, or uncertai
 
 **To find linked/related items:**
 ```
-WiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
+wiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = {{work_item_id}} AND [System.Links.LinkType] <> '') MODE (MustContain)"
 ```
 
 **To check recent churn that may elevate risk:**
 ```
-WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] = {{work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') AND [System.ChangedDate] >= @Today - 14"
+wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] = {{work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') AND [System.ChangedDate] >= @Today - 14"
 ```
 
 Then use `wit-get-work-items-context-batch` to pull details for those related items (limit to 10-15 items max to avoid context overflow).

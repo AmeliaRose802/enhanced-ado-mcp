@@ -1,7 +1,7 @@
 ---
 name: backlog_cleanup_by_hierarchy
 description: Assess Azure DevOps backlog health hierarchically, starting from Key Results and analyzing all descendant work items in a structured tree format.
-version: 1
+version: 2
 arguments: {}
 ---
 
@@ -9,19 +9,19 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 
 **Important:** **Exclude work items in Done/Completed/Closed/Resolved states from analysis** - these represent successfully completed work. Focus on active work items to understand their health, clarity, and actionability.
 
-**Inputs (auto-populated where possible):**
-- org_url: {{org_url}}
-- project: {{project}}
-- area_path: {{area_path}}
-- max_age_days: {{max_age_days}} (default 180)
-- dry_run: {{dry_run}} (analysis only)
+**Configuration (Auto-Populated):**
+- **Organization & Project:** Auto-filled from configuration
+- **Area Path:** {{area_path}} (defaults to configured area path)
+- **Max Age Days:** {{max_age_days}} (default: 180)
+
+**Note:** This prompt provides hierarchical analysis only and does not modify work items.
 
 **Available MCP tools:**
-- `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `IncludeSubstantiveChange: true`)
+- `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
   - **Important**: Use simple `SELECT [System.Id] FROM WorkItems WHERE...` queries, NOT `WorkItemLinks` queries
   - WorkItemLinks queries are not fully supported by this tool and will return empty results
 - `wit-get-work-items-context-batch` – ⚠️ batch enrichment with relationship data (LIMIT: 20-30 items per call to avoid context overflow)
-  - **Has relationship support**: Use `IncludeRelations: true` and `IncludeChildrenOutsideSet: true` to get child relationships
+  - **Has relationship support**: Use `includeRelations: true` and `includeChildrenOutsideSet: true` to get child relationships
 - `wit-get-work-item-context-package` – ⚠️ deep dive for individual items with full hierarchy (use sparingly, returns large payload)
   - **Best for single-item hierarchy**: Use `IncludeChildren: true` and `MaxChildDepth` to get full child tree
 - (Create/assign tools available but not used for analysis): `wit-create-new-item`, `wit-assign-to-copilot`, `wit-new-copilot-item`, `wit-extract-security-links`
@@ -39,11 +39,11 @@ Start by identifying all Key Results (top-level strategic items) in the specifie
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] = 'Key Result' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.Title] ASC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType", "System.Description", "Microsoft.VSTS.Common.Priority"],
-  IncludeSubstantiveChange: true,
-  SubstantiveChangeHistoryCount: 50,
-  MaxResults: 200
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] = 'Key Result' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.Title] ASC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType", "System.Description", "Microsoft.VSTS.Common.Priority"],
+  includeSubstantiveChange: true,
+  substantiveChangeHistoryCount: 50,
+  maxResults: 200
 }
 ```
 
@@ -56,11 +56,11 @@ For each Key Result found, query its direct children and recursively fetch their
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {KeyResultId} AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.WorkItemType], [System.Title] ASC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType", "System.Parent", "Microsoft.VSTS.Common.Priority"],
-  IncludeSubstantiveChange: true,
-  SubstantiveChangeHistoryCount: 50,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {KeyResultId} AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.WorkItemType], [System.Title] ASC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType", "System.Parent", "Microsoft.VSTS.Common.Priority"],
+  includeSubstantiveChange: true,
+  substantiveChangeHistoryCount: 50,
+  maxResults: 100
 }
 ```
 
@@ -73,10 +73,10 @@ If analyzing a single Key Result and you want the full tree in one call, use `wi
 ```
 Tool: wit-get-work-item-context-package
 Arguments: {
-  WorkItemId: {KeyResultId},
+  workItemId: {KeyResultId},
   IncludeChildren: true,
   MaxChildDepth: 3,  # Adjust based on hierarchy depth (Key Result -> Epic -> Feature -> Story)
-  IncludeRelations: true,
+  includeRelations: true,
   IncludeHistory: false  # Skip to reduce payload size
 }
 ```
@@ -88,10 +88,10 @@ If you already have a list of work item IDs (e.g., from a broader area query) an
 ```
 Tool: wit-get-work-items-context-batch
 Arguments: {
-  WorkItemIds: [id1, id2, id3, ...],  # Up to 30 items per call
-  IncludeRelations: true,
-  IncludeChildrenOutsideSet: true,  # Includes children not in the WorkItemIds list
-  IncludeParentOutsideSet: true,    # Includes parents not in the WorkItemIds list
+  workItemIds: [id1, id2, id3, ...],  # Up to 30 items per call
+  includeRelations: true,
+  includeChildrenOutsideSet: true,  # Includes children not in the WorkItemIds list
+  includeParentOutsideSet: true,    # Includes parents not in the WorkItemIds list
   MaxOutsideReferences: 50,
   ReturnFormat: "graph"  # Returns nodes and edges for relationship analysis
 }
@@ -110,10 +110,10 @@ If you need additional details like descriptions, acceptance criteria, or tags f
 ```
 Tool: wit-get-work-items-context-batch
 Arguments: {
-  WorkItemIds: [id1, id2, ...],
-  IncludeFields: ["System.Description", "Microsoft.VSTS.Common.AcceptanceCriteria", "System.Tags"],
-  IncludeRelations: true,
-  IncludeChildrenOutsideSet: true  # Also gets children relationships
+  workItemIds: [id1, id2, ...],
+  includeFields: ["System.Description", "Microsoft.VSTS.Common.AcceptanceCriteria", "System.Tags"],
+  includeRelations: true,
+  includeChildrenOutsideSet: true  # Also gets children relationships
 }
 ```
 
@@ -122,7 +122,7 @@ Arguments: {
 ```
 Tool: wit-get-work-item-context-package
 Arguments: {
-  WorkItemId: {id},
+  workItemId: {id},
   IncludeChildren: true,
   IncludeParent: true,
   IncludeComments: true,
@@ -146,7 +146,7 @@ Present findings organized by Key Result hierarchy (see Report Output Format bel
 
 ### Hierarchical Quality Queries
 
-If you want to identify specific patterns within a hierarchy branch, you can run targeted queries. **Always include `IncludeSubstantiveChange: true`** to get activity data.
+If you want to identify specific patterns within a hierarchy branch, you can run targeted queries. **Always include `includeSubstantiveChange: true`** to get activity data.
 
 #### Find Key Results with No Active Children
 
@@ -155,10 +155,10 @@ If you want to identify specific patterns within a hierarchy branch, you can run
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] = 'Key Result' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.CreatedDate] ASC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] = 'Key Result' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.CreatedDate] ASC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
@@ -167,9 +167,9 @@ Then for each Key Result, check if it has children:
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {KeyResultId} AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved')",
-  IncludeFields: ["System.Id"],
-  MaxResults: 1
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {KeyResultId} AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved')",
+  includeFields: ["System.Id"],
+  maxResults: 1
 }
 ```
 
@@ -180,10 +180,10 @@ If count = 0, the Key Result has no active children.
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Epic', 'Feature', 'User Story', 'Product Backlog Item', 'Task') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.Parent] = '' ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
-  IncludeFields: ["System.Title", "System.State", "System.WorkItemType", "System.CreatedDate"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Epic', 'Feature', 'User Story', 'Product Backlog Item', 'Task') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.Parent] = '' ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.CreatedDate"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
@@ -194,10 +194,10 @@ Query by area path to find items missing descriptions, then filter in your analy
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.Description] = '' ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
-  IncludeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 200
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.Description] = '' ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
+  includeSubstantiveChange: true,
+  maxResults: 200
 }
 ```
 
@@ -217,7 +217,7 @@ Assess work items across multiple dimensions to understand backlog health. Consi
 - **Empty branches** – Parent items with no active children
 
 #### Activity & Engagement Signals
-- **Extended inactivity** – `daysInactive` field (from WIQL with `IncludeSubstantiveChange: true`) exceeding thresholds (e.g., > `max_age_days`)
+- **Extended inactivity** – `daysInactive` field (from WIQL with `includeSubstantiveChange: true`) exceeding thresholds (e.g., > `max_age_days`)
 - **Stalled in initial state** – Remains in New/Proposed/To Do for extended periods (> 50% of `max_age_days`) without progression
 - **Limited ownership engagement** – Assigned but showing no substantive activity
 - **Cascading inactivity** – Parent and all children showing extended inactivity (suggests abandoned initiative)

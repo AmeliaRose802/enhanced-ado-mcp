@@ -242,26 +242,34 @@ This report documents comprehensive improvements made to the Enhanced ADO MCP Se
 
 ---
 
-### 1.4 Find Stale Items Tool (`wit-find-stale-items`)
+### 1.4 Finding Stale Items with WIQL
 
-**Status:** ✅ Completed and committed  
+**Status:** ✅ Use `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true`  
 **Priority:** High  
-**Files:** `find-stale-items.handler.ts`, `schemas.ts`, `tool-configs.ts`, `tool-service.ts`
 
 **What it does:**
-- Purpose-built tool for backlog hygiene workflows
-- Combines WIQL query + computed metrics + staleness signals + risk categorization
-- Automatically excludes terminal states (Done, Closed, Removed)
-- Categorizes results by risk level: **High** (>365 days + passive state), **Medium** (180-365 days), **Low** (90-180 days)
-- Detects staleness signals: placeholder titles, unassigned items, passive states
+- Uses WIQL queries to find stale/abandoned work items
+- Leverage `includeSubstantiveChange: true` to automatically filter out automated changes (iteration path updates, etc.)
+- Use `computeMetrics: true` for additional staleness detection (daysInactive, isStale)
+- Excludes terminal states via WIQL WHERE clause
 
-**Example:**
+**Example WIQL Query:**
+```wiql
+SELECT [System.Id], [System.Title], [System.State], [System.ChangedDate]
+FROM WorkItems 
+WHERE [System.AreaPath] UNDER 'MyProject\\MyArea'
+AND [System.State] NOT IN ('Done', 'Closed', 'Removed')
+AND [System.ChangedDate] < @Today - 180
+ORDER BY [System.ChangedDate] ASC
+```
+
+**Tool Call:**
 ```json
 {
-  "AreaPath": "MyProject\\MyTeam",
-  "MinInactiveDays": 180,
-  "IncludeSubstantiveChange": true,
-  "IncludeSignals": true
+  "wiqlQuery": "SELECT [System.Id], [System.Title], [System.State] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Done', 'Closed', 'Removed') AND [System.ChangedDate] < @Today - 180",
+  "includeSubstantiveChange": true,
+  "computeMetrics": true,
+  "staleThresholdDays": 180
 }
 ```
 

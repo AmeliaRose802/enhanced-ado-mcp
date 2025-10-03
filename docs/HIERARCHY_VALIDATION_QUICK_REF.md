@@ -9,12 +9,8 @@ Fast, rule-based validation of Azure DevOps work item hierarchies without AI pro
 - ✅ Regular backlog maintenance (weekly/sprint)
 - ✅ After bulk work item operations
 - ✅ When you need minimal context usage
-
-## When to Use wit-hierarchy-validator (AI) Instead
-- Need intelligent parenting suggestions
-- Want context-aware analysis
-- Require alternative parent recommendations
-- Deep analysis with confidence scores
+- ✅ Validate parent-child type relationships
+- ✅ Check state consistency between parents and children
 
 ## Quick Start
 

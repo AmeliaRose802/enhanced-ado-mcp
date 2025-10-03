@@ -44,6 +44,20 @@ export function loadSystemPrompt(promptName: string, variables?: Record<string, 
     }
   }
   
-  
   return prompt;
+}
+
+/**
+ * Apply template substitutions to text using provided variables
+ * @param text - Text containing {{variable}} placeholders
+ * @param variables - Variables to substitute
+ * @returns Text with all variables substituted
+ */
+export function applyTemplateVariables(text: string, variables: Record<string, any>): string {
+  let result = text;
+  for (const [key, value] of Object.entries(variables)) {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    result = result.replace(regex, String(value || ''));
+  }
+  return result;
 }

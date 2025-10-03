@@ -6,16 +6,12 @@ import {
   extractSecurityLinksSchema,
   workItemIntelligenceSchema,
   aiAssignmentAnalyzerSchema,
-  featureDecomposerSchema,
-  hierarchyValidatorSchema,
   getConfigurationSchema,
   wiqlQuerySchema,
   workItemContextPackageSchema,
   workItemsBatchContextSchema,
   getLastSubstantiveChangeSchema,
-  bulkStateTransitionSchema,
   bulkAddCommentsSchema,
-  findStaleItemsSchema,
   detectPatternsSchema,
   validateHierarchyFastSchema
 } from "./schemas.js";
@@ -193,68 +189,6 @@ export const toolConfigs: ToolConfig[] = [
       required: ["workItemId"]
     }
   },
-  // DISABLED: wit-feature-decomposer
-  // Reason: Consistent timeout failures (100% failure rate) during beta testing
-  // Status: Temporarily removed from production pending performance fixes
-  // See: tasklist/backlog_cleanup_beta_tests/SYNTHESIS_REPORT.md - Issue 2: Performance Failures
-  /*
-  {
-    name: "wit-feature-decomposer",
-    description: "Intelligently decompose large features into smaller, assignable work items with AI suitability analysis using VS Code sampling",
-    script: "", // Handled internally with sampling
-    schema: featureDecomposerSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string", description: "Feature title to decompose into smaller work items" },
-        description: { type: "string", description: "Feature description with requirements and context" },
-        parentWorkItemId: { type: "number", description: "Parent work item ID to create child items under" },
-        workItemType: { type: "string", description: "Type of work items to create (Task, User Story, etc.)" },
-        targetComplexity: { type: "string", enum: ["simple", "medium"], description: "Target complexity for generated work items" },
-        maxItems: { type: "number", description: "Maximum number of work items to generate" },
-        technicalContext: { type: "string", description: "Technical context: architecture, frameworks, constraints" },
-        businessContext: { type: "string", description: "Business context: user needs, goals, success criteria" },
-        existingComponents: { type: "string", description: "Existing components or systems to consider" },
-        dependencies: { type: "string", description: "Known dependencies or integration points" },
-        timeConstraints: { type: "string", description: "Timeline or milestone constraints" },
-        qualityRequirements: { type: "string", description: "Quality, performance, or security requirements" },
-        generateAcceptanceCriteria: { type: "boolean", description: "Generate acceptance criteria for each work item" },
-        analyzeAISuitability: { type: "boolean", description: "Analyze AI assignment suitability for each item" },
-        autoCreateWorkItems: { type: "boolean", description: "Automatically create work items in Azure DevOps" },
-        autoAssignAISuitable: { type: "boolean", description: "Automatically assign AI-suitable items to GitHub Copilot" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" },
-        areaPath: { type: "string", description: "Area path for created work items" },
-        iterationPath: { type: "string", description: "Iteration path for created work items" },
-        tags: { type: "string", description: "Additional tags to apply to created work items" }
-      },
-      required: ["title"]
-    }
-  },
-  */
-  {
-    name: "wit-hierarchy-validator",
-    description: "Analyze work item parent-child relationships and provide intelligent parenting suggestions using VS Code sampling",
-    script: "", // Handled internally with sampling
-    schema: hierarchyValidatorSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to validate (if not provided, will analyze area path)" },
-        areaPath: { type: "string", description: "Area path to analyze all work items within (used if workItemIds not provided)" },
-        includeChildAreas: { type: "boolean", description: "Include child area paths in analysis" },
-        maxItemsToAnalyze: { type: "number", description: "Maximum number of work items to analyze" },
-        analysisDepth: { type: "string", enum: ["shallow", "deep"], description: "Analysis depth: shallow (basic) or deep (comprehensive with content analysis)" },
-        suggestAlternatives: { type: "boolean", description: "Generate alternative parent suggestions" },
-        includeConfidenceScores: { type: "boolean", description: "Include confidence scores for recommendations" },
-        filterByWorkItemType: { type: "array", items: { type: "string" }, description: "Filter analysis to specific work item types" },
-        excludeStates: { type: "array", items: { type: "string" }, description: "Exclude work items in these states from analysis" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: []
-    }
-  },
   // Configuration and Discovery Tools
   {
     name: "wit-get-configuration",
@@ -305,25 +239,6 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-state-transition",
-    description: "Efficiently transition multiple work items (1-50) to a new state in a single call. Includes validation, dry-run mode for safety, and detailed per-item results. Ideal for backlog hygiene operations like bulk removal or closure.",
-    script: "", // Handled internally
-    schema: bulkStateTransitionSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemIds: { type: "array", items: { type: "number" }, description: "Array of work item IDs to transition (1-50 items)" },
-        newState: { type: "string", description: "Target state to transition items to (e.g., 'Removed', 'Closed', 'Active')" },
-        comment: { type: "string", description: "Comment to add to work item history when transitioning" },
-        reason: { type: "string", description: "Reason for state change (e.g., 'Abandoned', 'Obsolete')" },
-        dryRun: { type: "boolean", description: "If true, validates transitions without making changes" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["workItemIds", "newState"]
-    }
-  },
-  {
     name: "wit-bulk-add-comments",
     description: "Add comments to multiple work items (1-50) efficiently in a single call. Supports templates with variable substitution for consistent messaging. Ideal for bulk notifications or status updates.",
     script: "", // Handled internally
@@ -349,28 +264,6 @@ export const toolConfigs: ToolConfig[] = [
         project: { type: "string", description: "Azure DevOps project name" }
       },
       required: ["items"]
-    }
-  },
-  {
-    name: "wit-find-stale-items",
-    description: "Purpose-built backlog hygiene tool to find stale/abandoned work items using date arithmetic and configurable thresholds. Returns items with staleness signals and risk categorization.",
-    script: "", // Handled internally
-    schema: findStaleItemsSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        areaPath: { type: "string", description: "Area path to search for stale items" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" },
-        minInactiveDays: { type: "number", description: "Minimum days of inactivity to consider an item stale (default 180)" },
-        excludeStates: { type: "array", items: { type: "string" }, description: "States to exclude from search" },
-        includeSubAreas: { type: "boolean", description: "Include items from sub-area paths" },
-        workItemTypes: { type: "array", items: { type: "string" }, description: "Filter by specific work item types (empty = all types)" },
-        maxResults: { type: "number", description: "Maximum number of results to return" },
-        includeSubstantiveChange: { type: "boolean", description: "Include substantive change analysis for more accurate staleness detection" },
-        includeSignals: { type: "boolean", description: "Include signals explaining why each item is considered stale" }
-      },
-      required: ["areaPath"]
     }
   },
   {
@@ -426,9 +319,7 @@ export const toolConfigs: ToolConfig[] = [
  */
 export const AI_POWERED_TOOLS = [
   'wit-intelligence-analyzer',
-  'wit-ai-assignment-analyzer',
-  'wit-hierarchy-validator'
-  // wit-feature-decomposer is commented out - disabled due to timeout issues
+  'wit-ai-assignment-analyzer'
 ];
 
 /**

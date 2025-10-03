@@ -10,7 +10,7 @@ async function testBasicWiqlQuery() {
   
   try {
     const result = await executeTool("wit-get-work-items-by-query-wiql", {
-      WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
+      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
     });
     
     if (result.success) {

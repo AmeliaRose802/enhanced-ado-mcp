@@ -26,12 +26,22 @@ export function buildErrorResponse(error: string | Error, metadata: Record<strin
 }
 
 export function buildSamplingUnavailableResponse(): ToolExecutionResult {
-  const error = 'VS Code language model sampling is not available. Ensure you have GitHub Copilot enabled and the language model is accessible.';
-  return {
-    success: false,
-    data: null,
-    metadata: { source: 'sampling-check-failed', samplingAvailable: false },
-    errors: [error],
-    warnings: []
-  };
+  return buildErrorResponse(
+    'VS Code language model sampling is not available. Ensure you have GitHub Copilot enabled and the language model is accessible.',
+    { source: 'sampling-check-failed', samplingAvailable: false }
+  );
+}
+
+/**
+ * Build validation error response for tool handlers
+ */
+export function buildValidationErrorResponse(validationError: any, source: string = 'validation'): ToolExecutionResult {
+  return buildErrorResponse(`Validation error: ${validationError.message}`, { source });
+}
+
+/**
+ * Build Azure CLI error response
+ */
+export function buildAzureCliErrorResponse(error: { isAvailable: boolean, isLoggedIn: boolean, error?: string }): ToolExecutionResult {
+  return buildErrorResponse(error.error || 'Azure CLI validation failed', { source: 'azure-cli-validation' });
 }

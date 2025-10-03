@@ -3,29 +3,6 @@ import { loadConfiguration } from '../../config/config.js';
 import { logger } from '../../utils/logger.js';
 import { getAzureDevOpsToken, curlJson } from '../../utils/ado-token.js';
 
-/**
- * Clean up verbose fields from work item data to reduce context window usage.
- * Simplifies user objects to just displayName and removes redundant metadata.
- */
-function cleanFields(fields: any): any {
-  if (!fields || typeof fields !== 'object') return fields;
-  
-  const cleaned: any = {};
-  
-  for (const [key, value] of Object.entries(fields)) {
-    // Simplify user objects (System.CreatedBy, System.ChangedBy, System.AssignedTo, etc.)
-    if (value && typeof value === 'object' && 'displayName' in value) {
-      cleaned[key] = value.displayName;
-    }
-    // Keep other fields as-is
-    else {
-      cleaned[key] = value;
-    }
-  }
-  
-  return cleaned;
-}
-
 interface BatchArgs {
   workItemIds: number[];
   organization?: string;
@@ -130,32 +107,44 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
       // Calculate comment count from CommentCount field if available
       const commentCount = f['System.CommentCount'] || 0;
       
-      const node = {
+      const node: any = {
         id: wi.id,
         title: f['System.Title'],
         type: f['System.WorkItemType'],
         state: f['System.State'],
         assignedTo: f['System.AssignedTo']?.displayName || f['System.AssignedTo']?.uniqueName,
-        storyPoints: f['Microsoft.VSTS.Scheduling.StoryPoints'],
-        priority: f['Microsoft.VSTS.Common.Priority'],
-        risk: f['Microsoft.VSTS.Common.Risk'],
-        remainingWork: f['Microsoft.VSTS.Scheduling.RemainingWork'],
-        tags: includeTags && f['System.Tags'] ? String(f['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean) : [],
-        url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${wi.id}`,
-        relationshipContext: {
-          parentId: parentId,
-          childIds: childIds,
-          childCount: childCount,
-          relatedCount: relatedCount,
-          linkedPRs: linkedPRCount,
-          linkedCommits: linkedCommitCount,
-          commentCount: commentCount,
-          hasParent: parentCount > 0,
-          hasChildren: childCount > 0,
-          isOrphaned: parentCount === 0 && childCount === 0 && relatedCount === 0
-        },
-        _raw: includeExtendedFields ? { fields: cleanFields(f) } : undefined
+        url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${wi.id}`
       };
+
+      // Add optional fields only if they exist
+      if (f['Microsoft.VSTS.Scheduling.StoryPoints'] !== undefined) {
+        node.storyPoints = f['Microsoft.VSTS.Scheduling.StoryPoints'];
+      }
+      if (f['Microsoft.VSTS.Common.Priority'] !== undefined) {
+        node.priority = f['Microsoft.VSTS.Common.Priority'];
+      }
+      if (f['Microsoft.VSTS.Common.Risk']) {
+        node.risk = f['Microsoft.VSTS.Common.Risk'];
+      }
+      if (f['Microsoft.VSTS.Scheduling.RemainingWork'] !== undefined) {
+        node.remainingWork = f['Microsoft.VSTS.Scheduling.RemainingWork'];
+      }
+      if (includeTags && f['System.Tags']) {
+        node.tags = String(f['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean);
+      }
+
+      // Add relationship context only if there are relationships
+      if (parentId || childIds.length > 0 || relatedCount > 0 || linkedPRCount > 0 || linkedCommitCount > 0 || commentCount > 0) {
+        const relContext: any = {};
+        if (parentId) relContext.parentId = parentId;
+        if (childIds.length > 0) relContext.childIds = childIds;
+        if (relatedCount > 0) relContext.relatedCount = relatedCount;
+        if (linkedPRCount > 0) relContext.linkedPRs = linkedPRCount;
+        if (linkedCommitCount > 0) relContext.linkedCommits = linkedCommitCount;
+        if (commentCount > 0) relContext.commentCount = commentCount;
+        node.relationships = relContext;
+      }
+
       nodes.push(node);
 
       if (includeRelations && wi.relations) {
@@ -167,12 +156,12 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
             if (relType === 'System.LinkTypes.Hierarchy-Forward') { // parent -> child edge
               edges.push({ from: wi.id, to: targetId, type: 'child' });
               if (!insideSet.has(targetId) && includeChildrenOutsideSet && outsideRefs.size < maxOutsideReferences) {
-                outsideRefs.set(targetId, { id: targetId, minimal: true });
+                outsideRefs.set(targetId, { id: targetId });
               }
             } else if (relType === 'System.LinkTypes.Hierarchy-Reverse') { // child -> parent edge
               edges.push({ from: targetId, to: wi.id, type: 'child' });
               if (!insideSet.has(targetId) && includeParentOutsideSet && outsideRefs.size < maxOutsideReferences) {
-                outsideRefs.set(targetId, { id: targetId, minimal: true });
+                outsideRefs.set(targetId, { id: targetId });
               }
             } else if (relType === 'System.LinkTypes.Related') {
               // Use normalized ordering to avoid duplicates
@@ -180,7 +169,7 @@ export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
               const b = Math.max(wi.id, targetId);
               edges.push({ from: a, to: b, type: 'related' });
               if (!insideSet.has(targetId) && outsideRefs.size < maxOutsideReferences) {
-                outsideRefs.set(targetId, { id: targetId, minimal: true });
+                outsideRefs.set(targetId, { id: targetId });
               }
             }
         }

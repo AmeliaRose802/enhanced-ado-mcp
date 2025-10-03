@@ -6,23 +6,7 @@ import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableRespo
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
 import { execSync } from 'child_process';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../../config/config.js';
-
-/**
- * Get Azure DevOps PAT token from Azure CLI
- */
-function getAzureDevOpsToken(): string {
-  try {
-    const result = execSync(
-      `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv`,
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-    return result.trim();
-  } catch (error) {
-    logger.error('Failed to get Azure DevOps token from Azure CLI', error);
-    throw new Error('Failed to authenticate with Azure DevOps. Please ensure you are logged in with: az login');
-  }
-}
+import { getAzureDevOpsToken } from '../../utils/ado-token.js';
 
 /**
  * Get work item details from Azure DevOps

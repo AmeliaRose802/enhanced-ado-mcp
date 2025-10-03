@@ -3,17 +3,19 @@ import { join, basename } from "path";
 import type { Prompt, ParsedPrompt, PromptArgument } from "../types/index.js";
 import { promptsDir } from "../utils/paths.js";
 import { logger } from "../utils/logger.js";
+import { applyTemplateVariables } from "../utils/prompt-loader.js";
 
 /**
  * Create template variables object from config
  */
-function createTemplateVariables(config: any) {
+function createTemplateVariables(config: any): Record<string, any> {
   const now = new Date();
   const month = now.getMonth();
   const quarter = Math.floor(month / 3) + 1;
   const semester = `Q${quarter}`;
   
   return {
+    // Core config variables
     area_path: config.azureDevOps.areaPath || '',
     project: config.azureDevOps.project || '',
     project_name: config.azureDevOps.project || '',
@@ -21,28 +23,27 @@ function createTemplateVariables(config: any) {
     organization: config.azureDevOps.organization || '',
     iteration_path: config.azureDevOps.iterationPath || '',
     assigned_to: config.azureDevOps.defaultAssignedTo || '',
+    work_item_type: config.azureDevOps.defaultWorkItemType || '',
+    priority: config.azureDevOps.defaultPriority?.toString() || '',
+    branch: config.gitRepository.defaultBranch || '',
+    
+    // Config defaults with prefix
+    default_organization: config.azureDevOps.organization,
+    default_project: config.azureDevOps.project,
+    default_area_path: config.azureDevOps.areaPath || '',
+    default_iteration_path: config.azureDevOps.iterationPath || '',
+    default_work_item_type: config.azureDevOps.defaultWorkItemType,
+    default_priority: config.azureDevOps.defaultPriority?.toString(),
+    default_assigned_to: config.azureDevOps.defaultAssignedTo,
+    default_branch: config.gitRepository.defaultBranch,
+    
+    // Computed values
     semester: semester,
     max_age_days: 180,
     include_child_areas: true,
     max_items: 50,
     dry_run: true
   };
-}
-
-/**
- * Apply template substitutions to a string value
- */
-function applyTemplateSubstitutions(value: string, templateVars: Record<string, any>): string {
-  let result = value;
-  result = result.replace(/{{area_path}}/g, templateVars.area_path);
-  result = result.replace(/{{project}}/g, templateVars.project);
-  result = result.replace(/{{project_name}}/g, templateVars.project_name);
-  result = result.replace(/{{org_url}}/g, templateVars.org_url);
-  result = result.replace(/{{organization}}/g, templateVars.organization);
-  result = result.replace(/{{iteration_path}}/g, templateVars.iteration_path);
-  result = result.replace(/{{assigned_to}}/g, templateVars.assigned_to);
-  result = result.replace(/{{semester}}/g, templateVars.semester);
-  return result;
 }
 
 /**
@@ -238,103 +239,26 @@ export async function getPromptContent(name: string, args: Record<string, any> =
         const { loadConfiguration } = await import('../config/config.js');
         const config = loadConfiguration();
 
-        // For zero-argument prompts, still provide all standard template variables
-        const argsWithDefaults = { ...args };
+        // Create comprehensive template variables from config
+        const configVars = createTemplateVariables(config);
         
-        // Always provide comprehensive template variables for zero-config prompts
-        if (Object.keys(parsed.arguments).length === 0 || Object.values(parsed.arguments).length === 0) {
-          Object.assign(argsWithDefaults, createTemplateVariables(config));
-        }
-
-        // Apply argument defaults for prompts that still have arguments  
+        // Merge with user-provided args (args override config defaults)
+        const allVars = { ...configVars, ...args };
+        
+        // Apply argument defaults from prompt definition
         for (const [argName, argDef] of Object.entries(parsed.arguments)) {
-          if (!(argName in argsWithDefaults) && argDef.default !== undefined) {
-            // If default contains template variables, resolve them
+          if (!(argName in allVars) && argDef.default !== undefined) {
+            // If default contains template variables, resolve them first
             if (typeof argDef.default === 'string' && argDef.default.includes('{{')) {
-              let defaultValue = argDef.default;
-              // Replace common template variables in defaults
-              defaultValue = defaultValue.replace(/{{area_path}}/g, config.azureDevOps.areaPath || '');
-              defaultValue = defaultValue.replace(/{{project}}/g, config.azureDevOps.project);
-              defaultValue = defaultValue.replace(/{{project_name}}/g, config.azureDevOps.project);
-              defaultValue = defaultValue.replace(/{{org_url}}/g, `https://dev.azure.com/${config.azureDevOps.organization}`);
-              defaultValue = defaultValue.replace(/{{organization}}/g, config.azureDevOps.organization);
-              defaultValue = defaultValue.replace(/{{iteration_path}}/g, config.azureDevOps.iterationPath || '');
-              defaultValue = defaultValue.replace(/{{assigned_to}}/g, config.azureDevOps.defaultAssignedTo);
-              // Simple semester calculation
-              const now = new Date();
-              const month = now.getMonth();
-              const semester = month < 3 ? 'Kr' : month < 6 ? 'Br' : month < 9 ? 'Ar' : month < 11 ? 'Ca' : 'Sc';
-              defaultValue = defaultValue.replace(/{{semester}}/g, semester);
-              argsWithDefaults[argName] = defaultValue;
+              allVars[argName] = applyTemplateVariables(argDef.default, configVars);
             } else {
-              argsWithDefaults[argName] = argDef.default;
+              allVars[argName] = argDef.default;
             }
           }
         }
         
-        // Provide configuration defaults as template variables
-        const configDefaults = {
-          default_organization: config.azureDevOps.organization,
-          default_project: config.azureDevOps.project,
-          default_area_path: config.azureDevOps.areaPath || '',
-          default_iteration_path: config.azureDevOps.iterationPath || '',
-          default_work_item_type: config.azureDevOps.defaultWorkItemType,
-          default_priority: config.azureDevOps.defaultPriority.toString(),
-          default_assigned_to: config.azureDevOps.defaultAssignedTo,
-          default_branch: config.gitRepository.defaultBranch
-        };
-        
-        // Auto-fill common parameters from configuration if not provided
-        const enhancedArgs = { ...argsWithDefaults };
-        
-        // Organization and project mapping
-        if (!enhancedArgs.project && config.azureDevOps.project) {
-          enhancedArgs.project = config.azureDevOps.project;
-        }
-        if (!enhancedArgs.project_name && config.azureDevOps.project) {
-          enhancedArgs.project_name = config.azureDevOps.project;
-        }
-        if (!enhancedArgs.organization && config.azureDevOps.organization) {
-          enhancedArgs.organization = config.azureDevOps.organization;
-        }
-        if (!enhancedArgs.org_url && config.azureDevOps.organization) {
-          enhancedArgs.org_url = `https://dev.azure.com/${config.azureDevOps.organization}`;
-        }
-        
-        // Area and iteration paths
-        if (!enhancedArgs.area_path && config.azureDevOps.areaPath) {
-          enhancedArgs.area_path = config.azureDevOps.areaPath;
-        }
-        if (!enhancedArgs.iteration_path && config.azureDevOps.iterationPath) {
-          enhancedArgs.iteration_path = config.azureDevOps.iterationPath;
-        }
-        
-        // Work item defaults
-        if (!enhancedArgs.work_item_type && config.azureDevOps.defaultWorkItemType) {
-          enhancedArgs.work_item_type = config.azureDevOps.defaultWorkItemType;
-        }
-        if (!enhancedArgs.priority && config.azureDevOps.defaultPriority) {
-          enhancedArgs.priority = config.azureDevOps.defaultPriority.toString();
-        }
-        if (!enhancedArgs.assigned_to && config.azureDevOps.defaultAssignedTo) {
-          enhancedArgs.assigned_to = config.azureDevOps.defaultAssignedTo;
-        }
-        
-        // Git repository defaults
-        if (!enhancedArgs.branch && config.gitRepository.defaultBranch) {
-          enhancedArgs.branch = config.gitRepository.defaultBranch;
-        }
-        
-        // Merge user args with config defaults (user args take precedence)
-        const allArgs = { ...configDefaults, ...enhancedArgs };
-        
-        // Replace template variables
-        for (const [key, value] of Object.entries(allArgs)) {
-          const regex = new RegExp(`{{${key}}}`, 'g');
-          content = content.replace(regex, String(value || ''));
-        }
-        
-        return content;
+        // Apply all template substitutions
+        return applyTemplateVariables(content, allVars);
       }
     }
     

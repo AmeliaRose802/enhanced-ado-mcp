@@ -12,9 +12,7 @@ import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-contex
 import { handleAssignToCopilot } from './handlers/assign-to-copilot.handler.js';
 import { handleNewCopilotItem } from './handlers/new-copilot-item.handler.js';
 import { handleExtractSecurityLinks } from './handlers/extract-security-links.handler.js';
-import { handleBulkStateTransition } from './handlers/bulk-state-transition.handler.js';
 import { handleBulkAddComments } from './handlers/bulk-add-comments.handler.js';
-import { handleFindStaleItems } from './handlers/find-stale-items.handler.js';
 import { handleDetectPatterns } from './handlers/detect-patterns.handler.js';
 import { handleValidateHierarchy } from './handlers/validate-hierarchy.handler.js';
 
@@ -75,30 +73,6 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     return await samplingService.analyzeAIAssignment(args);
   }
 
-  // DISABLED: wit-feature-decomposer
-  // Feature decomposition with intelligent breakdown (uses sampling if available)
-  // Disabled due to consistent timeout failures in beta testing
-  /*
-  if (name === 'wit-feature-decomposer') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    
-    const samplingService = new SamplingService(serverInstance);
-    return await samplingService.decomposeFeature(args);
-  }
-  */
-
-  // Hierarchy validation with intelligent parenting suggestions (uses sampling if available)
-  if (name === 'wit-hierarchy-validator') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    
-    const samplingService = new SamplingService(serverInstance);
-    return await samplingService.validateHierarchy(args);
-  }
-
   // Create work item using REST API (TypeScript implementation)
   if (name === 'wit-create-new-item') {
     return await handleCreateNewItem(config, args);
@@ -147,19 +121,9 @@ export async function executeTool(name: string, args: any): Promise<ToolExecutio
     return await handleExtractSecurityLinks(config, args);
   }
 
-  // Bulk state transition for multiple work items
-  if (name === 'wit-bulk-state-transition') {
-    return await handleBulkStateTransition(config, args);
-  }
-
   // Bulk add comments to multiple work items
   if (name === 'wit-bulk-add-comments') {
     return await handleBulkAddComments(config, args);
-  }
-
-  // Find stale/abandoned work items
-  if (name === 'wit-find-stale-items') {
-    return await handleFindStaleItems(config, args);
   }
 
   // Detect common patterns and issues

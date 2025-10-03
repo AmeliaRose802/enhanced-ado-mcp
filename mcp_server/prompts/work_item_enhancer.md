@@ -1,11 +1,12 @@
 ---
 name: work_item_enhancer
 description: Improve a work item description so it has enough clarity, scope, and acceptance criteria for automated handling by an AI coding agent (GitHub Copilot + tools).
-version: 2
+version: 3
 arguments:
-  item_title: { type: string, required: true }
-  item_description: { type: string, required: true }
-  acceptance_criteria: { type: string, required: false }
+  work_item_id: { type: string, required: false, description: "Work item ID to enhance (will auto-fetch details)" }
+  item_title: { type: string, required: false, description: "Work item title (not needed if work_item_id provided)" }
+  item_description: { type: string, required: false, description: "Work item description (not needed if work_item_id provided)" }
+  acceptance_criteria: { type: string, required: false, description: "Acceptance criteria (not needed if work_item_id provided)" }
   context_doc: { type: string, required: false, description: "Optional web page or file contents to use for context when rewriting" }
 ---
 
@@ -13,6 +14,16 @@ You are a **senior work item groomer** preparing tasks for execution by an AI co
 Your goal: **rewrite and expand the work item so it is precise, testable, and self-contained.**
 
 **Important:** This tool should only be used on **active work items** that need enhancement. Do not enhance work items in Done/Completed/Closed/Resolved states as they represent finished work.
+
+## Input Options
+
+**Option 1: Provide work_item_id** (Recommended)
+- Automatically fetches all details using `wit-get-work-item-context-package`
+- No need to manually provide title, description, or acceptance criteria
+
+**Option 2: Provide details manually**
+- Use when enhancing a work item that doesn't exist yet in ADO
+- Requires item_title and item_description at minimum
 
 **Available MCP tools:**
 - `wit-create-new-item` - create new work items with enhanced features

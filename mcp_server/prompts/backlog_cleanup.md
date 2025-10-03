@@ -1,7 +1,7 @@
 ---
 name: backlog_cleanup
 description: Assess Azure DevOps backlog health and identify improvement opportunities under a specific Area Path using wit-* search tooling.
-version: 3
+version: 4
 arguments: {}
 ---
 
@@ -9,15 +9,15 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 
 **Important:** **Exclude work items in Done/Completed/Closed/Resolved states from analysis** - these represent successfully completed work. Focus on active work items to understand their health, clarity, and actionability.
 
-**Inputs (auto-populated where possible):**
-- org_url: {{org_url}}
-- project: {{project}}
-- area_path: {{area_path}}
-- max_age_days: {{max_age_days}} (default 180)
-- dry_run: {{dry_run}} (analysis only)
+**Configuration (Auto-Populated):**
+- **Organization & Project:** Auto-filled from configuration
+- **Area Path:** {{area_path}} (defaults to configured area path)
+- **Max Age Days:** {{max_age_days}} (default: 180)
+
+**Note:** This prompt provides analysis only and does not modify work items.
 
 **Available MCP tools:**
-- `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `IncludeSubstantiveChange: true`)
+- `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
 - `wit-get-work-items-context-batch` – ⚠️ batch enrichment (LIMIT: 20-30 items per call to avoid context overflow)
 - `wit-get-work-item-context-package` – ⚠️ deep dive for edge cases (use sparingly, returns large payload)
 - (Create/assign tools available but not used for removal analysis): `wit-create-new-item`, `wit-assign-to-copilot`, `wit-new-copilot-item`, `wit-extract-security-links`
@@ -27,15 +27,15 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 ### Process Steps
 
 1. **Search for work items with substantive change analysis**:
-	 - **PRIMARY METHOD**: Use `wit-get-work-items-by-query-wiql` with `IncludeSubstantiveChange: true` to get work items AND their last substantive change dates in ONE call:
+	 - **PRIMARY METHOD**: Use `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true` to get work items AND their last substantive change dates in ONE call:
 		 ```
 		 Tool: wit-get-work-items-by-query-wiql
 		 Arguments: {
-		   WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.ChangedDate] ASC",
-		   IncludeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType"],
-		   IncludeSubstantiveChange: true,
-		   SubstantiveChangeHistoryCount: 50,
-		   MaxResults: 200
+		   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.ChangedDate] ASC",
+		   includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType"],
+		   includeSubstantiveChange: true,
+		   substantiveChangeHistoryCount: 50,
+		   maxResults: 200
 		 }
 		 ```
 	 - This returns items with computed `lastSubstantiveChangeDate` and `daysInactive` fields (server-side filtering of automated updates)
@@ -48,27 +48,33 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 
 ### Additional WIQL Queries for Quality Analysis
 
-Use these targeted queries to identify specific quality issues in the backlog. **Remember to include `IncludeSubstantiveChange: true` in your tool calls to get activity data.**
+Use these targeted queries to identify specific quality issues in the backlog. **Remember to include `includeSubstantiveChange: true` in your tool calls to get activity data.**
 
 #### Missing or Empty Descriptions
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Description] = '' OR [System.Description] IS NULL) ORDER BY [System.CreatedDate] DESC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate", "System.Description"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Description] = '' OR [System.Description] IS NULL) ORDER BY [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.Description"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
-#### Missing Acceptance Criteria (for User Stories/PBIs)
+**Missing Acceptance Criteria** (User Stories/PBIs only):
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([Microsoft.VSTS.Common.AcceptanceCriteria] = '' OR [Microsoft.VSTS.Common.AcceptanceCriteria] IS NULL) ORDER BY [System.CreatedDate] DESC",
-  IncludeFields: ["System.Title", "System.State", "System.WorkItemType", "Microsoft.VSTS.Common.AcceptanceCriteria"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([Microsoft.VSTS.Common.AcceptanceCriteria] = '' OR [Microsoft.VSTS.Common.AcceptanceCriteria] IS NULL) ORDER BY [System.CreatedDate] DESC",
+  includeFields: ["System.Title"],
+  maxResults: 100
+```
+Tool: wit-get-work-items-by-query-wiql
+Arguments: {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([Microsoft.VSTS.Common.AcceptanceCriteria] = '' OR [Microsoft.VSTS.Common.AcceptanceCriteria] IS NULL) ORDER BY [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.WorkItemType", "Microsoft.VSTS.Common.AcceptanceCriteria"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
@@ -76,10 +82,10 @@ Arguments: {
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Active', 'In Progress', 'Committed') AND [System.AssignedTo] = '' ORDER BY [System.CreatedDate] ASC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Active', 'In Progress', 'Committed') AND [System.AssignedTo] = '' ORDER BY [System.CreatedDate] ASC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
@@ -87,10 +93,10 @@ Arguments: {
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('New', 'Proposed', 'To Do') AND [System.CreatedDate] < @Today - {{max_age_days}} ORDER BY [System.CreatedDate] ASC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('New', 'Proposed', 'To Do') AND [System.CreatedDate] < @Today - {{max_age_days}} ORDER BY [System.CreatedDate] ASC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
@@ -98,10 +104,10 @@ Arguments: {
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Title] CONTAINS 'TBD' OR [System.Title] CONTAINS 'TODO' OR [System.Title] CONTAINS 'test' OR [System.Title] CONTAINS 'placeholder') ORDER BY [System.CreatedDate] DESC",
-  IncludeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Title] CONTAINS 'TBD' OR [System.Title] CONTAINS 'TODO' OR [System.Title] CONTAINS 'test' OR [System.Title] CONTAINS 'placeholder') ORDER BY [System.CreatedDate] DESC",
+  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
@@ -109,14 +115,14 @@ Arguments: {
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.ChangedDate] < @Today - {{max_age_days}} ORDER BY [System.ChangedDate] ASC",
-  IncludeFields: ["System.Title", "System.State", "System.ChangedDate"],
-  IncludeSubstantiveChange: true,
-  MaxResults: 100
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.ChangedDate] < @Today - {{max_age_days}} ORDER BY [System.ChangedDate] ASC",
+  includeFields: ["System.Title", "System.State", "System.ChangedDate"],
+  includeSubstantiveChange: true,
+  maxResults: 100
 }
 ```
 
-**Usage Tip:** All queries above include `IncludeSubstantiveChange: true` to automatically provide `daysInactive` and `lastSubstantiveChangeDate` fields. Run these queries individually to create focused cleanup reports by issue type, or combine results for comprehensive analysis.
+**Usage Tip:** All queries above include `includeSubstantiveChange: true` to automatically provide `daysInactive` and `lastSubstantiveChangeDate` fields. Run these queries individually to create focused cleanup reports by issue type, or combine results for comprehensive analysis.
 
 ### Backlog Health Indicators
 
@@ -130,7 +136,7 @@ Assess work items across multiple dimensions to understand backlog health. Consi
 - **Missing priority/effort** – Items lacking estimation or priority fields
 
 #### Activity & Engagement Signals
-- **Extended inactivity** – `daysInactive` field (from WIQL with `IncludeSubstantiveChange: true`) exceeding thresholds (e.g., > `max_age_days`)
+- **Extended inactivity** – `daysInactive` field (from WIQL with `includeSubstantiveChange: true`) exceeding thresholds (e.g., > `max_age_days`)
 - **Stalled in initial state** – Remains in New/Proposed/To Do for extended periods (> 50% of `max_age_days`) without progression
 - **Limited ownership engagement** – Assigned but showing no substantive activity
 
