@@ -37,13 +37,14 @@ interface ODataResponse {
 
 /**
  * Clean OData metadata from results to reduce response size
+ * Removes all @odata.* fields and filters out null values to minimize context usage
  */
 function cleanODataResults(results: any[]): any[] {
   return results.map(item => {
     const cleaned: any = {};
     for (const [key, value] of Object.entries(item)) {
-      // Skip OData metadata fields
-      if (!key.startsWith('@odata')) {
+      // Skip OData metadata fields and null values
+      if (!key.startsWith('@odata') && value !== null) {
         cleaned[key] = value;
       }
     }

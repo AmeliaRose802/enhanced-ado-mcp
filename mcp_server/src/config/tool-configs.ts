@@ -14,7 +14,11 @@ import {
   getLastSubstantiveChangeSchema,
   bulkAddCommentsSchema,
   detectPatternsSchema,
-  validateHierarchyFastSchema
+  validateHierarchyFastSchema,
+  bulkCommentByQueryHandleSchema,
+  bulkUpdateByQueryHandleSchema,
+  bulkAssignByQueryHandleSchema,
+  bulkRemoveByQueryHandleSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -207,7 +211,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-get-work-items-by-query-wiql",
-    description: "Query Azure DevOps work items using WIQL (Work Item Query Language). Supports complex queries with filtering, sorting, and field selection. Returns work item details including Id, Title, Type, State, and any requested additional fields.",
+    description: "Query Azure DevOps work items using WIQL (Work Item Query Language). Supports complex queries with filtering, sorting, and field selection. Includes pagination support via skip/top parameters. Returns work item details including Id, Title, Type, State, and any requested additional fields. Can return a query handle for safe bulk operations.",
     script: "", // Handled internally
     schema: wiqlQuerySchema,
     inputSchema: {
@@ -217,7 +221,10 @@ export const toolConfigs: ToolConfig[] = [
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" },
         includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include (e.g., 'System.Description', 'Microsoft.VSTS.Common.Priority')" },
-        maxResults: { type: "number", description: "Maximum number of results to return (default 200)" }
+        maxResults: { type: "number", description: "Maximum number of results to return per page (default 200)" },
+        skip: { type: "number", description: "Number of work items to skip for pagination (default 0). Use with top for pagination." },
+        top: { type: "number", description: "Maximum number of work items to return (alias for maxResults). When specified, overrides maxResults." },
+        returnQueryHandle: { type: "boolean", description: "Return a query handle instead of full work item details. The handle can be used with bulk operation tools to safely perform operations without risk of ID hallucination. Handle expires after 1 hour." }
       },
       required: ["wiqlQuery"]
     }
@@ -339,6 +346,86 @@ export const toolConfigs: ToolConfig[] = [
         validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" }
       },
       required: []
+    }
+  },
+  {
+    name: "wit-bulk-comment-by-query-handle",
+    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-get-work-items-by-query-wiql to eliminate ID hallucination risk. Supports dry-run mode.",
+    script: "", // Handled internally
+    schema: bulkCommentByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        comment: { type: "string", description: "Comment text to add to all work items (supports Markdown)" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle", "comment"]
+    }
+  },
+  {
+    name: "wit-bulk-update-by-query-handle",
+    description: "Update multiple work items identified by a query handle. Uses JSON Patch operations to update fields. Supports dry-run mode.",
+    script: "", // Handled internally
+    schema: bulkUpdateByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        updates: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              op: { type: "string", enum: ["add", "replace", "remove"], description: "JSON Patch operation" },
+              path: { type: "string", description: "Field path (e.g., '/fields/System.State', '/fields/System.AssignedTo')" },
+              value: { description: "Value to set (not needed for 'remove' operation)" }
+            },
+            required: ["op", "path"]
+          },
+          description: "Array of JSON Patch operations to apply"
+        },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle", "updates"]
+    }
+  },
+  {
+    name: "wit-bulk-assign-by-query-handle",
+    description: "Assign multiple work items to a user, identified by query handle. Supports dry-run mode.",
+    script: "", // Handled internally
+    schema: bulkAssignByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        assignTo: { type: "string", description: "User email or display name to assign work items to" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle", "assignTo"]
+    }
+  },
+  {
+    name: "wit-bulk-remove-by-query-handle",
+    description: "Remove (delete) multiple work items identified by a query handle. Optionally add a comment with removal reason before deletion. Supports dry-run mode.",
+    script: "", // Handled internally
+    schema: bulkRemoveByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        removeReason: { type: "string", description: "Optional reason for removing work items (added as comment before removal)" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle"]
     }
   }
 ];

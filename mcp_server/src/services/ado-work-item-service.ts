@@ -559,6 +559,8 @@ interface WiqlQueryArgs {
   project: string;
   includeFields?: string[];
   maxResults?: number;
+  skip?: number;
+  top?: number;
   includeSubstantiveChange?: boolean;
   substantiveChangeHistoryCount?: number;
   computeMetrics?: boolean;
@@ -678,12 +680,9 @@ async function calculateSubstantiveChange(
       daysInactive,
     };
   } catch (error) {
-    logger.warn(`Failed to calculate substantive change for work item ${workItemId}`, error);
-    // Return default values on error
-    return {
-      lastSubstantiveChangeDate: createdDate,
-      daysInactive: daysBetween(createdDate),
-    };
+    logger.error(`Failed to calculate substantive change for work item ${workItemId}:`, error);
+    // Re-throw the error so it can be properly handled upstream
+    throw new Error(`Substantive change calculation failed for work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -713,6 +712,10 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   workItems: WiqlWorkItemResult[];
   count: number;
   query: string;
+  totalCount: number;
+  skip: number;
+  top: number;
+  hasMore: boolean;
 }> {
   const {
     wiqlQuery,
@@ -720,11 +723,16 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     project,
     includeFields = [],
     maxResults = 200,
+    skip = 0,
+    top,
     includeSubstantiveChange = false,
     substantiveChangeHistoryCount = 50,
     computeMetrics = false,
     staleThresholdDays = 180
   } = args;
+
+  // Use 'top' if provided, otherwise use 'maxResults'
+  const pageSize = top ?? maxResults;
 
   // Get authentication token
   const httpClient = createADOHttpClient(organization, project);
@@ -742,16 +750,25 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       return {
         workItems: [],
         count: 0,
-        query: wiqlQuery
+        query: wiqlQuery,
+        totalCount: 0,
+        skip: skip,
+        top: pageSize,
+        hasMore: false
       };
     }
 
-    // Limit results
-    const workItemIds = wiqlResult.workItems
-      .slice(0, maxResults)
-      .map((wi: { id: number }) => wi.id);
+    // Store total count before pagination
+    const totalCount = wiqlResult.workItems.length;
+    
+    // Apply pagination: skip items, then take pageSize items
+    const paginatedWorkItems = wiqlResult.workItems.slice(skip, skip + pageSize);
+    const workItemIds = paginatedWorkItems.map((wi: { id: number }) => wi.id);
+    
+    // Calculate if there are more results
+    const hasMore = (skip + pageSize) < totalCount;
 
-    logger.debug(`WIQL query returned ${wiqlResult.workItems.length} items, fetching details for first ${workItemIds.length}`);
+    logger.debug(`WIQL query returned ${totalCount} items, fetching details for items ${skip + 1}-${skip + workItemIds.length} (page size: ${pageSize})`);
 
     // Fetch work item details
     // Default fields to include
@@ -858,28 +875,47 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     if (includeSubstantiveChange) {
       logger.debug(`Calculating substantive change data for ${workItems.length} work items`);
       
-      // Process work items in parallel for efficiency
-      const substantiveChangePromises = workItems.map(async (workItem) => {
-        if (!workItem.createdDate) {
-          return null;
-        }
+      // Process work items in batches to avoid overwhelming the API
+      const BATCH_SIZE = 10; // Process 10 items at a time
+      const workItemsWithCreatedDate = workItems.filter(wi => wi.createdDate);
+      
+      logger.debug(`${workItemsWithCreatedDate.length} work items have createdDate, ${workItems.length - workItemsWithCreatedDate.length} do not`);
+      
+      const allResults: Array<{ id: number; lastSubstantiveChangeDate: string; daysInactive: number } | null> = [];
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (let i = 0; i < workItemsWithCreatedDate.length; i += BATCH_SIZE) {
+        const batch = workItemsWithCreatedDate.slice(i, i + BATCH_SIZE);
+        logger.debug(`Processing substantive change batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(workItemsWithCreatedDate.length / BATCH_SIZE)} (${batch.length} items)`);
         
-        const result = await calculateSubstantiveChange(
-          workItem.id,
-          workItem.createdDate,
-          organization,
-          project,
-          substantiveChangeHistoryCount,
-          httpClient
-        );
+        const batchPromises = batch.map(async (workItem) => {
+          try {
+            const result = await calculateSubstantiveChange(
+              workItem.id,
+              workItem.createdDate!,
+              organization,
+              project,
+              substantiveChangeHistoryCount,
+              httpClient
+            );
+            successCount++;
+            return { id: workItem.id, ...result };
+          } catch (error) {
+            errorCount++;
+            logger.error(`Failed to calculate substantive change for work item ${workItem.id}:`, error);
+            return null;
+          }
+        });
         
-        return { id: workItem.id, ...result };
-      });
-
-      const substantiveChangeResults = await Promise.all(substantiveChangePromises);
+        const batchResults = await Promise.all(batchPromises);
+        allResults.push(...batchResults);
+      }
+      
+      logger.debug(`Substantive change analysis complete: ${successCount} succeeded, ${errorCount} failed`);
 
       // Merge substantive change data into work items
-      for (const result of substantiveChangeResults) {
+      for (const result of allResults) {
         if (result) {
           const workItem = workItems.find(wi => wi.id === result.id);
           if (workItem) {
@@ -888,12 +924,20 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
           }
         }
       }
+      
+      if (errorCount > 0) {
+        logger.warn(`${errorCount} work items failed substantive change analysis - they will not have lastSubstantiveChangeDate/daysInactive fields`);
+      }
     }
 
     return {
       workItems,
       count: workItems.length,
-      query: wiqlQuery
+      query: wiqlQuery,
+      totalCount,
+      skip,
+      top: pageSize,
+      hasMore
     };
 
   } catch (error) {

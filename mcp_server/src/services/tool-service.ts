@@ -16,6 +16,10 @@ import { handleExtractSecurityLinks } from './handlers/extract-security-links.ha
 import { handleBulkAddComments } from './handlers/bulk-add-comments.handler.js';
 import { handleDetectPatterns } from './handlers/detect-patterns.handler.js';
 import { handleValidateHierarchy } from './handlers/validate-hierarchy.handler.js';
+import { handleBulkCommentByQueryHandle } from './handlers/bulk-comment-by-query-handle.handler.js';
+import { handleBulkUpdateByQueryHandle } from './handlers/bulk-update-by-query-handle.handler.js';
+import { handleBulkAssignByQueryHandle } from './handlers/bulk-assign-by-query-handle.handler.js';
+import { handleBulkRemoveByQueryHandle } from './handlers/bulk-remove-by-query-handle.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: MCPServer | null = null;
@@ -141,6 +145,23 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   // Fast hierarchy validation (types and states)
   if (name === 'wit-validate-hierarchy-fast') {
     return await handleValidateHierarchy(config, args);
+  }
+
+  // Bulk operations using query handles (eliminates ID hallucination)
+  if (name === 'wit-bulk-comment-by-query-handle') {
+    return await handleBulkCommentByQueryHandle(config, args);
+  }
+
+  if (name === 'wit-bulk-update-by-query-handle') {
+    return await handleBulkUpdateByQueryHandle(config, args);
+  }
+
+  if (name === 'wit-bulk-assign-by-query-handle') {
+    return await handleBulkAssignByQueryHandle(config, args);
+  }
+
+  if (name === 'wit-bulk-remove-by-query-handle') {
+    return await handleBulkRemoveByQueryHandle(config, args);
   }
 
   // All tools should be handled by the cases above

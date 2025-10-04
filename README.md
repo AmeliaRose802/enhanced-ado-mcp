@@ -254,6 +254,16 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
 }
 ```
 
+### Paginated Query - Get Results in Pages
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+  "top": 50,
+  "skip": 0
+}
+```
+Use `skip: 50` to get the next page, `skip: 100` for the third page, etc. The response includes pagination metadata with `hasMore` and `nextSkip` fields.
+
 ### Complex Query - Recently Changed Tasks
 ```json
 {
@@ -556,7 +566,153 @@ The login button on the authentication page is not responding to click events on
 
 ---
 
-#### 3. `security_items_analyzer`
+#### 4. `team_velocity_analyzer`
+
+**Purpose:** Analyze team member performance, velocity, strengths, and recommend optimal work assignments
+
+**Arguments:**
+- `analysis_period_days` (optional, default: 90) - Number of days to analyze backwards
+- `max_recommendations` (optional, default: 3) - Maximum work item recommendations per team member
+
+**Use Cases:**
+- Evaluate team capacity and utilization
+- Identify bottlenecks and over/under-utilized team members
+- Balance workload across team
+- Get data-driven work assignment recommendations
+- Optimize team productivity
+
+**Example Request:**
+```json
+{
+  "analysis_period_days": 90,
+  "max_recommendations": 3
+}
+```
+
+**Example Output:**
+```markdown
+## Team Velocity Analysis
+
+**Team Overview:**
+- Analysis Period: 90 days
+- Team Size: 5 members
+- Overall Score: 75/100
+- Total Completed: 156 items (487 Story Points)
+- Avg Cycle Time: 8.5 days
+- Throughput: 5.4 SP/week
+- Current Active Load: 23 items
+
+**Per Team Member:**
+
+**Alice Johnson** | Health Score: 85/100
+- Completed: 42 items (27%) | Story Points: 145 (30%) | Velocity: 1.6 SP/week
+- Current Load: 4 items | Weighted Load: 18 points | WIP Status: Healthy
+- Coding vs Non-Coding: 85% coding, 15% infrastructure
+- Strengths: High velocity on complex Features, strong follow-through
+- Next Assignments:
+  1. Epic #12345 - Implement user authentication (13 SP)
+  2. PBI #12346 - Add password reset flow (5 SP)
+```
+
+---
+
+#### 5. `project_completion_planner`
+
+**Purpose:** Comprehensive project completion analysis with timeline forecasting and optimized AI/human task assignments
+
+**Arguments:**
+- `project_epic_id` (optional) - Root Epic or Feature ID to analyze (if not provided, analyzes entire area path)
+- `target_completion_date` (optional) - Desired completion date in YYYY-MM-DD format
+- `planning_horizon_weeks` (optional, default: 26) - Planning horizon in weeks (~6 months)
+- `include_buffer` (optional, default: true) - Include 20% time buffer for risks
+
+**Use Cases:**
+- Forecast project completion timeline
+- Assess current progress and remaining work
+- Evaluate team capacity for delivery
+- Generate realistic milestone roadmap
+- Optimize AI vs human task assignments
+- Identify risks and blockers
+- Create detailed execution plan
+
+**Example Request:**
+```json
+{
+  "project_epic_id": 54321,
+  "target_completion_date": "2025-12-31",
+  "planning_horizon_weeks": 26,
+  "include_buffer": true
+}
+```
+
+**Example Output:**
+```markdown
+## Project Completion Analysis: Azure Host Gateway
+
+**Executive Summary:**
+- Total Scope: 287 work items (1,245 Story Points)
+- Completed: 42% (120 items, 523 SP)
+- In Progress: 18% (52 items, 224 SP)
+- Remaining: 40% (115 items, 498 SP)
+- Team Size: 5 active contributors
+- Team Velocity: 18.5 SP/week
+- **Estimated Completion: 2025-11-15** (with 20% buffer)
+- **Confidence Level: Medium (70%)**
+- Health Score: 68/100
+
+**Timeline Forecast:**
+
+Base Scenario: 23 weeks → 2025-10-15 (50% confidence)
+**Recommended: 27 weeks → 2025-11-15 (70% confidence)**
+Conservative: 32 weeks → 2025-12-20 (90% confidence)
+
+**Target Date Analysis:**
+- User target: 2025-12-31
+- Gap: +6 weeks buffer
+- Feasibility: ✅ Achievable with current velocity
+
+**AI Acceleration Opportunities:**
+- AI-suitable work: 78 items (234 SP)
+- AI completion time: 8 weeks (vs 13 weeks human)
+- Time saved: 5 weeks
+- **Revised completion with AI: 2025-10-20**
+
+**Milestone Roadmap:**
+
+**Q4 2025 (Weeks 1-13):**
+- Target: 240 SP, 85 items
+- Key deliverables:
+  1. Feature #12345 - Core authentication (65 SP)
+  2. Feature #12346 - API gateway integration (48 SP)
+- AI assignments: 32 items (96 SP)
+- Human assignments: 53 items (144 SP)
+
+**Critical Risks:**
+- 🔴 Unestimated work: 23% (115 SP estimated) - Cannot reliably forecast
+- 🔴 3 blocked items on critical path
+- ⚠️ Team member Bob overloaded (3x average load)
+
+**Immediate Actions (This Week):**
+1. Estimate remaining backlog items - Owner: Alice - Target: Oct 7
+2. Unblock items #54321, #54322, #54323 - Owner: Bob - Target: Oct 8
+3. Rebalance 4 items from Bob to Carol - Owner: Manager - Target: Oct 6
+
+**Recommended Work Assignments (Next Sprint):**
+
+**Human Assignments:**
+- **Alice** (Current: 18 SP): Epic #12345 (13 SP), PBI #12346 (5 SP)
+- **Bob** (Current: 42 SP): [Reduce load - reassign 4 items]
+- **Carol** (Current: 12 SP): Feature #12347 (8 SP), 2 items from Bob (10 SP)
+
+**AI Assignments (GitHub Copilot):**
+1. Task #54401 - Update API endpoints (3 SP) - Reviewer: Alice
+2. Task #54402 - Add unit tests (2 SP) - Reviewer: Carol
+... [15 more AI-suitable tasks]
+```
+
+---
+
+#### 6. `security_items_analyzer`
 
 **Purpose:** Analyze security and compliance work items in a given area path
 

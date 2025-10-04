@@ -23,8 +23,6 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 - `wit-get-work-item-context-package` – ⚠️ deep dive for edge cases (use sparingly, returns large payload)
 - (Create/assign tools available but not used for removal analysis): `wit-create-new-item`, `wit-assign-to-copilot`, `wit-new-copilot-item`, `wit-extract-security-links`
 
----
-
 ### Process Steps
 
 1. **Get high-level metrics (RECOMMENDED FIRST STEP)**:

@@ -19,7 +19,7 @@ import { updateConfigFromCLI } from "./config/config.js";
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
-  version: "1.2.3"
+  version: "1.4.1"
 }, {
   capabilities: {
     tools: {},
@@ -76,6 +76,7 @@ server.fallbackRequestHandler = async (request: any) => {
     return {
       contents: [{
         uri: content.uri,
+        name: content.name,
         mimeType: content.mimeType,
         text: content.text
       }]

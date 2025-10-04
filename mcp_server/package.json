@@ -1,6 +1,6 @@
 {
   "name": "enhanced-ado-mcp-server",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": false,
   "type": "module",
   "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol with AI-powered tools, REST API integration, and intelligent automation",
@@ -52,7 +52,8 @@
     "typescript"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npm run copy-resources",
+    "copy-resources": "node -e \"require('fs').cpSync('resources', 'dist/resources', {recursive: true})\" && node -e \"require('fs').cpSync('prompts', 'dist/prompts', {recursive: true})\"",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "jest",

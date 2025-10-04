@@ -6,17 +6,41 @@
 import { logger } from "../utils/logger.js";
 import path from "path";
 import { readFile } from "fs/promises";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+/**
+ * Get current file path in both ESM and CommonJS environments
+ */
+function getCurrentFile(): string {
+  // In test/Jest environment
+  if (process.env.JEST_WORKER_ID !== undefined) {
+    return path.join(process.cwd(), 'src', 'services', 'resource-service.ts');
+  }
+  
+  // Check if we're in CommonJS environment
+  if (typeof __filename !== 'undefined') {
+    return __filename;
+  }
+  
+  // In ESM environment - use eval to prevent transpiler from touching this
+  const metaUrl = eval('import.meta.url');
+  return fileURLToPath(metaUrl);
+}
 
 /**
  * Get the resources directory path
  */
 function getResourcesDir(): string {
-  // In production (dist), resources are at ../resources from dist/services
+  const currentFile = getCurrentFile();
+  const currentDir = dirname(currentFile);
+  
+  // In production (dist), resources are at ../resources from dist/services (copied during build)
   // In development (src), resources are at ../../resources from src/services
-  if (__filename.includes('/dist/') || __filename.includes('\\dist\\')) {
-    return path.join(__dirname, '..', '..', 'resources');
+  if (currentFile.includes('/dist/') || currentFile.includes('\\dist\\')) {
+    return path.join(currentDir, '..', 'resources');
   }
-  return path.join(__dirname, '..', '..', 'resources');
+  return path.join(currentDir, '..', '..', 'resources');
 }
 
 export interface MCPResource {
@@ -28,6 +52,7 @@ export interface MCPResource {
 
 export interface MCPResourceContent {
   uri: string;
+  name: string;
   mimeType: string;
   text?: string;
 }
@@ -65,6 +90,12 @@ const resourceDefinitions: MCPResource[] = [
     name: "Tool Selection Guide",
     description: "Quick decision guide for which tool to use for different tasks. Helps choose between WIQL, OData, context packages, and AI analyzers.",
     mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/query-handle-pattern",
+    name: "Query Handle Pattern - Anti-Hallucination Architecture",
+    description: "Comprehensive guide to using query handles for bulk operations. Eliminates ID hallucination by ensuring work item IDs come from Azure DevOps, not LLM memory.",
+    mimeType: "text/markdown"
   }
 ];
 
@@ -91,7 +122,8 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     "ado://docs/odata-quick-reference": "odata-quick-reference.md",
     "ado://docs/hierarchy-patterns": "hierarchy-patterns.md",
     "ado://docs/common-workflows": "common-workflows.md",
-    "ado://docs/tool-selection-guide": "tool-selection-guide.md"
+    "ado://docs/tool-selection-guide": "tool-selection-guide.md",
+    "ado://docs/query-handle-pattern": "query-handle-pattern.md"
   };
 
   const filename = contentMap[uri];
@@ -108,6 +140,7 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     
     return {
       uri,
+      name: resource.name,
       mimeType: resource.mimeType,
       text: content
     };

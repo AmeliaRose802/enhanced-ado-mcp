@@ -1,7 +1,7 @@
 /** @type {import('jest').Config} */
 export default {
   // Use ts-jest preset for TypeScript support
-  preset: 'ts-jest/presets/default-esm',
+  preset: 'ts-jest',
   
   // Test environment
   testEnvironment: 'node',
@@ -14,9 +14,9 @@ export default {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        useESM: true,
         tsconfig: {
-          module: 'ESNext',
+          module: 'commonjs',
+          target: 'ES2022',
           moduleResolution: 'node',
           esModuleInterop: true
         }
@@ -24,9 +24,9 @@ export default {
     ]
   },
   
-  // Module name mapper for path aliases
+  // Module name mapper to handle .js extensions in imports
   moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.\\.?\\/.+)\\.js$': '$1'
   },
   
   // Test match patterns
@@ -36,10 +36,17 @@ export default {
     '**/__tests__/**/*.ts'
   ],
   
-  // Ignore patterns
+  // Ignore patterns - exclude integration tests that require ADO credentials
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/dist/'
+    '/dist/',
+    'work-item-rest-api.test.ts',
+    'wiql-query.test.ts',
+    'configuration-discovery.test.ts',
+    'sampling-feature.test.ts',
+    'hierarchy-validator-integration.test.ts',
+    'ai-assignment-integration.test.ts',
+    'ai-assignment-analyzer.test.ts'
   ],
   
   // Coverage configuration

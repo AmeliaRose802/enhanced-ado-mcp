@@ -172,6 +172,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
         } else if (relRef === 'System.LinkTypes.Hierarchy-Forward' && includeChildren) {
           children.push({ id: parseInt(rel.url.split('/').pop() || '0', 10) });
         } else if (relRef.startsWith('System.LinkTypes')) {
+          // Store related links - we'll filter them after expanding
           related.push({ type: relRef, url: rel.url });
         } else if (relRef === 'ArtifactLink') {
           // Heuristic for commits/PRs: look at attributes.name
@@ -201,7 +202,39 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       const childIds = children.map(c => c.id).slice(0, 200);
       const idsParam = childIds.join(',');
       const cResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(`wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State`);
-      if (cResponse.data && cResponse.data.value) expandedChildren = cResponse.data.value;
+      if (cResponse.data && cResponse.data.value) {
+        // Filter out Done/Removed/Closed children immediately to reduce context
+        expandedChildren = cResponse.data.value.filter(c => {
+          const state = c.fields?.['System.State'];
+          return state !== 'Done' && state !== 'Removed' && state !== 'Closed';
+        });
+      }
+    }
+    
+    // Expand related items and filter out Done/Removed/Closed ones
+    let expandedRelated: Array<{type: string; id: number; title?: string; state?: string}> = [];
+    if (related.length > 0) {
+      try {
+        const relatedIds = related.map(r => parseInt(r.url.split('/').pop() || '0', 10)).filter(id => id > 0);
+        if (relatedIds.length > 0) {
+          const relIdsParam = relatedIds.slice(0, maxRelatedItems).join(',');
+          const relResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(`wit/workitems?ids=${relIdsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State`);
+          if (relResponse.data && relResponse.data.value) {
+            // Filter out Done/Removed/Closed related items
+            expandedRelated = relResponse.data.value
+              .filter(r => {
+                const state = r.fields?.['System.State'];
+                return state !== 'Done' && state !== 'Removed' && state !== 'Closed';
+              })
+              .map((r, idx) => ({
+                type: related[idx]?.type || 'Related',
+                id: r.id || 0,
+                title: r.fields?.['System.Title'] as string,
+                state: r.fields?.['System.State'] as string
+              }));
+          }
+        }
+      } catch (e) { logger.warn('Failed to expand related items', e); }
     }
 
     // Get comments
@@ -267,13 +300,13 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
         type: parent.fields?.['System.WorkItemType'],
         state: parent.fields?.['System.State']
       } : null,
-      children: expandedChildren
-        .filter(c => {
-          const state = c.fields?.['System.State'];
-          return state !== 'Done' && state !== 'Removed' && state !== 'Closed';
-        })
-        .map(c => ({ id: c.id, title: c.fields?.['System.Title'], type: c.fields?.['System.WorkItemType'], state: c.fields?.['System.State'] })),
-      related: related.slice(0, maxRelatedItems),
+      children: expandedChildren.map(c => ({ 
+        id: c.id, 
+        title: c.fields?.['System.Title'], 
+        type: c.fields?.['System.WorkItemType'], 
+        state: c.fields?.['System.State'] 
+      })),
+      related: expandedRelated,
       pullRequests: prLinks,
       commits: commitLinks,
       attachments: includeAttachments ? attachments : undefined,

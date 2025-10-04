@@ -242,11 +242,14 @@ export const wiqlQuerySchema = z.object({
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   includeFields: z.array(z.string()).optional().describe("Additional fields to include in work item details (default includes Id, Title, Type, State, AreaPath, IterationPath, AssignedTo)"),
-  maxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return (default 200)"),
+  maxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return per page (default 200)"),
+  skip: z.number().int().optional().default(0).describe("Number of work items to skip for pagination (default 0). Use with top for pagination."),
+  top: z.number().int().optional().describe("Maximum number of work items to return (alias for maxResults). When specified, overrides maxResults."),
   includeSubstantiveChange: z.boolean().optional().default(false).describe("Include computed fields lastSubstantiveChangeDate and daysInactive for each work item - automatically filters out automated changes like iteration path updates. Minimal overhead: only 2 fields per item."),
   substantiveChangeHistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze when computing substantive change (default 50)"),
   computeMetrics: z.boolean().optional().default(false).describe("Include computed metrics: daysInactive (from changed date), daysSinceCreated, hasDescription (>50 chars), isStale (inactive >180 days)"),
-  staleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)")
+  staleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)"),
+  returnQueryHandle: z.boolean().optional().default(false).describe("Return a query handle instead of full work item details. The handle can be used with bulk operation tools (wit-bulk-*-by-query-handle) to safely perform operations without risk of ID hallucination. Handle expires after 1 hour.")
 });
 
 /**
@@ -370,6 +373,46 @@ export const validateHierarchyFastSchema = z.object({
   validateStates: z.boolean().optional().default(true).describe("Validate state consistency between parents and children")
 });
 
+/**
+ * Bulk operation schemas using query handles
+ * These tools eliminate ID hallucination risk by using query handles
+ */
+
+export const bulkCommentByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  comment: z.string().describe("Comment text to add to all work items (supports Markdown)"),
+  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const bulkUpdateByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  updates: z.array(z.object({
+    op: z.enum(['add', 'replace', 'remove']).describe("JSON Patch operation"),
+    path: z.string().describe("Field path (e.g., '/fields/System.State', '/fields/System.AssignedTo')"),
+    value: z.union([z.string(), z.number(), z.boolean()]).optional().describe("Value to set (not needed for 'remove' operation)")
+  })).min(1).describe("Array of JSON Patch operations to apply to all work items"),
+  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const bulkAssignByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  assignTo: z.string().describe("User email or display name to assign work items to"),
+  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const bulkRemoveByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  removeReason: z.string().optional().describe("Reason for removing work items (added as comment before removal)"),
+  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
 
 
 

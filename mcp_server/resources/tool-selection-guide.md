@@ -126,6 +126,44 @@ Quick decision guide for choosing the right tool for your task.
 }
 ```
 
+## AI-Powered Prompts
+
+### Team Velocity Analysis
+**Prompt:** `team_velocity_analyzer`  
+**When:** Analyze team performance and get work assignment recommendations  
+**Example:** Evaluate team capacity and optimize assignments
+
+```json
+{
+  "analysis_period_days": 90,
+  "max_recommendations": 3
+}
+```
+
+### Project Completion Planning
+**Prompt:** `project_completion_planner`  
+**When:** Need comprehensive project timeline and completion forecast  
+**Example:** Analyze entire project, estimate completion date, optimize AI/human assignments
+
+```json
+{
+  "project_epic_id": 12345,
+  "target_completion_date": "2025-12-31",
+  "planning_horizon_weeks": 26,
+  "include_buffer": true
+}
+```
+
+### AI Assignment Analysis
+**Prompt:** `ai_assignment_analyzer`  
+**When:** Evaluate multiple items for GitHub Copilot assignment suitability  
+**Example:** Batch analyze backlog for AI opportunities
+
+### Work Item Enhancement
+**Prompt:** `work_item_enhancer`  
+**When:** Improve work item descriptions, acceptance criteria, and clarity  
+**Example:** Enhance PBI before sprint planning
+
 ## Bulk Operations
 
 ### Add Comments to Multiple Items
@@ -247,6 +285,12 @@ Configuration?
 2. `wit-get-work-items-by-query-wiql` - Get candidates
 3. `wit-ai-assignment-analyzer` - Check Copilot suitability
 4. `wit-assign-to-copilot` - Delegate to AI
+
+### Project Completion Planning
+1. `project_completion_planner` prompt - Comprehensive project analysis
+2. Review timeline, capacity, and risks
+3. `wit-assign-to-copilot` - Assign AI-suitable items
+4. Track progress weekly against forecast
 
 ### Quality Check
 1. `wit-get-work-items-by-query-wiql` - Get recent items

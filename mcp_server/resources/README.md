@@ -70,6 +70,18 @@ Decision guide for choosing the right tool:
 
 **Use when:** Agent is unsure which tool to use
 
+### 6. Query Handle Pattern (`query-handle-pattern.md`)
+**URI:** `ado://docs/query-handle-pattern`
+
+Anti-hallucination architecture for bulk operations:
+- Why query handles eliminate ID hallucination
+- How to use query handles
+- Complete workflow examples
+- Best practices and safety features
+- Troubleshooting
+
+**Use when:** Agent needs to perform bulk operations on multiple work items
+
 ## How Agents Access Resources
 
 ### List Available Resources
@@ -167,7 +179,8 @@ resources/
 ├── odata-quick-reference.md
 ├── hierarchy-patterns.md
 ├── common-workflows.md
-└── tool-selection-guide.md
+├── tool-selection-guide.md
+└── query-handle-pattern.md
 ```
 
 ## Benefits for AI Agents

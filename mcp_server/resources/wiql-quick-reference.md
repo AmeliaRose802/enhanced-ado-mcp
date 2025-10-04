@@ -178,6 +178,31 @@ ORDER BY [System.Priority], [System.WorkItemType]
 }
 ```
 
+## Pagination Support
+
+Use `skip` and `top` parameters for pagination:
+
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "top": 50,
+  "skip": 0
+}
+```
+
+- `top` - Maximum items per page (overrides `MaxResults`)
+- `skip` - Number of items to skip (use for subsequent pages)
+- Response includes `pagination.hasMore` flag and `pagination.nextSkip` value
+
+**Example: Get page 2:**
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "top": 50,
+  "skip": 50
+}
+```
+
 ## Critical Notes
 
 ⚠️ **ORDER BY not supported in WorkItemLinks queries**  

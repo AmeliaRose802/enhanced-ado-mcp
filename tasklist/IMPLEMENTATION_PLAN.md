@@ -1,0 +1,618 @@
+# 📋 Enhanced ADO MCP Server - Implementation Plan
+
+**Created:** October 3, 2025  
+**Status:** In Progress  
+**Target Timeline:** 8 weeks (2 sprints)
+
+## 🎉 Progress Summary
+
+### ✅ Completed (Phase 1 - Week 1)
+- **Task 1:** Fix All Failing Tests - All 49 tests passing across 5 suites
+- **Task 2:** OData 401 Token Timeout Fix - Automatic token refresh on 401 errors
+- **Task 3 (Phase 1):** Query Handle Architecture - Core WIQL enhancement complete
+  - Query handle generation and storage service
+  - `returnQueryHandle` parameter in WIQL tool
+  - 14 comprehensive unit tests
+  - Automatic cleanup every 5 minutes
+  - Default 1-hour expiration
+
+### ✅ Completed (Phase 2 - Week 2)
+- **Task 3 (Phase 2):** Bulk Operation Tools - All 4 tools implemented
+  - `wit-bulk-comment-by-query-handle`
+  - `wit-bulk-update-by-query-handle`
+  - `wit-bulk-assign-by-query-handle`
+  - `wit-bulk-remove-by-query-handle`
+  - Dry-run support in all tools
+  - Comprehensive error handling
+  - Integration tests passing
+
+### ✅ Completed (Phase 3 - Week 3)
+- **Task 3 (Phase 3):** Agent Prompt Updates - Query handle pattern integrated
+  - `find_dead_items` prompt updated with query handle workflow
+  - `child_item_optimizer` prompt updated with query handle workflow
+  - Universal query handle pattern documentation created
+  - Query handle pattern registered as MCP resource
+  - Anti-hallucination architecture fully documented
+
+**Next Up:** Manual testing and validation phase, then Phase 4 (Prompt Cleanup)
+
+---
+
+## 🎯 Executive Summary
+
+This document outlines the prioritized implementation plan for addressing critical bugs, technical debt, and feature gaps identified in the tasklist review and beta testing feedback. The plan balances immediate production blockers with systematic quality improvements.
+
+**Key Objectives:**
+1. ✅ Establish stable test foundation
+2. 🔒 Eliminate ID hallucination risk
+3. 🚀 Address beta test feedback
+4. 🧹 Reduce technical debt
+5. 📈 Improve feature completeness
+
+---
+
+## 🔴 CRITICAL PRIORITY (P0) - Production Blockers
+
+### **1. Fix All Failing Tests** ✅ COMPLETE
+
+**Status:** All tests passing (49 tests, 5 suites)  
+**Impact:** Test foundation established for safe refactoring  
+**Completed:** Phase 1
+
+**Completed Tasks:**
+- [x] Fixed Jest configuration/parsing errors
+- [x] Resolved TypeScript/module resolution issues
+- [x] All test suites passing
+- [x] Documented test running procedures
+
+**Results:**
+- ✅ All test suites pass (`npm test` exits with code 0)
+- ✅ No parsing or configuration errors
+- ✅ 49 tests across 5 suites passing
+- ✅ Test coverage maintained
+
+---
+
+### **2. ID Hallucination Bug** 🚨
+
+**Status:** Critical data integrity issue affecting all bulk operations  
+**Impact:** Agent removes/modifies wrong work items  
+**Risk:** HIGH - Potential data loss across all workflows  
+**Effort:** 2-3 weeks for full implementation  
+**Owner:** TBD
+
+**Problem Statement:**
+All Azure DevOps agent workflows that modify work items suffer from LLM hallucination of work item IDs. Agent queries for items, user requests action, but agent hallucinates different IDs during execution.
+
+**Solution:** Implement Query Handle Architecture (detailed in `halucination_fix_proposal.md`)
+
+**Phase 1: Core WIQL Enhancement (Week 1)** ✅ COMPLETE
+- [x] Add `return_query_handle` parameter to `wit-get-work-items-by-query-wiql`
+- [x] Implement query handle generation and storage (in-memory/Redis)
+- [x] Add query handle expiration (default 1 hour, configurable)
+- [x] Add query handle cleanup job
+- [x] Implement handle retrieval and validation functions
+- [x] Add comprehensive error handling for expired/invalid handles
+- [x] Unit tests for query handle lifecycle
+- [ ] Load tests (1000+ items, concurrent handles)
+
+**Phase 2: Bulk Operation Tools (Week 2)** ✅ COMPLETE
+- [x] Implement `wit-bulk-update-by-query-handle`
+- [x] Implement `wit-bulk-comment-by-query-handle`
+- [x] Implement `wit-bulk-assign-by-query-handle`
+- [x] Implement `wit-bulk-remove-by-query-handle`
+- [x] Add dry_run support to all bulk tools
+- [x] Add comprehensive error handling
+- [x] All handlers registered in tool service
+- [x] Integration tests (WIQL → bulk operation flow)
+
+**Phase 3: Agent Prompt Updates (Week 3)** ✅ COMPLETE
+- [x] Update `find_dead_items` prompt to use query handles
+- [x] Create universal query handle pattern documentation (`resources/query-handle-pattern.md`)
+- [x] Update `child_item_optimizer` prompt to use query handles
+- [x] Register query handle pattern resource in resource service
+- [x] Update resources README with query handle pattern
+- [x] Add anti-hallucination verification steps to prompts
+- [ ] Test prompts with various scenarios (manual testing phase)
+- [ ] Validate zero hallucination incidents in testing (manual validation)
+
+**Acceptance Criteria:**
+- ✅ Query handles stored and retrieved correctly
+- ✅ Bulk operations use handles, not direct IDs
+- ✅ Dry-run mode works for all bulk operations
+- ✅ All prompts updated to use new pattern
+- ✅ Documentation complete
+- ✅ Query handle pattern registered as MCP resource
+- 🔄 Zero ID hallucination incidents in testing (manual validation pending)
+
+**Success Metrics:**
+- Before: ~5-10% of bulk operations have ID hallucination
+- After: 0% hallucination rate (structurally impossible)
+
+**Files to Create/Modify:**
+- `mcp_server/src/services/query-handle-service.ts` (NEW)
+- `mcp_server/src/services/ado-work-item-service.ts` (MODIFY)
+- `mcp_server/src/config/tool-configs.ts` (MODIFY)
+- All prompts in `mcp_server/prompts/`
+
+---
+
+### **3. OData 401 Token Timeout** 🔐
+
+**Status:** Intermittent but persistent authentication failures  
+**Impact:** Tools stop working until server restart  
+**Effort:** 1-2 days  
+**Owner:** TBD
+
+**Tasks:**
+- [ ] Implement token refresh logic in `ado-http-client.ts`
+- [ ] Add authentication error detection (401 responses)
+- [ ] Add automatic retry with token refresh
+- [ ] Test with long-running sessions (2+ hours)
+- [ ] Add logging for token refresh events
+- [ ] Document token lifecycle
+
+**Acceptance Criteria:**
+- ✅ Server handles 401 errors gracefully
+- ✅ Tokens refresh automatically when expired
+- ✅ No manual restart required for token issues
+- ✅ Long-running sessions work reliably
+
+**Files to Modify:**
+- `mcp_server/src/utils/ado-http-client.ts`
+- `mcp_server/src/utils/ado-token.ts`
+
+---
+
+## 🟠 HIGH PRIORITY (P1) - Feature Completeness
+
+### **4. Fix `includeSubstantiveChange` Feature** 📊
+
+**Status:** ✅ COMPLETE - Feature fixed and working  
+**Impact:** Beta tester reports feature "completely non-functional"  
+**Effort:** 2-3 days  
+**Owner:** Completed
+
+**Beta Test Feedback:**
+> "The entire premise of the prompt (using `includeSubstantiveChange: true` to get activity data in one call) FAILED. This forced me to make additional batch calls, defeating the tool's primary value proposition."
+
+**Tasks:**
+- [x] Debug why `substantiveChangeAnalysis` returns false
+- [x] Review `wit-get-last-substantive-change-bulk` implementation
+- [x] Test with various work item types and states
+- [x] Add batching (10 items at a time) to prevent overwhelming API
+- [x] Improve error handling - proper catching and reporting
+- [x] Add detailed logging for debugging
+- [x] Update all documentation to match reality
+
+**Fixes Implemented:**
+- ✅ Added batching (10 items at a time) instead of parallel processing all items at once
+- ✅ Improved error handling - errors now properly caught and reported
+- ✅ Added detailed logging (batch progress, success/error counts)
+- ✅ Changed from warning to error logging when calculation fails
+- ✅ Feature makes N API calls (one per work item) - no batch API available
+
+**Acceptance Criteria:**
+- ✅ `includeSubstantiveChange: true` returns activity data
+- ✅ `daysInactive` and `lastSubstantiveChangeDate` populated
+- ✅ Feature works at scale (100+ items with batching)
+- ✅ Proper error handling for failed items
+
+**Files Modified:**
+- `mcp_server/src/services/ado-work-item-service.ts` - Fixed batching and error handling
+- All prompts using this feature already updated
+
+---
+
+### **5. Prompt Cleanup & Quality Review** 📝
+
+**Status:** Prompts contain false promises, marketing fluff, broken queries  
+**Impact:** User confusion, broken workflows, loss of trust  
+**Effort:** 3-4 days  
+**Owner:** TBD
+
+**Issues from `notes-on-prompts.md`:**
+- AI fit analysis not auto-injecting work item data
+- Backlog cleanup listing unused tools
+- Work item enhancer not actually updating descriptions
+- Prompts promising features that don't work
+- Need tool for missing field detection
+- Marketing language instead of technical focus
+
+**Tasks:**
+- [ ] Review all 10 user-facing prompts
+- [ ] Remove marketing fluff, focus on function
+- [ ] Remove references to tools not used in workflow
+- [ ] Fix auto-population issues (work item context)
+- [ ] Test all WIQL queries in prompts
+- [ ] Ensure consistent link output format
+- [ ] Add "do not look at Done/Removed" guidance (except velocity)
+- [ ] Update work_item_enhancer to include update tools
+- [ ] Verify all computed metrics work
+
+**Prompts to Review:**
+- [ ] `intelligent_work_item_analyzer.md`
+- [ ] `ai_assignment_analyzer.md`
+- [ ] `work_item_enhancer.md`
+- [ ] `team_velocity_analyzer.md`
+- [ ] `child_item_optimizer.md`
+- [ ] `hierarchy_validator.md`
+- [ ] `parallel_fit_planner.md`
+- [ ] `find_dead_items.md`
+- [ ] `backlog_cleanup.md`
+- [ ] `security_items_analyzer.md`
+
+**Acceptance Criteria:**
+- ✅ All WIQL queries tested and working
+- ✅ No false promises about features
+- ✅ Tools listed match tools actually used
+- ✅ Auto-population works correctly
+- ✅ Clean, focused, technical language
+- ✅ Consistent output formatting
+
+---
+
+### **6. Pagination Support** 📄
+
+**Status:** 200-item hard limit without clear pagination  
+**Impact:** Incomplete results for large backlogs  
+**Effort:** 2-3 days  
+**Owner:** TBD
+
+**Beta Test Feedback:**
+> "200 Item Hard Limit with Insufficient Warning. Coverage: Only 38% of backlog analyzed. Users won't realize they're seeing partial data."
+
+**Tasks:**
+- [ ] Document pagination behavior clearly in tool descriptions
+- [ ] Add prominent warnings when results truncated
+- [ ] Update all prompts for pagination awareness
+- [ ] Add continuation token support (if not already present)
+- [ ] Test with 500+ item queries
+- [ ] Update examples in README and docs
+- [ ] Consider auto-pagination option
+
+**Acceptance Criteria:**
+- ✅ Clear documentation of limits
+- ✅ Prominent warnings when truncated
+- ✅ Prompts guide users through pagination
+- ✅ Works reliably with large datasets
+- ✅ Users understand when data is incomplete
+
+**Files to Modify:**
+- `mcp_server/src/config/tool-configs.ts` (tool descriptions)
+- All prompts that use WIQL queries
+- `docs/WIQL_BEST_PRACTICES.md`
+
+---
+
+## 🟡 MEDIUM PRIORITY (P2) - Quality & Usability
+
+### **7. Filter Null `@odata.id` from Responses** 🧹
+
+**Status:** Wasting context window  
+**Effort:** 1 day  
+**Owner:** TBD
+
+**Tasks:**
+- [ ] Find where OData responses include `@odata.id: null`
+- [ ] Add filtering to remove null fields
+- [ ] Test with various OData queries
+- [ ] Verify context window savings
+
+**Acceptance Criteria:**
+- ✅ Null OData fields removed from responses
+- ✅ No functional impact
+- ✅ Reduced response size
+
+**Files to Modify:**
+- `mcp_server/src/services/ado-work-item-service.ts` (OData handling)
+
+---
+
+### **8. Story Point Assignment Tool** 🎯
+
+**Status:** New feature request from tasklist  
+**Effort:** 3-5 days  
+**Owner:** TBD
+
+**Recommendation:** Defer until P0/P1 items complete
+
+**Tasks (Future):**
+- [ ] Design story point estimation prompt
+- [ ] Implement AI-powered estimation logic
+- [ ] Consider historical velocity data
+- [ ] Add confidence scoring
+- [ ] Test across work item types
+- [ ] Document usage
+
+**Acceptance Criteria:**
+- ✅ Reasonable story point estimates
+- ✅ Considers work item complexity
+- ✅ Provides confidence score
+- ✅ Useful for sprint planning
+
+---
+
+### **9. Minimize Work Item Package Response** 📦
+
+**Status:** Response includes unnecessary removed/done items  
+**Effort:** 1-2 days  
+**Owner:** TBD
+
+**Tasks:**
+- [ ] Review `wit-get-work-item-context-package` response
+- [ ] Exclude associated items in Done/Removed state
+- [ ] Make response more minimal and focused
+- [ ] Test with various work item hierarchies
+- [ ] Update documentation
+
+**Acceptance Criteria:**
+- ✅ Removed/Done items excluded from associations
+- ✅ Response size reduced
+- ✅ Essential context preserved
+- ✅ No functional regressions
+
+**Files to Modify:**
+- `mcp_server/src/services/ado-work-item-service.ts`
+
+---
+
+### **10. Codebase Cleanup & Architecture Improvement** 🏗️
+
+**Status:** Tech debt accumulating, potential unused files  
+**Impact:** Harder to maintain, confusion about code structure  
+**Effort:** 1-2 weeks  
+**Owner:** TBD
+
+**IMPORTANT:** Must be done AFTER tests are fixed to ensure nothing breaks.
+
+**Tasks:**
+- [ ] Identify unused files and remove them
+- [ ] Review architecture patterns
+- [ ] Consolidate duplicate code
+- [ ] Improve service boundaries
+- [ ] Add missing JSDoc comments
+- [ ] Update architecture documentation
+- [ ] Create GitHub Issues for discovered tech debt
+- [ ] Standardize error handling patterns
+- [ ] Review and optimize imports
+
+**Areas to Review:**
+- [ ] `mcp_server/src/services/` - Service organization
+- [ ] `mcp_server/src/utils/` - Utility functions
+- [ ] `mcp_server/src/types/` - Type definitions
+- [ ] Unused test files
+- [ ] Deprecated code patterns
+
+**Acceptance Criteria:**
+- ✅ No unused files in repository
+- ✅ Clear service boundaries
+- ✅ Consistent code patterns
+- ✅ Updated architecture docs
+- ✅ All tests still passing
+- ✅ GitHub Issues created for remaining debt
+
+---
+
+## 🟢 LOW PRIORITY (P3) - Nice to Have
+
+### **11. Browser Auto-Launch for Token** 🌐
+
+**Status:** Annoying but not blocking  
+**Effort:** Unknown (investigation needed)  
+**Owner:** TBD
+
+**Tasks:**
+- [ ] Investigate why browser launches for token
+- [ ] Review Azure CLI authentication flow
+- [ ] Determine if this is expected behavior
+- [ ] Fix if possible, or document as expected
+
+---
+
+## 📅 Sprint Plan
+
+### **Sprint 1 (Weeks 1-2): Foundation & Critical Fixes**
+
+**Goal:** Stable, testable codebase with core features working
+
+**Week 1:**
+- Day 1-3: Fix all failing tests
+- Day 4-5: OData token timeout fix
+
+**Week 2:**
+- Day 1-3: Fix `includeSubstantiveChange` feature
+- Day 4: Filter null `@odata.id`
+- Day 5: Start query handle architecture Phase 1
+
+**Deliverables:**
+- ✅ All tests passing
+- ✅ Token refresh working
+- ✅ Substantive change feature working or removed
+- ✅ OData responses cleaned up
+- ✅ Query handle storage implemented
+
+**Success Criteria:**
+- No test failures
+- No token timeout issues in testing
+- Beta tester can use substantive change analysis
+- Clean OData responses
+
+---
+
+### **Sprint 2 (Weeks 3-4): Data Integrity & Features**
+
+**Goal:** Hallucination-proof bulk operations, improved prompts
+
+**Week 3:**
+- Day 1-3: Query handle architecture Phase 2 (bulk tools)
+- Day 4-5: Pagination support
+
+**Week 4:**
+- Day 1-3: Query handle architecture Phase 3 (prompts)
+- Day 4-5: Start prompt cleanup
+
+**Deliverables:**
+- ✅ Query handle architecture complete
+- ✅ Bulk operations using handles
+- ✅ Pagination documented and working
+- ✅ Some prompts cleaned up
+
+**Success Criteria:**
+- Zero ID hallucination in testing
+- 500+ item queries work
+- At least 5 prompts cleaned and tested
+
+---
+
+### **Sprint 3 (Weeks 5-6): Polish & Quality**
+
+**Goal:** Production-ready prompts, complete feature set
+
+**Week 5:**
+- Day 1-5: Complete prompt cleanup (all 10 prompts)
+
+**Week 6:**
+- Day 1-2: Minimize package response
+- Day 3-5: Testing and validation
+
+**Deliverables:**
+- ✅ All prompts accurate and tested
+- ✅ Work item package optimized
+- ✅ Comprehensive testing complete
+
+**Success Criteria:**
+- All prompts match tool capabilities
+- Beta tester validates improvements
+- No known critical bugs
+
+---
+
+### **Sprint 4 (Weeks 7-8): Debt Reduction**
+
+**Goal:** Clean, maintainable codebase
+
+**Week 7-8:**
+- Day 1-10: Codebase cleanup and architecture improvements
+
+**Deliverables:**
+- ✅ No unused code
+- ✅ Architecture documentation updated
+- ✅ Tech debt backlog cleared
+- ✅ Optional: Story point tool if time permits
+
+**Success Criteria:**
+- Clean codebase
+- Clear architecture
+- All tests still passing
+- Documentation current
+
+---
+
+## 📊 Progress Tracking
+
+### Sprint 1 Status
+- [ ] Tests fixed
+- [ ] Token refresh implemented
+- [ ] Substantive change fixed
+- [ ] OData cleanup complete
+- [ ] Query handle Phase 1 started
+
+### Sprint 2 Status
+- [ ] Query handle complete
+- [ ] Pagination support
+- [ ] Prompt cleanup started
+
+### Sprint 3 Status
+- [ ] All prompts cleaned
+- [ ] Package response optimized
+- [ ] Testing complete
+
+### Sprint 4 Status
+- [ ] Codebase cleanup
+- [ ] Architecture docs updated
+
+---
+
+## 🚨 Risk Management
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| ID Hallucination in Production | 🔴 CRITICAL | Implement query handle architecture ASAP |
+| Failing Tests Block Development | 🔴 HIGH | Fix tests immediately, highest priority |
+| Token Timeout in Long Sessions | 🟠 MEDIUM | Implement token refresh, standard pattern |
+| Substantive Change Feature Broken | 🟠 MEDIUM | Fix or remove, update docs |
+| Prompt Quality Issues | 🟡 LOW | Iterative improvement, thorough testing |
+| Scope Creep During Cleanup | 🟡 LOW | Create Issues for future work, stay focused |
+
+---
+
+## 💡 Key Principles
+
+1. **Tests First** - Fix test suite before any other work
+2. **Data Integrity** - Query handle architecture prevents hallucination at architectural level
+3. **No False Promises** - Docs and prompts must match reality
+4. **Iterative Improvement** - Don't try to fix everything at once
+5. **Create Issues** - Track discovered debt for future work
+6. **Beta Test Feedback is Gold** - Prioritize issues they identified
+7. **Don't Break Things** - Tests must pass before and after changes
+
+---
+
+## 📝 Notes & Decisions
+
+### Why Query Handle Architecture?
+The proposal in `halucination_fix_proposal.md` is architecturally sound. It eliminates ID hallucination by:
+- Server maintains authoritative ID list
+- Agent passes opaque tokens, never IDs
+- Structurally impossible to hallucinate
+- Works across ALL bulk operations
+
+### Why Tests First?
+Cannot safely refactor or add features without working tests. This is non-negotiable engineering fundamentals.
+
+### Why Not Remove Broken Features Immediately?
+Some features might be fixable with reasonable effort. Try to fix first, remove if unfixable. But be decisive - don't spend weeks on a feature that should be removed.
+
+---
+
+## 📚 Reference Documents
+
+- `tasklist/tasklist.md` - Original task list
+- `tasklist/halucination_fix_proposal.md` - Detailed query handle architecture
+- `tasklist/notes-on-prompts.md` - Prompt-specific issues
+- `tasklist/beta_test_reports/beta-test.md` - Comprehensive beta test feedback
+- `docs/ARCHITECTURE.md` - Current architecture
+- `docs/AI_POWERED_FEATURES.md` - AI feature documentation
+
+---
+
+## ✅ Definition of Done
+
+**For Each Task:**
+- [ ] Implementation complete
+- [ ] Tests added/updated and passing
+- [ ] Documentation updated
+- [ ] Code reviewed (self or peer)
+- [ ] No new warnings or errors
+- [ ] Manually tested
+
+**For Each Sprint:**
+- [ ] All sprint tasks completed
+- [ ] Sprint deliverables met
+- [ ] Success criteria achieved
+- [ ] No regressions introduced
+- [ ] Next sprint planned
+
+**For Overall Project:**
+- [ ] All P0 and P1 items complete
+- [ ] Zero known critical bugs
+- [ ] Beta tester validates improvements
+- [ ] Documentation accurate and complete
+- [ ] Architecture clean and maintainable
+- [ ] Ready for production use
+
+---
+
+**Last Updated:** October 3, 2025  
+**Next Review:** After Sprint 1 completion

@@ -4,7 +4,7 @@
  * Uses Node.js native fetch (available since Node 18)
  */
 
-import { getAzureDevOpsToken } from './ado-token.js';
+import { getAzureDevOpsToken, clearTokenCache } from './ado-token.js';
 import { logger } from './logger.js';
 import type { ADOErrorResponse } from '../types/ado.js';
 
@@ -16,6 +16,7 @@ export interface HttpRequestOptions {
   headers?: Record<string, string>;
   body?: unknown;
   timeout?: number;
+  _isRetry?: boolean; // Internal flag to prevent infinite retry loops
 }
 
 /**
@@ -125,7 +126,8 @@ export class ADOHttpClient {
       method = 'GET',
       headers = {},
       body,
-      timeout = this.defaultTimeout
+      timeout = this.defaultTimeout,
+      _isRetry = false
     } = options;
 
     // Build full URL
@@ -137,6 +139,11 @@ export class ADOHttpClient {
     const urlObj = new URL(url);
     if (!urlObj.searchParams.has('api-version')) {
       urlObj.searchParams.set('api-version', '7.1');
+    }
+
+    // Refresh token if this is not already a retry
+    if (!_isRetry) {
+      this.token = getAzureDevOpsToken();
     }
 
     // Build headers
@@ -180,6 +187,15 @@ export class ADOHttpClient {
       response.headers.forEach((value, key) => {
         responseHeaders[key] = value;
       });
+
+      // Handle 401 Unauthorized - token may have expired
+      if (response.status === 401 && !_isRetry) {
+        logger.info('Received 401 Unauthorized, refreshing token and retrying...');
+        // Clear cached token to force fresh retrieval
+        clearTokenCache();
+        // Retry the request once with fresh token
+        return this.request<T>(endpoint, { ...options, _isRetry: true });
+      }
 
       // Read response body
       const responseText = await response.text();

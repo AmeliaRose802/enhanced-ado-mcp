@@ -35,32 +35,92 @@ async function testBasicWiqlQuery() {
   }
 }
 
+async function testPagination() {
+  console.log("\n🧪 Testing WIQL pagination...");
+  
+  try {
+    // Get first page with top=5
+    const page1 = await executeTool("wit-get-work-items-by-query-wiql", {
+      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+      top: 5,
+      skip: 0
+    });
+    
+    if (!page1.success) {
+      console.log("❌ First page query failed");
+      console.log(`   Errors: ${page1.errors?.join(", ")}`);
+      return false;
+    }
+    
+    console.log("✅ First page query succeeded");
+    console.log(`   Items in page: ${page1.data?.count}`);
+    console.log(`   Total count: ${page1.data?.pagination?.totalCount}`);
+    console.log(`   Has more: ${page1.data?.pagination?.hasMore}`);
+    
+    if (page1.data?.pagination?.hasMore) {
+      // Get second page
+      const page2 = await executeTool("wit-get-work-items-by-query-wiql", {
+        wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+        top: 5,
+        skip: 5
+      });
+      
+      if (!page2.success) {
+        console.log("❌ Second page query failed");
+        console.log(`   Errors: ${page2.errors?.join(", ")}`);
+        return false;
+      }
+      
+      console.log("✅ Second page query succeeded");
+      console.log(`   Items in page: ${page2.data?.count}`);
+      console.log(`   Skip: ${page2.data?.pagination?.skip}`);
+      console.log(`   Has more: ${page2.data?.pagination?.hasMore}`);
+      
+      // Verify items are different
+      const page1Ids = page1.data?.work_items?.map((item: any) => item.id) || [];
+      const page2Ids = page2.data?.work_items?.map((item: any) => item.id) || [];
+      const overlap = page1Ids.filter((id: number) => page2Ids.includes(id));
+      
+      if (overlap.length > 0) {
+        console.log("❌ Pages have overlapping items");
+        return false;
+      }
+      
+      console.log("✅ Pages have no overlapping items");
+    }
+    
+    return true;
+  } catch (error) {
+    console.log("❌ Exception during pagination test:");
+    console.log(`   ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
 async function main() {
   console.log("═══════════════════════════════════════════════════════");
   console.log("  Testing WIQL Query Tool Implementation  ");
   console.log("═══════════════════════════════════════════════════════");
   
   try {
-    const passed = await testBasicWiqlQuery();
+    const basicPassed = await testBasicWiqlQuery();
+    const paginationPassed = await testPagination();
     
     console.log("\n═══════════════════════════════════════════════════════");
     console.log("  Test Results Summary  ");
     console.log("═══════════════════════════════════════════════════════");
-    console.log(`Basic WIQL query:    ${passed ? "✅ PASS" : "❌ FAIL"}`);
+    console.log(`Basic WIQL query:    ${basicPassed ? "✅ PASS" : "❌ FAIL"}`);
+    console.log(`Pagination test:     ${paginationPassed ? "✅ PASS" : "❌ FAIL"}`);
     
-    if (passed) {
-      console.log("\n🎉 WIQL query test passed!");
+    if (basicPassed && paginationPassed) {
+      console.log("\n🎉 All WIQL query tests passed!");
       process.exit(0);
     } else {
-      console.log("\n⚠️  Test failed. Review the output above for details.");
+      console.log("\n⚠️  Some tests failed. Review the output above for details.");
       process.exit(1);
     }
   } catch (error) {
     console.error("\n💥 Test suite failed with exception:", error);
     process.exit(1);
   }
-}
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
 }

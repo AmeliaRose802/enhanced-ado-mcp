@@ -28,9 +28,25 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     return date.toISOString().split('T')[0];
   };
   
+  // Extract area substring for OData contains() filtering
+  // OData doesn't support eq/startswith/under operators, so we use contains() with a unique substring
+  const extractAreaSubstring = (areaPath: string): string => {
+    if (!areaPath) return '';
+    // Get the last two segments of the area path for uniqueness
+    // e.g., "One\\Azure Compute\\OneFleet Node\\Azure Host Agent" -> "OneFleet Node\\\\Azure Host Agent"
+    const segments = areaPath.split('\\').filter(s => s.length > 0);
+    if (segments.length >= 2) {
+      // Use last 2 segments, double-escape backslashes for OData
+      return segments.slice(-2).join('\\\\');
+    }
+    // If only one segment, use it as-is with double backslash escape
+    return segments.join('\\\\');
+  };
+  
   return {
     // Core config variables (escape area paths for use in WIQL/OData queries)
     area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
+    area_substring: extractAreaSubstring(config.azureDevOps.areaPath || ''),
     project: config.azureDevOps.project || '',
     project_name: config.azureDevOps.project || '',
     org_url: `https://dev.azure.com/${config.azureDevOps.organization}`,

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * Test new configuration and discovery tools
  */
