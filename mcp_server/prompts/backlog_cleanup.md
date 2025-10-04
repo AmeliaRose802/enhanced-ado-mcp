@@ -18,10 +18,9 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 
 **Available MCP tools:**
 - `wit-query-analytics-odata` – ⭐ PREFERRED for aggregated metrics (counts by state/type/assignee, distributions)
-- `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
-- `wit-get-work-items-context-batch` – ⚠️ batch enrichment (LIMIT: 20-30 items per call to avoid context overflow)
-- `wit-get-work-item-context-package` – ⚠️ deep dive for edge cases (use sparingly, returns large payload)
-- (Create/assign tools available but not used for removal analysis): `wit-create-new-item`, `wit-assign-to-copilot`, `wit-new-copilot-item`, `wit-extract-security-links`
+- `wit-get-work-items-by-query-wiql` – Primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
+- `wit-get-work-items-context-batch` – Batch enrichment (LIMIT: 20-30 items per call to avoid context overflow)
+- `wit-get-work-item-context-package` – Deep dive for edge cases (use sparingly, large payload)
 
 ### Process Steps
 
