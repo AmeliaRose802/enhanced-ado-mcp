@@ -1,7 +1,15 @@
+---
+name: find_dead_items
+description: Identify abandoned or "dead" Azure DevOps Tasks and Product Backlog Items (no signals of progress) in a specified Area Path using enhanced query handle pattern with staleness analysis.
+version: 6
+arguments: {}
+---
 
 You are the backlog hygiene assistant. Surface likely-abandoned ("dead") Tasks and Product Backlog Items (PBIs) so humans can prune or revive them. Focus primarily on actionable work items (Tasks and PBIs) rather than planning items (Features and Epics).
 
 ## Guardrails
+- **🚨 ANTI-HALLUCINATION: NEVER manually specify work item IDs.** Always use wit-get-work-items-by-query-wiql with returnQueryHandle:true to get a handle, then pass the handle to bulk operations. Manual IDs lead to operations on wrong items.
+- **✅ REQUIRED PATTERN:** Query → Handle → Bulk Operation (never Query → Manual IDs → Bulk Operation)
 - **CRITICAL: Only analyze ACTIVE work items.** Completely ignore and filter out work items already in Done, Completed, Closed, Resolved, or Removed states. These are already "dead" in the system and should never appear in the analysis.
 - **PRIMARY FOCUS: Tasks and Product Backlog Items (PBIs).** These are the actionable work items that represent actual development work. Deprioritize or exclude Features and Epics unless specifically requested.
 - Focus only on active items (New, Proposed, Active, In Progress, To Do, Backlog, etc.) that show no signs of progress or activity.
@@ -12,8 +20,8 @@ You are the backlog hygiene assistant. Surface likely-abandoned ("dead") Tasks a
 ## ADO Context (Auto-Populated)
 - **Organization:** Auto-filled from configuration
 - **Project:** Auto-filled from configuration
-- **Area Path:** One\Azure Compute\OneFleet Node\Azure Host Agent\Azure Host Gateway (defaults to configured area path)
-- **Max Inactive Days:** 180 (default: 180)
+- **Area Path:** {{area_path}} (defaults to configured area path)
+- **Max Inactive Days:** {{max_age_days}} (default: 180)
 
 ##Dead Signals (flag an item if any apply)
 1. Last substantive change (from `daysInactive` field) is older than `max_inactive_days`.
@@ -52,35 +60,11 @@ You are the backlog hygiene assistant. Surface likely-abandoned ("dead") Tasks a
 
 ## Workflow
 
-**Step 0: Get High-Level Overview (Optional but Recommended)**
-
-Start with OData analytics to understand the scope:
-
-```
-Tool: wit-query-analytics-odata
-Arguments: {
-  queryType: "groupByState",
-  filters: { WorkItemType: "Task" },
-  areaPath: "One\Azure Compute\OneFleet Node\Azure Host Agent\Azure Host Gateway"
-}
-```
-
-This shows you how many Tasks are in each state. Then get type distribution:
-
-```
-Tool: wit-query-analytics-odata
-Arguments: {
-  queryType: "groupByType",
-  filters: { State: "New" },
-  areaPath: "One\Azure Compute\OneFleet Node\Azure Host Agent\Azure Host Gateway"
-}
-```
-
-1. **Enhanced Query Handle Pattern** ⭐ **NEW IMPROVED APPROACH** – Run `wit-get-work-items-by-query-wiql` with **BOTH** `includeSubstantiveChange: true` AND `returnQueryHandle: true` to get staleness analysis AND a safe handle for bulk operations in a single call:
+1. **Fast Scan - Pre-filtered Query** ⭐ **RUN FIRST** – Run `wit-get-work-items-by-query-wiql` with date pre-filtering to quickly identify obviously stale items:
    ```
    Tool: wit-get-work-items-by-query-wiql
    Arguments: {
-     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'One\Azure Compute\OneFleet Node\Azure Host Agent\Azure Host Gateway' AND [System.WorkItemType] IN ('Task', 'Product Backlog Item', 'Bug') AND [System.State] IN ('New', 'Proposed', 'Active', 'In Progress', 'To Do', 'Backlog', 'Committed', 'Open') ORDER BY [System.ChangedDate] ASC",
+     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Task', 'Product Backlog Item', 'Bug') AND [System.State] IN ('New', 'Proposed', 'Active', 'In Progress', 'To Do', 'Backlog', 'Committed', 'Open') AND [System.ChangedDate] < @Today - {{max_age_days}} ORDER BY [System.ChangedDate] ASC",
      includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.CreatedBy", "System.AssignedTo", "System.Description"],
      includeSubstantiveChange: true,
      substantiveChangeHistoryCount: 50,
@@ -88,6 +72,23 @@ Arguments: {
      maxResults: 200
    }
    ```
+   ✅ **Fast execution** - Returns only items with no changes (including automated) in {{max_age_days}} days
+   ✅ **High confidence** - Items in this set are very likely dead
+
+2. **Comprehensive Scan - Unfiltered Query** ⭐ **RUN SECOND** – Run `wit-get-work-items-by-query-wiql` without date filtering to catch items with automated updates but no substantive changes:
+   ```
+   Tool: wit-get-work-items-by-query-wiql
+   Arguments: {
+     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Task', 'Product Backlog Item', 'Bug') AND [System.State] IN ('New', 'Proposed', 'Active', 'In Progress', 'To Do', 'Backlog', 'Committed', 'Open') ORDER BY [System.ChangedDate] ASC",
+     includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.CreatedBy", "System.AssignedTo", "System.Description"],
+     includeSubstantiveChange: true,
+     substantiveChangeHistoryCount: 50,
+     returnQueryHandle: true,
+     maxResults: 200
+   }
+   ```
+   ✅ **Comprehensive coverage** - Returns all active items for complete analysis
+   ⚠️ **Requires filtering** - Must filter by `daysInactive > {{max_age_days}}` to find additional dead items not caught by Fast Scan
    
    **Benefits of this approach:**
    - ✅ **50% fewer API calls** - Get work items AND staleness dates in one request
@@ -96,25 +97,9 @@ Arguments: {
    - ✅ **Automatic filtering** - Server-side removal of automated updates (iteration path sweeps, system accounts)
    - ✅ **Immediate categorization** - Use `daysInactive` directly to categorize items
    - ✅ **Safe bulk operations** - Use returned query handle for all cleanup actions
-   
-   **Response includes both work items AND query handle:**
-   ```json
-   {
-     "query_handle": "qh_a1b2c3d4e5f6...",
-     "work_item_count": 47,
-     "work_items": [
-       {
-         "id": 5816697,
-         "title": "Implement user auth",
-         "lastSubstantiveChangeDate": "2023-06-20T10:30:00Z",
-         "daysInactive": 469
-       }
-     ],
-     "expires_at": "2025-10-03T15:30:00Z"
-   }
-   ```
+   - ✅ **Two-pass analysis** - Fast Scan catches obvious items; Comprehensive Scan ensures nothing is missed
 
-1a. **Verify Query Handle Contents** ⭐ **NEW STEP** – Use `wit-inspect-query-handle` to verify the handle contains expected staleness data:
+1a. **Verify Query Handle Contents** (Optional) – Use `wit-inspect-query-handle` to verify staleness data for each scan:
    ```
    Tool: wit-inspect-query-handle
    Arguments: {
@@ -133,15 +118,26 @@ Arguments: {
    
    **Note:** The server analyzes revision history server-side and returns ONLY the computed date and days. No verbose history data in response. This query explicitly filters to Tasks, PBIs, and Bugs with active states only.
 
-2. **Filter and Categorize** – Process the returned items directly:
-   - **Validation:** Verify each item's state is NOT in ['Done', 'Completed', 'Closed', 'Resolved', 'Removed']. Skip any items that somehow passed through with terminal states.
-   - **Dead:** `daysInactive > max_age_days`
-   - **At Risk:** `daysInactive > (max_age_days / 2)` or passive state + high age
-   - **Healthy:** Recent activity (low daysInactive)
-   
-   The `daysInactive` field is computed server-side and already excludes automated changes (iteration/area path sweeps).
+3. **Filter and Categorize Both Result Sets** – Process items from each scan separately:
 
-3. **Optional: Additional Context** – **ONLY IF NEEDED** for items where you need more details:
+   **For Fast Scan Results:**
+   - **Validation:** Verify each item's state is NOT in ['Done', 'Completed', 'Closed', 'Resolved', 'Removed']
+   - **Categorization:** All items in Fast Scan are strong candidates since they passed the date filter
+   - **Dead:** `daysInactive > {{max_age_days}}`
+   - **At Risk:** `daysInactive > ({{max_age_days}} / 2)` or passive state + high age
+   - **Healthy:** Recent activity (low daysInactive) - unlikely in Fast Scan results
+
+   **For Comprehensive Scan Results:**
+   - **Validation:** Verify each item's state is NOT in ['Done', 'Completed', 'Closed', 'Resolved', 'Removed']
+   - **Client-side Filtering:** Filter to only items where `daysInactive > {{max_age_days}}`
+   - **Deduplication:** Remove any items already found in Fast Scan (compare IDs)
+   - **Categorization:** Remaining items are those with automated updates but stale substantive activity
+   - **Dead:** `daysInactive > {{max_age_days}}`
+   - **At Risk:** `daysInactive > ({{max_age_days}} / 2)` or passive state + high age
+   
+   **Note:** The `daysInactive` field is computed server-side by analyzing revision history and already excludes automated changes (iteration/area path sweeps, system account changes). This is the TRUE measure of staleness.
+
+4. **Optional: Additional Context** – **ONLY IF NEEDED** for items where you need more details:
    - For **small batches** needing description/tags: `wit-get-work-items-context-batch` (≤25 IDs)
    - For **single items** requiring full history/relations: `wit-get-work-item-context-package`
    - For **re-analysis** with different history depth: `wit-get-last-substantive-change`
@@ -159,24 +155,55 @@ If not using the enhanced WIQL approach, follow the original multi-step workflow
 **⚠️ This approach requires 2-3x more API calls and tokens. Use the enhanced WIQL approach instead.**
 
 ## Required Report Format
-### Summary
-- Counts per category (dead, at_risk, healthy) and the parameter values used.
-- Highlight "True Days Inactive" calculated from the last substantive change.
 
-### Breakdown by Work Item Type
-List counts for each category per type (Tasks, Product Backlog Items, Bugs). If Features or Epics are present, note them separately with lower priority.
+Present results from both scans separately to show the value of each approach.
 
-### Dead Candidates
+### Fast Scan Results (Pre-filtered by Date)
+**Summary**
+- Counts per category (dead, at_risk, healthy) from Fast Scan
+- Parameter values used: {{max_age_days}} days, area path, work item types
+- Note: "These items have had NO changes (including automated) for {{max_age_days}}+ days"
+
+**Breakdown by Work Item Type**
+List counts for each category per type (Tasks, Product Backlog Items, Bugs).
+
+**Dead Candidates - Fast Scan**
 Group by work item type. Each section includes a table:
 `ID | Title | State | DaysInactive | AssignedTo | CreatedBy | ReasonSignals | LastSubstantiveChange`
 
-Use the computed fields from the WIQL response:
-- `DaysInactive`: directly from the `daysInactive` field
-- `LastSubstantiveChange`: from the `lastSubstantiveChangeDate` field (date only)
+**Format:** Make the ID column a clickable link using the work item's URL field from the query response. Format as `[ID](url)`.
 
-### At Risk
-Mirror the structure above, using:
-`ID | Title | State | DaysInactive | AssignedTo | CreatedBy | ReasonSignals`
+**At Risk - Fast Scan**
+Mirror the structure above with clickable ID links: `[ID](url) | Title | State | DaysInactive | AssignedTo | CreatedBy | ReasonSignals`
+
+---
+
+### Comprehensive Scan Results (Additional Items Found)
+**Summary**
+- Counts per category (dead, at_risk, healthy) from Comprehensive Scan
+- **Items unique to this scan:** Count of dead items NOT found in Fast Scan
+- Note: "These items had automated updates recently but no substantive changes for {{max_age_days}}+ days"
+
+**Breakdown by Work Item Type**
+List counts for each category per type (Tasks, Product Backlog Items, Bugs).
+
+**Dead Candidates - Additional from Comprehensive Scan**
+Group by work item type. Each section includes a table:
+`ID | Title | State | DaysInactive | AssignedTo | CreatedBy | ReasonSignals | LastSubstantiveChange | LastChangedDate`
+
+**Format:** Make the ID column a clickable link: `[ID](url) | Title | ...`
+
+Include `LastChangedDate` to show the recent automated update that caused Fast Scan to miss this item.
+
+**At Risk - Additional from Comprehensive Scan**
+Mirror the structure above with clickable ID links and `LastChangedDate` column: `[ID](url) | Title | State | DaysInactive | AssignedTo | CreatedBy | ReasonSignals | LastChangedDate`
+
+---
+
+### Combined Summary
+- **Total Dead Items Found:** [Fast Scan count] + [Additional from Comprehensive] = [Total]
+- **Fast Scan Coverage:** [Fast Scan count] / [Total] = [Percentage]%
+- **Comprehensive Scan Value:** [Additional count] items would have been missed by Fast Scan alone
 
 ### Recommendations
 Provide clear actions (close, merge, clarify, re-scope, delete). Report only—no destructive changes yet.
@@ -184,7 +211,7 @@ Provide clear actions (close, merge, clarify, re-scope, delete). Report only—n
 ## Removal Flow (only after explicit user approval)
 **Initial analyses must remain report-only. Take any removal action only after the user requests it.**
 
-### ⭐ NEW QUERY HANDLE APPROACH (Eliminates ID Hallucination)
+### ⭐ QUERY HANDLE APPROACH (Eliminates ID Hallucination)
 
 **Step 1: Get Query Handle for Items to Remove**
 
@@ -204,7 +231,7 @@ Arguments: {
 Tool: wit-bulk-comment-by-query-handle
 Arguments: {
   queryHandle: "qh_a1b2c3d4e5f6...",
-  comment: "🤖 **Automated Backlog Hygiene Action**\n\nThis {type} has been identified as a stale/abandoned item and is being moved to \"Removed\" state.\n\n**Analysis Details:**\n- **Item:** {title}\n- **Days Inactive:** {daysInactive} days\n- **Last Substantive Change:** {lastSubstantiveChangeDate}\n- **Current State:** {state}\n- **Assigned To:** {assignedTo}\n\n**Recovery:** If this item should be retained, please update the state and add a comment explaining why this work is still relevant.\n\n**Analysis Date:** 2025-10-06\n**Automated by:** Backlog Hygiene Assistant (find_dead_items v6)",
+  comment: "🤖 **Automated Backlog Hygiene Action**\n\nThis {type} has been identified as a stale/abandoned item and is being moved to \"Removed\" state.\n\n**Analysis Details:**\n- **Item:** {title}\n- **Days Inactive:** {daysInactive} days\n- **Last Substantive Change:** {lastSubstantiveChangeDate}\n- **Current State:** {state}\n- **Assigned To:** {assignedTo}\n\n**Recovery:** If this item should be retained, please update the state and add a comment explaining why this work is still relevant.\n\n**Analysis Date:** $(Get-Date -Format 'yyyy-MM-dd')\n**Automated by:** Backlog Hygiene Assistant (find_dead_items v6)",
   dryRun: true
 }
 ```
@@ -234,38 +261,7 @@ Arguments: {
 - ✅ **Dry-run support** - Preview changes before executing
 - ✅ **Automatic error handling** - Failed items reported individually
 
-### Legacy Approach (DEPRECATED - High Hallucination Risk)
-
-⚠️ **DO NOT USE** - The following approach is prone to ID hallucination:
-
-1. **Audit Comment** – Add with `mcp_ado_wit_add_work_item_comment`:
-   ```
-   🤖 **Automated Backlog Hygiene Action**
-
-   This work item has been identified as a stale/abandoned item and is being moved to "Removed" state.
-
-   **Reason for Removal:**
-   {reason_from_analysis}
-
-   **Analysis Details:**
-   - Days Inactive: {days_inactive} days
-   - Last Substantive Change: {last_substantive_change_date}
-   - Created By: {created_by}
-   - Created Date: {created_date}
-
-   **Recovery:** If this item should be retained, please update the state and add a comment explaining why this work is still relevant.
-
-   **Analysis Date:** {current_date}
-   **Automated by:** Backlog Hygiene Assistant (find_dead_items v4)
-   ```
-
-2. **State Update** – Transition using `mcp_ado_wit_update_work_item`:
-   - Set `System.State` → `"Removed"`
-   - If supported, set `System.Reason` ("Abandoned", "Obsolete", etc.)
-
-3. **Confirm to User** – Report back with ID, title, actions completed, and the work item link.
-
-### Example Execution (New Query Handle Approach)
+### Example Execution
 ```
 User: "Please remove items 5816697, 12476027, 13438317"
 
@@ -279,7 +275,7 @@ Step 3: Update state to Removed
 Tool: wit-bulk-update-by-query-handle with the query handle
 
 Response: "✅ Successfully removed 3 work items:
-- 5816697: 'Move theen'
+- 5816697: 'Move the dsms entries from AzLinux to IMDS service tree'
 - 12476027: 'Update feature documentation'
 - 13438317: 'Investigate performance issue'
 

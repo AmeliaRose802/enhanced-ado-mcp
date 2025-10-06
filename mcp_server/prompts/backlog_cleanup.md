@@ -32,15 +32,24 @@ itemSelector: "all"
 ### Example: Find and Remove Dead Items
 
 ```
-Step 1: Single Query Gets Everything
-─────────────────────────────────────
+Step 1: Single Query Gets Everything (with Server-Side Filtering)
+──────────────────────────────────────────────────────────────────
 Tool: wit-get-work-items-by-query-wiql
 
 {
-  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New' AND [System.CreatedDate] < @Today - 180",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
   "includeFields": ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo"],
   "returnQueryHandle": true,
-  "includeSubstantiveChange": true,
+  "filterByDaysInactiveMin": 180,  // 🆕 NEW: Only items with no substantive changes in 180+ days
+  "maxResults": 200
+}
+
+// Alternative: Use date-based filtering instead
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
+  "includeFields": ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo"],
+  "returnQueryHandle": true,
+  "filterBySubstantiveChangeBefore": "2024-06-01T00:00:00Z",  // Before June 1, 2024
   "maxResults": 200
 }
 
@@ -172,22 +181,35 @@ Why wrong: Can't verify what will be affected before committing
 
 ## 🎓 Best Practices
 
-### 1. Single Query for Everything
+### 1. Single Query for Everything (with Optional Filtering)
 ```json
 {
   "wiqlQuery": "your query here",
   "includeFields": ["all", "fields", "you", "need"],
   "returnQueryHandle": true,
-  "includeSubstantiveChange": true,
-  "computeMetrics": true  // Optional: adds daysInactive, isStale, etc.
+  "includeSubstantiveChange": true,  // Optional if not using filters
+  "computeMetrics": true,  // Optional: adds daysInactive, isStale, etc.
+  
+  // 🆕 NEW: Server-side filtering options (pick one or combine)
+  "filterByDaysInactiveMin": 180,  // Only items inactive >= 180 days
+  "filterByDaysInactiveMax": 30,   // Only items inactive <= 30 days
+  "filterBySubstantiveChangeAfter": "2024-01-01T00:00:00Z",  // Changed after date
+  "filterBySubstantiveChangeBefore": "2024-12-31T23:59:59Z"  // Changed before date
 }
 ```
 
 **You get:**
 - Query handle for bulk operations
 - Full work item data for review
-- Substantive change analysis
+- Substantive change analysis (auto-enabled by filters)
 - Computed metrics
+- **Filtered results** - only items matching your criteria
+
+**Benefits of filtering:**
+- ⚡ Faster - server filters before returning results
+- 💰 Lower cost - fewer tokens in response
+- 🎯 More precise - only relevant items returned
+- 🛡️ Safer - less data to accidentally process
 
 ### 2. Always Review Before Acting
 ```typescript

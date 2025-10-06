@@ -21,6 +21,10 @@ You are a **Work Item Portfolio Optimizer & Execution Planner** with expertise i
 - `wit-get-work-items-context-batch` - Get details for multiple work items with relationships
 - `wit-get-work-items-by-query-wiql` - ⭐ Query for work items with query handle support (use `returnQueryHandle: true`)
   - ⚠️ **Pagination:** Returns first 200 items by default. For parents with >200 children, use `skip` and `top` parameters to paginate.
+  - 🆕 **NEW FILTERING:** Can filter by substantive change date/inactivity (see find_dead_items prompt for details):
+    - `filterByDaysInactiveMin` - Find stale children (e.g., 180 for 6+ months)
+    - `filterByDaysInactiveMax` - Find recently active children (e.g., 30 for last month)
+    - Use when analyzing children to quickly identify inactive items for removal/enhancement
 - `wit-ai-assignment-analyzer` - Analyze work items for AI assignment suitability
 - `wit-intelligence-analyzer` - Analyze work item completeness and enhancement needs
 - `wit-create-new-item` - Create new work items

@@ -216,6 +216,26 @@ ORDER BY [System.WorkItemType], [System.CreatedDate] DESC
 }
 ```
 
+**With substantive change filtering (find stale items):**
+```javascript
+{
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  IncludeFields: ["System.Title", "System.State"],
+  FilterByDaysInactiveMin: 180,  // Items inactive for 6+ months
+  MaxResults: 500
+}
+```
+
+**With substantive change filtering (find recently active items):**
+```javascript
+{
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  FilterByDaysInactiveMax: 30,  // Items active in last 30 days
+  // OR use date-based filtering:
+  FilterBySubstantiveChangeAfter: "2024-10-01T00:00:00Z"  // Items changed after Oct 1, 2024
+}
+```
+
 ### Pattern 2: Get Children of Specific Parent
 
 **Use Case:** Build hierarchy level by level

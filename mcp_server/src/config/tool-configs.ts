@@ -215,7 +215,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-get-work-items-by-query-wiql",
-    description: "🔐 ANTI-HALLUCINATION TOOL: Execute WIQL query and get both work item details AND a query handle for safe operations. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Limit: 200 items (use pagination for more).",
+    description: "🔐 ANTI-HALLUCINATION TOOL: Execute WIQL query and get both work item details AND a query handle for safe operations. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Limit: 200 items (use pagination for more). Can filter results by last substantive change date to find stale or recently active items.",
     script: "", // Handled internally
     schema: wiqlQuerySchema,
     inputSchema: {
@@ -228,6 +228,11 @@ export const toolConfigs: ToolConfig[] = [
         maxResults: { type: "number", description: "Maximum number of results to return per page (default 200, max 1000). ⚠️ Results are truncated at this limit - use pagination for more." },
         skip: { type: "number", description: "Number of work items to skip for pagination (default 0). Example: skip=200, top=200 gets items 201-400." },
         top: { type: "number", description: "Maximum number of work items to return (alias for maxResults, max 1000). When specified, overrides maxResults." },
+        includeSubstantiveChange: { type: "boolean", description: "Include computed fields lastSubstantiveChangeDate and daysInactive for each work item - automatically filters out automated changes. Essential for backlog hygiene workflows." },
+        filterBySubstantiveChangeAfter: { type: "string", description: "Filter results to only include work items with lastSubstantiveChangeDate after this date (ISO 8601 format, e.g., '2024-01-01T00:00:00Z'). Auto-enables includeSubstantiveChange. Use for finding recently active items." },
+        filterBySubstantiveChangeBefore: { type: "string", description: "Filter results to only include work items with lastSubstantiveChangeDate before this date (ISO 8601 format). Auto-enables includeSubstantiveChange. Use for finding stale items." },
+        filterByDaysInactiveMin: { type: "number", description: "Filter results to only include work items with daysInactive >= this value. Auto-enables includeSubstantiveChange. Use for finding stale items (e.g., 180 for items inactive 6+ months)." },
+        filterByDaysInactiveMax: { type: "number", description: "Filter results to only include work items with daysInactive <= this value. Auto-enables includeSubstantiveChange. Use for finding recently active items (e.g., 30 for items active in last month)." },
         returnQueryHandle: { type: "boolean", description: "🔐 DEFAULT TRUE: Return query handle for safe operations. ⚠️ Only set to false if you need raw IDs for immediate user display. For analysis, bulk operations, or any workflow that might reference IDs later, keep this true to prevent hallucination. Handle expires after 1 hour." }
       },
       required: ["wiqlQuery"]

@@ -9,8 +9,6 @@
 
 - Too many backlog cleanup report prompt flow. Just keep one. Dead items should also be combined into the single backlog cleanup prompt
 
-- Add ability to filter result of wiql call by last substaintal change date. 
-
 - Flow for removing by handle still isn't right. User needs to be able to confirm removal of a specific item ID and then server needs to allow agent to remove it while validating that handle, id and title match to make sure the right item was used
 
 - Add tool for finding items with missing descritptions/acceptance criteria etc. Can't do with current tools
@@ -57,6 +55,18 @@
 
 
 # DONE
+
+- ✅ **FIXED** - Add ability to filter result of WIQL call by last substantial change date
+  - Added: `filterBySubstantiveChangeAfter` parameter - filter by date (ISO 8601)
+  - Added: `filterBySubstantiveChangeBefore` parameter - filter by date (ISO 8601)
+  - Added: `filterByDaysInactiveMin` parameter - filter items inactive >= N days
+  - Added: `filterByDaysInactiveMax` parameter - filter items inactive <= N days
+  - Implementation: Filters applied after substantive change calculation
+  - Auto-enables: `includeSubstantiveChange` when any filter parameter is used
+  - Documentation: Updated WIQL_BEST_PRACTICES.md and wiql-quick-reference.md
+  - Tool config: Updated wit-get-work-items-by-query-wiql description and parameters
+  - Testing: All 99 tests passing
+  - Use cases: Find stale items (6+ months inactive), find recently active items (last 30 days), date range filtering
 
 - ✅ **FIXED** - Adding comments to items is going though as markdown and not rendering correctly. Make sure correct settings are set when adding bulk comments so they render right in markdown
   - Fixed: Updated bulk-add-comments.handler.ts to use comments API instead of System.History field for proper markdown support

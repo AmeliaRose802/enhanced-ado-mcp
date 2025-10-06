@@ -563,6 +563,10 @@ interface WiqlQueryArgs {
   top?: number;
   includeSubstantiveChange?: boolean;
   substantiveChangeHistoryCount?: number;
+  filterBySubstantiveChangeAfter?: string;
+  filterBySubstantiveChangeBefore?: string;
+  filterByDaysInactiveMin?: number;
+  filterByDaysInactiveMax?: number;
   computeMetrics?: boolean;
   staleThresholdDays?: number;
 }
@@ -727,9 +731,20 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     top,
     includeSubstantiveChange = false,
     substantiveChangeHistoryCount = 50,
+    filterBySubstantiveChangeAfter,
+    filterBySubstantiveChangeBefore,
+    filterByDaysInactiveMin,
+    filterByDaysInactiveMax,
     computeMetrics = false,
     staleThresholdDays = 180
   } = args;
+
+  // Auto-enable includeSubstantiveChange if any filtering parameters are provided
+  const needsSubstantiveChange = includeSubstantiveChange || 
+    filterBySubstantiveChangeAfter !== undefined || 
+    filterBySubstantiveChangeBefore !== undefined ||
+    filterByDaysInactiveMin !== undefined ||
+    filterByDaysInactiveMax !== undefined;
 
   // Use 'top' if provided, otherwise use 'maxResults'
   const pageSize = top ?? maxResults;
@@ -872,7 +887,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     });
 
     // If substantive change analysis is requested, calculate it for each work item
-    if (includeSubstantiveChange) {
+    if (needsSubstantiveChange) {
       logger.debug(`Calculating substantive change data for ${workItems.length} work items`);
       
       // Process work items in batches to avoid overwhelming the API
@@ -930,9 +945,52 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       }
     }
 
+    // Apply substantive change filters if specified
+    let filteredWorkItems = workItems;
+    if (needsSubstantiveChange) {
+      let preFilterCount = filteredWorkItems.length;
+      
+      if (filterBySubstantiveChangeAfter) {
+        const afterDate = new Date(filterBySubstantiveChangeAfter);
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          if (!wi.lastSubstantiveChangeDate) return false;
+          return new Date(wi.lastSubstantiveChangeDate) > afterDate;
+        });
+        logger.debug(`Filtered by substantive change after ${filterBySubstantiveChangeAfter}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        preFilterCount = filteredWorkItems.length;
+      }
+      
+      if (filterBySubstantiveChangeBefore) {
+        const beforeDate = new Date(filterBySubstantiveChangeBefore);
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          if (!wi.lastSubstantiveChangeDate) return false;
+          return new Date(wi.lastSubstantiveChangeDate) < beforeDate;
+        });
+        logger.debug(`Filtered by substantive change before ${filterBySubstantiveChangeBefore}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        preFilterCount = filteredWorkItems.length;
+      }
+      
+      if (filterByDaysInactiveMin !== undefined) {
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          if (wi.daysInactive === undefined) return false;
+          return wi.daysInactive >= filterByDaysInactiveMin;
+        });
+        logger.debug(`Filtered by daysInactive >= ${filterByDaysInactiveMin}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        preFilterCount = filteredWorkItems.length;
+      }
+      
+      if (filterByDaysInactiveMax !== undefined) {
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          if (wi.daysInactive === undefined) return false;
+          return wi.daysInactive <= filterByDaysInactiveMax;
+        });
+        logger.debug(`Filtered by daysInactive <= ${filterByDaysInactiveMax}: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
+    }
+
     return {
-      workItems,
-      count: workItems.length,
+      workItems: filteredWorkItems,
+      count: filteredWorkItems.length,
       query: wiqlQuery,
       totalCount,
       skip,

@@ -125,7 +125,11 @@ class QueryHandleService {
         type: context?.type || 'Unknown',
         daysInactive: context?.daysInactive,
         lastChange: context?.lastSubstantiveChangeDate,
-        tags: context?.tags ? context.tags.split(';').map((t: string) => t.trim()).filter((t: string) => t) : undefined
+        tags: context?.tags 
+          ? (Array.isArray(context.tags) 
+              ? context.tags 
+              : context.tags.split(';').map((t: string) => t.trim()).filter((t: string) => t))
+          : undefined
       };
     });
 

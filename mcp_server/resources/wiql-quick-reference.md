@@ -178,6 +178,52 @@ ORDER BY [System.Priority], [System.WorkItemType]
 }
 ```
 
+## Substantive Change Filtering
+
+Filter results by last **meaningful** change (excludes automated updates like iteration path changes):
+
+### Find Stale Items (Inactive 6+ Months)
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "FilterByDaysInactiveMin": 180,
+  "MaxResults": 500
+}
+```
+
+### Find Recently Active Items (Last 30 Days)
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "FilterByDaysInactiveMax": 30
+}
+```
+
+### Filter by Specific Date
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "FilterBySubstantiveChangeAfter": "2024-10-01T00:00:00Z",
+  "FilterBySubstantiveChangeBefore": "2024-12-31T23:59:59Z"
+}
+```
+
+**What counts as substantive:**
+- Title changes
+- Description updates
+- State transitions
+- Assignee changes
+- Priority changes
+- Acceptance criteria edits
+
+**What's excluded (automated):**
+- Iteration path bulk updates
+- Area path changes
+- Stack rank adjustments
+- Backlog priority changes
+
+**Note:** Filtering automatically enables `IncludeSubstantiveChange`, which adds `lastSubstantiveChangeDate` and `daysInactive` fields to results.
+
 ## Pagination Support
 
 Use `skip` and `top` parameters for pagination:
