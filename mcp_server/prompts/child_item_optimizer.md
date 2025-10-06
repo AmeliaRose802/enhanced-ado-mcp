@@ -66,234 +66,32 @@ Parameters:
 
 ### Phase 2: Analyze Each Child Item
 
-For each child work item, perform comprehensive analysis:
-
 #### Classification Criteria
+**REMOVE (Dead/Obsolete):** ❌ Duplicate, no longer relevant, blocked indefinitely, stale >180 days, empty placeholder, completed but not closed
+**SPLIT (Too Large):** 📦 Story points >8, multiple independent features, >5 acceptance criteria, >10 files, needs multiple experts, clear decomposition
+**ENHANCE (Missing Details):** 📝 No/vague description (<50 chars), no acceptance criteria, unclear scope, missing context/tests
+**READY (Good to Go):** ✅ Clear title, adequate description (>50 chars), acceptance criteria, reasonable scope (1-5 SP), not blocked, complete info
 
-**Category 1: REMOVE (Dead/Obsolete)**
-Mark for removal if:
-- ❌ Duplicate of another item
-- ❌ No longer relevant (requirements changed)
-- ❌ Blocked indefinitely with no path forward
-- ❌ Abandoned (stale >180 days in backlog state)
-- ❌ Empty placeholder with no description
-- ❌ Already completed but not closed
-
-**Category 2: SPLIT (Too Large)**
-Mark for splitting if:
-- 📦 Story points >8 (or equivalent complexity)
-- 📦 Description mentions multiple independent features
-- 📦 Acceptance criteria has >5 major items
-- 📦 Estimated to touch >10 files
-- 📦 Requires multiple team members' expertise
-- 📦 Can be decomposed into clear sub-tasks
-
-**Category 3: ENHANCE (Missing Details)**
-Mark for enhancement if:
-- 📝 Missing description or description <50 characters
-- 📝 No acceptance criteria defined
-- 📝 Vague title (e.g., "Fix bug", "Update component")
-- 📝 Missing technical context or requirements
-- 📝 Unclear scope or ambiguous language
-- 📝 No test strategy defined
-
-**Category 4: READY (Good to Go)**
-Mark as ready if:
-- ✅ Clear, specific title
-- ✅ Adequate description (>50 characters with context)
-- ✅ Defined acceptance criteria
-- ✅ Reasonable scope (story points 1-5)
-- ✅ Not blocked by dependencies
-- ✅ All required information present
-
-#### For Each Item, Determine:
-
-1. **Category**: REMOVE, SPLIT, ENHANCE, or READY
-2. **Reasoning**: Why it fits this category
-3. **Priority**: Critical, High, Medium, Low
-4. **Complexity**: Simple, Medium, Complex
-5. **Dependencies**: Blocking or blocked by other items
-6. **AI Suitability**: AI_FIT, HUMAN_FIT, or HYBRID (only for PBIs and Tasks)
+**For Each Item Determine:** Category (REMOVE/SPLIT/ENHANCE/READY), reasoning, priority, complexity, dependencies, AI suitability (PBIs/Tasks only)
 
 ### Phase 3: Dependency & Parallelization Analysis
-
-#### Build Dependency Graph
-
-Map out all dependencies:
-- **Blocks**: Item A must complete before B can start
-- **Related**: Items that share context or code areas
-- **Sequential**: Items in logical order
-- **Independent**: Items with no dependencies
-
-#### Create Parallel Execution Waves
-
-Group items into execution waves:
-
-**Wave 1 (Can Start Immediately):**
-- Items with no dependencies
-- Foundation work that other items depend on
-- Highest priority items
-
-**Wave 2 (Dependent on Wave 1):**
-- Items blocked by Wave 1 completion
-- Medium priority items
-- Items that build on foundation
-
-**Wave 3+ (Later Waves):**
-- Items with multiple dependencies
-- Lower priority items
-- Items that require Wave 1 & 2 completion
-
-#### Parallelization Strategy
-
-For each wave:
-- **Team Capacity**: How many items can be worked simultaneously?
-- **Skill Distribution**: Balance across team member expertise
-- **AI Opportunities**: Which items can AI handle in parallel?
-- **Risk Management**: Don't parallel risky items that could cascade failures
+**Build Dependency Graph:** Blocks (A before B), Related (shared context), Sequential (logical order), Independent (no deps)
+**Create Execution Waves:**
+- **Wave 1:** No dependencies, foundation work, highest priority
+- **Wave 2:** Dependent on Wave 1, medium priority
+- **Wave 3+:** Multiple dependencies, lower priority
+**Parallelization Strategy:** Balance team capacity, skill distribution, AI opportunities, risk management (don't parallel risky items)
 
 ### Phase 4: AI Assignment Analysis
-
-**IMPORTANT RULES:**
-- ✅ **Only PBIs (Product Backlog Items) and Tasks can be assigned to AI**
-- ❌ **Features, Epics, Bugs, and other types CANNOT be assigned to AI**
-- ✅ Must use `wit-assign-to-copilot` tool with `repository` parameter
-
-For each READY item that is a PBI or Task:
-
-Use `wit-ai-assignment-analyzer` to check suitability:
-
-```
-Tool: wit-ai-assignment-analyzer
-Parameters:
-  workItemId: [child work item ID]
-```
-
-**AI Assignment Criteria:**
-- Decision must be "AI_FIT"
-- Confidence score >0.7
-- Risk score <40
-- Item has clear requirements
-- Item is not blocked
-- Repository parameter must be provided
-
-**Do NOT assign to AI if:**
-- Work item type is NOT PBI or Task
-- Missing repository parameter
-- Requires human judgment or stakeholder input
-- Touches sensitive/critical systems
-- Has ambiguous requirements
+**RULES:** ✅ Only PBIs and Tasks (use `wit-ai-assignment-analyzer`), ❌ Not Features/Epics/Bugs, ✅ Must provide `repository` parameter
+**AI Assignment Criteria:** Decision "AI_FIT", confidence >0.7, risk <40, clear requirements, not blocked, repository provided
+**Do NOT assign:** Wrong type, missing repository, needs human judgment, sensitive systems, ambiguous requirements
 
 ### Phase 5: Generate Recommendations
-
-#### For REMOVE Items
-
-**Recommendation:**
-```
-Action: Remove work item #XXXX - [Title]
-Reason: [Specific reason: duplicate/obsolete/abandoned]
-Evidence: [Supporting facts]
-
-Suggested Action (Query Handle Approach - Zero ID Hallucination):
-
-Step 1: Get query handle for items to remove
-Tool: wit-get-work-items-by-query-wiql
-Parameters:
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (XXXX, YYYY, ZZZZ)"
-  returnQueryHandle: true
-
-Step 2: Add audit comment
-Tool: wit-bulk-comment-by-query-handle
-Parameters:
-  queryHandle: "[handle from step 1]"
-  comment: "Removing: [specific reason] - Reference duplicate/replacement: #[ID] if applicable"
-  dryRun: false
-
-Step 3: Transition to Removed state
-Tool: wit-bulk-update-by-query-handle
-Parameters:
-  queryHandle: "[handle from step 1]"
-  updates: [
-    {
-      op: "replace",
-      path: "/fields/System.State",
-      value: "Removed"
-    }
-  ]
-  dryRun: false
-```
-
-#### For SPLIT Items
-
-**Recommendation:**
-```
-Action: Split work item #XXXX - [Title]
-Reason: [Why it's too large]
-Current Scope: [What it currently includes]
-Suggested Split:
-  1. New Item 1: [Title] - [Scope]
-     - Estimated Complexity: [Simple/Medium/Complex]
-     - Dependencies: [None/List]
-     - AI Suitable: [Yes/No]
-  
-  2. New Item 2: [Title] - [Scope]
-     - Estimated Complexity: [Simple/Medium/Complex]
-     - Dependencies: [Item 1 must complete first]
-     - AI Suitable: [Yes/No]
-  
-  [Additional items as needed]
-
-Implementation:
-  - Keep original item as tracking parent
-  - Create new child items with clear scope
-  - Update original with links to new items
-```
-
-#### For ENHANCE Items
-
-**Recommendation:**
-```
-Action: Enhance work item #XXXX - [Title]
-Missing Elements:
-  - [ ] Description needs more detail
-  - [ ] Acceptance criteria not defined
-  - [ ] Technical context missing
-  - [ ] Test strategy unclear
-
-Suggested Enhancements:
-  
-  **Enhanced Description:**
-  [Provide improved description with context]
-  
-  **Acceptance Criteria:**
-  1. [Specific, testable criterion]
-  2. [Specific, testable criterion]
-  3. [Specific, testable criterion]
-  
-  **Technical Context:**
-  - [Relevant technical details]
-  
-  **Test Strategy:**
-  - [How to verify completion]
-
-After Enhancement: 
-  - Re-run AI suitability analysis
-  - Assign to appropriate team member or AI
-```
-
-#### For READY Items
-
-**Recommendation:**
-```
-Status: Work item #XXXX - [Title] is ready for execution
-Quality Score: [X/10]
-Complexity: [Simple/Medium/Complex]
-Estimated Effort: [Story points or time estimate]
-AI Suitability: [AI_FIT/HUMAN_FIT/HYBRID]
-Recommended Assignee: [Team member or GitHub Copilot]
-Execution Wave: [Wave number]
-Dependencies: [List or "None"]
-```
+**REMOVE:** Action, reason, evidence + Query Handle approach (wit-get-work-items-by-query-wiql returnQueryHandle:true → wit-bulk-comment-by-query-handle → wit-bulk-update-by-query-handle to "Removed" state)
+**SPLIT:** Action, reason, proposed items (title, scope, complexity, dependencies, AI suitable) + wit-create-new-item with parentWorkItemId
+**ENHANCE:** Missing elements list, enhanced description, acceptance criteria, technical context, test strategy + wit-bulk-add-comments if auto_enhance:true
+**READY:** Status, quality score, complexity, effort, AI suitability, recommended assignee (wit-assign-to-copilot if AI_FIT+PBI/Task+repository), execution wave, dependencies
 
 ## Output Format
 
