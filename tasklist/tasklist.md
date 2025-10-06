@@ -9,6 +9,8 @@
 
 - Too many backlog cleanup report prompt flow. Just keep one. Dead items should also be combined into the single backlog cleanup prompt
 
+- Add ability to filter result of wiql call by last substaintal change date. 
+
 - Flow for removing by handle still isn't right. User needs to be able to confirm removal of a specific item ID and then server needs to allow agent to remove it while validating that handle, id and title match to make sure the right item was used
 
 - Add tool for finding items with missing descritptions/acceptance criteria etc. Can't do with current tools

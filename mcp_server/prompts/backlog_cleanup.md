@@ -6,7 +6,28 @@ This prompt demonstrates the CORRECT way to use query handles for backlog cleanu
 
 ## ✅ Correct Single-Query Pattern
 
+**⚠️ CRITICAL: Never manually specify work item IDs - always use query handles to prevent hallucination.**
+
 **Key Insight:** One query call returns BOTH the handle AND the full work item data with substantive change analysis.
+
+### 🎯 Item Selector Pattern (Selective Operations)
+
+Use `itemSelector` to operate on a subset of query handle items:
+
+```javascript
+// Option 1: Select by indices (zero-based)
+itemSelector: [0, 1, 2, 5, 10]  // Operate on specific items
+
+// Option 2: Select by criteria
+itemSelector: {
+  states: ['Active', 'New'],        // Only these states
+  tags: ['NeedsReview'],            // Must have this tag
+  daysInactiveMin: 90               // At least 90 days inactive
+}
+
+// Option 3: Select all (default)
+itemSelector: "all"
+```
 
 ### Example: Find and Remove Dead Items
 

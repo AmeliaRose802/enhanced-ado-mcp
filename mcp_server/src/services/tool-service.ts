@@ -13,7 +13,6 @@ import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-contex
 import { handleAssignToCopilot } from './handlers/assign-to-copilot.handler.js';
 import { handleNewCopilotItem } from './handlers/new-copilot-item.handler.js';
 import { handleExtractSecurityLinks } from './handlers/extract-security-links.handler.js';
-import { handleBulkAddComments } from './handlers/bulk-add-comments.handler.js';
 import { handleDetectPatterns } from './handlers/detect-patterns.handler.js';
 import { handleValidateHierarchy } from './handlers/validate-hierarchy.handler.js';
 import { handleBulkCommentByQueryHandle } from './handlers/bulk-comment-by-query-handle.handler.js';
@@ -134,11 +133,6 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   // Extract security instruction links from work item
   if (name === 'wit-extract-security-links') {
     return await handleExtractSecurityLinks(config, args);
-  }
-
-  // Bulk add comments to multiple work items
-  if (name === 'wit-bulk-add-comments') {
-    return await handleBulkAddComments(config, args);
   }
 
   // Detect common patterns and issues

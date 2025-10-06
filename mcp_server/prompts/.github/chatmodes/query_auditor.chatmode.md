@@ -44,13 +44,7 @@ Use `wit-get-configuration` to retrieve the current ADO project configuration. T
 3. **Execute Test**: Run query with appropriate tool and parameters
 4. **Result Analysis**: Evaluate if results are meaningful and expected
 5. **Performance Check**: Flag queries that might timeout or return excessive results
-6. **Security Review**: Identify queries that might expose sensitive data
-
-**Testing Parameters:**
-- Use `maxResults: 10` for initial validation (avoid overwhelming responses)
-- Include `includeFields` with commonly needed fields for context
-- Test with `dryRun: true` when available for destructive operations
-- Use `returnQueryHandle: true` for queries intended for bulk operations
+5. **Validate results**: If results are empty then that indicates a problem
 
 ## 🔧 Fixing Strategy
 
@@ -63,7 +57,7 @@ Use `wit-get-configuration` to retrieve the current ADO project configuration. T
 5. **State Value Updates**: Use current workflow state names
 6. **Type Safety**: Ensure field comparisons use correct data types
 
-**Iterative Improvement (max 4 attempts per query):**
+**Iterative Improvement:**
 - Apply one minimal fix per iteration
 - Test each change before proceeding
 - Document what was changed and why

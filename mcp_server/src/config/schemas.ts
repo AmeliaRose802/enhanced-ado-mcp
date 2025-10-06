@@ -336,21 +336,12 @@ export const workItemsBatchContextSchema = z.object({
 export const getLastSubstantiveChangeSchema = z.object({
   workItemId: z.number().int().describe("Work item ID to analyze"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  project: z.string().optional().default(() => cfg().azureDevOps.organization),
   historyCount: z.number().int().optional().default(50).describe("Number of revisions to analyze (default 50)"),
   automatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
 });
 
-export const bulkAddCommentsSchema = z.object({
-  items: z.array(z.object({
-    workItemId: z.number().int().describe("Work item ID to add comment to"),
-    comment: z.string().describe("Comment text to add (supports Markdown)")
-  })).min(1).max(50).describe("Array of work items and their comments (1-50 items)"),
-  template: z.string().optional().describe("Comment template with {{variable}} placeholders"),
-  templateVariables: z.record(z.string()).optional().describe("Variables to substitute in template"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
+// DEPRECATED: bulkAddCommentsSchema - Use wit-bulk-comment-by-query-handle instead
 
 export const detectPatternsSchema = z.object({
   workItemIds: z.array(z.number().int()).optional().describe("Specific work item IDs to analyze (if not provided, uses areaPath)"),

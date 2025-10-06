@@ -14,7 +14,6 @@ import {
   workItemContextPackageSchema,
   workItemsBatchContextSchema,
   getLastSubstantiveChangeSchema,
-  bulkAddCommentsSchema,
   detectPatternsSchema,
   validateHierarchyFastSchema,
   bulkCommentByQueryHandleSchema,
@@ -279,34 +278,7 @@ export const toolConfigs: ToolConfig[] = [
       required: ["workItemId"]
     }
   },
-  {
-    name: "wit-bulk-add-comments",
-    description: "Add comments to multiple work items (1-50) efficiently in a single call. Supports templates with variable substitution for consistent messaging. Ideal for bulk notifications or status updates.",
-    script: "", // Handled internally
-    schema: bulkAddCommentsSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        items: { 
-          type: "array", 
-          items: { 
-            type: "object",
-            properties: {
-              workItemId: { type: "number", description: "Work item ID to add comment to" },
-              comment: { type: "string", description: "Comment text to add (supports Markdown)" }
-            },
-            required: ["workItemId", "comment"]
-          }, 
-          description: "Array of work items and their comments (1-50 items)" 
-        },
-        template: { type: "string", description: "Comment template with {{variable}} placeholders" },
-        templateVariables: { type: "object", description: "Variables to substitute in template" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["items"]
-    }
-  },
+
   {
     name: "wit-detect-patterns",
     description: "Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned committed items, and stale automation. Returns categorized matches by severity.",
