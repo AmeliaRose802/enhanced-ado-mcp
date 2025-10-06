@@ -211,7 +211,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-get-work-items-by-query-wiql",
-    description: "Query Azure DevOps work items using WIQL (Work Item Query Language). Supports complex queries with filtering, sorting, and field selection. Includes pagination support via skip/top parameters. Returns work item details including Id, Title, Type, State, and any requested additional fields. Can return a query handle for safe bulk operations.",
+    description: "Query Azure DevOps work items using WIQL (Work Item Query Language). ⚠️ IMPORTANT: Default limit is 200 items - use skip/top parameters for pagination if you need more results. Supports complex queries with filtering, sorting, and field selection. Returns work item details including Id, Title, Type, State, and any requested additional fields. Can return a query handle for safe bulk operations.",
     script: "", // Handled internally
     schema: wiqlQuerySchema,
     inputSchema: {
@@ -221,9 +221,9 @@ export const toolConfigs: ToolConfig[] = [
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" },
         includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include (e.g., 'System.Description', 'Microsoft.VSTS.Common.Priority')" },
-        maxResults: { type: "number", description: "Maximum number of results to return per page (default 200)" },
-        skip: { type: "number", description: "Number of work items to skip for pagination (default 0). Use with top for pagination." },
-        top: { type: "number", description: "Maximum number of work items to return (alias for maxResults). When specified, overrides maxResults." },
+        maxResults: { type: "number", description: "Maximum number of results to return per page (default 200, max 1000). ⚠️ Results are truncated at this limit - use pagination for more." },
+        skip: { type: "number", description: "Number of work items to skip for pagination (default 0). Example: skip=200, top=200 gets items 201-400." },
+        top: { type: "number", description: "Maximum number of work items to return (alias for maxResults, max 1000). When specified, overrides maxResults." },
         returnQueryHandle: { type: "boolean", description: "Return a query handle instead of full work item details. The handle can be used with bulk operation tools to safely perform operations without risk of ID hallucination. Handle expires after 1 hour." }
       },
       required: ["wiqlQuery"]
