@@ -381,7 +381,19 @@ export const validateHierarchyFastSchema = z.object({
 export const bulkCommentByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
   comment: z.string().describe("Comment text to add to all work items (supports Markdown)"),
-  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  // NEW: Item selection within handle
+  itemSelector: z.union([
+    z.literal("all"),                    // Operate on all items
+    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
+    z.object({                           // Operate by server-side criteria
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -392,8 +404,20 @@ export const bulkUpdateByQueryHandleSchema = z.object({
     op: z.enum(['add', 'replace', 'remove']).describe("JSON Patch operation"),
     path: z.string().describe("Field path (e.g., '/fields/System.State', '/fields/System.AssignedTo')"),
     value: z.union([z.string(), z.number(), z.boolean()]).optional().describe("Value to set (not needed for 'remove' operation)")
-  })).min(1).describe("Array of JSON Patch operations to apply to all work items"),
-  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  })).min(1).describe("Array of JSON Patch operations to apply to selected work items"),
+  // NEW: Item selection within handle
+  itemSelector: z.union([
+    z.literal("all"),                    // Operate on all items
+    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
+    z.object({                           // Operate by server-side criteria
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -401,7 +425,19 @@ export const bulkUpdateByQueryHandleSchema = z.object({
 export const bulkAssignByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
   assignTo: z.string().describe("User email or display name to assign work items to"),
-  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  // NEW: Item selection within handle
+  itemSelector: z.union([
+    z.literal("all"),                    // Operate on all items
+    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
+    z.object({                           // Operate by server-side criteria
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -409,7 +445,19 @@ export const bulkAssignByQueryHandleSchema = z.object({
 export const bulkRemoveByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
   removeReason: z.string().optional().describe("Reason for removing work items (added as comment before removal)"),
-  dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
+  // NEW: Item selection within handle
+  itemSelector: z.union([
+    z.literal("all"),                    // Operate on all items
+    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
+    z.object({                           // Operate by server-side criteria
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -430,6 +478,28 @@ export const analyzeByQueryHandleSchema = z.object({
 
 export const listQueryHandlesSchema = z.object({
   includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)")
+});
+
+export const inspectQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  includePreview: z.boolean().optional().default(true).describe("Include preview of first 10 work items with their context data"),
+  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata")
+});
+
+export const selectItemsFromQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle to preview item selection for"),
+  itemSelector: z.union([
+    z.literal("all"),                    // Operate on all items
+    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
+    z.object({                           // Operate by server-side criteria
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  previewCount: z.number().int().optional().default(10).describe("Number of selected items to preview (default 10, max 50)")
 });
 
 

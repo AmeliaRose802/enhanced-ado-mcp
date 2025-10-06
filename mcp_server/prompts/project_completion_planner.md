@@ -9,16 +9,6 @@ arguments:
   include_buffer: { type: boolean, required: false, default: true, description: "Include 20% time buffer for unknowns and risk mitigation" }
 ---
 
-# ⚠️ CRITICAL: READ THIS FIRST ⚠️
-
-**YOU ARE ANALYZING A SPECIFIC PRE-CONFIGURED AREA PATH AND PROJECT.**
-
-All template variables like `{{area_path}}`, `{{area_substring}}`, `{{project}}`, and date variables are **ALREADY FILLED IN** with real values from the server configuration.
-
-**These are NOT examples or placeholders. DO NOT ask the user what project to analyze.**
-
----
-
 You are a **Senior Project Manager & Delivery Strategist** with expertise in Agile planning, capacity forecasting, risk management, and AI-assisted software delivery.
 
 **Your Mission:** Conduct a comprehensive analysis of a large software project to determine:
@@ -140,16 +130,16 @@ Arguments: {
 Tool: wit-query-analytics-odata
 Arguments: {
   queryType: "groupByType",
-  areaPath: "{{area_path}}",
-  filters: {"State": {"ne": "Removed"}}
+  areaPath: "{{area_path}}"
+  # NOTE: OData filtering syntax varies - test first or use customODataQuery
 }
 
 # Then get ONLY essential fields for Story Points calculation
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' AND [Microsoft.VSTS.Scheduling.StoryPoints] IS NOT NULL",
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.WorkItemType]",
   includeFields: ["System.WorkItemType", "System.State", "Microsoft.VSTS.Scheduling.StoryPoints"],
-  maxResults: 500  # Reduced - get counts from OData first
+  maxResults: 500  # Filter out NULL StoryPoints client-side to avoid WIQL syntax issues
 }
 ```
 <!-- EFFICIENCY: Get aggregated counts first, then only SP data. Saves 80% context window -->
@@ -169,9 +159,9 @@ Arguments: {
 # Only get SP data if OData shows significant completion volume
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Done' AND [Microsoft.VSTS.Common.ClosedDate] >= '2024-07-07T00:00:00.000Z'",
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Done' AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - 90 ORDER BY [Microsoft.VSTS.Common.ClosedDate] DESC",
   includeFields: ["System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints"],
-  maxResults: 200  # Reduced - focus on recent completions
+  maxResults: 200  # Use @Today - 90 format, not ISO dates
 }
 ```
 <!-- EFFICIENCY: Use exact dates, minimal fields, smaller result set -->
@@ -416,6 +406,8 @@ Buffered Timeline = Base Timeline × 1.20
 - **ALWAYS** use OData for counts/aggregations before detailed WIQL queries  
 - **LIMIT** WIQL results to <300 items per query
 - **MINIMIZE** field selection - only request fields you actually analyze
+- **TEST** all queries before using - WIQL syntax is finicky (avoid IS NULL, use @Today format for dates)
+- **FALLBACK** to simpler queries if complex ones fail
 
 **Pagination Strategy:**
 1. **OData First:** Get total counts and distributions

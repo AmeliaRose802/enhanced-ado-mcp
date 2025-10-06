@@ -34,13 +34,42 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     if (parsed.data.returnQueryHandle) {
       const workItemIds = result.workItems.map((wi: any) => wi.id);
       
+      // Build work item context map if we have work items data
+      const workItemContext = new Map<number, any>();
+      for (const wi of result.workItems) {
+        workItemContext.set(wi.id, {
+          title: wi.title,
+          state: wi.state,
+          type: wi.type,
+          createdDate: wi.createdDate,
+          assignedTo: wi.assignedTo,
+          areaPath: wi.areaPath,
+          iterationPath: wi.iterationPath,
+          ...(wi.lastSubstantiveChangeDate && { lastSubstantiveChangeDate: wi.lastSubstantiveChangeDate }),
+          ...(wi.daysInactive !== undefined && { daysInactive: wi.daysInactive }),
+          ...(wi.additionalFields && wi.additionalFields)
+        });
+      }
+
+      // Build analysis metadata
+      const analysisMetadata = {
+        includeSubstantiveChange: parsed.data.includeSubstantiveChange || false,
+        stalenessThresholdDays: parsed.data.staleThresholdDays,
+        analysisTimestamp: new Date().toISOString(),
+        successCount: result.workItems.filter((wi: any) => wi.lastSubstantiveChangeDate !== undefined).length,
+        failureCount: result.workItems.length - result.workItems.filter((wi: any) => wi.lastSubstantiveChangeDate !== undefined).length
+      };
+      
       const handle = queryHandleService.storeQuery(
         workItemIds,
         parsed.data.wiqlQuery,
         {
           project: parsed.data.project,
           queryType: 'wiql'
-        }
+        },
+        60 * 60 * 1000, // 1 hour TTL
+        workItemContext,
+        analysisMetadata
       );
 
       logger.info(`Query handle created: ${handle} (${workItemIds.length} work items)`);

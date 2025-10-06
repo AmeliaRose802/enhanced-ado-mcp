@@ -77,7 +77,13 @@ Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`:
       }
     }
     // ... more items
-  ]
+  ],
+  "selection_enabled": true,
+  "selection_examples": {
+    "select_all": "itemSelector: 'all'",
+    "select_first_item": "itemSelector: [0]",
+    "select_by_state": "itemSelector: { states: ['New'] }"
+  }
 }
 ```
 
@@ -86,23 +92,80 @@ Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`:
 - Expiration: 1 hour (default, configurable)
 - Storage: In-memory (with optional Redis support)
 
-### Step 2: Use Query Handle in Bulk Operations
+### Step 2: Select Items Within Handle (Optional)
+
+**NEW**: You can now select specific items within a query handle instead of operating on all items:
+
+**Select All Items (default):**
+```json
+{
+  "queryHandle": "qh_a1b2c3d4e5f6",
+  "itemSelector": "all"  // Default behavior
+}
+```
+
+**Select by Index (position in results):**
+```json
+{
+  "queryHandle": "qh_a1b2c3d4e5f6",
+  "itemSelector": [0, 2, 5]  // First, third, and sixth items
+}
+```
+
+**Select by Criteria:**
+```json
+{
+  "queryHandle": "qh_a1b2c3d4e5f6",
+  "itemSelector": {
+    "states": ["New", "Active"],
+    "daysInactiveMin": 90,
+    "titleContains": ["bug", "fix"]
+  }
+}
+```
+
+**Preview Selection:**
+```json
+// Use this tool to see what items will be selected
+{
+  "queryHandle": "qh_a1b2c3d4e5f6",
+  "itemSelector": { "states": ["New"] },
+  "previewCount": 10
+}
+```
+
+### Step 3: Use Query Handle in Bulk Operations
 
 Pass the `query_handle` string to any bulk operation tool:
 
-**Add Comments:**
+**Add Comments to All Items:**
 ```json
 {
   "queryHandle": "qh_a1b2c3d4e5f6",
   "comment": "Automated update: moving to removed state",
+  "itemSelector": "all",  // Optional: default behavior
   "dryRun": false
 }
 ```
 
-**Update Fields:**
+**Add Comments to Specific Items:**
 ```json
 {
   "queryHandle": "qh_a1b2c3d4e5f6",
+  "comment": "Selected for priority review",
+  "itemSelector": [0, 2, 5],  // First, third, sixth items
+  "dryRun": false
+}
+```
+
+**Update Fields by Criteria:**
+```json
+{
+  "queryHandle": "qh_a1b2c3d4e5f6",
+  "itemSelector": {
+    "states": ["New"],
+    "daysInactiveMin": 30
+  },
   "updates": [
     {
       "op": "replace",
@@ -114,20 +177,27 @@ Pass the `query_handle` string to any bulk operation tool:
 }
 ```
 
-**Assign Items:**
+**Assign Items by Tag:**
 ```json
 {
   "queryHandle": "qh_a1b2c3d4e5f6",
+  "itemSelector": {
+    "tags": ["urgent"]
+  },
   "assignTo": "user@example.com",
   "dryRun": false
 }
 ```
 
-**Remove Items:**
+**Remove Specific Items:**
 ```json
 {
   "queryHandle": "qh_a1b2c3d4e5f6",
-  "comment": "Removing obsolete items",
+  "itemSelector": {
+    "titleContains": ["duplicate"],
+    "states": ["New"]
+  },
+  "removeReason": "Removing duplicate items",
   "dryRun": false
 }
 ```
@@ -138,10 +208,11 @@ All tools support `dryRun: true` for safe preview:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-bulk-comment-by-query-handle` | Add same comment to multiple items | `queryHandle`, `comment` |
-| `wit-bulk-update-by-query-handle` | Update fields on multiple items | `queryHandle`, `updates` (JSON Patch) |
-| `wit-bulk-assign-by-query-handle` | Assign multiple items to user | `queryHandle`, `assignTo` |
-| `wit-bulk-remove-by-query-handle` | Remove multiple items | `queryHandle`, `comment` |
+| `wit-select-items-from-query-handle` | **NEW**: Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
+| `wit-bulk-comment-by-query-handle` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
+| `wit-bulk-update-by-query-handle` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
+| `wit-bulk-assign-by-query-handle` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
+| `wit-bulk-remove-by-query-handle` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
 
 ## 📋 Best Practices
 
@@ -163,7 +234,24 @@ All tools support `dryRun: true` for safe preview:
    }
    ```
 
-3. **Add audit comments before state changes**
+3. **Preview selection before destructive operations**
+   ```json
+   // Step 1: Preview what will be selected
+   {
+     "queryHandle": "qh_...",
+     "itemSelector": { "states": ["New"], "daysInactiveMin": 90 },
+     "previewCount": 10
+   }
+   
+   // Step 2: Use same selector in bulk operation
+   {
+     "queryHandle": "qh_...",
+     "itemSelector": { "states": ["New"], "daysInactiveMin": 90 },
+     "dryRun": true
+   }
+   ```
+
+4. **Add audit comments before state changes**
    ```json
    // Step 1: Add comment explaining why
    wit-bulk-comment-by-query-handle
@@ -265,63 +353,115 @@ Tools report individual failures:
 
 ## 📚 Complete Workflow Examples
 
-### Example 1: Find and Remove Dead Items
+### Example 1: Find and Remove Dead Items (with Item Selection)
 
 ```typescript
-// Step 1: Query for dead items with query handle
+// Step 1: Query for potentially dead items with query handle
 const response1 = await wit_get_work_items_by_query_wiql({
   wiqlQuery: `
     SELECT [System.Id] 
     FROM WorkItems 
     WHERE [System.State] = 'New' 
-      AND [System.CreatedDate] < @Today - 180
+      AND [System.CreatedDate] < @Today - 90  // Cast wider net
   `,
   includeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  includeSubstantiveChange: true,
+  includeSubstantiveChange: true,  // Gets daysInactive data
   returnQueryHandle: true
 });
 
 // response1.query_handle = "qh_a1b2c3d4e5f6"
-// response1.work_item_count = 47
+// response1.work_item_count = 120  // Broader query
 
-// Step 2: Show user the items
-console.log(`Found ${response1.work_item_count} dead items`);
+// Step 2: Preview selection of truly stale items (>180 days)
+const selection = await wit_select_items_from_query_handle({
+  queryHandle: response1.query_handle,
+  itemSelector: {
+    daysInactiveMin: 180  // Only items inactive >180 days
+  },
+  previewCount: 10
+});
 
-// Step 3: Dry-run to preview
+console.log(`Selected ${selection.selected_items_count} of ${response1.work_item_count} items`);
+
+// Step 3: Dry-run to preview removal
 const preview = await wit_bulk_remove_by_query_handle({
   queryHandle: response1.query_handle,
-  comment: "Removing stale items (>180 days old)",
+  itemSelector: {
+    daysInactiveMin: 180  // Same criteria as preview
+  },
+  removeReason: "Removing items with no activity >180 days",
   dryRun: true
 });
 
 // Step 4: Get user approval
-// User says "yes, remove them"
+// User says "yes, remove the truly stale ones"
 
-// Step 5: Add audit comments
+// Step 5: Add audit comments to selected items
 await wit_bulk_comment_by_query_handle({
   queryHandle: response1.query_handle,
+  itemSelector: {
+    daysInactiveMin: 180
+  },
   comment: `
 🤖 Automated Backlog Hygiene
-Reason: No activity for >180 days
-Last Change: {from substantive change analysis}
+Reason: No substantive activity for >180 days
+Last Change: Available in staleness data
+Review completed: ${new Date().toISOString()}
   `,
   dryRun: false
 });
 
-// Step 6: Execute removal
+// Step 6: Execute removal of selected items
 const result = await wit_bulk_remove_by_query_handle({
   queryHandle: response1.query_handle,
-  comment: "Removing stale items",
+  itemSelector: {
+    daysInactiveMin: 180  // Only truly stale items
+  },
+  removeReason: "Automated cleanup: >180 days inactive",
   dryRun: false
 });
 
-console.log(`✅ Removed ${result.success_count} items`);
+console.log(`✅ Removed ${result.successful} of ${result.selected_items} truly stale items`);
 ```
 
-### Example 2: Bulk Assign Items
+### Example 2: User-Directed Item Selection
 
 ```typescript
-// Step 1: Get unassigned items
+// Scenario: User says "Remove items 3, 7, and 10 from that list"
+
+// Step 1: Show user the indexed list first
+const inspection = await wit_inspect_query_handle({
+  queryHandle: "qh_previous_query",
+  includePreview: true
+});
+
+// Shows items with indices:
+// Index 0: "Fix login bug" (ID: 5816697)
+// Index 1: "Update docs" (ID: 5816698) 
+// Index 2: "Add tests" (ID: 5816699)
+// Index 3: "Remove deprecated code" (ID: 5816700)  ← User wants this
+// ...
+
+// Step 2: Preview user's selection
+const userSelection = await wit_select_items_from_query_handle({
+  queryHandle: "qh_previous_query",
+  itemSelector: [2, 6, 9],  // Zero-based: items 3, 7, 10 → indices 2, 6, 9
+  previewCount: 10
+});
+
+// Step 3: Execute user's choice
+const result = await wit_bulk_remove_by_query_handle({
+  queryHandle: "qh_previous_query",
+  itemSelector: [2, 6, 9],  // Same indices as preview
+  removeReason: "User-selected items for removal",
+  dryRun: false
+});
+```
+
+### Example 3: Bulk Assign by Team/Tag
+
+```typescript
+// Step 1: Get items that need assignment
 const response = await wit_get_work_items_by_query_wiql({
   wiqlQuery: `
     SELECT [System.Id] 
@@ -329,13 +469,27 @@ const response = await wit_get_work_items_by_query_wiql({
     WHERE [System.State] = 'Active' 
       AND [System.AssignedTo] = ''
   `,
+  includeFields: ["System.Tags"],
   returnQueryHandle: true
 });
 
-// Step 2: Assign to user
+// Step 2: Assign UI items to UI team
 await wit_bulk_assign_by_query_handle({
   queryHandle: response.query_handle,
-  assignTo: "user@example.com",
+  itemSelector: {
+    tags: ["UI", "frontend"]
+  },
+  assignTo: "ui-team@example.com",
+  dryRun: false
+});
+
+// Step 3: Assign backend items to backend team
+await wit_bulk_assign_by_query_handle({
+  queryHandle: response.query_handle,
+  itemSelector: {
+    tags: ["backend", "API"]
+  },
+  assignTo: "backend-team@example.com",
   dryRun: false
 });
 ```

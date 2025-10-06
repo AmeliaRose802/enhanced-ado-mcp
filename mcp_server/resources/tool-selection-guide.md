@@ -10,12 +10,17 @@ Quick decision guide for choosing the right tool for your task.
 
 ```
 Are you performing bulk operations (updating/removing/assigning multiple items)?
-├─ YES → Use Query Handles
+├─ YES → Use Query Handles with Item Selection
 │   └─ Steps:
 │       1. Query with returnQueryHandle: true
 │       2. Review work_items array to verify what will be affected
-│       3. Pass query_handle to bulk operation tool
-│       4. Handle expires after 1 hour
+│       3. **NEW**: Select specific items using itemSelector:
+│           • "all" → operate on all items (default)
+│           • [0,2,5] → operate on specific items by index
+│           • {states:["New"], daysInactiveMin:90} → criteria-based
+│       4. Preview selection with wit-select-items-from-query-handle
+│       5. Pass query_handle + itemSelector to bulk operation tool
+│       6. Handle expires after 1 hour
 │
 └─ NO → Regular Query
     └─ Use wit-get-work-items-by-query-wiql without returnQueryHandle
@@ -42,11 +47,30 @@ Are you performing bulk operations (updating/removing/assigning multiple items)?
 - `query_handle`: "qh_abc123..." (use for bulk operations)
 - `work_items`: [...] (full array to review)
 
-**Then use the handle:**
+**Then use the handle with item selection:**
 ```json
+// Select all items (default behavior)
 {
   "queryHandle": "qh_abc123...",
-  "dryRun": true  // Always preview first
+  "itemSelector": "all",
+  "dryRun": true
+}
+
+// Select specific items by position (user says "remove items 1, 3, and 5")
+{
+  "queryHandle": "qh_abc123...",
+  "itemSelector": [0, 2, 4],  // Zero-based indices
+  "dryRun": true
+}
+
+// Select by criteria (only stale items)
+{
+  "queryHandle": "qh_abc123...",
+  "itemSelector": {
+    "states": ["New"],
+    "daysInactiveMin": 180
+  },
+  "dryRun": true
 }
 ```
 
@@ -55,6 +79,93 @@ Are you performing bulk operations (updating/removing/assigning multiple items)?
 - Just reading/viewing items (no modifications)
 - Creating new work items
 - User explicitly provides one specific ID
+
+## 🛡️ Enhanced Safety Features (NEW)
+
+### Item Selection Preview
+**Tool:** `wit-select-items-from-query-handle`  
+**Purpose:** Preview exactly which items will be selected before bulk operations
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "itemSelector": { "states": ["New"], "daysInactiveMin": 90 },
+  "previewCount": 10
+}
+```
+
+**Shows:**
+- How many items match the criteria
+- Preview of selected items with titles and states
+- Selection percentage of total items
+- Clear summary of what will be affected
+
+### Index-Based Selection Safety
+When user says "remove item 5 from that list":
+
+```typescript
+// 1. Show indexed list first
+const inspection = await wit_inspect_query_handle({
+  queryHandle: "qh_abc123",
+  includePreview: true
+});
+
+// Shows: Index 4: "Fix authentication bug" (ID: 5816697)
+
+// 2. Use zero-based index (item 5 = index 4)
+const result = await wit_bulk_remove_by_query_handle({
+  queryHandle: "qh_abc123",
+  itemSelector: [4],  // Zero-based index for "item 5"
+  dryRun: true
+});
+```
+
+### Criteria-Based Selection Safety
+Automatically filter items without manual ID extraction:
+
+```json
+// Instead of manually extracting IDs for stale items
+// Let the server do the filtering
+{
+  "queryHandle": "qh_abc123",
+  "itemSelector": {
+    "daysInactiveMin": 180,
+    "states": ["New", "Active"]
+  },
+  "removeReason": "Automated cleanup of stale items"
+}
+```
+
+### Multi-Step Safety Pattern
+```typescript
+// Step 1: Query with handle
+const query = await wit_get_work_items_by_query_wiql({
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE ...",
+  returnQueryHandle: true,
+  includeSubstantiveChange: true
+});
+
+// Step 2: Preview selection
+const preview = await wit_select_items_from_query_handle({
+  queryHandle: query.query_handle,
+  itemSelector: { daysInactiveMin: 180 },
+  previewCount: 10
+});
+
+// Step 3: Dry-run bulk operation
+const dryRun = await wit_bulk_remove_by_query_handle({
+  queryHandle: query.query_handle,
+  itemSelector: { daysInactiveMin: 180 },
+  dryRun: true
+});
+
+// Step 4: Execute (only after user confirmation)
+const result = await wit_bulk_remove_by_query_handle({
+  queryHandle: query.query_handle,
+  itemSelector: { daysInactiveMin: 180 },
+  dryRun: false
+});
+```
 
 ---
 
@@ -239,33 +350,6 @@ Are you performing bulk operations (updating/removing/assigning multiple items)?
 ```
 
 **Returns:** Item count, expiration time, sample items, original query
-
-#### Handle-Based Analysis (NEW - Prevents ID Hallucination)
-**Tool:** `wit-analyze-by-query-handle`  
-**When:** Analyze work items without exposing individual IDs  
-**Example:** Get effort estimates, team assignments, risk assessment
-
-```json
-{
-  "queryHandle": "qh_abc123...",
-  "analysisType": ["effort", "assignments", "risks", "completion"]
-}
-```
-
-**Returns:** Comprehensive analysis without ID exposure (Story Points, team distribution, blocked items, completion %)
-
-#### List Active Handles (NEW - Handle Management)
-**Tool:** `wit-list-query-handles`  
-**When:** Track and manage active query handles  
-**Example:** See handle statistics and cleanup status
-
-```json
-{
-  "includeExpired": false
-}
-```
-
-**Returns:** Handle statistics, cleanup guidance, management tips
 
 #### Bulk Comment by Query Handle
 **Tool:** `wit-bulk-comment-by-query-handle`  

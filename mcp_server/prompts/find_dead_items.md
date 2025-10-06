@@ -1,7 +1,7 @@
 ---
 name: find_dead_items
-description: Identify abandoned or "dead" Azure DevOps Tasks and Product Backlog Items (no signals of progress) in a specified Area Path using query/search wit-* tools.
-version: 5
+description: Identify abandoned or "dead" Azure DevOps Tasks and Product Backlog Items (no signals of progress) in a specified Area Path using enhanced query handle pattern with staleness analysis.
+version: 6
 arguments: {}
 ---
 
@@ -16,9 +16,9 @@ You are the backlog hygiene assistant. Surface likely-abandoned ("dead") Tasks a
 - Never recommend removing items that are already in terminal states (Done, Completed, Closed, Resolved, Removed).
 
 ## ADO Context (Auto-Populated)
-- **Organization:** Auto-filled from configuration
-- **Project:** Auto-filled from configuration
-- **Area Path:** {{area_path}} (defaults to configured area path)
+- **Organization:** msazure (from configuration)
+- **Project:** One (from configuration)
+- **Area Path:** {{area_path}} (defaults to: One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway)
 - **Max Inactive Days:** {{max_age_days}} (default: 180)
 
 ##Dead Signals (flag an item if any apply)
@@ -45,11 +45,12 @@ You are the backlog hygiene assistant. Surface likely-abandoned ("dead") Tasks a
 - `wit-new-copilot-item`
 - `wit-extract-security-links`
 
-**Cleanup Actions** ⭐ **NEW QUERY HANDLE APPROACH**
-- `wit-bulk-comment-by-query-handle` - Add comments to multiple work items safely
-- `wit-bulk-update-by-query-handle` - Update multiple work items safely
-- `wit-bulk-assign-by-query-handle` - Assign multiple work items safely
-- `wit-bulk-remove-by-query-handle` - Remove multiple work items safely
+**Cleanup Actions** ⭐ **ENHANCED QUERY HANDLE APPROACH**
+- `wit-inspect-query-handle` - ⭐ **NEW** Inspect query handle contents, verify staleness data, see template variables
+- `wit-bulk-comment-by-query-handle` - Add comments with template variables ({daysInactive}, {lastSubstantiveChangeDate}, etc.)
+- `wit-bulk-update-by-query-handle` - Update multiple work items safely using handles
+- `wit-bulk-assign-by-query-handle` - Assign multiple work items safely using handles
+- `wit-bulk-remove-by-query-handle` - Remove multiple work items safely using handles
 
 **Legacy Cleanup (DEPRECATED - Use Query Handles Instead)**
 - `mcp_ado_wit_add_work_item_comment` - ⚠️ RISK: Manual ID entry prone to hallucination
@@ -81,7 +82,7 @@ Arguments: {
 }
 ```
 
-1. **Seed Query with Computed Staleness Fields AND Query Handle** ⭐ **RECOMMENDED APPROACH** – Run `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true` AND `returnQueryHandle: true` to get staleness analysis AND a safe handle for bulk operations:
+1. **Enhanced Query Handle Pattern** ⭐ **NEW IMPROVED APPROACH** – Run `wit-get-work-items-by-query-wiql` with **BOTH** `includeSubstantiveChange: true` AND `returnQueryHandle: true` to get staleness analysis AND a safe handle for bulk operations in a single call:
    ```
    Tool: wit-get-work-items-by-query-wiql
    Arguments: {
@@ -102,17 +103,38 @@ Arguments: {
    - ✅ **Immediate categorization** - Use `daysInactive` directly to categorize items
    - ✅ **Safe bulk operations** - Use returned query handle for all cleanup actions
    
-   **Response includes query_handle:**
+   **Response includes both work items AND query handle:**
    ```json
    {
      "query_handle": "qh_a1b2c3d4e5f6...",
      "work_item_count": 47,
+     "work_items": [
+       {
+         "id": 5816697,
+         "title": "Implement user auth",
+         "lastSubstantiveChangeDate": "2023-06-20T10:30:00Z",
+         "daysInactive": 469
+       }
+     ],
      "expires_at": "2025-10-03T15:30:00Z"
    }
    ```
-     "lastSubstantiveChangeDate": "2023-06-20T...",
-     "daysInactive": 469
+
+1a. **Verify Query Handle Contents** ⭐ **NEW STEP** – Use `wit-inspect-query-handle` to verify the handle contains expected staleness data:
+   ```
+   Tool: wit-inspect-query-handle
+   Arguments: {
+     queryHandle: "qh_a1b2c3d4e5f6...",
+     includePreview: true,
+     includeStats: true
    }
+   ```
+   
+   This shows:
+   - ✅ Staleness statistics (min/max/avg days inactive)
+   - ✅ Analysis coverage (how many items have staleness data)
+   - ✅ Preview of first 10 items with context
+   - ✅ Available template variables for bulk operations
    ```
    
    **Note:** The server analyzes revision history server-side and returns ONLY the computed date and days. No verbose history data in response. This query explicitly filters to Tasks, PBIs, and Bugs with active states only.
@@ -188,10 +210,12 @@ Arguments: {
 Tool: wit-bulk-comment-by-query-handle
 Arguments: {
   queryHandle: "qh_a1b2c3d4e5f6...",
-  comment: "🤖 **Automated Backlog Hygiene Action**\n\nThis work item has been identified as a stale/abandoned item and is being moved to \"Removed\" state.\n\n**Reason for Removal:**\n{reason_from_analysis}\n\n**Analysis Details:**\n- Days Inactive: {days_inactive} days\n- Last Substantive Change: {last_substantive_change_date}\n\n**Recovery:** If this item should be retained, please update the state and add a comment explaining why this work is still relevant.\n\n**Analysis Date:** {current_date}\n**Automated by:** Backlog Hygiene Assistant (find_dead_items v5)",
-  dryRun: false
+  comment: "🤖 **Automated Backlog Hygiene Action**\n\nThis {type} has been identified as a stale/abandoned item and is being moved to \"Removed\" state.\n\n**Analysis Details:**\n- **Item:** {title}\n- **Days Inactive:** {daysInactive} days\n- **Last Substantive Change:** {lastSubstantiveChangeDate}\n- **Current State:** {state}\n- **Assigned To:** {assignedTo}\n\n**Recovery:** If this item should be retained, please update the state and add a comment explaining why this work is still relevant.\n\n**Analysis Date:** $(Get-Date -Format 'yyyy-MM-dd')\n**Automated by:** Backlog Hygiene Assistant (find_dead_items v6)",
+  dryRun: true
 }
 ```
+
+⭐ **Template Variables Available:** `{daysInactive}`, `{lastSubstantiveChangeDate}`, `{title}`, `{state}`, `{type}`, `{assignedTo}`, `{id}` - These are automatically substituted per work item when the query handle contains staleness context.
 
 **Step 3: Update State Using Query Handle**
 

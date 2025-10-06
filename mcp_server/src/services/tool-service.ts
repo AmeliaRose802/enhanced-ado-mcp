@@ -23,6 +23,7 @@ import { handleBulkRemoveByQueryHandle } from './handlers/bulk-remove-by-query-h
 import { handleValidateQueryHandle } from './handlers/validate-query-handle.handler.js';
 import { handleAnalyzeByQueryHandle } from './handlers/analyze-by-query-handle.handler.js';
 import { handleListQueryHandles } from './handlers/list-query-handles.handler.js';
+import { handleInspectQueryHandle, handleSelectItemsFromQueryHandle } from './handlers/inspect-query-handle.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: MCPServer | null = null;
@@ -177,6 +178,14 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   if (name === 'wit-list-query-handles') {
     return await handleListQueryHandles(config, args);
+  }
+
+  if (name === 'wit-inspect-query-handle') {
+    return await handleInspectQueryHandle(config, args);
+  }
+
+  if (name === 'wit-select-items-from-query-handle') {
+    return await handleSelectItemsFromQueryHandle(config, args);
   }
 
   // All tools should be handled by the cases above

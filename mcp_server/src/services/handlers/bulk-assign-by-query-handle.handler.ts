@@ -25,12 +25,13 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, assignTo, dryRun, organization, project } = parsed.data;
+    const { queryHandle, assignTo, itemSelector, dryRun, organization, project } = parsed.data;
 
-    // Retrieve work item IDs from query handle
-    const workItemIds = queryHandleService.getWorkItemIds(queryHandle);
+    // Retrieve work item IDs from query handle using itemSelector
+    const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
+    const queryData = queryHandleService.getQueryData(queryHandle);
     
-    if (!workItemIds) {
+    if (!selectedWorkItemIds || !queryData) {
       return {
         success: false,
         data: null,
@@ -40,22 +41,44 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       };
     }
 
-    logger.info(`Bulk assign operation: ${workItemIds.length} work items to '${assignTo}' (dry_run: ${dryRun})`);
+    // Show selection information
+    const totalItems = queryData.workItemIds.length;
+    const selectedCount = selectedWorkItemIds.length;
+
+    logger.info(`Bulk assign operation: ${selectedCount} of ${totalItems} work items to '${assignTo}' (dry_run: ${dryRun})`);
 
     if (dryRun) {
+      // Show preview of selected items
+      const previewItems = selectedWorkItemIds.slice(0, 5).map((id: number) => {
+        const context = queryData.itemContext.find(item => item.id === id);
+        return {
+          work_item_id: id,
+          index: context?.index,
+          title: context?.title || "No title available",
+          state: context?.state || "Unknown",
+          current_assignee: queryData.workItemContext?.get(id)?.assignedTo || "Unassigned"
+        };
+      });
+
       return {
         success: true,
         data: {
           dry_run: true,
           query_handle: queryHandle,
-          work_item_ids: workItemIds,
+          total_items_in_handle: totalItems,
+          selected_items_count: selectedCount,
+          item_selector: itemSelector,
+          work_item_ids: selectedWorkItemIds,
           assign_to: assignTo,
-          summary: `DRY RUN: Would assign ${workItemIds.length} work item(s) to '${assignTo}'`
+          preview_items: previewItems,
+          summary: `DRY RUN: Would assign ${selectedCount} of ${totalItems} work item(s) to '${assignTo}'`
         },
         metadata: { 
           source: "bulk-assign-by-query-handle",
           dryRun: true,
-          count: workItemIds.length
+          selectedCount,
+          totalItems,
+          itemSelector
         },
         errors: [],
         warnings: []
@@ -79,7 +102,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       }
     ];
 
-    for (const workItemId of workItemIds) {
+    for (const workItemId of selectedWorkItemIds) {
       try {
         const url = `wit/workItems/${workItemId}?api-version=7.1`;
         
@@ -102,15 +125,19 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       data: {
         query_handle: queryHandle,
         assign_to: assignTo,
-        total_work_items: workItemIds.length,
+        total_items_in_handle: totalItems,
+        selected_items: selectedCount,
+        item_selector: itemSelector,
         successful: successCount,
         failed: failureCount,
         results,
-        summary: `Successfully assigned ${successCount} of ${workItemIds.length} work item(s) to '${assignTo}'${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
+        summary: `Successfully assigned ${successCount} of ${selectedCount} selected work items to '${assignTo}'${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
       },
       metadata: {
         source: "bulk-assign-by-query-handle",
-        totalWorkItems: workItemIds.length,
+        totalWorkItems: totalItems,
+        selectedWorkItems: selectedCount,
+        itemSelector,
         successful: successCount,
         failed: failureCount
       },

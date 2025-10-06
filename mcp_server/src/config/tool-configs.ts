@@ -9,6 +9,8 @@ import {
   getConfigurationSchema,
   wiqlQuerySchema,
   odataAnalyticsQuerySchema,
+  inspectQueryHandleSchema,
+  selectItemsFromQueryHandleSchema,
   workItemContextPackageSchema,
   workItemsBatchContextSchema,
   getLastSubstantiveChangeSchema,
@@ -353,15 +355,15 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-bulk-comment-by-query-handle",
-    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-get-work-items-by-query-wiql to eliminate ID hallucination risk. Supports dry-run mode.",
+    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-get-work-items-by-query-wiql to eliminate ID hallucination risk. Supports template variables and dry-run mode. TEMPLATE VARIABLES: Use {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id} in comment text for per-item substitution when query handle includes staleness data.",
     script: "", // Handled internally
     schema: bulkCommentByQueryHandleSchema,
     inputSchema: {
       type: "object",
       properties: {
         queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
-        comment: { type: "string", description: "Comment text to add to all work items (supports Markdown)" },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
+        comment: { type: "string", description: "Comment text to add to all work items (supports Markdown and template variables like {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id})" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default false) - shows template substitution examples" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
       },
@@ -481,6 +483,53 @@ export const toolConfigs: ToolConfig[] = [
         includeExpired: { type: "boolean", description: "Include expired handles in the list (default false). Useful for debugging handle lifecycle issues." }
       },
       required: []
+    }
+  },
+  {
+    name: "wit-inspect-query-handle",
+    description: "🔍 HANDLE INSPECTOR: Detailed inspection of a query handle including staleness data, work item context, and analysis metadata. Shows what data is available for template substitution in bulk operations. Essential for verifying handle contains expected staleness analysis before using with bulk tools.",
+    script: "", // Handled internally
+    schema: inspectQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
+        includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
+        includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" }
+      },
+      required: ["queryHandle"]
+    }
+  },
+  {
+    name: "wit-select-items-from-query-handle",
+    description: "🎯 ITEM SELECTOR: Preview and analyze item selection from a query handle before bulk operations. Shows exactly which items will be selected using index-based ([0,1,2]) or criteria-based selection (states, tags, staleness). Essential for validating selections before destructive operations. Eliminates 'wrong item' errors in bulk workflows.",
+    script: "", // Handled internally
+    schema: selectItemsFromQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle to preview item selection for" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, maxItems: 100, description: "Array of zero-based indices [0,1,2] to select specific items" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" }, description: "Filter by work item states" },
+                titleContains: { type: "array", items: { type: "string" }, description: "Filter by title keywords" },
+                tags: { type: "array", items: { type: "string" }, description: "Filter by tags" },
+                daysInactiveMin: { type: "number", description: "Minimum days inactive" },
+                daysInactiveMax: { type: "number", description: "Maximum days inactive" }
+              },
+              description: "Criteria-based selection object"
+            }
+          ],
+          description: "Item selection: 'all' for all items, array of indices for specific items, or criteria object for filtering"
+        },
+        previewCount: { type: "number", description: "Number of selected items to preview (default 10, max 50)" }
+      },
+      required: ["queryHandle", "itemSelector"]
     }
   }
 ];

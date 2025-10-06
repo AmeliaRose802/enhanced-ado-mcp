@@ -26,12 +26,13 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, removeReason, dryRun, organization, project } = parsed.data;
+    const { queryHandle, removeReason, itemSelector, dryRun, organization, project } = parsed.data;
 
-    // Retrieve work item IDs from query handle
-    const workItemIds = queryHandleService.getWorkItemIds(queryHandle);
+    // Retrieve work item IDs from query handle using itemSelector
+    const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
+    const queryData = queryHandleService.getQueryData(queryHandle);
     
-    if (!workItemIds) {
+    if (!selectedWorkItemIds || !queryData) {
       return {
         success: false,
         data: null,
@@ -41,22 +42,43 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       };
     }
 
-    logger.info(`Bulk remove operation: ${workItemIds.length} work items (dry_run: ${dryRun})`);
+    // Show selection information
+    const totalItems = queryData.workItemIds.length;
+    const selectedCount = selectedWorkItemIds.length;
+
+    logger.info(`Bulk remove operation: ${selectedCount} of ${totalItems} work items selected (dry_run: ${dryRun})`);
 
     if (dryRun) {
+      // Show preview of selected items for destructive operation
+      const previewItems = selectedWorkItemIds.slice(0, 5).map((id: number) => {
+        const context = queryData.itemContext.find(item => item.id === id);
+        return {
+          work_item_id: id,
+          index: context?.index,
+          title: context?.title || "No title available",
+          state: context?.state || "Unknown"
+        };
+      });
+
       return {
         success: true,
         data: {
           dry_run: true,
           query_handle: queryHandle,
-          work_item_ids: workItemIds,
+          total_items_in_handle: totalItems,
+          selected_items_count: selectedCount,
+          item_selector: itemSelector,
+          work_item_ids: selectedWorkItemIds,
           remove_reason: removeReason,
-          summary: `DRY RUN: Would remove ${workItemIds.length} work item(s)${removeReason ? ' with reason comment' : ''}`
+          preview_items: previewItems,
+          summary: `DRY RUN: Would remove ${selectedCount} of ${totalItems} work item(s)${removeReason ? ' with reason comment' : ''}`
         },
         metadata: { 
           source: "bulk-remove-by-query-handle",
           dryRun: true,
-          count: workItemIds.length
+          selectedCount,
+          totalItems,
+          itemSelector
         },
         errors: [],
         warnings: ['⚠️ DESTRUCTIVE OPERATION: Work items will be permanently deleted']
@@ -71,7 +93,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
 
     const results: Array<{ workItemId: number; success: boolean; error?: string; commentAdded?: boolean }> = [];
 
-    for (const workItemId of workItemIds) {
+    for (const workItemId of selectedWorkItemIds) {
       try {
         // Add comment with reason if provided
         let commentAdded = false;
@@ -79,7 +101,8 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           try {
             const commentUrl = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
             await httpClient.post(commentUrl, {
-              text: `🗑️ **Removal Reason:** ${removeReason}`
+              text: `🗑️ **Removal Reason:** ${removeReason}`,
+              format: 1  // 1 = Markdown, 0 = PlainText
             });
             commentAdded = true;
             logger.debug(`Added removal reason comment to work item ${workItemId}`);
@@ -109,16 +132,20 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       success: failureCount === 0,
       data: {
         query_handle: queryHandle,
-        total_work_items: workItemIds.length,
+        total_items_in_handle: totalItems,
+        selected_items: selectedCount,
+        item_selector: itemSelector,
         successful: successCount,
         failed: failureCount,
         comments_added: removeReason ? commentsAdded : undefined,
         results,
-        summary: `Successfully removed ${successCount} of ${workItemIds.length} work item(s)${failureCount > 0 ? ` (${failureCount} failed)` : ''}${removeReason && commentsAdded > 0 ? ` with reason comments on ${commentsAdded} items` : ''}`
+        summary: `Successfully removed ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}${removeReason && commentsAdded > 0 ? ` with reason comments on ${commentsAdded} items` : ''}`
       },
       metadata: {
         source: "bulk-remove-by-query-handle",
-        totalWorkItems: workItemIds.length,
+        totalWorkItems: totalItems,
+        selectedWorkItems: selectedCount,
+        itemSelector,
         successful: successCount,
         failed: failureCount
       },

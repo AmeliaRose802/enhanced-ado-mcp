@@ -1,167 +1,314 @@
----
-name: backlog_cleanup
-description: Assess Azure DevOps backlog health and identify improvement opportunities under a specific Area Path.
-version: 5
-arguments: {}
----
+# Backlog Cleanup - Corrected Workflow Example
 
-Assess backlog health within area path `{{area_path}}`. Identify quality issues, stale items, and improvement opportunities. **Exclude Done/Completed/Closed/Resolved states** - focus on active work items only. Analysis only - do not modify work items.
+## 🎯 Purpose
 
-**Configuration:**
-- Area Path: `{{area_path}}`
-- Max Age: `{{max_age_days}}` days
+This prompt demonstrates the CORRECT way to use query handles for backlog cleanup workflows, showing how `returnQueryHandle` and `includeSubstantiveChange` work together in a single query call.
 
-**Available Tools:**
-- `wit-query-analytics-odata` - Aggregated metrics (counts, distributions)
-- `wit-get-work-items-by-query-wiql` - Work item retrieval with `includeSubstantiveChange: true` ⚠️ **Pagination:** Returns first 200 items by default. Use `skip` and `top` parameters for larger result sets (e.g., `skip: 200, top: 200` for next page).
-- `wit-get-work-items-context-batch` - Batch context (limit 20-30 items per call)
-- `wit-detect-patterns` - Pattern identification
+## ✅ Correct Single-Query Pattern
 
-### Analysis Steps
+**Key Insight:** One query call returns BOTH the handle AND the full work item data with substantive change analysis.
 
-1. **Get high-level metrics** (use OData first):
-   ```
-   Tool: wit-query-analytics-odata
-   Arguments: {
-     queryType: "groupByState",
-     filters: {},
-     areaPath: "{{area_path}}"
-   }
-   ```
-   
-   Work item type distribution (exclude completed):
-   ```
-   Tool: wit-query-analytics-odata
-   Arguments: {
-     queryType: "customQuery",
-     customODataQuery: "$apply=filter(State ne 'Done' and State ne 'Completed' and State ne 'Closed' and State ne 'Resolved' and State ne 'Removed' and startswith(Area/AreaPath, '{{area_path}}'))/groupby((WorkItemType), aggregate($count as Count))&$orderby=Count desc"
-   }
-   ```
-
-2. **Get work items with activity data**:
-   ```
-   Tool: wit-get-work-items-by-query-wiql
-   Arguments: {
-     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.ChangedDate] ASC",
-     includeFields: ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo", "System.WorkItemType"],
-     includeSubstantiveChange: true,
-     substantiveChangeHistoryCount: 50,
-     maxResults: 200
-   }
-   ```
-   Returns items with `lastSubstantiveChangeDate` and `daysInactive` fields.
-
-3. **Get additional context if needed**: Use `wit-get-work-items-context-batch` (20-30 items max per call) for descriptions, tags, relationships.
-
-4. **Analyze and report**: Use `daysInactive` and quality indicators to generate health report.
-
----
-
-### Quality Check Queries
-
-**All queries use `includeSubstantiveChange: true` to get activity data.**
-
-#### Missing Descriptions
-Description is a long-text field - cannot query in WIQL. Retrieve items first, then check with `wit-get-work-items-context-batch`:
+### Example: Find and Remove Dead Items
 
 ```
+Step 1: Single Query Gets Everything
+─────────────────────────────────────
 Tool: wit-get-work-items-by-query-wiql
-Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.CreatedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  includeSubstantiveChange: true,
-  maxResults: 200
+
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New' AND [System.CreatedDate] < @Today - 180",
+  "includeFields": ["System.Title", "System.State", "System.CreatedDate", "System.AssignedTo"],
+  "returnQueryHandle": true,
+  "includeSubstantiveChange": true,
+  "maxResults": 200
+}
+
+Response contains BOTH:
+✓ query_handle: "qh_a1b2c3d4e5f6..."
+✓ work_items: [
+    {
+      "id": 5816697,
+      "fields": {
+        "System.Title": "Old task",
+        "System.State": "New",
+        "System.CreatedDate": "2024-01-15T10:30:00Z"
+      },
+      "lastSubstantiveChangeDate": "2024-01-20T14:22:00Z",
+      "daysInactive": 259
+    },
+    // ... more items
+  ]
+✓ work_item_count: 47
+
+Step 1a: ⭐ NEW - Inspect Query Handle
+──────────────────────────────────────────
+Tool: wit-inspect-query-handle
+
+{
+  "queryHandle": "qh_a1b2c3d4e5f6...",
+  "includePreview": true,
+  "includeStats": true
+}
+
+Response shows:
+✓ staleness_statistics: {min: 92, max: 469, avg: 287}
+✓ staleness_coverage: "100.0%" (all items have staleness data)
+✓ template_variables_available: ["{daysInactive}", "{lastSubstantiveChangeDate}", "{title}", "{state}", etc.]
+✓ preview_items: [first 10 items with context]
+✓ next_steps: [...guidance on bulk operations...]
+
+
+Step 2: Review and Show User
+─────────────────────────────
+Analyze the work_items array:
+- Total: 47 items
+- All inactive >180 days
+- Last substantive changes from 6-9 months ago
+- Present summary to user for approval
+
+
+Step 3: Add Templated Audit Comments ⭐ ENHANCED
+──────────────────────────────────────────────────────
+Tool: wit-bulk-comment-by-query-handle
+
+{
+  "queryHandle": "qh_a1b2c3d4e5f6...",
+  "comment": "🤖 **Automated Backlog Hygiene**\n\nThis {type} has been **inactive for {daysInactive} days** since {lastSubstantiveChangeDate}.\n\n**Item:** {title}\n**Current State:** {state}\n**Assigned To:** {assignedTo}\n\n**Action:** Moving to Removed state due to extended inactivity.\n\n**Recovery:** If this item should be retained, please update the state and add a comment explaining why this work is still relevant.",
+  "dryRun": true  // Preview first
+}
+
+Template Variables Used:
+✓ {daysInactive} - Days since last meaningful change
+✓ {lastSubstantiveChangeDate} - Date of last substantive change  
+✓ {title} - Work item title
+✓ {state} - Current state
+✓ {type} - Work item type
+✓ {assignedTo} - Assigned user
+
+
+Step 4: Execute Removal
+───────────────────────
+Tool: wit-bulk-remove-by-query-handle
+
+{
+  "queryHandle": "qh_a1b2c3d4e5f6...",
+  "removeReason": "Backlog cleanup: Items inactive >180 days",
+  "dryRun": false
+}
+
+Result: ✅ Successfully removed 47 items
+```
+
+## ❌ Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Querying Twice
+```
+❌ WRONG - Unnecessary double query:
+
+1. Query without returnQueryHandle (to get data)
+2. Query again WITH returnQueryHandle (to get handle)
+
+Why wrong: Wastes API calls, data can change between calls
+```
+
+### Anti-Pattern 2: Passing IDs Directly
+```
+❌ WRONG - Prone to hallucination:
+
+Step 1: Query returns IDs [5816697, 12476027, 13438317]
+Step 2: Agent tries to remove using:
+{
+  "workItemIds": [5816698, 12476028, 13438318]  // ❌ Hallucinated IDs!
+}
+
+Why wrong: LLMs can misremember or confuse IDs
+```
+
+### Anti-Pattern 3: Not Using includeSubstantiveChange
+```
+❌ WRONG - Removes items with recent real activity:
+
+{
+  "wiqlQuery": "... WHERE [System.CreatedDate] < @Today - 180",
+  "returnQueryHandle": true
+  // Missing: includeSubstantiveChange: true
+}
+
+Why wrong: Item might be old but recently had meaningful updates
+```
+
+### Anti-Pattern 4: Skipping Dry-Run
+```
+❌ WRONG - No safety preview:
+
+{
+  "queryHandle": "qh_...",
+  "dryRun": false  // ❌ Directly to production!
+}
+
+Why wrong: Can't verify what will be affected before committing
+```
+
+## 🎓 Best Practices
+
+### 1. Single Query for Everything
+```json
+{
+  "wiqlQuery": "your query here",
+  "includeFields": ["all", "fields", "you", "need"],
+  "returnQueryHandle": true,
+  "includeSubstantiveChange": true,
+  "computeMetrics": true  // Optional: adds daysInactive, isStale, etc.
 }
 ```
-Then use `wit-get-work-items-context-batch` (20-30 items per call) to get descriptions and filter client-side.
 
-#### Missing Acceptance Criteria
-AcceptanceCriteria is a long-text field - cannot query in WIQL. Get User Stories/PBIs first:
+**You get:**
+- Query handle for bulk operations
+- Full work item data for review
+- Substantive change analysis
+- Computed metrics
 
-```
-Tool: wit-get-work-items-by-query-wiql
-Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('User Story', 'Product Backlog Item') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') ORDER BY [System.CreatedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.WorkItemType"],
-  includeSubstantiveChange: true,
-  maxResults: 100
-}
-```
-Then use `wit-get-work-items-context-batch` with `includeFields: ["Microsoft.VSTS.Common.AcceptanceCriteria"]` and filter client-side.
+### 2. Always Review Before Acting
+```typescript
+// After query, analyze the work_items array
+console.log(`Found ${data.work_item_count} items`);
+console.log(`Sample: ${data.work_items.slice(0, 3).map(wi => wi.id)}`);
 
-#### Old Items in Initial State
-```
-Tool: wit-get-work-items-by-query-wiql
-Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('New', 'Proposed', 'To Do') AND [System.CreatedDate] < @Today - {{max_age_days}} ORDER BY [System.CreatedDate] ASC",
-  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  includeSubstantiveChange: true,
-  maxResults: 100
-}
+// Show user what will be affected
+// Get approval before proceeding
 ```
 
-#### Placeholder Titles
-```
-Tool: wit-get-work-items-by-query-wiql
-Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Title] CONTAINS 'TBD' OR [System.Title] CONTAINS 'TODO' OR [System.Title] CONTAINS 'test' OR [System.Title] CONTAINS 'placeholder') ORDER BY [System.CreatedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
-  includeSubstantiveChange: true,
-  maxResults: 100
+### 3. Use Dry-Run First
+```json
+{
+  "queryHandle": "qh_...",
+  "dryRun": true  // ✅ Preview first!
 }
 ```
 
-#### No Recent Activity
-```
-Tool: wit-get-work-items-by-query-wiql
-Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.ChangedDate] < @Today - {{max_age_days}} ORDER BY [System.ChangedDate] ASC",
-  includeFields: ["System.Title", "System.State", "System.ChangedDate"],
-  includeSubstantiveChange: true,
-  maxResults: 100
+### 4. Add Audit Trail
+```json
+// Before removal/state change, add comment
+{
+  "queryHandle": "qh_...",
+  "comment": "Reason for this action: ...",
+  "dryRun": false
 }
 ```
 
----
+### 5. Handle Expiration
+```typescript
+// Query handles expire after 1 hour
+// If expired, simply re-query:
+if (error.includes("expired")) {
+  // Re-run the same WIQL query with returnQueryHandle: true
+}
+```
 
-### Health Indicators
+## 📋 Complete Workflow Templates
 
-**Quality & Clarity:**
-- Missing/inadequate descriptions
-- Missing acceptance criteria (User Stories/PBIs)
-- Vague/placeholder titles (TBD, TODO, test, placeholder)
-- Unassigned items in active states
-- Missing priority/effort
+### Template 1: Find and Remove Stale Items
+```json
+// 1. Query with both features
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New' AND [System.CreatedDate] < @Today - 180",
+  "returnQueryHandle": true,
+  "includeSubstantiveChange": true,
+  "includeFields": ["System.Title", "System.State", "System.CreatedDate"]
+}
 
-**Activity:**
-- Extended inactivity (`daysInactive` > `max_age_days`)
-- Stalled in initial state (> 50% of `max_age_days` in New/Proposed/To Do)
-- Assigned but no substantive activity
+// 2. Review work_items array, show user
 
-**Organization:**
-- Potential duplicates
-- Aging items in early states
-- Possible scope drift
+// 3. Dry-run removal
+{
+  "queryHandle": "{returned_handle}",
+  "removeReason": "Stale items >180 days",
+  "dryRun": true
+}
 
-### Health Categories
+// 4. Execute removal
+{
+  "queryHandle": "{returned_handle}",
+  "removeReason": "Stale items >180 days",
+  "dryRun": false
+}
+```
 
-1. **Healthy** - Well-defined, actively maintained, clear ownership
-2. **Needs Enhancement** - Valid but could use better descriptions/criteria
-3. **Requires Attention** - Extended inactivity, missing critical info, unclear purpose
-4. **Consider for Review** - Multiple indicators suggest team discussion needed
+### Template 2: Bulk State Transition
+```json
+// 1. Query with both features
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.Tags] CONTAINS 'Deprecated'",
+  "returnQueryHandle": true,
+  "includeSubstantiveChange": true
+}
 
----
+// 2. Review work_items array
 
-### Report Format
+// 3. Add comment explaining change
+{
+  "queryHandle": "{returned_handle}",
+  "comment": "Moving deprecated items to Removed state",
+  "dryRun": false
+}
 
-**Per Item:** `[ID]({{org_url}}/{{project}}/_workitems/edit/{ID}) | Type | State | DaysInactive | Health | Improvements | LastSubstantiveChange`
+// 4. Update state
+{
+  "queryHandle": "{returned_handle}",
+  "updates": [
+    {
+      "op": "replace",
+      "path": "/fields/System.State",
+      "value": "Removed"
+    }
+  ],
+  "dryRun": false
+}
+```
 
-**Summary:**
-- Total items analyzed
-- Distribution across health categories
-- Top improvement themes
-- Suggested next steps
+### Template 3: Bulk Assignment
+```json
+// 1. Query unassigned items
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.AssignedTo] = ''",
+  "returnQueryHandle": true,
+  "includeFields": ["System.Title", "System.WorkItemType"]
+}
 
-**Detailed Findings:** Group by health category with actionable recommendations. Use `daysInactive` and `lastSubstantiveChangeDate` directly from WIQL response.
+// 2. Review work_items array, determine assignee
 
-Be constructive - frame as opportunities for improvement.
+// 3. Assign items
+{
+  "queryHandle": "{returned_handle}",
+  "assignTo": "user@example.com",
+  "dryRun": false
+}
+```
+
+## 🔍 Validation Checklist
+
+Before executing bulk operations, verify:
+
+- [ ] Query returned expected number of items
+- [ ] Work items array reviewed and correct
+- [ ] Substantive change data shows items are actually inactive
+- [ ] User approved the operation
+- [ ] Dry-run executed successfully
+- [ ] Query handle hasn't expired (< 1 hour old)
+- [ ] Audit comment added (for state changes/removals)
+
+## 🎯 Key Takeaways
+
+1. **One Query, Two Results**: `returnQueryHandle: true` gives you BOTH handle AND data
+2. **Use Both Features Together**: `returnQueryHandle` + `includeSubstantiveChange` in single call
+3. **Review Before Acting**: Always analyze work_items array before bulk operations
+4. **Dry-Run Is Mandatory**: Never skip preview step
+5. **Add Audit Trail**: Comment before destructive operations
+6. **Handles Expire**: Re-query if handle is >1 hour old
+
+## 📚 Related Resources
+
+- [Query Handle Pattern](../resources/query-handle-pattern.md) - Complete architecture guide
+- [WIQL Best Practices](../resources/wiql-quick-reference.md) - Query optimization
+- [Tool Selection Guide](../resources/tool-selection-guide.md) - When to use what
+- [Common Workflows](../resources/common-workflows.md) - More examples

@@ -39,7 +39,7 @@ function applyTemplate(template: string, variables: Record<string, string>): str
 }
 
 /**
- * Add comment to a work item
+ * Add comment to a work item using the comments API for proper markdown support
  */
 async function addComment(
   organization: string,
@@ -49,15 +49,12 @@ async function addComment(
 ): Promise<void> {
   const httpClient = createADOHttpClient(organization, project);
   
-  const operations = [
-    {
-      op: 'add',
-      path: '/fields/System.History',
-      value: comment
-    }
-  ];
-
-  await httpClient.patch(`wit/workitems/${workItemId}`, operations);
+  const url = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
+  
+  await httpClient.post(url, {
+    text: comment,
+    format: 1  // 1 = Markdown, 0 = PlainText
+  });
 }
 
 export async function handleBulkAddComments(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {

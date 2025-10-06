@@ -1,68 +1,27 @@
+```markdown
 # TODO
 
-- ⏳ **NEW** - Fix returnQueryHandle parameter description to clarify it returns BOTH handle AND data
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - Files: `mcp_server/src/config/schemas.ts` line 252, `mcp_server/src/config/tool-configs.ts` line 227
-  - Change: "instead of" → "along with full work item details"
-  - Priority: High (P1)
+- ⏳ **CRITICAL ARCHITECTURE ISSUE** - Query Handle Architecture Fundamental Problem  
+  - Issue: Two competing paradigms for bulk operations causing user confusion and ID hallucination
+  - Status: NEEDS IMMEDIATE ATTENTION - See `tasklist/architecture-fix-plan.md`
+  - Impact: Users abandon query handles → revert to hallucination-prone manual ID operations  
+  - Priority: P0 - Blocks reliable bulk operations
 
-- ⏳ **NEW** - Enhance includeSubstantiveChange parameter description with use case
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - Files: `mcp_server/src/config/schemas.ts` line 248
-  - Add: "Essential for backlog hygiene workflows" to description
-  - Priority: High (P1)
+- Too many backlog cleanup report prompt flow. Just keep one. Dead items should also be combined into the single backlog cleanup prompt
 
-- ⏳ **NEW** - Add Quick Start section to query-handle-pattern.md resource
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - File: `mcp_server/resources/query-handle-pattern.md`
-  - Add: One-call example showing returnQueryHandle + includeSubstantiveChange together
-  - Add: Key insights section emphasizing dual return
-  - Priority: High (P1)
+- Flow for removing by handle still isn't right. User needs to be able to confirm removal of a specific item ID and then server needs to allow agent to remove it while validating that handle, id and title match to make sure the right item was used
 
-- ⏳ **NEW** - Implement wit-validate-query-handle MCP tool
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - Create: `mcp_server/src/services/handlers/validate-query-handle.handler.ts`
-  - Add: Schema to `schemas.ts`, tool config to `tool-configs.ts`
-  - Returns: Item count, expiration, sample items (5 max), original query
-  - Write: Unit tests
-  - Priority: High (P1)
+- Add tool for finding items with missing descritptions/acceptance criteria etc. Can't do with current tools
 
-- ⏳ **NEW** - Enhance WIQL query tool response messages with next steps
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - File: `mcp_server/src/services/handlers/wiql-query.handler.ts` lines 45-60
-  - Add: "Next steps" guidance when returnQueryHandle is true
-  - Clarify: Response contains both handle and work_items array
-  - Priority: High (P1)
 
-- ⏳ **NEW** - Update tool-selection-guide.md with query handle decision tree
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - File: `mcp_server/resources/tool-selection-guide.md`
-  - Add: "When to use query handles" section with clear examples
-  - Priority: Medium (P1)
 
-- ⏳ **NEW** - Create corrected workflow example prompt template
-  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
-  - Create: `mcp_server/prompts/backlog_cleanup_corrected_workflow.md`
-  - Show: Correct single-query pattern with both features
-  - Show: Anti-patterns to avoid
-  - Priority: Medium (P1)
-
-- ⏳ **IN PROGRESS** - Clean up the codebase and make it more AI ready. Don't break things. Improve the archetecture and reduce tech debt. There may be some unused files which should all be deleted
-  - Status: Part of IMPLEMENTATION_PLAN Task 10 (Codebase Cleanup & Architecture Improvement)
-  - Requires: Systematic review after P0/P1 tasks complete
-  - Priority: Medium (P2) - deferred until critical items done
-  - Note: All 49 tests passing - no regressions
+- Optionally support getting additional context based on wiql query
 
 - ⏳ **NEEDS INVESTIGATION** - Should not pop up browser to get token. No idea what is going on
   - Status: Part of IMPLEMENTATION_PLAN Task 11 (Browser Auto-Launch for Token)
   - Priority: Low (P3) - annoying but not blocking
   - Requires: Investigation of Azure CLI authentication flow
   - Note: May be expected behavior - needs determination
-
-- ⏳ **PARTIAL** - All queries in prompts and resources need to be actually run in order to make sure they work. We should not include false and broken queries.
-  - Status: Needs manual validation of WIQL queries in all prompts
-  - Note: This is part of the prompt cleanup task (IMPLEMENTATION_PLAN Task 5)
-  - Requires: Testing each query against actual Azure DevOps instance
 
 
 - ⏳ **IN PROGRESS** - Review all prompts to remove marketing fluff etc and make them as tight and focused as possible. They should all output links in a valid format. None should look at done or removed items except the velocity one. Generally make them clean, logical and bulletproof. Don't break the WIQL queries.
@@ -97,11 +56,66 @@
 
 # DONE
 
-- ✅ **FIXED** - We have a very bad bug where the AI sometimes halucinates item id's to remove. See the halucination_fix_proposal.md
+- ✅ **FIXED** - Adding comments to items is going though as markdown and not rendering correctly. Make sure correct settings are set when adding bulk comments so they render right in markdown
+  - Fixed: Updated bulk-add-comments.handler.ts to use comments API instead of System.History field for proper markdown support
+  - Fixed: Added explicit format: 1 (Markdown) to both bulk comment handlers and bulk removal comment
+  - Fixed: All test failures resolved by fixing import.meta usage and removing non-Jest test file
+  - Status: Comments now render properly as markdown in Azure DevOps work items
+```
+
+- ✅ **FIXED** - Fix returnQueryHandle parameter description to clarify it returns BOTH handle AND data
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Updated schemas.ts line 252 and tool-configs.ts line 227
+  - Changed: "instead of" → "along with full work item details"
+  - Status: Parameter descriptions now clarify dual return functionality
+
+- ✅ **FIXED** - Enhance includeSubstantiveChange parameter description with use case
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Updated schemas.ts line 248
+  - Added: "Essential for backlog hygiene workflows" to description
+  - Status: Clear use case guidance added to parameter
+
+- ✅ **FIXED** - Add Quick Start section to query-handle-pattern.md resource
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Added comprehensive Quick Start section with one-call example
+  - Added: Key insights section emphasizing dual return pattern
+  - Status: Clear guidance for returnQueryHandle + includeSubstantiveChange together
+
+- ✅ **FIXED** - Implement wit-validate-query-handle MCP tool
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Created validate-query-handle.handler.ts with full implementation
+  - Added: Schema to schemas.ts, tool config to tool-configs.ts
+  - Returns: Item count, expiration, sample items (max 5), original query metadata
+  - Tested: Unit tests passing (6/6 tests in validate-query-handle.test.ts)
+  - Status: Production ready with comprehensive validation
+
+- ✅ **FIXED** - Enhance WIQL query tool response messages with next steps
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Added next_steps array to wiql-query.handler.ts response
+  - Added: Clear guidance for wit-bulk-*-by-query-handle tools
+  - Clarified: Response contains both handle and work_items array
+  - Status: Users now get actionable next steps after querying
+
+- ✅ **FIXED** - Update tool-selection-guide.md with query handle decision tree
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Added "When to Use Query Handles" section with clear examples
+  - Added: Decision tree for query handle vs direct ID operations
+  - Status: Clear guidance for tool selection based on operation type
+
+- ✅ **FIXED** - Create corrected workflow example prompt template
+  - Issue: https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/4
+  - Fixed: Created backlog_cleanup_corrected_workflow.md
+  - Shows: Correct single-query pattern with both features
+  - Shows: Anti-patterns to avoid and common mistakes
+  - Status: Reference template for proper query handle usage
+
+- ⚠️ **PARTIALLY FIXED** - We have a very bad bug where the AI sometimes halucinates item id's to remove. See the halucination_fix_proposal.md
   - Fixed: Query Handle Architecture implemented (Phases 1-3 complete)
   - Fixed: Bulk operations now use query handles instead of direct IDs
   - Fixed: Prompts updated (find_dead_items, child_item_optimizer)
-  - Status: Structurally impossible to hallucinate IDs now
+  - Status: Query handles prevent hallucination BUT users still abandon them
+  - **REMAINING ISSUE**: Architecture has fundamental UX problems causing users to revert to unsafe patterns
+  - **NEEDS**: Complete architectural redesign per `architecture-fix-plan.md`
 
 
 

@@ -1,7 +1,7 @@
 ---
 name: security_items_analyzer
-description: Analyze security and compliance items, categorize them, identify AI-suitable work, and create remediation plans.
-version: 5
+description: Analyze security and compliance items with enhanced staleness analysis, categorize them, identify AI-suitable work, and create remediation plans.
+version: 6
 arguments: {}
 ---
 
@@ -9,25 +9,46 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 
 ## Tools
 
-- `wit-get-work-items-by-query-wiql` - Query security items
-  - ⚠️ **Pagination:** Returns first 200 items by default. Use `skip` and `top` for large sets.
+**Discovery & Analysis:**
+- `wit-get-work-items-by-query-wiql` - ⭐ **ENHANCED** Query security items with staleness data and query handles
+- `wit-inspect-query-handle` - ⭐ **NEW** Verify query handle contents and staleness statistics
 - `wit-get-work-items-context-batch` - Batch details (max 20-25 items)
 - `wit-extract-security-links` - Extract documentation links
+
+**Work Item Management:**
 - `wit-create-new-item` - Create work items
 - `wit-assign-to-copilot` - Assign to GitHub Copilot
 - `wit-new-copilot-item` - Create and assign to Copilot
 
+**Bulk Operations:**
+- `wit-bulk-comment-by-query-handle` - Add templated comments to security items
+- `wit-bulk-update-by-query-handle` - Update multiple security items
+- `wit-bulk-assign-by-query-handle` - Assign multiple security items
+
 ## Workflow
 
-### 1. Discovery
-Find security items using WIQL:
+### 1. Enhanced Discovery with Query Handle
+Find security items using WIQL with staleness data and query handle:
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] NOT IN ('Closed', 'Done', 'Completed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"],
   includeSubstantiveChange: true,
+  returnQueryHandle: true,
   maxResults: {{max_items}}
+}
+```
+
+This returns BOTH security items with staleness data AND a query handle for bulk operations.
+
+### 1a. Verify Query Handle Contents
+```
+Tool: wit-inspect-query-handle
+Arguments: {
+  queryHandle: "qh_from_previous_response",
+  includePreview: true,
+  includeStats: true
 }
 ```
 

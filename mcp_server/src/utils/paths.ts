@@ -10,7 +10,7 @@ function getCurrentDir(): string {
     return join(cwd(), 'src', 'utils');
   }
   
-  // In production ESM environment - import.meta.url is available
+  // In production - use __dirname equivalent with import.meta.url for ES modules
   return dirname(fileURLToPath(import.meta.url));
 }
 
