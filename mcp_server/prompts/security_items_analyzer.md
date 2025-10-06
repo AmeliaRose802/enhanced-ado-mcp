@@ -10,6 +10,7 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 ## Tools
 
 - `wit-get-work-items-by-query-wiql` - Query security items
+  - ⚠️ **Pagination:** Returns first 200 items by default. Use `skip` and `top` for large sets.
 - `wit-get-work-items-context-batch` - Batch details (max 20-25 items)
 - `wit-extract-security-links` - Extract documentation links
 - `wit-create-new-item` - Create work items

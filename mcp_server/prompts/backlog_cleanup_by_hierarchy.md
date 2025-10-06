@@ -19,6 +19,7 @@ You are an assistant working with an Azure DevOps (ADO) MCP server. Your task is
 **Available MCP tools:**
 - `wit-query-analytics-odata` – ⭐ PREFERRED for aggregated metrics (counts by state/type/assignee, distributions)
 - `wit-get-work-items-by-query-wiql` – primary retrieval with built-in substantive change analysis (use `includeSubstantiveChange: true`)
+  - ⚠️ **Pagination:** Returns first 200 items by default. Use `skip` and `top` for large hierarchies.
   - **Important**: Use simple `SELECT [System.Id] FROM WorkItems WHERE...` queries, NOT `WorkItemLinks` queries
   - WorkItemLinks queries are not fully supported by this tool and will return empty results
 - `wit-get-work-items-context-batch` – ⚠️ batch enrichment with relationship data (LIMIT: 20-30 items per call to avoid context overflow)

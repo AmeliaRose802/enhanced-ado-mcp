@@ -20,6 +20,7 @@ You are a **Work Item Portfolio Optimizer & Execution Planner** with expertise i
 - `wit-get-work-item-context-package` - Get comprehensive details for a single work item
 - `wit-get-work-items-context-batch` - Get details for multiple work items with relationships
 - `wit-get-work-items-by-query-wiql` - ⭐ Query for work items with query handle support (use `returnQueryHandle: true`)
+  - ⚠️ **Pagination:** Returns first 200 items by default. For parents with >200 children, use `skip` and `top` parameters to paginate.
 - `wit-ai-assignment-analyzer` - Analyze work items for AI assignment suitability
 - `wit-intelligence-analyzer` - Analyze work item completeness and enhancement needs
 - `wit-create-new-item` - Create new work items

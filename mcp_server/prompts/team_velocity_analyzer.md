@@ -50,6 +50,7 @@ Generate specific work assignments and process improvements.
 
 **Real-Time Queries (WIQL):**
 - `wit-get-work-items-by-query-wiql` - Current state, area filtering, assignment status, stale detection
+  - ⚠️ **Pagination:** Returns first 200 items by default. For large teams or long time periods (>200 items), use `skip` and `top` parameters to paginate (e.g., `skip: 0, top: 200`, then `skip: 200, top: 200`).
 
 **Deep Context (Use Sparingly):**
 - `wit-get-work-item-context-package` - ⚠️ Single work item deep dive (large payload)

@@ -13,7 +13,7 @@ Assess backlog health within area path `{{area_path}}`. Identify quality issues,
 
 **Available Tools:**
 - `wit-query-analytics-odata` - Aggregated metrics (counts, distributions)
-- `wit-get-work-items-by-query-wiql` - Work item retrieval with `includeSubstantiveChange: true`
+- `wit-get-work-items-by-query-wiql` - Work item retrieval with `includeSubstantiveChange: true` ⚠️ **Pagination:** Returns first 200 items by default. Use `skip` and `top` parameters for larger result sets (e.g., `skip: 200, top: 200` for next page).
 - `wit-get-work-items-context-batch` - Batch context (limit 20-30 items per call)
 - `wit-detect-patterns` - Pattern identification
 

@@ -69,6 +69,7 @@ Create detailed execution plan with specific human and AI assignments.
 
 **Real-Time Queries (WIQL):**
 - `wit-get-work-items-by-query-wiql` - Current state queries, Story Points, precise filtering
+  - ⚠️ **Pagination:** Returns first 200 items by default. For large projects (>200 items), use `skip` and `top` parameters to paginate (e.g., `skip: 0, top: 200`, then `skip: 200, top: 200`).
 - `wit-get-last-substantive-change` - Detect stale work items
 
 **Team Analysis:**
