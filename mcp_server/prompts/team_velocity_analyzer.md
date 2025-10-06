@@ -19,7 +19,7 @@ You are a **Team Performance Analyst & Assignment Optimizer**. Analyze team perf
 4. **Recommendations:** Specific work assignments + process improvements
 
 ## Tools & Technical Notes
-**OData:** `wit-query-analytics-odata` - Historical metrics, velocity trends, completion counts | ❌ NO StoryPoints/Cycle time | ✅ WorkItemType, State, AssignedTo, CompletedDate | 5-15 min delayed | Use `contains(Area/AreaPath, '{{area_substring}}')` + `AssignedTo/UserName ne null` for groupby
+**OData:** `wit-query-analytics-odata` - Historical metrics, velocity trends, completion counts | ❌ NO StoryPoints/Cycle time | ✅ WorkItemType, State, AssignedTo, CompletedDate | 5-15 min delayed | Use filters: {"Area/AreaPath": "{{area_path}}"} for exact match (contains() not supported in custom queries)
 **WIQL:** `wit-get-work-items-by-query-wiql` - Real-time state, `UNDER` hierarchy, StoryPoints, stale detection | ⚠️ Pagination: 200 default, use skip/top
 **Context (Sparingly):** `wit-get-work-item-context-package` (single), `wit-get-work-items-context-batch` (≤50 items)
 **Pattern:** `wit-detect-patterns`, `wit-get-last-substantive-change`
@@ -37,7 +37,8 @@ You are a **Team Performance Analyst & Assignment Optimizer**. Analyze team perf
 1. **Completion Velocity:** queryType: "velocityMetrics", dateRangeField: "CompletedDate"
 2. **Work Distribution by Person:** OData groupby AssignedTo/UserName (item counts only, no StoryPoints)
 3. **Story Points for Completed Work:** WIQL with StoryPoints field, aggregate client-side
-4. **Work Type Distribution:** OData groupby (AssignedTo/UserName, WorkItemType)
+4. **Work Type Distribution:** Use separate OData queries - groupByAssignee then groupByType (multi-dimensional groupby not supported)
+<!-- Note: Custom OData queries with contains(Area/AreaPath, 'substring') fail. Use exact Area/AreaPath filters instead. -->
 5. **Current Active Load:** WIQL with State='Active', includes StoryPoints/Priority/CreatedDate for weighted load
 6. **Cycle Time Analysis:** WIQL with date fields (CreatedDate, ClosedDate, ActivatedDate), calculate client-side
 7. **Person-Specific Context:** WIQL filtered by AssignedTo email, includeSubstantiveChange: true
@@ -234,15 +235,16 @@ For each team member:
 ## Technical Syntax Reference
 
 **Area Path Filtering:**
-- **OData:** `contains(Area/AreaPath, '{{area_substring}}')` with double backslash in string literals
+- **OData:** Use filters: {"Area/AreaPath": "{{area_path}}"} for exact match (contains() fails in custom queries)
 - **WIQL:** `[System.AreaPath] UNDER '{{area_path}}'` with single backslash
 
 **Unassigned Filtering:**
 - **WIQL:** `[System.AssignedTo] = ''` (empty string) - RELIABLE
 - **OData:** `AssignedTo/UserName eq null` (for filtering only, NOT groupby) - UNRELIABLE
 
-**Critical OData GroupBy Rule:**
-When using `groupby((AssignedTo/UserName), ...)`, MUST include `AssignedTo/UserName ne null` in filter or get 0 results.
+**Critical OData GroupBy Rules:**
+- When using `groupby((AssignedTo/UserName), ...)`, MUST include `AssignedTo/UserName ne null` in filter or get 0 results
+- Multi-dimensional groupby like `groupby((AssignedTo/UserName, WorkItemType), ...)` is not supported; use separate queries
 
 **Date Filtering:**
 - **OData:** `CompletedDate ge {{start_date}}Z` (ISO 8601 with Z suffix)

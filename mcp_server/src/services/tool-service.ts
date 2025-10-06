@@ -20,6 +20,9 @@ import { handleBulkCommentByQueryHandle } from './handlers/bulk-comment-by-query
 import { handleBulkUpdateByQueryHandle } from './handlers/bulk-update-by-query-handle.handler.js';
 import { handleBulkAssignByQueryHandle } from './handlers/bulk-assign-by-query-handle.handler.js';
 import { handleBulkRemoveByQueryHandle } from './handlers/bulk-remove-by-query-handle.handler.js';
+import { handleValidateQueryHandle } from './handlers/validate-query-handle.handler.js';
+import { handleAnalyzeByQueryHandle } from './handlers/analyze-by-query-handle.handler.js';
+import { handleListQueryHandles } from './handlers/list-query-handles.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: MCPServer | null = null;
@@ -162,6 +165,18 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   if (name === 'wit-bulk-remove-by-query-handle') {
     return await handleBulkRemoveByQueryHandle(config, args);
+  }
+
+  if (name === 'wit-validate-query-handle') {
+    return await handleValidateQueryHandle(config, args);
+  }
+
+  if (name === 'wit-analyze-by-query-handle') {
+    return await handleAnalyzeByQueryHandle(config, args);
+  }
+
+  if (name === 'wit-list-query-handles') {
+    return await handleListQueryHandles(config, args);
   }
 
   // All tools should be handled by the cases above

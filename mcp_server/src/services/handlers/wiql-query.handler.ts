@@ -30,7 +30,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     
     const pageSize = parsed.data.top ?? parsed.data.maxResults ?? 200;
 
-    // If returnQueryHandle is true, store results and return handle instead
+    // If returnQueryHandle is true, store results and return handle along with work items
     if (parsed.data.returnQueryHandle) {
       const workItemIds = result.workItems.map((wi: any) => wi.id);
       
@@ -49,24 +49,37 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         success: true,
         data: {
           query_handle: handle,
+          work_items: result.workItems,
           work_item_count: workItemIds.length,
           total_count: result.totalCount,
           query: result.query,
-          summary: `Query handle created for ${workItemIds.length} work item(s). Use this handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`,
+          summary: `Query handle created for ${workItemIds.length} work item(s) along with full work item details. Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`,
+          next_steps: [
+            "Review the work_items array to see what will be affected",
+            "Use wit-bulk-comment-by-query-handle to add comments to all items",
+            "Use wit-bulk-update-by-query-handle to update fields on all items",
+            "Use wit-bulk-assign-by-query-handle to assign all items to a user",
+            "Use wit-bulk-remove-by-query-handle to remove all items",
+            "Always use dryRun: true first to preview changes before applying them"
+          ],
           expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
           pagination: {
             skip: result.skip,
             top: result.top,
             totalCount: result.totalCount,
             hasMore: result.hasMore
-          }
+          },
+          ...(parsed.data.includeSubstantiveChange && { 
+            substantiveChangeIncluded: true 
+          })
         },
         metadata: {
           source: "rest-api-wiql",
           queryHandleMode: true,
           handle,
           count: workItemIds.length,
-          totalCount: result.totalCount
+          totalCount: result.totalCount,
+          substantiveChangeAnalysis: parsed.data.includeSubstantiveChange || false
         },
         errors: [],
         warnings: result.hasMore

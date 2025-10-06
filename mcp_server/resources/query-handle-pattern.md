@@ -1,5 +1,26 @@
 # Query Handle Pattern - Anti-Hallucination Architecture
 
+## ⚡ Quick Start
+
+**One call gets you both the data AND a safe handle for bulk operations:**
+
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
+  "includeFields": ["System.Title", "System.State"],
+  "returnQueryHandle": true,
+  "includeSubstantiveChange": true
+}
+```
+
+**Response includes BOTH:**
+- ✅ `query_handle`: Use for bulk operations (removes/updates/assigns)
+- ✅ `work_items`: Full array of work item data with substantive change info
+
+**Key Insight:** You get the handle AND the data in the same response. Use the data to show the user what will be affected, then use the handle for safe bulk operations without ID hallucination risk.
+
+---
+
 ## 🎯 Purpose
 
 The Query Handle Pattern eliminates ID hallucination in bulk operations by ensuring work item IDs come directly from Azure DevOps, not from LLM memory.

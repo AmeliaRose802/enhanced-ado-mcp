@@ -33,30 +33,42 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 
 ---
 
-## CRITICAL: Documentation Standards
+## 🚫 CRITICAL: NO SUMMARY DOCS POLICY
 
-### ❌ DO NOT CREATE:
-- Summary files (e.g., `*_SUMMARY.md`, `*_COMPLETE.md`, `*_REPORT.md`)
-- Implementation status documents
+### ❌ ABSOLUTELY FORBIDDEN TO CREATE UNLESS USER SPECIFICALLY ASKS:
+- **ANY** summary files (e.g., `*_SUMMARY.md`, `*_COMPLETE.md`, `*_REPORT.md`, `*_ANALYSIS.md`)
+- Implementation status documents or "completion reports"
 - Changelog files outside of git commit messages
 - Redundant "guide" files that duplicate existing documentation
 - Verbose architecture documents that should be code comments
+- **Analysis reports** or comprehensive documentation of work done
+- "Beta test response" documents or improvement plans as files
 
-### ✅ INSTEAD:
-- Use git commit messages for implementation history
-- Keep docs focused and actionable
-- Update existing docs rather than creating new ones
-- Put implementation details in code comments
-- Use concise, to-the-point documentation
+### ✅ EXCEPTION: USER EXPLICITLY REQUESTS DOCUMENTATION
+- **If user specifically asks** for a summary, report, or analysis document, you may create it
+- **Still prefer** updating existing documentation when possible
+- **Ask for clarification** if the request is ambiguous
+
+### ⚠️ IF USER ASKS FOR DOCUMENTATION WITHOUT BEING SPECIFIC:
+1. **ASK** what specific documentation they need and where it should go
+2. **SUGGEST** updating existing docs instead of creating new ones
+3. **OFFER** to put details in git commit messages
+4. **ONLY CREATE** new docs if they explicitly confirm that's what they want
+
+### ✅ ONLY ACCEPTABLE DOCUMENTATION:
+- Updating existing `/docs` files with essential user info
+- Adding `/mcp_server/resources` quick reference guides for agents
+- Code comments for implementation details
+- Git commit messages for change history
 
 ### Documentation Organization:
-- `/docs` - Only essential user-facing documentation
-- `/mcp_server/resources` - Quick reference guides for agents
+- `/docs` - Only essential user-facing documentation (update existing only)
+- `/mcp_server/resources` - Quick reference guides for agents (functional, not summaries)
 - `/tasklist` - DO NOT TOUCH unless explicitly asked
 - Code should be self-documenting with clear naming
 
-### When Asked to Document:
-1. Check if existing docs can be updated
-2. Keep it short and practical
-3. No verbose summaries or status reports
-4. Focus on HOW to use, not implementation history
+### When Asked to Document Implementation/Analysis:
+1. **SAY NO** to creating summary files
+2. Explain the policy against summary documentation
+3. Offer to update existing functional documentation instead
+4. Keep any updates focused on HOW to use, not WHAT was implemented

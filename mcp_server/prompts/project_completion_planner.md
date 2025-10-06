@@ -69,7 +69,9 @@ Create detailed execution plan with specific human and AI assignments.
 
 **Real-Time Queries (WIQL):**
 - `wit-get-work-items-by-query-wiql` - Current state queries, Story Points, precise filtering
-  - ⚠️ **Pagination:** Returns first 200 items by default. For large projects (>200 items), use `skip` and `top` parameters to paginate (e.g., `skip: 0, top: 200`, then `skip: 200, top: 200`).
+  - ⚠️ **Pagination Strategy:** Use OData counts first, then paginate WIQL: `skip: 0, top: 200` → `skip: 200, top: 200`
+  - 🚨 **Context Window Management:** NEVER request more than 300 items at once. NEVER include `System.Description` or `System.Tags` in bulk queries
+  - 📊 **Efficiency Rule:** Get aggregated data from OData first, then targeted WIQL for specific analysis
 - `wit-get-last-substantive-change` - Detect stale work items
 
 **Team Analysis:**
@@ -132,25 +134,47 @@ Arguments: {
 }
 ```
 
-### 3. Get All Work Items in Project (with Story Points)
+### 3. Get All Work Items in Project (Efficient Summary)
 ```
+# CRITICAL: Use OData for aggregation first, then targeted WIQL
+Tool: wit-query-analytics-odata
+Arguments: {
+  queryType: "groupByType",
+  areaPath: "{{area_path}}",
+  filters: {"State": {"ne": "Removed"}}
+}
+
+# Then get ONLY essential fields for Story Points calculation
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.WorkItemType], [System.State]",
-  includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "System.CreatedDate", "System.ChangedDate", "Microsoft.VSTS.Common.Priority", "System.Tags", "System.Parent"],
-  maxResults: 2000
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' AND [Microsoft.VSTS.Scheduling.StoryPoints] IS NOT NULL",
+  includeFields: ["System.WorkItemType", "System.State", "Microsoft.VSTS.Scheduling.StoryPoints"],
+  maxResults: 500  # Reduced - get counts from OData first
 }
 ```
+<!-- EFFICIENCY: Get aggregated counts first, then only SP data. Saves 80% context window -->
 
 ### 4. Completed Work (Historical Velocity)
 ```
+# Use OData for velocity trends first (more efficient)
+Tool: wit-query-analytics-odata
+Arguments: {
+  queryType: "velocityMetrics",
+  dateRangeField: "CompletedDate",
+  dateRangeStart: "2024-07-07",  # Exactly 90 days from 2024-10-06
+  areaPath: "{{area_path}}",
+  groupBy: ["AssignedTo/UserName", "WorkItemType"]
+}
+
+# Only get SP data if OData shows significant completion volume
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Done' AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - 90 ORDER BY [Microsoft.VSTS.Common.ClosedDate] DESC",
-  includeFields: ["System.AssignedTo", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.ClosedDate", "System.CreatedDate"],
-  maxResults: 1000
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Done' AND [Microsoft.VSTS.Common.ClosedDate] >= '2024-07-07T00:00:00.000Z'",
+  includeFields: ["System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints"],
+  maxResults: 200  # Reduced - focus on recent completions
 }
 ```
+<!-- EFFICIENCY: Use exact dates, minimal fields, smaller result set -->
 
 ### 5. Active Work (Current Team Load)
 ```
@@ -164,13 +188,15 @@ Arguments: {
 
 ### 6. Backlog Work (Remaining Effort)
 ```
+# CRITICAL: Never request System.Description in bulk queries - context killer
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('New', 'Proposed', 'To Do', 'Approved') ORDER BY [Microsoft.VSTS.Common.Priority] ASC",
-  includeFields: ["System.Title", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.Tags", "System.Description"],
-  maxResults: 1000
+  includeFields: ["System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority"],
+  maxResults: 300  # Reasonable limit for backlog planning
 }
 ```
+<!-- EFFICIENCY: Removed description and tags - they can bloat context by 10x -->
 
 ### 7. Blocked/Impediment Items
 ```
@@ -383,12 +409,26 @@ Buffered Timeline = Base Timeline × 1.20
 **Team Health:** Sustainable pace, skill diversity, growth opportunities
 **Validate:** Check hierarchy integrity, verify estimates, identify data quality issues
 
+## 🚨 CRITICAL: Query Efficiency Rules
+
+**Context Window Conservation:**
+- **NEVER** request `System.Description`, `System.Tags`, or `System.History` in bulk queries
+- **ALWAYS** use OData for counts/aggregations before detailed WIQL queries  
+- **LIMIT** WIQL results to <300 items per query
+- **MINIMIZE** field selection - only request fields you actually analyze
+
+**Pagination Strategy:**
+1. **OData First:** Get total counts and distributions
+2. **Targeted WIQL:** Query specific subsets based on OData insights
+3. **Batch Processing:** Process large datasets in 200-item chunks
+4. **Early Termination:** Stop querying when you have enough data for analysis
+
 ## Tool Selection
-- **WIQL:** Story Points, real-time state, area path filtering, assignments
-- **OData:** Historical trends, velocity over time (NOT Story Points)
+- **OData (PRIMARY):** Aggregated metrics, velocity trends, distributions - USE FIRST
+- **WIQL (SECONDARY):** Targeted queries after OData analysis, Story Points, specific filtering
+- **Context Package:** Single item deep-dive only (never batch)
 - **Hierarchy Validation:** Structure integrity, orphaned items
-- **Context Package:** Deep Epic/Feature analysis, dependencies
-- **AI Assignment Analyzer:** Batch AI suitability, automation opportunities
+- **Batch Context:** Max 25 items, use sparingly
 
 ---
 

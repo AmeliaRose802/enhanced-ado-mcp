@@ -18,7 +18,10 @@ import {
   bulkCommentByQueryHandleSchema,
   bulkUpdateByQueryHandleSchema,
   bulkAssignByQueryHandleSchema,
-  bulkRemoveByQueryHandleSchema
+  bulkRemoveByQueryHandleSchema,
+  validateQueryHandleSchema,
+  analyzeByQueryHandleSchema,
+  listQueryHandlesSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -211,7 +214,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-get-work-items-by-query-wiql",
-    description: "Query Azure DevOps work items using WIQL (Work Item Query Language). ⚠️ IMPORTANT: Default limit is 200 items - use skip/top parameters for pagination if you need more results. Supports complex queries with filtering, sorting, and field selection. Returns work item details including Id, Title, Type, State, and any requested additional fields. Can return a query handle for safe bulk operations.",
+    description: "🔐 ANTI-HALLUCINATION TOOL: Execute WIQL query and get both work item details AND a query handle for safe operations. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Limit: 200 items (use pagination for more).",
     script: "", // Handled internally
     schema: wiqlQuerySchema,
     inputSchema: {
@@ -224,7 +227,7 @@ export const toolConfigs: ToolConfig[] = [
         maxResults: { type: "number", description: "Maximum number of results to return per page (default 200, max 1000). ⚠️ Results are truncated at this limit - use pagination for more." },
         skip: { type: "number", description: "Number of work items to skip for pagination (default 0). Example: skip=200, top=200 gets items 201-400." },
         top: { type: "number", description: "Maximum number of work items to return (alias for maxResults, max 1000). When specified, overrides maxResults." },
-        returnQueryHandle: { type: "boolean", description: "Return a query handle instead of full work item details. The handle can be used with bulk operation tools to safely perform operations without risk of ID hallucination. Handle expires after 1 hour." }
+        returnQueryHandle: { type: "boolean", description: "🔐 DEFAULT TRUE: Return query handle for safe operations. ⚠️ Only set to false if you need raw IDs for immediate user display. For analysis, bulk operations, or any workflow that might reference IDs later, keep this true to prevent hallucination. Handle expires after 1 hour." }
       },
       required: ["wiqlQuery"]
     }
@@ -426,6 +429,58 @@ export const toolConfigs: ToolConfig[] = [
         project: { type: "string", description: "Azure DevOps project name" }
       },
       required: ["queryHandle"]
+    }
+  },
+  {
+    name: "wit-validate-query-handle",
+    description: "Validate a query handle and get metadata about stored query results. Returns item count, expiration time, original query, and optionally fetches sample items. Use this to check if a handle is still valid before bulk operations.",
+    script: "", // Handled internally
+    schema: validateQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle to validate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
+        includeSampleItems: { type: "boolean", description: "Fetch and include sample items (first 5) with titles and states (default false)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle"]
+    }
+  },
+  {
+    name: "wit-analyze-by-query-handle",
+    description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, and priority analysis. Forces safe analysis patterns.",
+    script: "", // Handled internally
+    schema: analyzeByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (ensures analysis is based on real query results, not hallucinated IDs)" },
+        analysisType: { 
+          type: "array", 
+          items: { 
+            type: "string", 
+            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities"] 
+          },
+          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown)"
+        },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle", "analysisType"]
+    }
+  },
+  {
+    name: "wit-list-query-handles",
+    description: "📋 HANDLE REGISTRY: List all active query handles to track and manage them. Shows handle statistics, cleanup status, and provides guidance on handle management. Makes handles feel like persistent resources rather than ephemeral strings.",
+    script: "", // Handled internally
+    schema: listQueryHandlesSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        includeExpired: { type: "boolean", description: "Include expired handles in the list (default false). Useful for debugging handle lifecycle issues." }
+      },
+      required: []
     }
   }
 ];

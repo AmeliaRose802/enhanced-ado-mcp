@@ -245,11 +245,11 @@ export const wiqlQuerySchema = z.object({
   maxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return per page (default 200)"),
   skip: z.number().int().optional().default(0).describe("Number of work items to skip for pagination (default 0). Use with top for pagination."),
   top: z.number().int().optional().describe("Maximum number of work items to return (alias for maxResults). When specified, overrides maxResults."),
-  includeSubstantiveChange: z.boolean().optional().default(false).describe("Include computed fields lastSubstantiveChangeDate and daysInactive for each work item - automatically filters out automated changes like iteration path updates. Minimal overhead: only 2 fields per item."),
+  includeSubstantiveChange: z.boolean().optional().default(false).describe("Include computed fields lastSubstantiveChangeDate and daysInactive for each work item - automatically filters out automated changes like iteration path updates. Essential for backlog hygiene workflows. Minimal overhead: only 2 fields per item."),
   substantiveChangeHistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze when computing substantive change (default 50)"),
   computeMetrics: z.boolean().optional().default(false).describe("Include computed metrics: daysInactive (from changed date), daysSinceCreated, hasDescription (>50 chars), isStale (inactive >180 days)"),
   staleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)"),
-  returnQueryHandle: z.boolean().optional().default(false).describe("Return a query handle instead of full work item details. The handle can be used with bulk operation tools (wit-bulk-*-by-query-handle) to safely perform operations without risk of ID hallucination. Handle expires after 1 hour.")
+  returnQueryHandle: z.boolean().optional().default(true).describe("🔐 ANTI-HALLUCINATION: Return a query handle along with full work item details. Handle enables safe bulk operations without ID hallucination risk. Set to false only if you need IDs for immediate display to user. Handle expires after 1 hour. RECOMMENDED: Always keep true for analysis workflows.")
 });
 
 /**
@@ -412,6 +412,24 @@ export const bulkRemoveByQueryHandleSchema = z.object({
   dryRun: z.boolean().optional().default(false).describe("Preview operation without making changes"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const validateQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle to validate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  includeSampleItems: z.boolean().optional().default(false).describe("Fetch and include sample items (first 5) with titles and states"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const analyzeByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql (forces safe analysis without ID hallucination)"),
+  analysisType: z.array(z.enum(['effort', 'velocity', 'assignments', 'risks', 'completion', 'priorities'])).min(1).describe("Types of analysis to perform: effort (Story Points), velocity (completion trends), assignments (team distribution), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+export const listQueryHandlesSchema = z.object({
+  includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)")
 });
 
 

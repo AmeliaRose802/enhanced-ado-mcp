@@ -2,6 +2,62 @@
 
 Quick decision guide for choosing the right tool for your task.
 
+## 🔐 When to Use Query Handles
+
+**Query handles eliminate ID hallucination in bulk operations.**
+
+### Decision Tree
+
+```
+Are you performing bulk operations (updating/removing/assigning multiple items)?
+├─ YES → Use Query Handles
+│   └─ Steps:
+│       1. Query with returnQueryHandle: true
+│       2. Review work_items array to verify what will be affected
+│       3. Pass query_handle to bulk operation tool
+│       4. Handle expires after 1 hour
+│
+└─ NO → Regular Query
+    └─ Use wit-get-work-items-by-query-wiql without returnQueryHandle
+```
+
+### ✅ Use Query Handles When:
+- Operating on 2+ work items
+- User says "remove those items" or "update all of them"
+- Bulk state transitions (New → Removed)
+- Bulk assignment operations
+- Any operation where ID accuracy is critical
+
+### Example: Query WITH Query Handle
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New' AND [System.CreatedDate] < @Today - 180",
+  "includeFields": ["System.Title", "System.State"],
+  "returnQueryHandle": true,
+  "includeSubstantiveChange": true
+}
+```
+
+**Response includes BOTH:**
+- `query_handle`: "qh_abc123..." (use for bulk operations)
+- `work_items`: [...] (full array to review)
+
+**Then use the handle:**
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "dryRun": true  // Always preview first
+}
+```
+
+### ❌ Don't Need Query Handles When:
+- Single work item operation
+- Just reading/viewing items (no modifications)
+- Creating new work items
+- User explicitly provides one specific ID
+
+---
+
 ## Query Work Items
 
 ### Get Individual Work Items
@@ -166,7 +222,114 @@ Quick decision guide for choosing the right tool for your task.
 
 ## Bulk Operations
 
-### Add Comments to Multiple Items
+### ⚡ Query Handle-Based Bulk Operations (Recommended)
+
+**Eliminates ID hallucination by using server-stored query results**
+
+#### Validate Query Handle
+**Tool:** `wit-validate-query-handle`  
+**When:** Check if a query handle is still valid before using it  
+**Example:** Verify handle hasn't expired
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "includeSampleItems": true
+}
+```
+
+**Returns:** Item count, expiration time, sample items, original query
+
+#### Handle-Based Analysis (NEW - Prevents ID Hallucination)
+**Tool:** `wit-analyze-by-query-handle`  
+**When:** Analyze work items without exposing individual IDs  
+**Example:** Get effort estimates, team assignments, risk assessment
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "analysisType": ["effort", "assignments", "risks", "completion"]
+}
+```
+
+**Returns:** Comprehensive analysis without ID exposure (Story Points, team distribution, blocked items, completion %)
+
+#### List Active Handles (NEW - Handle Management)
+**Tool:** `wit-list-query-handles`  
+**When:** Track and manage active query handles  
+**Example:** See handle statistics and cleanup status
+
+```json
+{
+  "includeExpired": false
+}
+```
+
+**Returns:** Handle statistics, cleanup guidance, management tips
+
+#### Bulk Comment by Query Handle
+**Tool:** `wit-bulk-comment-by-query-handle`  
+**When:** Add same comment to multiple items safely  
+**Example:** Document bulk state change reason
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "comment": "Moving to backlog cleanup phase",
+  "dryRun": true
+}
+```
+
+#### Bulk Update by Query Handle
+**Tool:** `wit-bulk-update-by-query-handle`  
+**When:** Update fields on multiple items  
+**Example:** Change state on all matching items
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "updates": [
+    {
+      "op": "replace",
+      "path": "/fields/System.State",
+      "value": "Removed"
+    }
+  ],
+  "dryRun": true
+}
+```
+
+#### Bulk Assign by Query Handle
+**Tool:** `wit-bulk-assign-by-query-handle`  
+**When:** Assign multiple items to a user  
+**Example:** Reassign all unassigned items
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "assignTo": "user@example.com",
+  "dryRun": true
+}
+```
+
+#### Bulk Remove by Query Handle
+**Tool:** `wit-bulk-remove-by-query-handle`  
+**When:** Remove multiple items safely  
+**Example:** Clean up stale items
+
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "removeReason": "Stale items >180 days old",
+  "dryRun": true
+}
+```
+
+### Legacy: Direct ID-Based Bulk Operations
+
+**⚠️ Prone to ID hallucination - use query handles instead**
+
+#### Add Comments to Multiple Items
 **Tool:** `wit-bulk-add-comments`  
 **When:** Need to notify or update multiple items  
 **Example:** Add status update to all items in sprint
