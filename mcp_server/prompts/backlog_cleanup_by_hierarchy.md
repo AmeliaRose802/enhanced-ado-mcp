@@ -182,7 +182,7 @@ If count = 0, the Key Result has no active children.
 ```
 Tool: wit-get-work-items-by-query-wiql
 Arguments: {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Epic', 'Feature', 'User Story', 'Product Backlog Item', 'Task') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND [System.Parent] = '' ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Epic', 'Feature', 'User Story', 'Product Backlog Item', 'Task') AND [System.State] NOT IN ('Removed', 'Done', 'Completed', 'Closed', 'Resolved') AND ([System.Parent] = '' OR [System.Parent] IS NULL) ORDER BY [System.WorkItemType], [System.CreatedDate] DESC",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.CreatedDate"],
   includeSubstantiveChange: true,
   maxResults: 100
