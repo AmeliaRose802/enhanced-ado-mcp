@@ -377,4 +377,4 @@ packages/
 .github/chatmodes/
 
 # Internal documentation (exclude from public repo)
-tasklist/publishing*.md
+tasklist/
