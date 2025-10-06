@@ -316,325 +316,78 @@ Buffered Timeline = Base Timeline × 1.20
 ## Output Format
 
 ### Executive Summary
-
-**Project:** {{project}} - {{area_path}}
-**Analysis Date:** {{today}}
-**Planning Horizon:** {{planning_horizon_weeks}} weeks
-
-**Key Metrics:**
-- Total Scope: X work items (Y Story Points)
-- Completed: X% (Y items, Z SP)
-- In Progress: X% (Y items, Z SP)
-- Remaining: X% (Y items, Z SP)
-- Team Size: N active contributors
-- Team Velocity: X SP/week
-- **Estimated Completion: [Date]** (with {{include_buffer ? '20%' : 'no'}} buffer)
-- **Confidence Level: [High/Medium/Low]**
-
-**Health Score: X/100**
-- Progress: Y/30 points
-- Team Capacity: Y/25 points
-- Estimation Quality: Y/20 points
-- Risk Management: Y/15 points
-- AI Readiness: Y/10 points
-
----
-
-### Detailed Analysis
-
-#### 1. Project Scope & Structure
-
-**Hierarchy:**
-- Epics: X
-- Features: Y
-- Product Backlog Items: Z
-- Tasks: A
-- Bugs: B
-- Max Depth: N levels
-- Orphaned Items: X (flag if >0)
-
-**Work Distribution by Type:**
-| Type | Total | Done | Active | Backlog | Story Points |
-|------|-------|------|--------|---------|--------------|
-| Epic | X | Y | Z | A | B |
-| ... | ... | ... | ... | ... | ... |
-
-**Hierarchy Validation:**
-- ✅/⚠️ Structure: [Clean / Has issues]
-- ✅/⚠️ Linkage: [All linked / X orphans]
-- ✅/⚠️ Depth: [Appropriate / Too deep]
-
-#### 2. Progress & Velocity
-
-**Completion Status:**
-- Done: X items (Y%)
-- Completed Story Points: Z (W% of total)
-- Average Cycle Time: D days
-- Last 90-day Velocity: X SP/week
-- Last 30-day Velocity: Y SP/week (trending up/down/stable)
-
-**Active Work:**
-- In Progress: X items (Y SP)
-- Assigned to: N team members
-- Average age: Z days
-- WIP violations: X items (people with >6 active)
-
-**Backlog:**
-- Remaining: X items (Y SP)
-- Unestimated: Z items ⚠️ (estimated as ~W SP)
-- Priority breakdown:
-  - P1: X items (Y%)
-  - P2: X items (Y%)
-  - P3+: X items (Y%)
-
-#### 3. Team Capacity & Utilization
-
-**Team Members (N total):**
-
-For each active contributor:
-- **Name**
-  - Historical velocity: X SP/week (last 90 days)
-  - Current load: Y items (Z SP)
-  - Utilization: W% (Healthy/High/Critical)
-  - Strengths: [Work types, skills]
-  - Availability: [Full-time / constraints]
-
-**Team Totals:**
-- Combined velocity: X SP/week
-- Available capacity: Y SP over {{planning_horizon_weeks}} weeks
-- Current utilization: Z%
-
-**Capacity Risks:**
-- 🔴 Overloaded: [List members >150% capacity]
-- ⚠️ Single points of failure: [Critical skills concentrated in 1 person]
-- ⚠️ Non-coding overhead: [% time on non-dev work]
-
-#### 4. Effort & Timeline Estimation
-
-**Remaining Effort:**
-- Backlog: X SP
-- Active (to complete): Y SP
-- Unestimated (estimated): Z SP
-- **Total Remaining: W SP**
-
-**Complexity Adjustments:**
-- High-priority multiplier: +X SP
-- Blocked items buffer: +Y SP
-- Technical debt tax: +Z SP
-- **Adjusted Total: W SP**
-
-**Timeline Forecast:**
-
-**Base Scenario (No Buffer):**
-- Weeks required: X weeks
-- Estimated completion: [Date]
-- Confidence: 50%
-
-**Recommended Scenario (20% Buffer):**
-- Weeks required: X weeks
-- **Estimated completion: [Date]**
-- **Confidence: 70%**
-
-**Conservative Scenario (40% Buffer):**
-- Weeks required: X weeks
-- Estimated completion: [Date]
-- Confidence: 90%
-
-**Target Date Analysis (if provided):**
-- User target: {{target_completion_date}}
-- Gap: ±X weeks
-- Feasibility: ✅ Achievable / ⚠️ Tight / 🔴 Unrealistic
-- Required velocity: X SP/week (vs current Y SP/week)
-
-#### 5. AI Acceleration Opportunities
-
-**AI-Suitable Work Items:**
-- Analyzed: X items
-- AI-suitable: Y items (Z SP)
-- AI suitability rate: W%
-
-**Top AI Assignment Candidates (up to 20):**
-
-For each item:
-1. **Work Item #ID** - Title
-   - Type: [PBI/Task/Bug]
-   - Story Points: X
-   - AI Suitability: High/Medium
-   - Reason: [Why AI can handle this]
-   - Human review time: ~Y hours
-
-**AI Capacity Impact:**
-- AI-assignable work: X SP
-- AI completion time: Y weeks (vs Z weeks human)
-- Time saved: W weeks
-- **Revised completion with AI: [Date]**
-
-#### 6. Milestone Roadmap
-
-**Quarter 1 (Weeks 1-13):**
-- Target: X SP, Y items
-- Key deliverables:
-  1. [Epic/Feature] - Z SP
-  2. [Epic/Feature] - Z SP
-- AI assignments: W items
-- Human assignments: V items
-- Completion target: [Date]
-
-**Quarter 2 (Weeks 14-26):**
-- [Same structure]
-
-**[Additional quarters if planning_horizon_weeks > 26]**
-
-**Critical Path Items:**
-1. [Item] - Must complete by [Date] - Assigned to: [Person/AI]
-2. [Item] - Blocks: [Dependencies]
-
-#### 7. Risk Analysis & Mitigation
-
-**Critical Risks (🔴):**
-
-For each critical risk:
-- **Risk:** [Description]
-- **Impact:** [Timeline delay, quality, team health]
-- **Probability:** High/Medium/Low
-- **Mitigation:** [Specific action items]
-- **Owner:** [Person responsible]
-
-**Medium Risks (⚠️):**
-- [Same structure for medium-priority risks]
-
-**Risk Score: X/100** (lower is better)
-
-#### 8. Execution Plan
-
-**Immediate Actions (This Week):**
-1. [Action] - Owner: [Person] - Target: [Date]
-2. [Action] - Owner: [Person] - Target: [Date]
-3. [Action] - Owner: [Person] - Target: [Date]
-
-**Recommended Work Assignments (Next Sprint):**
-
-**Human Assignments:**
-
-For each team member:
-- **[Name]** (Current load: X SP)
-  1. Work Item #ID - Title (Y SP) - Why: [Reason]
-  2. Work Item #ID - Title (Y SP) - Why: [Reason]
-  3. [Stretch assignment if capacity allows]
-
-**AI Assignments (GitHub Copilot):**
-1. Work Item #ID - Title (X SP) - Human reviewer: [Name]
-2. Work Item #ID - Title (X SP) - Human reviewer: [Name]
-3. [Continue for top AI candidates]
-
-**Process Improvements:**
-1. [Improvement to increase velocity]
-2. [Improvement to reduce risk]
-3. [Improvement to optimize workflow]
-
-**Capacity Optimization:**
-- Rebalance: [Move work from X to Y]
-- Unblock: [Remove impediment Z]
-- Skill development: [Cross-train Person A on Skill B]
-
----
-
-### Key Takeaways & Recommendations
-
-**🎯 Bottom Line:**
-- Estimated completion: **[Date]** ({{include_buffer ? 'with 20% buffer' : 'base estimate'}})
-- Feasibility: **[On track / At risk / Critical]**
-- Primary accelerator: [AI assignments / Team expansion / Scope reduction]
-
-**💡 Top 3 Recommendations:**
-1. [Most impactful action]
-2. [Second priority]
-3. [Third priority]
-
-**⚠️ Top 3 Risks:**
-1. [Highest risk]
-2. [Second risk]
-3. [Third risk]
-
-**⚡ Quick Wins (This Sprint):**
-1. [Easy improvement with high impact]
-2. [Another quick win]
-
-**📊 Track These Metrics Weekly:**
-- Team velocity (target: ≥X SP/week)
-- Completion % (target: Y% by [Date])
-- Blocked items (target: <3)
-- WIP violations (target: 0)
-
----
-
-## Analysis Best Practices
-
-**Be Data-Driven:**
-- Base estimates on actual historical velocity
-- Don't rely on guesswork or optimism
-- Flag low-confidence areas explicitly
-
-**Be Realistic:**
-- Account for unknowns and risks
-- Include buffer time for project complexity
-- Don't overload team members
-- Consider non-coding overhead (meetings, infrastructure, etc.)
-
-**Be Actionable:**
-- Provide specific task assignments
-- Identify concrete next steps
-- Assign ownership to recommendations
-- Set measurable targets
-
-**Balance AI & Human Work:**
-- AI excels at well-defined, repetitive tasks
-- Humans handle ambiguity, architecture, complex problem-solving
-- Always include human review for AI-generated work
-- Don't underestimate integration and coordination overhead
-
-**Consider Team Health:**
-- Sustainable pace: Don't plan for >100% utilization
-- Skill diversity: Avoid over-specialization
-- Growth opportunities: Include stretch assignments
-- Work satisfaction: Minimize non-coding grunt work for developers
-
-**Validate Assumptions:**
-- Check hierarchy integrity
-- Verify Story Point estimates are reasonable
-- Cross-reference velocity trends
-- Identify data quality issues
-
----
-
-## Tool Selection Guidelines
-
-**Use WIQL for:**
-- All Story Points data (OData doesn't support it)
-- Real-time state queries
-- Precise area path filtering with UNDER
-- Current assignments and active work
-
-**Use OData for:**
-- Historical trend analysis
-- Completion velocity over time
-- Work distribution patterns
-- (But NOT for Story Points!)
-
-**Use Hierarchy Validation for:**
-- Project structure integrity
-- Identifying orphaned work items
-- Checking parent-child relationships
-
-**Use Context Package for:**
-- Deep Epic/Feature analysis
-- Understanding dependencies
-- Complex work item relationships
-
-**Use AI Assignment Analyzer for:**
-- Batch AI suitability analysis
-- Identifying automation opportunities
-- Optimizing AI/human work split
+**Project:** {{project}} - {{area_path}} | **Date:** {{today}} | **Horizon:** {{planning_horizon_weeks}} weeks
+**Scope:** X items (Y SP) | ✅ X% done (Z SP) | 🔄 W% active (V SP) | 📋 U% backlog (T SP)
+**Timeline:** Velocity X SP/week → **Completion [Date]** ({{include_buffer ? '20% buffer' : 'base'}}, Y% confidence)
+**Health:** X/100 (Progress Y/30, Capacity Z/25, Estimation W/20, Risk V/15, AI U/10)
+**Target:** {{target_completion_date ? `${target_completion_date}: ±X weeks gap, ✅/⚠️/🔴 feasibility` : 'Not set'}}
+
+### 1. Scope & Hierarchy
+**Structure:** Epics X, Features Y, PBIs Z, Tasks A, Bugs B, Max depth N, Orphans X (✅/⚠️)
+**Work Distribution:** Type | Total | Done | Active | Backlog | SP (table)
+**Unestimated:** X items ⚠️ (~Y SP estimated)
+
+### 2. Progress & Velocity
+**Completed:** X items (Y%), Z SP (W%), avg cycle D days
+**Velocity:** 90-day X SP/week, 30-day Y SP/week (trend 📈/📊/📉), range Min-Max
+**Active:** X items (Y SP), N members, avg age Z days, WIP violations: W
+**Backlog:** X items (Y SP) | Priority: P1 X%, P2 Y%, P3+ Z%
+
+### 3. Team Capacity
+**Per Member:** Name: X SP/week, Y SP active, Z% utilization (✅ Healthy/<150% | ⚠️ High/150-200% | 🔴 Critical/>200%), [strengths], [availability]
+**Team:** X SP/week combined, Y SP available ({{planning_horizon_weeks}} weeks), Z% utilization
+**Risks:** 🔴 Overloaded (>150%), ⚠️ Single points of failure, ⚠️ Non-coding overhead
+
+### 4. Timeline Forecast
+**Effort:** Backlog X SP + Active Y SP + Unestimated Z SP = **W SP**
+**Adjustments:** Priority +X, Blocked +Y, Tech debt +Z = **W SP adjusted**
+**Scenarios:**
+- Base (50%): X weeks → [Date]
+- **Recommended (70%, 20% buffer): X weeks → [Date]**
+- Conservative (90%, 40% buffer): X weeks → [Date]
+**Target Gap:** {{target_completion_date ? `±X weeks, ✅/⚠️/🔴, requires Y SP/week vs Z current` : 'N/A'}}
+
+### 5. AI Acceleration
+**AI-Suitable:** X items analyzed → Y suitable (Z SP, W% of backlog)
+**Top 20 Candidates:** #ID - Title (X SP, High/Medium, reason, ~Y hr review)
+**Impact:** Z SP AI-assignable, Y weeks vs W human = **V weeks saved** → **Revised: [Date]**
+
+### 6. Milestone Roadmap
+**Per Quarter (13-week blocks):** X SP target, key deliverables [Epic/Feature - SP], AI W items / Human V items, completion [Date]
+**Critical Path:** #ID - [Item] must complete by [Date] for [Person/AI], blocks [dependencies]
+
+### 7. Risk Analysis
+**Critical (🔴):** Risk | Impact | Probability H/M/L | Mitigation | Owner
+**Medium (⚠️):** Same structure
+**Risk Score:** X/100 (lower better)
+**Red Flags:** 🔴 Unestimated >20%, velocity declining, blocked >10%, hierarchy violations | ⚠️ WIP >6, over-specialization, overhead >30%
+
+### 8. Execution Plan
+**Immediate (This Week):** Action - Owner - Date (3 items)
+**Next Sprint Assignments:**
+- **Human:** Name (X SP): #ID tasks (Y SP, reason)
+- **AI:** #ID tasks (X SP, reviewer: Name)
+**Process:** [3 improvements: velocity/risk/workflow]
+**Optimize:** Rebalance, unblock, skill development
+
+### Key Takeaways
+**🎯 Bottom Line:** **[Date]** ({{include_buffer ? '20% buffer' : 'base'}}), [On track/At risk/Critical], [AI/team/scope]
+**💡 Recommendations** | **⚠️ Risks** | **⚡ Quick Wins** (top 3 each) | **📊 Metrics:** Velocity ≥X, Completion Y%, Blocked <3, WIP 0
+
+## Best Practices
+**Data-Driven:** Use historical velocity, flag low-confidence areas
+**Realistic:** Include buffer, account for non-coding overhead, don't overload (>100% utilization)
+**Actionable:** Specific assignments with owners and measurable targets
+**AI/Human Balance:** AI for well-defined tasks with human review, humans for ambiguity/architecture
+**Team Health:** Sustainable pace, skill diversity, growth opportunities
+**Validate:** Check hierarchy integrity, verify estimates, identify data quality issues
+
+## Tool Selection
+- **WIQL:** Story Points, real-time state, area path filtering, assignments
+- **OData:** Historical trends, velocity over time (NOT Story Points)
+- **Hierarchy Validation:** Structure integrity, orphaned items
+- **Context Package:** Deep Epic/Feature analysis, dependencies
+- **AI Assignment Analyzer:** Batch AI suitability, automation opportunities
 
 ---
 
