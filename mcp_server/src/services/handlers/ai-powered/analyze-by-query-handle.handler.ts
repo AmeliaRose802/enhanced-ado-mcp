@@ -8,7 +8,12 @@
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { ADOWorkItem, ADOApiResponse } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -284,13 +289,10 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
 
   } catch (error) {
     logger.error(`Error in handleAnalyzeByQueryHandle: ${error}`);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "analyze-by-query-handle" },
-      errors: [`Unexpected error: ${error instanceof Error ? error.message : String(error)}`],
-      warnings: []
-    };
+    return buildErrorResponse(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { source: "analyze-by-query-handle" }
+      );
   }
 }
 

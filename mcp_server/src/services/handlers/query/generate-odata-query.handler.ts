@@ -6,7 +6,12 @@
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
@@ -333,14 +338,8 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
     return result;
 
   } catch (error) {
-    logger.error('OData query generation handler error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "ai-sampling-odata-generator" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'ai-sampling-odata-generator');
   }
 }
 

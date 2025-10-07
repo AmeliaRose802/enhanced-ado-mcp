@@ -4,6 +4,11 @@
 
 import type { ToolExecutionResult } from "../../../types/index.js";
 import { loadConfiguration } from "../../../config/config.js";
+import { 
+  buildSuccessResponse,
+  buildErrorResponse,
+  buildCatchErrorResponse
+} from "../../../utils/response-builder.js";
 
 export async function handleGetConfiguration(args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -49,12 +54,9 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
       warnings: []
     };
   } catch (error) {
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "internal" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(
+        error instanceof Error ? error.message : String(error),
+        { source: "internal" }
+      );
   }
 }

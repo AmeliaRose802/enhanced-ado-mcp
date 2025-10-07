@@ -5,7 +5,12 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
@@ -359,14 +364,8 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       warnings
     };
   } catch (error) {
-    logger.error('OData Analytics handler error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "odata-analytics" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'odata-analytics');
   }
 }
 

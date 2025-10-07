@@ -9,7 +9,12 @@ import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { MCPServer } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -367,13 +372,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         : []
     };
   } catch (error) {
-    logger.error('Bulk enhance descriptions error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "bulk-enhance-descriptions" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'bulk-enhance-descriptions');
   }
 }

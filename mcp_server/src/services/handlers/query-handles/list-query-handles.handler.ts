@@ -7,7 +7,12 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -80,12 +85,9 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
 
   } catch (error) {
     logger.error(`Error in handleListQueryHandles: ${error}`);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "list-query-handles" },
-      errors: [`Unexpected error: ${error instanceof Error ? error.message : String(error)}`],
-      warnings: []
-    };
+    return buildErrorResponse(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { source: "list-query-handles" }
+      );
   }
 }

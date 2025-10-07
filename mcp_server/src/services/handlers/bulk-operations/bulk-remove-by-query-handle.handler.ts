@@ -182,13 +182,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       warnings: ['✅ State Change Complete: Work items have been moved to "Removed" state (not permanently deleted)']
     };
   } catch (error) {
-    logger.error('Bulk remove by query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "bulk-remove-by-query-handle" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'bulk-remove-by-query-handle');
   }
 }

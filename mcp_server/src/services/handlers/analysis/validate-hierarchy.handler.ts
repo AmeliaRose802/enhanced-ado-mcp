@@ -7,6 +7,12 @@
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
+import { 
+  buildValidationErrorResponse, 
+  buildAzureCliErrorResponse,
+  buildSuccessResponse,
+  buildCatchErrorResponse
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
 
@@ -322,14 +328,8 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       warnings: violations.length > 0 ? [`Found ${violations.length} hierarchy violations`] : []
     };
   } catch (error) {
-    logger.error('Validate hierarchy error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "validate-hierarchy" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'validate-hierarchy');
   }
 }
 

@@ -8,7 +8,12 @@ import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { MCPServer } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -350,13 +355,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
       ]
     };
   } catch (error) {
-    logger.error('Bulk assign story points error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "bulk-assign-story-points" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'bulk-assign-story-points');
   }
 }

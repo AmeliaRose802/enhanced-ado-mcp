@@ -4,7 +4,13 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse, 
+  buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -103,13 +109,7 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
     };
 
   } catch (error) {
-    logger.error('Select items from query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "select-items-from-query-handle" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'select-items-from-query-handle');
   }
 }

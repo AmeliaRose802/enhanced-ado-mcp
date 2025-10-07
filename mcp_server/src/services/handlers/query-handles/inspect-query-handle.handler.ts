@@ -4,7 +4,13 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, 
+  buildSuccessResponse, 
+  buildSuccessResponseWithWarnings, 
+  buildErrorResponse, 
+  buildPartialSuccessResponse, 
+  buildCatchErrorResponse, 
+  buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -241,13 +247,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       warnings
     };
   } catch (error) {
-    logger.error('Inspect query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "query-handle-service" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    logger.error('Handler error:', error);
+    return buildCatchErrorResponse(error, 'query-handle-service');
   }
 }
