@@ -224,6 +224,55 @@ Filter results by last **meaningful** change (excludes automated updates like it
 
 **Note:** Filtering automatically enables `IncludeSubstantiveChange`, which adds `lastSubstantiveChangeDate` and `daysInactive` fields to results.
 
+## Content Quality Filters
+
+Find incomplete work items that need documentation or refinement:
+
+### Find Items Missing Description
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
+  "FilterByMissingDescription": true
+}
+```
+
+### Find Items Missing Acceptance Criteria
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature')",
+  "FilterByMissingAcceptanceCriteria": true
+}
+```
+
+### Find Items Missing Both
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "FilterByMissingDescription": true,
+  "FilterByMissingAcceptanceCriteria": true
+}
+```
+
+**What counts as "missing":**
+- Empty field
+- Only whitespace
+- HTML-only content producing <10 characters of text
+
+**Common use cases:**
+- ✅ Backlog cleanup before sprint planning
+- ✅ Quality gates enforcement
+- ✅ Finding items that need refinement
+- ✅ Documentation requirements tracking
+
+**Combine with staleness filters:**
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "FilterByMissingDescription": true,
+  "FilterByDaysInactiveMin": 90
+}
+```
+
 ## Pagination Support
 
 Use `skip` and `top` parameters for pagination:
@@ -249,10 +298,76 @@ Use `skip` and `top` parameters for pagination:
 }
 ```
 
+## Full Context Packages
+
+⭐ **NEW:** Fetch comprehensive context for each work item in a query:
+
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "top": 10,
+  "fetchFullPackages": true
+}
+```
+
+### What's Included
+
+When `fetchFullPackages: true`, each work item includes:
+- Full description (Markdown/HTML)
+- Acceptance criteria
+- Comments and discussion
+- Change history (last 10 revisions)
+- Parent and children details
+- Related work items
+- Linked pull requests and commits
+- Extended fields (story points, priority, etc.)
+- Tags
+
+### API Cost Warning
+
+⚠️ **IMPORTANT:** Each work item with `fetchFullPackages` makes 2-3 additional API calls:
+- A query of 50 items = 100-150 API calls
+- **Recommended:** Use with small result sets (<50 items)
+- Combine with filters and pagination to minimize costs
+
+### Example: Deep Analysis of Priority 1 Bugs
+
+```json
+{
+  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.Priority] = 1 AND [System.State] = 'Active'",
+  "top": 20,
+  "fetchFullPackages": true,
+  "returnQueryHandle": true
+}
+```
+
+**Response includes:**
+- `work_items` - Basic work item data
+- `full_packages` - Comprehensive context packages
+- `fullPackagesIncluded: true`
+- `fullPackagesCount` - Number of packages fetched
+
+### Best Practices
+
+✅ **DO:**
+- Use with small, targeted queries (<50 items)
+- Combine with specific filters
+- Use pagination for larger analyses
+- Check `fullPackagesCount` in response
+
+❌ **DON'T:**
+- Use with broad queries (>50 items)
+- Use for bulk operations (use basic query instead)
+- Use when only basic fields needed
+- Ignore API cost warnings in response
+
 ## Critical Notes
 
 ⚠️ **ORDER BY not supported in WorkItemLinks queries**  
 ⚠️ **State names are case-sensitive** ('Active' not 'active')  
 ⚠️ **WorkItemType names are case-sensitive** ('Product Backlog Item')  
 ⚠️ **Empty parent check:** `[System.Parent] = '' OR [System.Parent] IS NULL`  
-⚠️ **Use UNDER for area paths** not = for sub-areas
+⚠️ **Use UNDER for area paths** not = for sub-areas  
+⚠️ **fetchFullPackages significantly increases API calls** - use sparingly  
+✅ **Use content quality filters** for backlog cleanup and quality gates  
+✅ **Combine filters** for powerful queries (staleness + missing content)

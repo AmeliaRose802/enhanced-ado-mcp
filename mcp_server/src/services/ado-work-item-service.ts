@@ -569,6 +569,8 @@ interface WiqlQueryArgs {
   filterByDaysInactiveMax?: number;
   computeMetrics?: boolean;
   staleThresholdDays?: number;
+  filterByMissingDescription?: boolean;
+  filterByMissingAcceptanceCriteria?: boolean;
 }
 
 // Fields that indicate substantive changes
@@ -736,7 +738,9 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     filterByDaysInactiveMin,
     filterByDaysInactiveMax,
     computeMetrics = false,
-    staleThresholdDays = 180
+    staleThresholdDays = 180,
+    filterByMissingDescription = false,
+    filterByMissingAcceptanceCriteria = false
   } = args;
 
   // Auto-enable includeSubstantiveChange if any filtering parameters are provided
@@ -800,6 +804,14 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     // Add date fields if needed for substantive change analysis or computed metrics
     if (includeSubstantiveChange || computeMetrics) {
       defaultFields.push('System.CreatedDate', 'System.ChangedDate');
+    }
+
+    // Add description and acceptance criteria fields if filtering by them
+    if (filterByMissingDescription) {
+      defaultFields.push('System.Description');
+    }
+    if (filterByMissingAcceptanceCriteria) {
+      defaultFields.push('Microsoft.VSTS.Common.AcceptanceCriteria');
     }
 
     // Combine default fields with user-requested fields
@@ -986,6 +998,28 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         });
         logger.debug(`Filtered by daysInactive <= ${filterByDaysInactiveMax}: ${preFilterCount} → ${filteredWorkItems.length}`);
       }
+    }
+
+    // Apply missing description filter
+    if (filterByMissingDescription) {
+      const preFilterCount = filteredWorkItems.length;
+      filteredWorkItems = filteredWorkItems.filter(wi => {
+        const description = wi.additionalFields?.['System.Description'] || '';
+        const descriptionText = String(description).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
+        return descriptionText.length < 10; // Consider empty if less than 10 characters
+      });
+      logger.debug(`Filtered by missing description: ${preFilterCount} → ${filteredWorkItems.length}`);
+    }
+
+    // Apply missing acceptance criteria filter
+    if (filterByMissingAcceptanceCriteria) {
+      const preFilterCount = filteredWorkItems.length;
+      filteredWorkItems = filteredWorkItems.filter(wi => {
+        const acceptanceCriteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '';
+        const criteriaText = String(acceptanceCriteria).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
+        return criteriaText.length < 10; // Consider empty if less than 10 characters
+      });
+      logger.debug(`Filtered by missing acceptance criteria: ${preFilterCount} → ${filteredWorkItems.length}`);
     }
 
     return {

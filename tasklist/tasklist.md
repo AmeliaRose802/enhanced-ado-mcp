@@ -11,9 +11,6 @@
 
 - Flow for removing by handle still isn't right. User needs to be able to confirm removal of a specific item ID and then server needs to allow agent to remove it while validating that handle, id and title match to make sure the right item was used
 
-- Add tool for finding items with missing descritptions/acceptance criteria etc. Can't do with current tools
-
-
 
 - Optionally support getting additional context based on wiql query
 
@@ -53,8 +50,25 @@
   - Requires: AI-powered estimation logic, historical velocity data, confidence scoring
 
 
+We are ending up with a unmanagable number of handler files all in the same directory. Please reorgnize the repo to use a sensible folder structure without breaking things. Add clear docs explaining where things belong so future code is placed correctly.
+
 
 # DONE
+
+- ✅ **COMPLETED** - Bulk intelligent sampling-based enhancement tools
+  - Added: `wit-bulk-enhance-descriptions-by-query-handle` - AI-powered description enhancement
+  - Added: `wit-bulk-assign-story-points-by-query-handle` - AI-powered story point estimation
+  - Added: `wit-bulk-add-acceptance-criteria-by-query-handle` - AI-powered acceptance criteria generation
+  - Features: Query handle integration, multiple styles/formats, dry-run mode, batch processing
+  - System Prompts: Created `description-enhancer.md`, `story-point-estimator.md`, `acceptance-criteria-generator.md`
+  - Documentation: Created comprehensive `bulk-intelligent-enhancement-guide.md` resource
+  - Safety: Auto-skip completed items, confidence scoring, sample size limits (max 100)
+  - Enhancement Styles: detailed, concise, technical, business
+  - Point Scales: fibonacci, linear, t-shirt
+  - Criteria Formats: gherkin, checklist, user-story
+  - Performance: Uses gpt-4o-mini for speed and cost efficiency
+  - All tools require single call to process entire query handle results
+  - Tests: All 99 existing tests pass
 
 - ✅ **FIXED** - Add ability to filter result of WIQL call by last substantial change date
   - Added: `filterBySubstantiveChangeAfter` parameter - filter by date (ISO 8601)

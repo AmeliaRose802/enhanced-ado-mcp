@@ -23,6 +23,9 @@ import { handleValidateQueryHandle } from './handlers/validate-query-handle.hand
 import { handleAnalyzeByQueryHandle } from './handlers/analyze-by-query-handle.handler.js';
 import { handleListQueryHandles } from './handlers/list-query-handles.handler.js';
 import { handleInspectQueryHandle, handleSelectItemsFromQueryHandle } from './handlers/inspect-query-handle.handler.js';
+import { handleBulkEnhanceDescriptions } from './handlers/bulk-enhance-descriptions.handler.js';
+import { handleBulkAssignStoryPoints } from './handlers/bulk-assign-story-points.handler.js';
+import { handleBulkAddAcceptanceCriteria } from './handlers/bulk-add-acceptance-criteria.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: MCPServer | null = null;
@@ -180,6 +183,28 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   if (name === 'wit-select-items-from-query-handle') {
     return await handleSelectItemsFromQueryHandle(config, args);
+  }
+
+  // Bulk intelligent enhancement tools (AI-powered)
+  if (name === 'wit-bulk-enhance-descriptions-by-query-handle') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleBulkEnhanceDescriptions(config, args, serverInstance);
+  }
+
+  if (name === 'wit-bulk-assign-story-points-by-query-handle') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleBulkAssignStoryPoints(config, args, serverInstance);
+  }
+
+  if (name === 'wit-bulk-add-acceptance-criteria-by-query-handle') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleBulkAddAcceptanceCriteria(config, args, serverInstance);
   }
 
   // All tools should be handled by the cases above

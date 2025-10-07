@@ -22,7 +22,10 @@ import {
   bulkRemoveByQueryHandleSchema,
   validateQueryHandleSchema,
   analyzeByQueryHandleSchema,
-  listQueryHandlesSchema
+  listQueryHandlesSchema,
+  bulkEnhanceDescriptionsByQueryHandleSchema,
+  bulkAssignStoryPointsByQueryHandleSchema,
+  bulkAddAcceptanceCriteriaByQueryHandleSchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -233,7 +236,10 @@ export const toolConfigs: ToolConfig[] = [
         filterBySubstantiveChangeBefore: { type: "string", description: "Filter results to only include work items with lastSubstantiveChangeDate before this date (ISO 8601 format). Auto-enables includeSubstantiveChange. Use for finding stale items." },
         filterByDaysInactiveMin: { type: "number", description: "Filter results to only include work items with daysInactive >= this value. Auto-enables includeSubstantiveChange. Use for finding stale items (e.g., 180 for items inactive 6+ months)." },
         filterByDaysInactiveMax: { type: "number", description: "Filter results to only include work items with daysInactive <= this value. Auto-enables includeSubstantiveChange. Use for finding recently active items (e.g., 30 for items active in last month)." },
-        returnQueryHandle: { type: "boolean", description: "🔐 DEFAULT TRUE: Return query handle for safe operations. ⚠️ Only set to false if you need raw IDs for immediate user display. For analysis, bulk operations, or any workflow that might reference IDs later, keep this true to prevent hallucination. Handle expires after 1 hour." }
+        filterByMissingDescription: { type: "boolean", description: "Filter to only include work items with missing or empty description. Useful for backlog cleanup - finding items that need documentation." },
+        filterByMissingAcceptanceCriteria: { type: "boolean", description: "Filter to only include work items with missing or empty acceptance criteria. Useful for finding PBIs/Features that need completion criteria defined." },
+        returnQueryHandle: { type: "boolean", description: "🔐 DEFAULT TRUE: Return query handle for safe operations. ⚠️ Only set to false if you need raw IDs for immediate user display. For analysis, bulk operations, or any workflow that might reference IDs later, keep this true to prevent hallucination. Handle expires after 1 hour." },
+        fetchFullPackages: { type: "boolean", description: "Fetch full context packages for each work item including description, comments, history, relations, children, and parent. ⚠️ WARNING: Increases API calls significantly (1 call per work item + relations/comments). Use for deep analysis of small result sets (<50 items). Automatically includes extended fields, relations, comments, and history." }
       },
       required: ["wiqlQuery"]
     }
@@ -508,6 +514,129 @@ export const toolConfigs: ToolConfig[] = [
       },
       required: ["queryHandle", "itemSelector"]
     }
+  },
+  
+  // ============================================================
+  // BULK INTELLIGENT ENHANCEMENT TOOLS (AI-Powered)
+  // ============================================================
+  
+  {
+    name: "wit-bulk-enhance-descriptions-by-query-handle",
+    description: "Use AI to generate improved descriptions for multiple work items identified by query handle. Processes items in batches, generates enhanced descriptions based on context, and updates work items. Supports multiple enhancement styles (detailed, concise, technical, business). Returns AI-generated descriptions with confidence scores. Set dryRun=false to apply changes.",
+    script: "",
+    schema: bulkEnhanceDescriptionsByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria"
+        },
+        sampleSize: { type: "number", description: "Max items to process (default 10, max 100)" },
+        enhancementStyle: { 
+          type: "string", 
+          enum: ["detailed", "concise", "technical", "business"],
+          description: "Style: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)" 
+        },
+        preserveExisting: { type: "boolean", description: "Append to existing description (default true)" },
+        dryRun: { type: "boolean", description: "Preview without updating (default true)" }
+      },
+      required: ["queryHandle"]
+    }
+  },
+  
+  {
+    name: "wit-bulk-assign-story-points-by-query-handle",
+    description: "Use AI to estimate story points for multiple work items identified by query handle. Analyzes complexity, scope, and risk to assign appropriate story points using fibonacci (1,2,3,5,8,13), linear (1-10), or t-shirt (XS,S,M,L,XL) scales. Returns estimates with confidence scores and reasoning. Set dryRun=false to apply changes.",
+    script: "",
+    schema: bulkAssignStoryPointsByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria"
+        },
+        sampleSize: { type: "number", description: "Max items to process (default 10, max 100)" },
+        pointScale: { 
+          type: "string", 
+          enum: ["fibonacci", "linear", "t-shirt"],
+          description: "Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)" 
+        },
+        onlyUnestimated: { type: "boolean", description: "Only estimate items without existing effort (default true)" },
+        dryRun: { type: "boolean", description: "Preview without updating (default true)" }
+      },
+      required: ["queryHandle"]
+    }
+  },
+  
+  {
+    name: "wit-bulk-add-acceptance-criteria-by-query-handle",
+    description: "Use AI to generate acceptance criteria for multiple work items identified by query handle. Generates 3-7 testable criteria in gherkin (Given/When/Then), checklist (bullet points), or user-story (As a/I want/So that) format. Returns generated criteria with confidence scores. Set dryRun=false to apply changes.",
+    script: "",
+    schema: bulkAddAcceptanceCriteriaByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria"
+        },
+        sampleSize: { type: "number", description: "Max items to process (default 10, max 100)" },
+        criteriaFormat: { 
+          type: "string", 
+          enum: ["gherkin", "checklist", "user-story"],
+          description: "Format: gherkin (Given/When/Then), checklist (bullets), user-story (As a/I want/So that)" 
+        },
+        minCriteria: { type: "number", description: "Minimum criteria to generate (default 3)" },
+        maxCriteria: { type: "number", description: "Maximum criteria to generate (default 7)" },
+        preserveExisting: { type: "boolean", description: "Append to existing criteria (default true)" },
+        dryRun: { type: "boolean", description: "Preview without updating (default true)" }
+      },
+      required: ["queryHandle"]
+    }
   }
 ];
 
@@ -516,7 +645,10 @@ export const toolConfigs: ToolConfig[] = [
  */
 export const AI_POWERED_TOOLS = [
   'wit-intelligence-analyzer',
-  'wit-ai-assignment-analyzer'
+  'wit-ai-assignment-analyzer',
+  'wit-bulk-enhance-descriptions-by-query-handle',
+  'wit-bulk-assign-story-points-by-query-handle',
+  'wit-bulk-add-acceptance-criteria-by-query-handle'
 ];
 
 /**

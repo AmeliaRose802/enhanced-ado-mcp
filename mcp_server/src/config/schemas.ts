@@ -253,7 +253,10 @@ export const wiqlQuerySchema = z.object({
   filterByDaysInactiveMax: z.number().int().optional().describe("Filter results to only include work items with daysInactive <= this value. Automatically enables includeSubstantiveChange. Use for finding recently active items."),
   computeMetrics: z.boolean().optional().default(false).describe("Include computed metrics: daysInactive (from changed date), daysSinceCreated, hasDescription (>50 chars), isStale (inactive >180 days)"),
   staleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)"),
-  returnQueryHandle: z.boolean().optional().default(true).describe("🔐 ANTI-HALLUCINATION: Return a query handle along with full work item details. Handle enables safe bulk operations without ID hallucination risk. Set to false only if you need IDs for immediate display to user. Handle expires after 1 hour. RECOMMENDED: Always keep true for analysis workflows.")
+  filterByMissingDescription: z.boolean().optional().default(false).describe("Filter results to only include work items with missing or empty description (after stripping HTML, less than 10 characters). Useful for finding incomplete work items that need documentation."),
+  filterByMissingAcceptanceCriteria: z.boolean().optional().default(false).describe("Filter results to only include work items with missing or empty acceptance criteria (after stripping HTML, less than 10 characters). Useful for finding PBIs/Features that need completion criteria defined."),
+  returnQueryHandle: z.boolean().optional().default(true).describe("🔐 ANTI-HALLUCINATION: Return a query handle along with full work item details. Handle enables safe bulk operations without ID hallucination risk. Set to false only if you need IDs for immediate display to user. Handle expires after 1 hour. RECOMMENDED: Always keep true for analysis workflows."),
+  fetchFullPackages: z.boolean().optional().default(false).describe("Fetch full context packages for each work item including description, comments, history, relations, children, and parent. ⚠️ WARNING: Increases API calls significantly (1 call per work item + 1 for comments/relations). Use sparingly for deep analysis of small result sets (<50 items). Automatically includes extended fields, relations, comments, and history.")
 });
 
 /**
@@ -497,6 +500,81 @@ export const selectItemsFromQueryHandleSchema = z.object({
   previewCount: z.number().int().optional().default(10).describe("Number of selected items to preview (default 10, max 50)")
 });
 
+/**
+ * Schema for bulk intelligent description enhancement
+ * Uses AI to generate improved descriptions for work items identified by query handle
+ */
+export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  itemSelector: z.union([
+    z.literal("all"),
+    z.array(z.number()).max(100),
+    z.object({
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all', array of indices, or criteria object"),
+  sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100 for performance)"),
+  enhancementStyle: z.enum(['detailed', 'concise', 'technical', 'business']).optional().default('detailed').describe("Style of enhanced description: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)"),
+  preserveExisting: z.boolean().optional().default(true).describe("Append to existing description rather than replace (default true)"),
+  dryRun: z.boolean().optional().default(true).describe("Preview AI-generated descriptions without updating work items (default true for safety)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
 
+/**
+ * Schema for bulk intelligent story point assignment
+ * Uses AI to estimate story points based on work item context
+ */
+export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle identifying work items to estimate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  itemSelector: z.union([
+    z.literal("all"),
+    z.array(z.number()).max(100),
+    z.object({
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all', array of indices, or criteria object"),
+  sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
+  pointScale: z.enum(['fibonacci', 'linear', 't-shirt']).optional().default('fibonacci').describe("Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)"),
+  onlyUnestimated: z.boolean().optional().default(true).describe("Only assign points to items without existing effort estimates (default true)"),
+  dryRun: z.boolean().optional().default(true).describe("Preview AI-estimated story points without updating work items (default true for safety)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
+ * Schema for bulk intelligent acceptance criteria generation
+ * Uses AI to generate acceptance criteria based on work item context
+ */
+export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  itemSelector: z.union([
+    z.literal("all"),
+    z.array(z.number()).max(100),
+    z.object({
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).default("all").describe("Item selection: 'all', array of indices, or criteria object"),
+  sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
+  criteriaFormat: z.enum(['gherkin', 'checklist', 'user-story']).optional().default('gherkin').describe("Format: gherkin (Given/When/Then), checklist (bullet points), user-story (As a/I want/So that)"),
+  minCriteria: z.number().int().min(1).max(10).optional().default(3).describe("Minimum number of acceptance criteria to generate (default 3)"),
+  maxCriteria: z.number().int().min(1).max(15).optional().default(7).describe("Maximum number of acceptance criteria to generate (default 7)"),
+  preserveExisting: z.boolean().optional().default(true).describe("Append to existing acceptance criteria rather than replace (default true)"),
+  dryRun: z.boolean().optional().default(true).describe("Preview AI-generated acceptance criteria without updating work items (default true for safety)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
 
 

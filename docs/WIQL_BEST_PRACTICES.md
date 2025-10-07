@@ -273,6 +273,61 @@ AND ([System.Description] = '' OR [System.Description] IS NULL)
 ORDER BY [System.CreatedDate] DESC
 ```
 
+### Pattern 5: Find Items Missing Description
+
+**Use Case:** Backlog cleanup - find items that need documentation
+
+```javascript
+{
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
+  FilterByMissingDescription: true,
+  MaxResults: 100
+}
+```
+
+**What counts as missing:**
+- Empty description field
+- Description with only whitespace  
+- HTML-only content that produces less than 10 characters of text
+
+### Pattern 6: Find Items Missing Acceptance Criteria
+
+**Use Case:** Quality gates - find PBIs/Features without completion criteria
+
+```javascript
+{
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature')",
+  FilterByMissingAcceptanceCriteria: true,
+  MaxResults: 100
+}
+```
+
+### Pattern 7: Find Incomplete Items (Both Missing)
+
+**Use Case:** Find items missing BOTH description AND acceptance criteria
+
+```javascript
+{
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  FilterByMissingDescription: true,
+  FilterByMissingAcceptanceCriteria: true,
+  MaxResults: 200
+}
+```
+
+### Pattern 8: Combine Quality and Staleness Filters
+
+**Use Case:** Find old, incomplete items that need attention
+
+```javascript
+{
+  WiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  FilterByMissingDescription: true,
+  FilterByDaysInactiveMin: 90,
+  MaxResults: 50
+}
+```
+
 ## Performance Tips
 
 ### 1. Use MaxResults Wisely
@@ -353,6 +408,103 @@ WHERE [System.Parent] = {knownParentId}
 6. **Use MaxResults** to prevent huge responses
 7. **Handle empty parents** with `= '' OR IS NULL`
 8. **Case matters** for state names and work item types
+9. **Use content quality filters** to find incomplete work items
+10. **Combine filters** for powerful cleanup queries (staleness + missing content)
+
+## Advanced Feature: Fetch Full Context Packages
+
+### Overview
+
+The `wit-get-work-items-by-query-wiql` tool now supports an optional `fetchFullPackages` flag that retrieves comprehensive context for each work item in a single query.
+
+### When to Use `fetchFullPackages`
+
+✅ **Use when:**
+- You need detailed descriptions, comments, and history for each work item
+- Analyzing small result sets (<50 items) that require deep context
+- Building comprehensive reports or documentation
+- Investigating specific work items in detail
+
+❌ **Avoid when:**
+- Querying large result sets (>50 items) - causes many API calls
+- Only need basic fields (ID, title, state, etc.)
+- Performing bulk operations where minimal context is sufficient
+- Performance is a concern
+
+### API Cost Warning
+
+⚠️ **Important:** Using `fetchFullPackages: true` significantly increases API calls:
+- Each work item requires 2-3 additional API calls (details + comments + relations)
+- A query returning 50 items could make 100-150 API calls
+- Use pagination and filters to limit result sets
+
+### Example Usage
+
+```typescript
+// Basic query without full packages (default)
+{
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  top: 100
+}
+
+// Query WITH full context packages (for deep analysis)
+{
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  top: 10,  // ⚠️ Keep small!
+  fetchFullPackages: true  // Fetches descriptions, comments, history, relations, etc.
+}
+```
+
+### What's Included in Full Packages
+
+When `fetchFullPackages: true`, each work item includes:
+
+- ✅ **Description** - Full markdown/HTML content
+- ✅ **Acceptance Criteria** - Complete acceptance criteria
+- ✅ **Comments** - All discussion threads
+- ✅ **History** - Recent change history (last 10 revisions)
+- ✅ **Relations** - Parent, children, related items
+- ✅ **Pull Requests** - Linked PRs and commits
+- ✅ **Extended Fields** - Story points, priority, risk, etc.
+- ✅ **Tags** - All tags associated with the work item
+
+### Response Structure
+
+```typescript
+{
+  success: true,
+  data: {
+    query_handle: "qh_xxx",
+    work_items: [...],           // Basic work item data
+    full_packages: [...],        // ⭐ Comprehensive context packages
+    fullPackagesIncluded: true,
+    fullPackagesCount: 10
+  }
+}
+```
+
+### Best Practices
+
+1. **Combine with filters** to minimize result sets:
+   ```sql
+   SELECT [System.Id] FROM WorkItems 
+   WHERE [System.AreaPath] = 'MyProject\Area1'
+   AND [System.State] = 'Active'
+   AND [System.WorkItemType] = 'Bug'
+   ```
+
+2. **Use with pagination** for large analyses:
+   ```typescript
+   {
+     wiqlQuery: "...",
+     top: 20,
+     skip: 0,
+     fetchFullPackages: true
+   }
+   ```
+
+3. **Monitor API usage** - check warnings in response
+4. **Start small** - test with `top: 5` first
 
 ## When You Need Help
 
@@ -361,3 +513,4 @@ WHERE [System.Parent] = {knownParentId}
 - Start simple, add complexity incrementally
 - Use `wit-validate-hierarchy-fast` for quick checks
 - Review query results count before processing
+- Use `fetchFullPackages` sparingly for deep analysis only

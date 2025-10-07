@@ -82,6 +82,19 @@ Anti-hallucination architecture for bulk operations:
 
 **Use when:** Agent needs to perform bulk operations on multiple work items
 
+### 7. Bulk Intelligent Enhancement Guide (`bulk-intelligent-enhancement-guide.md`)
+**URI:** `ado://docs/bulk-intelligent-enhancement-guide`
+
+AI-powered bulk enhancement tools for work items:
+- Bulk description enhancement (detailed, concise, technical, business styles)
+- Bulk story point estimation (fibonacci, linear, t-shirt scales)
+- Bulk acceptance criteria generation (gherkin, checklist, user-story formats)
+- Complete workflow patterns
+- Safety features and best practices
+- Performance considerations and troubleshooting
+
+**Use when:** Agent needs to enhance multiple work items with AI-generated content (descriptions, estimates, acceptance criteria)
+
 ## How Agents Access Resources
 
 ### List Available Resources
@@ -180,7 +193,9 @@ resources/
 ├── hierarchy-patterns.md
 ├── common-workflows.md
 ├── tool-selection-guide.md
-└── query-handle-pattern.md
+├── query-handle-pattern.md
+├── bulk-intelligent-enhancement-guide.md
+└── ... (other guides)
 ```
 
 ## Benefits for AI Agents
