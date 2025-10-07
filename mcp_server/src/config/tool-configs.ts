@@ -269,7 +269,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-query-analytics-odata",
-    description: "Query Azure DevOps Analytics using OData for efficient aggregations, metrics, and trend analysis. Supports work item counts, grouping by state/type/assignee, velocity metrics, and cycle time analysis. Use this for analytics and reporting instead of WIQL when you need aggregated data.",
+    description: "Query Azure DevOps Analytics using OData for efficient aggregations, metrics, and trend analysis. Supports work item counts, grouping by state/type/assignee, velocity metrics, and cycle time analysis. Use this for analytics and reporting instead of WIQL when you need aggregated data. Supports pagination for large result sets.",
     script: "", // Handled internally
     schema: odataAnalyticsQuerySchema,
     inputSchema: {
@@ -288,7 +288,8 @@ export const toolConfigs: ToolConfig[] = [
         dateRangeEnd: { type: "string", description: "End date (ISO 8601: YYYY-MM-DD)" },
         areaPath: { type: "string", description: "Filter by Area Path" },
         iterationPath: { type: "string", description: "Filter by Iteration Path" },
-        top: { type: "number", description: "Maximum number of results (default 100)" },
+        top: { type: "number", description: "Maximum number of results (default 100, max 1000)" },
+        skip: { type: "number", description: "Number of results to skip for pagination (default 0)" },
         computeCycleTime: { type: "boolean", description: "Compute cycle time for completed items" },
         includeMetadata: { type: "boolean", description: "Include query and URL metadata in response" },
         includeOdataMetadata: { type: "boolean", description: "Include OData metadata fields (@odata.*) in response (default: false)" }

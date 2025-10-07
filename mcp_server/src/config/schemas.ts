@@ -267,7 +267,8 @@ export const odataAnalyticsQuerySchema = z.object({
   dateRangeEnd: z.string().optional().describe("End date for date range filter (ISO 8601 format: YYYY-MM-DD)"),
   areaPath: z.string().optional().describe("Filter by Area Path"),
   iterationPath: z.string().optional().describe("Filter by Iteration Path"),
-  top: z.number().int().optional().default(100).describe("Maximum number of results to return (default 100)"),
+  top: z.number().int().min(1).max(1000).optional().default(100).describe("Maximum number of results to return (default 100, max 1000)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of results to skip for pagination (default 0)"),
   computeCycleTime: z.boolean().optional().default(false).describe("Compute cycle time (CompletedDate - CreatedDate) for completed items"),
   includeMetadata: z.boolean().optional().default(false).describe("Include query and URL metadata in response"),
   includeOdataMetadata: z.boolean().optional().default(false).describe("Include OData metadata fields (@odata.context, @odata.count, @odata.nextLink) in response (default: false)")

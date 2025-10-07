@@ -25,6 +25,7 @@ interface ODataAnalyticsArgs {
   areaPath?: string;
   iterationPath?: string;
   top?: number;
+  skip?: number;
   computeCycleTime?: boolean;
   includeMetadata?: boolean;
   includeOdataMetadata?: boolean;
@@ -66,7 +67,7 @@ function cleanODataResults(results: any[], stripMetadata: boolean = true): any[]
  */
 function buildODataQuery(args: ODataAnalyticsArgs): string {
   const { queryType, filters, groupBy, select, orderBy, dateRangeField, dateRangeStart, dateRangeEnd, 
-          areaPath, iterationPath, top, computeCycleTime, customODataQuery } = args;
+          areaPath, iterationPath, top, skip, computeCycleTime, customODataQuery } = args;
 
   let query = "";
   const filterClauses: string[] = [];
@@ -208,11 +209,15 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       throw new Error(`Unsupported query type: ${queryType}`);
   }
 
-  // Add $top if specified (not applicable for aggregations with $apply)
-  if (top && !query.includes("$apply")) {
-    query += `&$top=${top}`;
-  } else if (top && queryType === "velocityMetrics") {
-    query += `&$top=${top}`;
+  // Add $top and $skip for pagination (not applicable for aggregations with $apply, except velocityMetrics)
+  const isPaginationSupported = !query.includes("$apply") || queryType === "velocityMetrics";
+  if (isPaginationSupported) {
+    if (top) {
+      query += `&$top=${top}`;
+    }
+    if (skip && skip > 0) {
+      query += `&$skip=${skip}`;
+    }
   }
 
   // Add select clause if provided
@@ -289,12 +294,34 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     const resultCount = data["@odata.count"] || cleanedResults.length || 0;
     const summary = generateSummary(queryArgs.queryType, resultCount, cleanedResults);
 
+    // Calculate pagination metadata
+    const top = queryArgs.top || 100;
+    const skip = queryArgs.skip || 0;
+    const returned = cleanedResults.length;
+    const hasNextLink = !!data["@odata.nextLink"];
+    
     // Build concise response - only include what's needed
     const responseData: any = {
       summary: summary,
       count: resultCount,
       results: cleanedResults
     };
+    
+    // Add pagination metadata when applicable
+    const isPaginationSupported = !odataQuery.includes("$apply") || queryArgs.queryType === "velocityMetrics";
+    if (isPaginationSupported && (returned >= top || hasNextLink || skip > 0)) {
+      responseData.pagination = {
+        skip,
+        top,
+        returned,
+        hasMore: hasNextLink || returned >= top
+      };
+      
+      // Add nextSkip only if there are more results
+      if (hasNextLink || returned >= top) {
+        responseData.pagination.nextSkip = skip + returned;
+      }
+    }
     
     // Include top-level OData metadata if requested
     if (includeOdataMetadata) {
@@ -315,14 +342,21 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       responseData.analyticsUrl = fullUrl;
     }
 
+    // Add warnings if pagination available
+    const warnings: string[] = [];
+    if (responseData.pagination?.hasMore) {
+      warnings.push(`More results available. Use skip=${responseData.pagination.nextSkip} to get the next page.`);
+    }
+
     return {
       success: true,
       data: responseData,
       metadata: { 
-        source: "odata-analytics"
+        source: "odata-analytics",
+        ...(responseData.pagination && { pagination: responseData.pagination })
       },
       errors: [],
-      warnings: []
+      warnings
     };
   } catch (error) {
     logger.error('OData Analytics handler error:', error);
