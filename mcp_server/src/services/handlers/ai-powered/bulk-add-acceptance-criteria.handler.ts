@@ -28,6 +28,78 @@ interface CriteriaResult {
   skipped?: string;
 }
 
+/**
+ * Handler for wit-bulk-add-acceptance-criteria-by-query-handle tool
+ * 
+ * Uses AI to generate acceptance criteria for multiple work items identified by a query handle.
+ * The AI generates testable, specific criteria in the requested format (Gherkin, checklist, or user story).
+ * 
+ * This handler processes work items in batches, generating acceptance criteria that are:
+ * - Specific and testable
+ * - Cover happy paths, edge cases, and error conditions
+ * - Include performance/security considerations when relevant
+ * - Avoid vague terms like "works well"
+ * 
+ * @param config - Tool configuration containing the Zod schema for validation
+ * @param args - Arguments object expected to contain:
+ *   - queryHandle: string - The query handle ID from a previous WIQL query
+ *   - itemSelector: ItemSelector - How to select items: 'all', indices array, or criteria object
+ *   - sampleSize?: number - Max items to process (default: 10, max: 100)
+ *   - criteriaFormat?: string - Format for criteria: 'gherkin' | 'checklist' | 'user-story' (default: 'gherkin')
+ *   - minCriteria?: number - Minimum criteria to generate per item (default: 3)
+ *   - maxCriteria?: number - Maximum criteria to generate per item (default: 7)
+ *   - preserveExisting?: boolean - Append to existing criteria vs replace (default: true)
+ *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
+ *   - organization?: string - Azure DevOps organization (defaults to config value)
+ *   - project?: string - Azure DevOps project (defaults to config value)
+ * @param server - MCP server instance for AI sampling capabilities
+ * @returns Promise<ToolExecutionResult> with the following structure:
+ *   - success: boolean - True if all items processed without errors
+ *   - data: Object containing:
+ *       * query_handle: string - The input query handle
+ *       * total_items_in_handle: number - Total items in query handle
+ *       * selected_items: number - Items matching itemSelector
+ *       * items_processed: number - Items actually processed (limited by sampleSize)
+ *       * item_selector: ItemSelector - The selection pattern used
+ *       * criteria_format: string - Format used for criteria
+ *       * dry_run: boolean - Whether changes were applied
+ *       * successful: number - Count of successfully processed items
+ *       * skipped: number - Count of skipped items (completed/closed)
+ *       * failed: number - Count of failed items
+ *       * low_confidence: number - Count of items with insufficient info
+ *       * results: Array of per-item results
+ *       * summary: string - Human-readable summary
+ *   - metadata: Processing statistics and context
+ *   - errors: Array of error messages for failed items
+ *   - warnings: Array of warnings (skipped items, low confidence)
+ * @throws {Error} Returns error result (does not throw) if:
+ *   - Azure CLI is not available or not logged in
+ *   - AI sampling is not supported by the server
+ *   - Query handle is invalid, not found, or expired
+ *   - Work item fetching or updating fails
+ * @example
+ * ```typescript
+ * // Generate Gherkin acceptance criteria for all items (dry run)
+ * const result = await handleBulkAddAcceptanceCriteria(config, {
+ *   queryHandle: 'qh_abc123',
+ *   itemSelector: 'all',
+ *   criteriaFormat: 'gherkin',
+ *   dryRun: true
+ * }, server);
+ * ```
+ * @example
+ * ```typescript
+ * // Add checklist criteria to stale active items
+ * const result = await handleBulkAddAcceptanceCriteria(config, {
+ *   queryHandle: 'qh_abc123',
+ *   itemSelector: { states: ['Active'], daysInactiveMin: 7 },
+ *   criteriaFormat: 'checklist',
+ *   preserveExisting: false,
+ *   dryRun: false
+ * }, server);
+ * ```
+ * @since 1.4.0
+ */
 export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: unknown, server: MCPServer): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();

@@ -28,6 +28,82 @@ interface EnhancementResult {
   skipped?: string;
 }
 
+/**
+ * Handler for wit-bulk-enhance-descriptions-by-query-handle tool
+ * 
+ * Uses AI to generate improved descriptions for multiple work items.
+ * The AI analyzes existing content (title, tags, current description) and generates
+ * enhanced descriptions that are clear, comprehensive, and follow best practices.
+ * 
+ * Enhancement styles:
+ * - 'concise': Brief, focused descriptions (150-200 words)
+ * - 'detailed': Comprehensive descriptions with context (300-400 words)
+ * - 'technical': Technical audience with implementation details
+ * - 'business': Business stakeholder audience with value focus
+ * 
+ * @param config - Tool configuration containing the Zod schema for validation
+ * @param args - Arguments object expected to contain:
+ *   - queryHandle: string - The query handle ID from a previous WIQL query
+ *   - itemSelector: ItemSelector - How to select items: 'all', indices array, or criteria object
+ *   - sampleSize?: number - Max items to process (default: 10, max: 100)
+ *   - enhancementStyle?: string - Style for descriptions: 'concise' | 'detailed' | 'technical' | 'business' (default: 'detailed')
+ *   - preserveExisting?: boolean - Append to existing description vs replace (default: true)
+ *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
+ *   - organization?: string - Azure DevOps organization (defaults to config value)
+ *   - project?: string - Azure DevOps project (defaults to config value)
+ * @param server - MCP server instance for AI sampling capabilities
+ * @returns Promise<ToolExecutionResult> with the following structure:
+ *   - success: boolean - True if all items processed without errors
+ *   - data: Object containing:
+ *       * query_handle: string - The input query handle
+ *       * total_items_in_handle: number - Total items in query handle
+ *       * selected_items: number - Items matching itemSelector
+ *       * items_processed: number - Items actually processed (limited by sampleSize)
+ *       * item_selector: ItemSelector - The selection pattern used
+ *       * enhancement_style: string - Style used for descriptions
+ *       * preserve_existing: boolean - Whether existing content was preserved
+ *       * dry_run: boolean - Whether changes were applied
+ *       * successful: number - Count of successfully enhanced items
+ *       * skipped: number - Count of skipped items (completed/closed)
+ *       * failed: number - Count of failed items
+ *       * results: Array of per-item enhancement results with:
+ *           - work_item_id: number
+ *           - enhanced_description: string (if dry_run)
+ *           - improvement_reason: string - Why enhancement was needed
+ *           - confidence: number (0-1) - AI confidence in enhancement
+ *       * summary: string - Human-readable summary
+ *   - metadata: Processing statistics and context
+ *   - errors: Array of error messages for failed items
+ *   - warnings: Array of warnings (skipped items)
+ * @throws {Error} Returns error result (does not throw) if:
+ *   - Azure CLI is not available or not logged in
+ *   - AI sampling is not supported by the server
+ *   - Query handle is invalid, not found, or expired
+ *   - Work item fetching or updating fails
+ * @example
+ * ```typescript
+ * // Generate concise descriptions for items missing descriptions (dry run)
+ * const result = await handleBulkEnhanceDescriptions(config, {
+ *   queryHandle: 'qh_abc123',
+ *   itemSelector: 'all',
+ *   enhancementStyle: 'concise',
+ *   preserveExisting: false,
+ *   dryRun: true
+ * }, server);
+ * ```
+ * @example
+ * ```typescript
+ * // Add detailed technical context to active bugs
+ * const result = await handleBulkEnhanceDescriptions(config, {
+ *   queryHandle: 'qh_abc123',
+ *   itemSelector: { states: ['Active'], tags: ['bug'] },
+ *   enhancementStyle: 'technical',
+ *   preserveExisting: true,
+ *   dryRun: false
+ * }, server);
+ * ```
+ * @since 1.4.0
+ */
 export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: unknown, server: MCPServer): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
