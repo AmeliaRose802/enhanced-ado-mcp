@@ -535,6 +535,47 @@ class QueryHandleService {
   }
 
   /**
+   * Get all handles with their details
+   * 
+   * @param includeExpired Whether to include expired handles (default: false)
+   * @returns Array of handle details
+   */
+  getAllHandles(includeExpired: boolean = false): Array<{
+    id: string;
+    created_at: string;
+    expires_at: string;
+    item_count: number;
+    has_context: boolean;
+  }> {
+    const now = new Date();
+    const handles: Array<{
+      id: string;
+      created_at: string;
+      expires_at: string;
+      item_count: number;
+      has_context: boolean;
+    }> = [];
+
+    for (const [handle, data] of this.handles.entries()) {
+      const isExpired = now > data.expiresAt;
+      
+      if (!includeExpired && isExpired) {
+        continue;
+      }
+
+      handles.push({
+        id: handle,
+        created_at: data.createdAt.toISOString(),
+        expires_at: data.expiresAt.toISOString(),
+        item_count: data.workItemIds.length,
+        has_context: data.itemContext && data.itemContext.length > 0
+      });
+    }
+
+    return handles;
+  }
+
+  /**
    * Clean up expired handles
    */
   cleanup(): number {

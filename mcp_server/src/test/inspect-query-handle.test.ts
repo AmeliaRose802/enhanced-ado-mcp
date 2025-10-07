@@ -38,7 +38,8 @@ jest.mock('../services/ado-discovery-service.js', () => ({
 const inspectQueryHandleSchema = z.object({
   queryHandle: z.string().describe('Query handle to inspect'),
   includePreview: z.boolean().optional().default(true).describe('Include item preview'),
-  includeStats: z.boolean().optional().default(true).describe('Include statistics')
+  includeStats: z.boolean().optional().default(true).describe('Include statistics'),
+  includeExamples: z.boolean().optional().default(false).describe('Include selection examples')
 });
 
 describe('Inspect Query Handle Handler', () => {
@@ -298,12 +299,13 @@ describe('Inspect Query Handle Handler', () => {
   });
 
   describe('Contextual Examples', () => {
-    it('should provide contextual selection examples', async () => {
+    it('should provide contextual selection examples when includeExamples is true', async () => {
       const handle = createTestHandle();
 
       const result = await handleInspectQueryHandle(mockConfig, {
         queryHandle: handle,
-        includePreview: true
+        includePreview: true,
+        includeExamples: true
       });
 
       expect(result.success).toBe(true);
@@ -317,12 +319,38 @@ describe('Inspect Query Handle Handler', () => {
       expect(examplesStr).toContain('Active');
     });
 
-    it('should include stale items example when applicable', async () => {
+    it('should omit contextual selection examples when includeExamples is false (default)', async () => {
+      const handle = createTestHandle();
+
+      const result = await handleInspectQueryHandle(mockConfig, {
+        queryHandle: handle,
+        includePreview: true,
+        includeExamples: false
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.exampleSelectors).toBeUndefined();
+    });
+
+    it('should omit contextual selection examples by default', async () => {
       const handle = createTestHandle();
 
       const result = await handleInspectQueryHandle(mockConfig, {
         queryHandle: handle,
         includePreview: true
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.exampleSelectors).toBeUndefined();
+    });
+
+    it('should include stale items example when applicable and includeExamples is true', async () => {
+      const handle = createTestHandle();
+
+      const result = await handleInspectQueryHandle(mockConfig, {
+        queryHandle: handle,
+        includePreview: true,
+        includeExamples: true
       });
 
       expect(result.success).toBe(true);
@@ -438,7 +466,24 @@ describe('Inspect Query Handle Handler', () => {
       expect(result.data.selection_info).toBeDefined();
       expect(result.data.selection_info.total_selectable_indices).toBeDefined();
       expect(result.data.selection_info.available_criteria_tags).toBeDefined();
+      // selection_examples should be omitted by default
+      expect(result.data.selection_info.selection_examples).toBeUndefined();
+    });
+
+    it('should include selection_examples in legacy format when includeExamples is true', async () => {
+      const handle = createTestHandle();
+
+      const result = await handleInspectQueryHandle(mockConfig, {
+        queryHandle: handle,
+        includePreview: true,
+        includeExamples: true
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.selection_info).toBeDefined();
       expect(result.data.selection_info.selection_examples).toBeDefined();
+      expect(result.data.selection_info.selection_examples.select_all).toBeDefined();
+      expect(result.data.selection_info.selection_examples.select_first_item).toBeDefined();
     });
   });
 });

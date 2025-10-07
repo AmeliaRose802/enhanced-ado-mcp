@@ -46,7 +46,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
             organization: parsed.data.organization,
             project: parsed.data.project,
             includeHistory: true,
-            historyCount: 10,
+            maxHistoryRevisions: 10,
             includeComments: true,
             includeRelations: true,
             includeChildren: true,

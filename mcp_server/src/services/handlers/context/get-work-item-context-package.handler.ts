@@ -78,7 +78,7 @@ interface ContextPackageArgs {
   organization?: string;
   project?: string;
   includeHistory?: boolean;
-  historyCount?: number;
+  maxHistoryRevisions?: number;
   includeComments?: boolean;
   includeRelations?: boolean;
   includeChildren?: boolean;
@@ -86,6 +86,8 @@ interface ContextPackageArgs {
   includeLinkedPRsAndCommits?: boolean;
   includeExtendedFields?: boolean;
   includeHtml?: boolean;
+  includeHtmlFields?: boolean;
+  stripHtmlFormatting?: boolean;
   maxChildDepth?: number;
   maxRelatedItems?: number;
   includeAttachments?: boolean;
@@ -108,14 +110,39 @@ function stripHtml(html?: string): string | undefined {
     .trim();
 }
 
+/**
+ * Process HTML field based on includeHtmlFields and stripHtmlFormatting parameters.
+ * Returns either the raw HTML, stripped plain text, or both depending on parameters.
+ */
+function processHtmlField(
+  fieldValue: string | undefined, 
+  includeHtmlFields: boolean, 
+  stripHtmlFormatting: boolean
+): string | undefined {
+  if (!fieldValue) return undefined;
+  
+  // If includeHtmlFields is true, return the raw HTML
+  if (includeHtmlFields) {
+    return fieldValue;
+  }
+  
+  // If stripHtmlFormatting is true (default), convert to plain text
+  if (stripHtmlFormatting) {
+    return stripHtml(fieldValue);
+  }
+  
+  // Otherwise return the raw value (no stripping)
+  return fieldValue;
+}
+
 export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) {
   const cfg = loadConfiguration();
   const {
     workItemId,
     organization = cfg.azureDevOps.organization,
     project = cfg.azureDevOps.project,
-    includeHistory = true,
-    historyCount = 10,
+    includeHistory = false,
+    maxHistoryRevisions = 5,
     includeComments = true,
     includeRelations = true,
     includeChildren = true,
@@ -123,6 +150,8 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     includeLinkedPRsAndCommits = true,
     includeExtendedFields = false,
     includeHtml = false,
+    includeHtmlFields = false,
+    stripHtmlFormatting = true,
     maxChildDepth = 1,
     maxRelatedItems = 50,
     includeAttachments = false,
@@ -139,7 +168,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     ];
     const extendedFields = [
       'Microsoft.VSTS.Common.AcceptanceCriteria','Microsoft.VSTS.Common.Priority','Microsoft.VSTS.Scheduling.StoryPoints',
-      'Microsoft.VSTS.Scheduling.RemainingWork','Microsoft.VSTS.Common.Risk','Microsoft.VSTS.Common.ValueArea'
+      'Microsoft.VSTS.Scheduling.RemainingWork','Microsoft.VSTS.Common.Risk','Microsoft.VSTS.Common.ValueArea','Microsoft.VSTS.TCM.ReproSteps'
     ];
     const fields = includeExtendedFields ? baseFields.concat(extendedFields) : baseFields;
     const fieldParam = fields.join(',');
@@ -256,17 +285,20 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     let history: Array<{rev: number; changedDate: string; changedBy?: string; fields: CleanedFields}> = [];
     if (includeHistory) {
       try {
-        const hResponse = await httpClient.get<ADORevisionsResponse>(`wit/workItems/${workItemId}/revisions?$top=${historyCount}`);
+        const hResponse = await httpClient.get<ADORevisionsResponse>(`wit/workItems/${workItemId}/revisions?$top=${maxHistoryRevisions}`);
         const hRes = hResponse.data;
-        history = (hRes.value || []).map((r) => {
-          const cleanedFields = cleanFields(r.fields || {});
-          return {
-            rev: r.rev || 0,
-            changedDate: typeof cleanedFields?.['System.ChangedDate'] === 'string' ? cleanedFields['System.ChangedDate'] : '',
-            changedBy: typeof cleanedFields?.['System.ChangedBy'] === 'string' ? cleanedFields['System.ChangedBy'] : undefined,
-            fields: cleanedFields
-          };
-        });
+        history = (hRes.value || [])
+          .sort((a, b) => (b.rev || 0) - (a.rev || 0)) // Sort by revision number descending (newest first)
+          .slice(0, maxHistoryRevisions) // Limit to maxHistoryRevisions
+          .map((r) => {
+            const cleanedFields = cleanFields(r.fields || {});
+            return {
+              rev: r.rev || 0,
+              changedDate: typeof cleanedFields?.['System.ChangedDate'] === 'string' ? cleanedFields['System.ChangedDate'] : '',
+              changedBy: typeof cleanedFields?.['System.ChangedBy'] === 'string' ? cleanedFields['System.ChangedBy'] : undefined,
+              fields: cleanedFields
+            };
+          });
       } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, e); }
     }
 
@@ -287,11 +319,12 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       priority: fieldsMap['Microsoft.VSTS.Common.Priority'],
       storyPoints: fieldsMap['Microsoft.VSTS.Scheduling.StoryPoints'],
       remainingWork: fieldsMap['Microsoft.VSTS.Scheduling.RemainingWork'],
-      acceptanceCriteria: fieldsMap['Microsoft.VSTS.Common.AcceptanceCriteria'],
+      acceptanceCriteria: processHtmlField(fieldsMap['Microsoft.VSTS.Common.AcceptanceCriteria'] as string | undefined, includeHtmlFields, stripHtmlFormatting),
+      reproSteps: fieldsMap['Microsoft.VSTS.TCM.ReproSteps'] ? processHtmlField(fieldsMap['Microsoft.VSTS.TCM.ReproSteps'] as string, includeHtmlFields, stripHtmlFormatting) : undefined,
       description: includeHtml ? {
         html: fieldsMap['System.Description'],
-        text: stripHtml(fieldsMap['System.Description'])
-      } : stripHtml(fieldsMap['System.Description']),
+        text: stripHtml(fieldsMap['System.Description'] as string | undefined)
+      } : processHtmlField(fieldsMap['System.Description'] as string | undefined, includeHtmlFields, stripHtmlFormatting),
       tags: includeTags && fieldsMap['System.Tags'] ? String(fieldsMap['System.Tags']).split(/;|,/).map((t: string) => t.trim()).filter(Boolean) : [],
       url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${wi.id}`,
       parent: parent ? {
@@ -311,7 +344,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       commits: commitLinks,
       attachments: includeAttachments ? attachments : undefined,
       comments,
-      history,
+      ...(includeHistory ? { history } : {}),
       _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
     };
 

@@ -68,8 +68,8 @@ export const toolConfigs: ToolConfig[] = [
       type: "object",
       properties: {
         workItemId: { type: "number", description: "Primary work item ID to retrieve full context for" },
-        includeHistory: { type: "boolean", description: "Include recent change history (last 10 changes)" },
-        historyCount: { type: "number", description: "Number of recent history entries to include" },
+        includeHistory: { type: "boolean", description: "Include recent change history (disabled by default to save ~40KB per work item)" },
+        maxHistoryRevisions: { type: "number", description: "Maximum number of recent history revisions to include when history is enabled (sorted by revision number descending)" },
         includeComments: { type: "boolean", description: "Include work item comments/discussion" },
         includeRelations: { type: "boolean", description: "Include related links (parent, children, related, attachments, commits, PRs)" },
         includeChildren: { type: "boolean", description: "Include all child hierarchy (one level) if item is a Feature/Epic" },
@@ -290,7 +290,8 @@ export const toolConfigs: ToolConfig[] = [
         iterationPath: { type: "string", description: "Filter by Iteration Path" },
         top: { type: "number", description: "Maximum number of results (default 100)" },
         computeCycleTime: { type: "boolean", description: "Compute cycle time for completed items" },
-        includeMetadata: { type: "boolean", description: "Include OData metadata in response" }
+        includeMetadata: { type: "boolean", description: "Include query and URL metadata in response" },
+        includeOdataMetadata: { type: "boolean", description: "Include OData metadata fields (@odata.*) in response (default: false)" }
       },
       required: ["queryType"]
     }
@@ -501,7 +502,8 @@ export const toolConfigs: ToolConfig[] = [
       properties: {
         queryHandle: { type: "string", description: "Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
         includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
-        includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" }
+        includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" },
+        includeExamples: { type: "boolean", description: "Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)" }
       },
       required: ["queryHandle"]
     }

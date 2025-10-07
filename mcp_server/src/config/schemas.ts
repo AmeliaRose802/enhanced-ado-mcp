@@ -269,7 +269,8 @@ export const odataAnalyticsQuerySchema = z.object({
   iterationPath: z.string().optional().describe("Filter by Iteration Path"),
   top: z.number().int().optional().default(100).describe("Maximum number of results to return (default 100)"),
   computeCycleTime: z.boolean().optional().default(false).describe("Compute cycle time (CompletedDate - CreatedDate) for completed items"),
-  includeMetadata: z.boolean().optional().default(false).describe("Include OData metadata in response")
+  includeMetadata: z.boolean().optional().default(false).describe("Include query and URL metadata in response"),
+  includeOdataMetadata: z.boolean().optional().default(false).describe("Include OData metadata fields (@odata.context, @odata.count, @odata.nextLink) in response (default: false)")
 });
 
 // Full context package retrieval (single work item)
@@ -277,8 +278,8 @@ export const workItemContextPackageSchema = z.object({
   workItemId: z.number().int().describe("Primary work item ID to retrieve full context for"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
-  includeHistory: z.boolean().optional().default(true).describe("Include recent change history (last 10 changes)"),
-  historyCount: z.number().int().optional().default(10).describe("Number of recent history entries to include"),
+  includeHistory: z.boolean().optional().default(false).describe("Include recent change history (disabled by default to save ~40KB per work item)"),
+  maxHistoryRevisions: z.number().int().optional().default(5).describe("Maximum number of recent history revisions to include when history is enabled (sorted by revision number descending)"),
   includeComments: z.boolean().optional().default(true).describe("Include work item comments/discussion"),
   includeRelations: z.boolean().optional().default(true).describe("Include related links (parent, children, related, attachments, commits, PRs)"),
   includeChildren: z.boolean().optional().default(true).describe("Include all child hierarchy (one level) if item is a Feature/Epic"),
@@ -286,6 +287,8 @@ export const workItemContextPackageSchema = z.object({
   includeLinkedPRsAndCommits: z.boolean().optional().default(true).describe("Include linked Git PRs and commits if present in relations"),
   includeExtendedFields: z.boolean().optional().default(false).describe("Include extended field set beyond defaults (all system fields + common custom)"),
   includeHtml: z.boolean().optional().default(false).describe("Return original HTML field values alongside Markdown/plain text"),
+  includeHtmlFields: z.boolean().optional().default(false).describe("Whether to include original HTML-formatted fields (System.Description, Microsoft.VSTS.TCM.ReproSteps, Microsoft.VSTS.Common.AcceptanceCriteria). When false, HTML is stripped. Saves ~10-30% context window usage."),
+  stripHtmlFormatting: z.boolean().optional().default(true).describe("Whether to convert HTML fields to plain text by removing tags and decoding entities. When true, converts HTML to readable plain text preserving line breaks."),
   maxChildDepth: z.number().int().optional().default(1).describe("Depth of child hierarchy to traverse (1 = immediate children)"),
   maxRelatedItems: z.number().int().optional().default(50).describe("Maximum number of related items to expand"),
   includeAttachments: z.boolean().optional().default(false).describe("Include attachment metadata (names, urls, sizes)"),
@@ -326,7 +329,8 @@ export const detectPatternsSchema = z.object({
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   patterns: z.array(z.enum(['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation', 'no_description'])).optional().default(['duplicates', 'placeholder_titles', 'unassigned_committed', 'no_description']).describe("Patterns to detect"),
   maxResults: z.number().int().optional().default(200).describe("Maximum number of results when using areaPath"),
-  includeSubAreas: z.boolean().optional().default(true).describe("Include sub-area paths when using areaPath")
+  includeSubAreas: z.boolean().optional().default(true).describe("Include sub-area paths when using areaPath"),
+  format: z.enum(['summary', 'categorized', 'flat']).optional().default('categorized').describe("Response format: 'summary' (counts only, ~50-70% context reduction), 'categorized' (grouped by severity, default), 'flat' (single array with pattern field)")
 });
 
 export const validateHierarchyFastSchema = z.object({
@@ -425,7 +429,8 @@ export const listQueryHandlesSchema = z.object({
 export const inspectQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
   includePreview: z.boolean().optional().default(true).describe("Include preview of first 10 work items with their context data"),
-  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata")
+  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata"),
+  includeExamples: z.boolean().optional().default(false).describe("Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)")
 });
 
 export const selectItemsFromQueryHandleSchema = z.object({

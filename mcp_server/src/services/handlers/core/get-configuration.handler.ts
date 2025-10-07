@@ -23,8 +23,8 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
       configData.gitRepository = cfg.gitRepository;
     }
     if (section === "all" || section === "gitHubCopilot") {
-      configData.gitHubCopilot = includeSensitive ? cfg.gitHubCopilot : { 
-        defaultGuid: cfg.gitHubCopilot.defaultGuid ? "***" : ""
+      configData.gitHubCopilot = { 
+        defaultGuid: cfg.gitHubCopilot.defaultGuid || null
       };
     }
     

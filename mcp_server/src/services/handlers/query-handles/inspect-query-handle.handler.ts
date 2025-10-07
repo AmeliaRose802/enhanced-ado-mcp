@@ -15,7 +15,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, includePreview = true, includeStats = true } = parsed.data;
+    const { queryHandle, includePreview = true, includeStats = true, includeExamples = false } = parsed.data;
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
@@ -53,25 +53,9 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
           'N/A'
       };
 
-      // Calculate staleness statistics if we have the data
-      if (queryData.workItemContext && queryData.analysisMetadata.includeSubstantiveChange) {
-        const stalenessData = Array.from(queryData.workItemContext.values())
-          .filter(context => context.daysInactive !== undefined && typeof context.daysInactive === 'number')
-          .map(context => context.daysInactive as number);
-
-        if (stalenessData.length > 0) {
-          const sortedDays = [...stalenessData].sort((a, b) => a - b);
-          response.analysis.staleness_statistics = {
-            min_days_inactive: Math.min(...stalenessData),
-            max_days_inactive: Math.max(...stalenessData),
-            avg_days_inactive: Math.round(stalenessData.reduce((a, b) => a + b, 0) / stalenessData.length),
-            median_days_inactive: sortedDays[Math.floor(sortedDays.length / 2)],
-            items_over_90_days: stalenessData.filter(d => d > 90).length,
-            items_over_180_days: stalenessData.filter(d => d > 180).length,
-            items_over_365_days: stalenessData.filter(d => d > 365).length
-          };
-        }
-      }
+      // Note: Verbose staleness statistics have been removed to reduce token usage.
+      // Individual work items in the preview still contain last_activity (as last_substantive_change)
+      // and days_inactive for basic staleness checks.
     }
 
     // Include preview of work items with indices and selection hints
@@ -196,7 +180,10 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
         byTags: tagStats
       };
       
-      response.exampleSelectors = selectionExamples;
+      // Only include examples when explicitly requested (saves ~300 tokens by default)
+      if (includeExamples) {
+        response.exampleSelectors = selectionExamples;
+      }
 
       // Add legacy preview format for backward compatibility
       response.preview = {
@@ -207,15 +194,19 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       // Add legacy selection_info for backward compatibility
       response.selection_info = {
         total_selectable_indices: queryData.selectionMetadata.selectableIndices.length,
-        available_criteria_tags: queryData.selectionMetadata.criteriaTags,
-        selection_examples: {
+        available_criteria_tags: queryData.selectionMetadata.criteriaTags
+      };
+      
+      // Only include selection_examples when explicitly requested
+      if (includeExamples) {
+        response.selection_info.selection_examples = {
           select_all: "itemSelector: 'all'",
           select_first_item: "itemSelector: [0]",
           select_multiple_by_index: "itemSelector: [0, 2, 5]",
           select_by_state: "itemSelector: { states: ['Active', 'New'] }",
           select_stale_items: "itemSelector: { daysInactiveMin: 90 }"
-        }
-      };
+        };
+      }
     }
 
     // Time until expiration
