@@ -689,7 +689,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-generate-odata-query",
-    description: "🤖 AI-POWERED: Generate valid OData Analytics queries from natural language descriptions with iterative validation. Automatically tests and refines queries for metrics, aggregations, and analytics. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
+    description: "🤖 AI-POWERED: Generate valid OData Analytics queries from natural language descriptions with iterative validation. Automatically tests and refines queries for metrics, aggregations, and analytics. Can optionally return a query handle for safe bulk operations. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: generateODataQuerySchema,
     inputSchema: {
@@ -699,6 +699,9 @@ export const toolConfigs: ToolConfig[] = [
         maxIterations: { type: "number", description: "Maximum attempts to generate valid query (1-5, default 3)" },
         includeExamples: { type: "boolean", description: "Include example patterns in prompt (default true)" },
         testQuery: { type: "boolean", description: "Test query by executing it (default true)" },
+        returnQueryHandle: { type: "boolean", description: "Execute query and return handle for bulk operations (prevents ID hallucination, default false)" },
+        maxResults: { type: "number", description: "Maximum work items to fetch when returnQueryHandle=true (1-1000, default 200)" },
+        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include when returnQueryHandle=true" },
         areaPath: { type: "string", description: "Override default area path from config (automatically scopes queries to configured area)" },
         iterationPath: { type: "string", description: "Override default iteration path from config" }
       },
