@@ -185,36 +185,6 @@ export const aiAssignmentAnalyzerSchema = z.object({
   outputFormat: z.enum(["detailed", "json"]).optional().default("detailed").describe("Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)")
 });
 
-/**
- * Schema for AI-powered hierarchy validation and parenting suggestions
- * 
- * @example
- * ```typescript
- * {
- *   areaPath: "Project\\Team\\Component",
- *   analysisDepth: "deep",
- *   maxItemsToAnalyze: 50
- * }
- * ```
- * 
- * @remarks
- * Analyzes work item parent-child relationships, identifies misparented or orphaned items,
- * and provides intelligent parenting suggestions. Requires VS Code sampling support.
- */
-export const hierarchyValidatorSchema = z.object({
-  workItemIds: z.array(z.number().int()).optional().describe("Specific work item IDs to validate (if not provided, will analyze area path)"),
-  areaPath: z.string().optional().describe("Area path to analyze all work items within (used if workItemIds not provided)"),
-  includeChildAreas: z.boolean().optional().default(true).describe("Include child area paths in analysis"),
-  maxItemsToAnalyze: z.number().int().optional().default(50).describe("Maximum number of work items to analyze"),
-  analysisDepth: z.enum(["shallow", "deep"]).optional().default("shallow").describe("Analysis depth: shallow (basic) or deep (comprehensive with content analysis)"),
-  suggestAlternatives: z.boolean().optional().default(true).describe("Generate alternative parent suggestions"),
-  includeConfidenceScores: z.boolean().optional().default(true).describe("Include confidence scores for recommendations"),
-  filterByWorkItemType: z.array(z.string()).optional().describe("Filter analysis to specific work item types (e.g., ['Task', 'Bug'])"),
-  excludeStates: z.array(z.string()).optional().default(["Done", "Closed", "Removed"]).describe("Exclude work items in these states from analysis"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
-
 // Configuration and discovery tool schemas
 export const getConfigurationSchema = z.object({
   includeSensitive: z.boolean().optional().default(false).describe("Include potentially sensitive configuration values"),
@@ -347,8 +317,6 @@ export const getLastSubstantiveChangeSchema = z.object({
   historyCount: z.number().int().optional().default(50).describe("Number of revisions to analyze (default 50)"),
   automatedPatterns: z.array(z.string()).optional().describe("Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])")
 });
-
-// DEPRECATED: bulkAddCommentsSchema - Use wit-bulk-comment-by-query-handle instead
 
 export const detectPatternsSchema = z.object({
   workItemIds: z.array(z.number().int()).optional().describe("Specific work item IDs to analyze (if not provided, uses areaPath)"),

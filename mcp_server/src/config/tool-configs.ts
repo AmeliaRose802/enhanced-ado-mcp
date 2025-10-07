@@ -32,7 +32,6 @@ import {
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema
 } from "./schemas.js";
-import { z } from 'zod';
 
 /**
  * Tool configuration registry to eliminate repetitive switch/case & schema duplication
