@@ -95,8 +95,14 @@ Always warn about:
 
 ## Response Format
 
+**IMPORTANT**: The `includeExamples` parameter in the analysis parameters controls whether to include detailed usage examples.
+
+- **When `includeExamples` is false**: Omit the `exampleUsage` field entirely from recommendations. This saves ~100-300 tokens per tool.
+- **When `includeExamples` is true**: Include detailed, realistic `exampleUsage` examples for each recommendation.
+
 Respond with ONLY valid JSON (no markdown, no explanations outside JSON):
 
+### When includeExamples is TRUE:
 ```json
 {
   "recommendations": [
@@ -119,6 +125,31 @@ Respond with ONLY valid JSON (no markdown, no explanations outside JSON):
   ]
 }
 ```
+
+### When includeExamples is FALSE:
+```json
+{
+  "recommendations": [
+    {
+      "toolName": "exact-tool-name-from-list",
+      "confidence": 85,
+      "reasoning": "Clear, specific explanation of why this tool is recommended. Mention key parameters needed.",
+      "requiredParameters": ["param1", "param2"],
+      "optionalParameters": ["param3", "param4"]
+    }
+  ],
+  "alternativeApproaches": [
+    "If X is also needed, consider using tool Y afterwards",
+    "For a different approach, tool Z could achieve similar results"
+  ],
+  "warnings": [
+    "This operation requires AI sampling support",
+    "Use dryRun=true first to preview changes"
+  ]
+}
+```
+
+Note: DO NOT include `exampleUsage` when `includeExamples` is false.
 
 ## Example Scenarios
 

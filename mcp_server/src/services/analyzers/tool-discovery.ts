@@ -61,7 +61,7 @@ export class ToolDiscoveryAnalyzer {
       }
 
       const maxRecommendations = args.maxRecommendations || 3;
-      const includeExamples = args.includeExamples ?? true;
+      const includeExamples = args.includeExamples ?? false;
       const filterCategory = args.filterCategory || 'all';
 
       // Filter tools by category if specified
