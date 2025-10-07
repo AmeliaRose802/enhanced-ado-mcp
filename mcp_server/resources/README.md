@@ -159,6 +159,22 @@ AI-powered sprint planning for optimal work assignment:
 
 **Use when:** Agent needs to create a sprint plan, analyze team capacity, or propose work assignments
 
+### 13. Tool Limitations and Constraints (`tool-limitations.md`)
+**URI:** `ado://docs/tool-limitations`
+
+Comprehensive guide to tool limitations, constraints, and restrictions:
+- WIQL vs OData query limitations
+- Bulk operation constraints
+- AI-powered tool limitations (accuracy, context window, rate limits)
+- Azure DevOps API limitations (rate limits, field restrictions)
+- Query handle expiration and scope
+- Performance constraints and benchmarks
+- When to avoid certain tools
+- Common workarounds for limitations
+- Authentication constraints
+
+**Use when:** Agent needs to understand what tools can/cannot do before attempting operations, troubleshooting failures, or choosing between alternative approaches
+
 ## How Agents Access Resources
 ```typescript
 // MCP Protocol: resources/list
@@ -257,6 +273,7 @@ resources/
 ├── tool-selection-guide.md
 ├── query-handle-pattern.md
 ├── bulk-intelligent-enhancement-guide.md
+├── tool-limitations.md
 └── ... (other guides)
 ```
 
