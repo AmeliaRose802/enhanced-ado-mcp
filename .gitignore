@@ -373,8 +373,5 @@ packages/
 *.psm1~
 *.ps1~
 
-# Internal chat modes (exclude from public repo)
-.github/chatmodes/
-
 # Internal documentation (exclude from public repo)
 tasklist/

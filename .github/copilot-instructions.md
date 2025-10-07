@@ -1,6 +1,24 @@
-# GitHub Copilot Instructions
+# GitHub Copilot Instructions for Enhanced ADO MCP Server
 
-This project uses **Azure DevOps** for work item management and project tracking.
+This project is an **Azure DevOps Model Context Protocol (MCP) Server** that enables AI-powered work item management.
+
+## Project Overview
+
+**Repository:** enhanced-ado-mcp  
+**Language:** TypeScript (Node.js)  
+**Purpose:** MCP server for Azure DevOps integration with AI agents
+
+## Custom Instructions
+
+This repository uses directory-specific custom instructions to provide context-aware guidance:
+
+- **`AGENTS.md`** (root) - General project structure, build commands, and development workflow
+- **`.github/instructions/prompts.instructions.md`** - Guidelines for working with AI prompt templates
+- **`.github/instructions/services.instructions.md`** - Service layer, handlers, and configuration patterns
+- **`.github/instructions/tests.instructions.md`** - Testing standards and patterns
+- **`.github/instructions/documentation.instructions.md`** - Documentation requirements and style guide
+
+These instructions are automatically applied when working in their respective directories.
 
 ## Enhanced ADO MCP Server
 
@@ -10,15 +28,18 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 
 ## Available Tool Categories
 
-1. **Core Work Item Tools**: Create, assign, and manage work items
-2. **AI-Powered Analysis Tools**: Intelligent work item analysis, feature decomposition, hierarchy validation
-3. **Configuration & Discovery Tools**: View configuration and discover available resources
-4. **Prompt Templates**: Work item enhancement, AI suitability analysis, security item analysis
+1. **Core Work Item Tools** - Create, assign, and manage work items
+2. **AI-Powered Analysis Tools** - Intelligent work item analysis, feature decomposition, hierarchy validation
+3. **Bulk Operations** - Safe bulk updates using query handle pattern
+4. **Query Tools** - WIQL and OData query generation and execution
+5. **Configuration & Discovery Tools** - View configuration and discover available resources
+6. **Prompt Templates** - Work item enhancement, AI suitability analysis, security item analysis
 
 ## Best Practices
 
 - Use the discovery tools to find valid area paths, iteration paths, and repositories before creating work items
 - Leverage AI-powered tools for analyzing work items and decomposing features
+- Use the query handle pattern for safe bulk operations (prevents ID hallucination)
 - Use the configuration tools to understand the current setup
 - Check the security items analyzer for compliance and security work items
 
@@ -30,10 +51,48 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 - "Extract security findings from work item 67890"
 - "Decompose this large feature into smaller work items"
 - "Show my current MCP server configuration"
+- "Generate a WIQL query to find all active bugs assigned to me"
+- "Bulk update all items in this sprint to add a tag"
 
 ---
 
-## 🚫 CRITICAL: NO SUMMARY DOCS POLICY
+## � FEATURE SPECIFICATION REQUIREMENTS
+
+### When Adding a New Feature
+
+**REQUIRED:** Create a feature specification at `docs/feature_specs/<feature-name>.md`
+
+The feature spec MUST include:
+- **Overview** - What the feature does and why it exists
+- **Input Parameters** - All parameters with types, defaults, and examples
+- **Output Format** - Success and error response structures
+- **Examples** - Working examples with actual input/output
+- **Error Handling** - Common errors and resolutions
+- **Implementation Details** - Key components and integration points
+- **Testing** - Test coverage and manual testing steps
+
+**Also REQUIRED:** Update `docs/feature_specs/toc.yml` with new entry
+
+### When Modifying an Existing Feature
+
+**REQUIRED:** Update the corresponding feature spec in `docs/feature_specs/`
+
+Changes to document:
+- Updated input/output formats
+- New parameters or configuration options
+- Changed behavior
+- New error conditions
+- Version increment in changelog
+
+### Feature Spec Naming Convention
+
+- Use kebab-case: `feature-name.md`
+- Be descriptive: `query-handle-pattern.md` not `qh.md`
+- Match tool name if applicable: `create-work-item.md` for `create-work-item` tool
+
+---
+
+## �🚫 CRITICAL: NO SUMMARY DOCS POLICY
 
 ### ❌ ABSOLUTELY FORBIDDEN TO CREATE UNLESS USER SPECIFICALLY ASKS:
 - **ANY** summary files (e.g., `*_SUMMARY.md`, `*_COMPLETE.md`, `*_REPORT.md`, `*_ANALYSIS.md`)
