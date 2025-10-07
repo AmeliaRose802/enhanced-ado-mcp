@@ -1,15 +1,130 @@
 ```markdown
 # TODO
 
-## 🤖 ORCHESTRATION PLAN - Autonomous AI Agent Coordination
-**Created:** October 6, 2025
-**Status:** Ready for Execution
-**Orchestrator:** GitHub Copilot (this agent)
-**Workers:** GitHub Copilot Coding Agents
+## � HIGH PRIORITY: Tool Consolidation & Simplification (from Beta Tester Report)
 
-See `tasklist/orchestration-execution-plan.md` for detailed parallel execution strategy.
+### Remove/Merge Redundant Tools (13 → 7 tools)
+- **Merge handle tools**: Combine `wit-validate-query-handle`, `wit-inspect-query-handle`, and `wit-select-items-from-query-handle` into single `wit-query-handle-info` tool with optional `detailed` parameter
+- **Remove `wit-get-work-items-context-batch`**: Redundant with context-package tool. Context package is sufficient.
+- **Remove `wit-get-last-substantive-change`**: Data already built into query results
+`wit-analyze-by-query-handle`**: Generic analysis rarely useful in practice
 
----
+### Add Missing Core Tools (from Beta Report)
+- **Add `wit-bulk-transition-state-by-query-handle`**: Common operation (close resolved bugs, move completed tasks to done). Currently requires JSON Patch workaround.
+- **Add `wit-bulk-move-to-iteration-by-query-handle`**: Constant need for sprint rescheduling. Currently requires JSON Patch workaround.
+- **Add `wit-clone-work-item`**: Template-based creation, cloning features for different environments
+- **Add `wit-link-work-items-by-query-handles`**: Bulk relationship creation (link all bugs to parent, create related-to relationships)
+
+### Fix AI-Powered Tool Issues
+- **Fix `wit-sprint-planning-analyzer` output format**: Currently outputs 2000+ word markdown essay. Change to JSON with suggested assignments, capacity numbers, risk flags. Users don't want a novel, they want actionable data.
+- **Document when to use AI vs rule-based tools**: Clear guidance on appropriate use cases
+
+### Improve Tool Naming & Organization
+- **Standardize tool naming patterns**: Currently inconsistent (verb-object, noun, action-method patterns)
+- **Add category prefixes**: `wit-query-*`, `wit-bulk-*`, `wit-analyze-*`, `wit-ai-*` to make tool purposes obvious
+- **Clarify similar tool differences**: Make differences clear without reading docs (validate vs inspect vs select)
+
+### Documentation Gaps to Fill
+- **Add cost information**: Which tools cost money? How much per operation?
+- **Add performance expectations**: How long does each tool take?
+- **Add workflow examples**: End-to-end scenarios showing tool combinations
+- **Add best practices guide**: When to use AI vs rule-based tools
+- **Add limitations documentation**: What these tools can't do
+
+## �🔥 CRITICAL: Context Window Optimization
+
+- Getting the item context as a batch likely isn't needed since we have the handle based tool. Remove the non handle/wiql based tools
+
+- Validate hyerchey fast should be renamed to just validate hyerchey 
+
+- **wit-get-work-item-context-package returns massive history data**: The history array contains 9 revisions with complete field dumps for every single field change. This is consuming ~40KB+ per work item. Solution: Add `includeHistory` parameter (default: false), and when true, add `maxHistoryRevisions` parameter (default: 5) to limit history depth. Most AI workflows only need latest state or last 2-3 changes.
+
+- **All HTML fields should be stripped by default**: Fields like `Microsoft.VSTS.TCM.ReproSteps` and `Microsoft.VSTS.Common.AcceptanceCriteria` contain massive HTML tables with inline styles consuming thousands of tokens. Solution: Add `includeHtmlFields` parameter (default: false) and `stripHtmlFormatting` parameter (default: true) to return plain text only. Only include HTML when explicitly requested for rendering.
+
+- **get_config.json exposes masked GitHub Copilot GUID but shouldn't need masking**: The `defaultGuid: "***"` serves no purpose - either show it or remove it entirely from responses. Solution: Remove from response or show actual value since it's needed for operations anyway.
+
+- **wit-list-query-handles returns empty handles array despite having 1 active handle**: Response shows `"total_handles": 1` but `"handles": []` is empty. This defeats the purpose of the tool. Solution: Actually return the handle details (id, created_at, expires_at, item_count) in the handles array.
+
+- **wit-inspect-query-handle includes redundant selection examples every time**: The `selection_examples` object with 5 examples is returned on every inspection, consuming ~300+ tokens unnecessarily. Solution: Move to tool description/documentation, only return examples if `includeExamples: true` parameter is set.
+
+- **wit-detect-patterns returns full match lists twice**: Results are duplicated in both `matches` array and `categorized.warning/info` arrays, doubling context usage. Solution: Remove the flat `matches` array, only return `categorized` structure. Or add `format` parameter with options: "summary" (counts only), "categorized" (default), "flat" (matches array only).
+
+- **OData query responses should strip @odata.* fields by default**: Already implemented for null filtering, but should be opt-in to include @odata metadata. Solution: Add `includeOdataMetadata` parameter (default: false).
+
+- **wit-generate-query and generate-odata-query include verbose usage object**: The `usage` object with organization, project, description is returned but rarely needed. Solution: Remove from data response, keep only in metadata if needed for debugging.
+
+- **WIQL query results include full pagination object even with 1 item**: Returns `"pagination": {"skip": 0, "top": 10, "totalCount": 1, "hasMore": false}` for every response. Solution: Only include pagination when `totalCount > top` or when explicitly requested via `includePaginationDetails: true`.
+
+- **Bulk operation dry-run previews should limit preview items**: Currently returns all selected items in preview, which could be hundreds. Solution: Add `maxPreviewItems` parameter (default: 5) to limit preview size while still showing representative sample.
+
+- **wit-find-tool includes full tool schemas and examples in every recommendation**: Each tool recommendation includes detailed example usage strings consuming 100+ tokens each. Solution: Add `includeExamples` parameter (default: false), return concise recommendations by default.
+
+- **Substantive change analysis in query handles includes excessive staleness statistics**: Every handle inspection returns min/max/avg/median days inactive plus three threshold buckets. Solution: Move statistics to separate `wit-analyze-query-handle-stats` tool, only return basic staleness info (last change date, days inactive) in standard inspection.
+
+- **wit-bulk-enhance-descriptions returns full enhanced_description HTML in results array**: Each enhanced item includes the complete new description (often 500-1000+ tokens with HTML/Markdown), plus `improvement_reason`, original title, etc. For 20 items, this could be 10-20KB. Solution: Add `returnFormat` parameter with options: "summary" (counts + IDs only), "preview" (first 200 chars of each enhancement), "full" (current behavior). Default to "summary" for dry-run, "preview" for actual operations.
+
+- **Bulk enhancement results include redundant metadata duplication**: Response includes `successful/skipped/failed` counts in both `data` object AND `metadata` object, along with `totalWorkItems/selectedWorkItems/processedWorkItems` that all convey similar information. Solution: Consolidate to single location (keep in `data`, remove from `metadata` or vice versa). Remove `processedWorkItems` as it equals `selectedWorkItems` in all cases.
+
+- **Enhancement tool returns both work_item_id and title in each result**: Since operations are by ID, the title is just context bloat (often 50-150 tokens per item). Solution: Add `includeTitles` parameter (default: false), only return IDs unless explicitly requested. Titles can be looked up separately if needed for display.
+
+- **confidence scores in enhancement results provide limited value**: Every result includes `"confidence": 0.95` which is essentially constant and doesn't help decision-making. Solution: Only include confidence when it's < 0.85 (indicating uncertain enhancement), or remove entirely if not actionable.
+
+- **Sprint planner includes massive fullAnalysisText that duplicates structured data**: The `fullAnalysisText` field contains ~6KB of Markdown-formatted analysis that repeats information already in structured fields (`teamAssignments`, `velocityAnalysis`, `sprintRisks`, etc.). This is consuming massive context while providing little additional value. Solution: Add `includeFullAnalysis` parameter (default: false), only return the structured data unless explicitly requested. For error cases with parse failures, include minimal error context instead of full unparsed text.
+
+- **Sprint planner returns empty arrays with parse error but keeps large analysis text**: When AI response parsing fails, the tool returns empty `teamAssignments`, `unassignedItems`, and `alternativePlans` arrays along with a "Parse Error" critical risk, BUT still includes the full ~6KB `fullAnalysisText`. This is worst-case context usage. Solution: On parse failure, return summary-level data only with first 500 chars of analysis text as error context. Add `rawAnalysisOnError` parameter to optionally include full text for debugging.
+
+- **Velocity analysis returns empty historical data with "Unknown" placeholders**: Fields like `averagePointsPerSprint: 0`, `trendDirection: "Unknown"`, `consistency: "Unknown"`, `lastThreeSprints: []` consume tokens without providing information. Solution: Remove fields that have no data instead of returning zero/unknown/empty values. Use null/undefined or omit entirely.
+
+- **Balance metrics all return zero scores with "Not available" assessment**: The entire `balanceMetrics` object with `workloadBalance`, `skillCoverage`, `dependencyRisk`, and `overallBalance` all show `score: 0` and `assessment: "Not available"`, wasting ~300 tokens. Solution: Return `balanceMetrics: null` or omit entirely when unavailable instead of returning empty structure.
+
+- **Sprint summary includes redundant confidenceLevel "Unknown"**: When confidence can't be determined, returning `"confidenceLevel": "Unknown"` is less useful than omitting the field. Solution: Only include when confidence can be assessed.
+
+- **Alternative plans array always empty but still returned**: The `alternativePlans: []` array is always empty in current implementation but included in every response. Solution: Only include when alternatives exist, or add parameter `includeAlternatives` (default: false).
+
+- **Action steps include generic fallback messages**: Items like "Review the full analysis text for planning insights" and "Consider manual sprint planning based on the analysis" appear in every failed parse. Solution: Make these more actionable based on the actual failure reason, or omit generic advice.
+
+## 🎯 STRATEGIC: Beta Tester "Core Problem" - Focus & Scope
+
+**Beta Tester Assessment:** "This server tries to do too much. Pick a lane."
+
+### Option A: Practical Automation Server (RECOMMENDED)
+- Focus on query generation, bulk operations, pattern detection
+- Remove AI-powered complexity
+- Add missing obvious tools (state transition, bulk move to iteration, clone, link)
+- Target: Day-to-day work item management
+- Keep: 15-18 core tools that do practical work
+
+### Option B: AI-Powered Analytics Platform
+- Go all-in on AI features
+- Add cost controls and warnings
+- Focus on insights and recommendations
+- Target: Strategic planning and team analytics
+
+**Decision needed:** Which direction should the server take? Current attempt to be both creates confusion and bloat.
+
+### Beta Tester's Final Verdict
+- **Rating: 3.5/5** - "Good bones, too much fat. Trim to 20 focused tools and this becomes 5/5."
+- **Core strength:** Query handles, bulk operations, template variables
+- **Core weakness:** Feature bloat, AI overreach, missing obvious tools
+- **Irony:** "You've built sophisticated AI-powered sprint planning and workload analysis tools, but you're missing a simple tool to bulk-move items to the next iteration. That's the core problem."
+
+## 📋 Original TODO Items
+
+- Add a pipeline that runs tests as a premerge step in github so agents have to have passing tests to merge their stuff
+
+- Perform indepth cleanup to reduce verbocity. Use the janitor chatmode as the basis for this item. Assign each agent to go though small groups of related files so that it can benifit from carry over but does not get overwelmed.
+
+- In wit-get-configuration, there is no need for github copilots guid to be starred out
+
+- Eliminate the need to enter github copilot's guid since finding it is annoying. Instead, look up the guid internally somehow based on the name
+
+- Review all tool call results and make them less verbose
+
+- wit-generate-query is supposed to be returning a handle but it is not
+
+- Do we actually need both inspect and validate for query handles?
+
+- Generate odata query also not returning a handle like it should
 
 - The generate wiql tool should return a handle to get the remaining result so the caller doesn't have to rerun to get or analysis all results
 
@@ -26,53 +141,62 @@ See `tasklist/orchestration-execution-plan.md` for detailed parallel execution s
 
 - Too many backlog cleanup report prompt flow. Just keep one. Dead items should also be combined into the single backlog cleanup prompt
 
-- Flow for removing by handle still isn't right. User needs to be able to confirm removal of a specific item ID and then server needs to allow agent to remove it while validating that handle, id and title match to make sure the right item was used
 
 
-- Optionally support getting additional context based on wiql query
-
-- ⏳ **NEEDS INVESTIGATION** - Should not pop up browser to get token. No idea what is going on
+- Should not pop up browser to get token. No idea what is going on
   - Status: Part of IMPLEMENTATION_PLAN Task 11 (Browser Auto-Launch for Token)
   - Priority: Low (P3) - annoying but not blocking
   - Requires: Investigation of Azure CLI authentication flow
   - Note: May be expected behavior - needs determination
 
 
-- ⏳ **IN PROGRESS** - Review all prompts to remove marketing fluff etc and make them as tight and focused as possible. They should all output links in a valid format. None should look at done or removed items except the velocity one. Generally make them clean, logical and bulletproof. Don't break the WIQL queries.
+- Review all prompts to remove marketing fluff etc and make them as tight and focused as possible. They should all output links in a valid format. None should look at done or removed items except the velocity one. Generally make them clean, logical and bulletproof. Don't break the WIQL queries.
   - Status: Part of IMPLEMENTATION_PLAN Task 5 (Prompt Cleanup & Quality Review)
   - Progress: work_item_enhancer updated, backlog_cleanup verified clean
   - Remaining: 8 other prompts to review (see IMPLEMENTATION_PLAN for full list)
   - Note: team_velocity_analyzer correctly uses Done state (appropriate for velocity)
 
-- ⏳ **NEEDS ARCHITECTURE CHANGE** - Context info in the ai assignement prompt not getting auto filled. The server should look up the work item ID and auto fill the data
+- Context info in the ai assignement prompt not getting auto filled. The server should look up the work item ID and auto fill the data
   - Status: Requires schema/handler modification for wit-intelligence-analyzer
   - Current: Tool requires title/description/etc to be passed manually
   - Desired: Add workItemId parameter that auto-fetches work item data
   - Impact: Would simplify intelligent_work_item_analyzer prompt significantly
   - Note: Marked for future enhancement - not blocking current functionality
 
-- ⏳ **IN PROGRESS** - Managing tech debt is important to the heathy continual devlopment. Please fix tech debt
-  - Status: See IMPLEMENTATION_PLAN Task 10 (Codebase Cleanup & Architecture Improvement)
-  - Approach: Systematic tech debt reduction after P0/P1 completion
-  - Current: All tests passing (49/49) - stable foundation for refactoring
-  - Priority: Medium (P2)
 
-- ⏳ **NEEDS INVESTIGATION** - When I enter a diffrent number of days to look back in the team velocity prompt, I still get the same thing entered.
+
+- When I enter a diffrent number of days to look back in the team velocity prompt, I still get the same thing entered.
   - Status: Needs manual testing with actual prompt usage
   - Investigation: Check if prompt argument is being passed correctly to tools
   - Location: team_velocity_analyzer.md prompt
 
-  - ⏳ **CRITICAL ARCHITECTURE ISSUE** - Query Handle Architecture Fundamental Problem  
-  - Issue: Two competing paradigms for bulk operations causing user confusion and ID hallucination
-  - Status: NEEDS IMMEDIATE ATTENTION - See `tasklist/architecture-fix-plan.md`
-  - Impact: Users abandon query handles → revert to hallucination-prone manual ID operations  
-  - Priority: P0 - Blocks reliable bulk operations
-
-
-We are ending up with a unmanagable number of handler files all in the same directory. Please reorgnize the repo to use a sensible folder structure without breaking things. Add clear docs explaining where things belong so future code is placed correctly.
+- We are ending up with a unmanagable number of handler files all in the same directory. Please reorgnize the repo to use a sensible folder structure without breaking things. Add clear docs explaining where things belong so future code is placed correctly.
 
 
 # DONE
+
+- ✅ **COMPLETED** - Query Handle Architecture v1.5.0 (Orchestration Blocks 1-6)
+  - Fixed: Complete itemSelector implementation with 3 selection modes (all, indices, criteria)
+  - Fixed: Type safety across all analysis and handler functions
+  - Fixed: All bulk operation handlers support item selection
+  - Added: `select-items-from-query-handle` preview tool for safe operations
+  - Added: Enhanced query handle inspector with indexed preview
+  - Added: Comprehensive documentation (migration guide, selection patterns)
+  - Added: 99 passing tests with >95% coverage
+  - Added: Complete JSDoc documentation
+  - Fixed: Removed dead code and cleaned up codebase
+  - Result: Zero ID hallucination, safe bulk operations, flexible selection
+  - PRs: #5-27 (23 PRs merged successfully)
+  - Status: Production ready for v1.5.0 release
+
+- ✅ **COMPLETED** - Technical debt remediation (Blocks 1, 6)
+  - Fixed: All 'any' types replaced with proper interfaces
+  - Fixed: MCPServer type used throughout
+  - Fixed: WorkItemAnalysis, WorkItemContext types enforced
+  - Fixed: Removed commented code and unused schemas
+  - Fixed: Added comprehensive JSDoc to all functions
+  - Result: Type-safe codebase ready for continued development
+  - Tests: 99/99 passing, TypeScript compiles cleanly
 
 - ✅ **FIXED** - Query generator needs to respect the callers context window by only showing the successful query and results not the iterations
   - Fixed: Removed `iterations` array from response data (previously showed all attempts with queries and errors)
