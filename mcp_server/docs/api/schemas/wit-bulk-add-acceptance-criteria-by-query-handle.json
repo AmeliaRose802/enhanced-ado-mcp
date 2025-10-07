@@ -1,0 +1,94 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)"
+    },
+    "itemSelector": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "all"
+          ],
+          "description": "Select all items"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Array of indices [0,1,2]"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "states": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "titleContains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "daysInactiveMin": {
+              "type": "number"
+            },
+            "daysInactiveMax": {
+              "type": "number"
+            }
+          }
+        }
+      ],
+      "description": "Item selection: 'all', indices, or criteria"
+    },
+    "sampleSize": {
+      "type": "number",
+      "description": "Max items to process (default 10, max 100)"
+    },
+    "criteriaFormat": {
+      "type": "string",
+      "enum": [
+        "gherkin",
+        "checklist",
+        "user-story"
+      ],
+      "description": "Format: gherkin (Given/When/Then), checklist (bullets), user-story (As a/I want/So that)"
+    },
+    "minCriteria": {
+      "type": "number",
+      "description": "Minimum criteria to generate (default 3)"
+    },
+    "maxCriteria": {
+      "type": "number",
+      "description": "Maximum criteria to generate (default 7)"
+    },
+    "preserveExisting": {
+      "type": "boolean",
+      "description": "Append to existing criteria (default true)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Preview without updating (default true)"
+    }
+  },
+  "required": [
+    "queryHandle"
+  ],
+  "$id": "#/components/schemas/wit-bulk-add-acceptance-criteria-by-query-handle",
+  "title": "wit-bulk-add-acceptance-criteria-by-query-handle",
+  "description": "Use AI to generate acceptance criteria for multiple work items identified by query handle. Generates 3-7 testable criteria in gherkin (Given/When/Then), checklist (bullet points), or user-story (As a/I want/So that) format. Returns generated criteria with confidence scores. Set dryRun=false to apply changes.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

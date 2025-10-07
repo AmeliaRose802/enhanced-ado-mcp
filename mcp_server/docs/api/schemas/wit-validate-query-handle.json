@@ -1,0 +1,29 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle to validate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"
+    },
+    "includeSampleItems": {
+      "type": "boolean",
+      "description": "Fetch and include sample items (first 5) with titles and states (default false)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle"
+  ],
+  "$id": "#/components/schemas/wit-validate-query-handle",
+  "title": "wit-validate-query-handle",
+  "description": "Validate a query handle and get metadata about stored query results. Returns item count, expiration time, original query, and optionally fetches sample items. Use this to check if a handle is still valid before bulk operations.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

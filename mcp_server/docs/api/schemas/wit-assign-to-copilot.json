@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "workItemId": {
+      "type": "number",
+      "description": "Existing work item ID to assign"
+    },
+    "repository": {
+      "type": "string",
+      "description": "Git repository name (required)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Override default branch from config"
+    },
+    "gitHubCopilotGuid": {
+      "type": "string",
+      "description": "Override default GitHub Copilot GUID from config"
+    }
+  },
+  "required": [
+    "workItemId",
+    "repository"
+  ],
+  "$id": "#/components/schemas/wit-assign-to-copilot",
+  "title": "wit-assign-to-copilot",
+  "description": "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
+  "category": "Copilot Integration",
+  "aiPowered": false
+}

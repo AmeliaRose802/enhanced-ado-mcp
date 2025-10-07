@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "workItemIds": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "Specific work item IDs to validate (if not provided, uses areaPath)"
+    },
+    "areaPath": {
+      "type": "string",
+      "description": "Area path to validate all work items within (if workItemIds not provided)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    },
+    "maxResults": {
+      "type": "number",
+      "description": "Maximum number of work items to analyze when using areaPath (default 500)"
+    },
+    "includeSubAreas": {
+      "type": "boolean",
+      "description": "Include child area paths in analysis (default true)"
+    },
+    "validateTypes": {
+      "type": "boolean",
+      "description": "Validate parent-child type relationships (default true)"
+    },
+    "validateStates": {
+      "type": "boolean",
+      "description": "Validate state consistency between parents and children (default true)"
+    }
+  },
+  "required": [],
+  "$id": "#/components/schemas/wit-validate-hierarchy-fast",
+  "title": "wit-validate-hierarchy-fast",
+  "description": "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis.",
+  "category": "Work Item Operations",
+  "aiPowered": false
+}

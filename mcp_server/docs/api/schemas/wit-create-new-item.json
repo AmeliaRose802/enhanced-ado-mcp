@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the work item (mandatory)"
+    },
+    "parentWorkItemId": {
+      "type": "number",
+      "description": "Optional parent work item ID"
+    },
+    "description": {
+      "type": "string",
+      "description": "Markdown description / repro steps"
+    },
+    "tags": {
+      "type": "string",
+      "description": "Semicolon or comma separated tags"
+    },
+    "workItemType": {
+      "type": "string",
+      "description": "Override default work item type from config"
+    },
+    "areaPath": {
+      "type": "string",
+      "description": "Override default area path from config"
+    },
+    "iterationPath": {
+      "type": "string",
+      "description": "Override default iteration path from config"
+    },
+    "assignedTo": {
+      "type": "string",
+      "description": "Override default assignee from config"
+    },
+    "priority": {
+      "type": "number",
+      "description": "Override default priority from config"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "$id": "#/components/schemas/wit-create-new-item",
+  "title": "wit-create-new-item",
+  "description": "Create a new Azure DevOps work item with optional parent relationship. organization, project, workItemType, priority, assignedTo, areaPath, iterationPath, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
+  "category": "Configuration",
+  "aiPowered": false
+}
