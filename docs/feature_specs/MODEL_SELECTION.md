@@ -3,7 +3,11 @@
 **Feature:** Language Model Selection for Sampling  
 **Status:** ✅ Implemented  
 **Version:** 1.5.0  
-**Last Updated:** 2025-10-02
+**Last Updated:** 2025-10-07
+
+> **See Also:**
+> - **AI tools:** [AI Intelligence Tools](./AI_INTELLIGENCE_TOOLS.md), [Bulk AI Enhancement](./BULK_AI_ENHANCEMENT.md)
+> - **AI overview:** [AI-Powered Features](./AI_POWERED_FEATURES.md)
 
 ## Overview
 

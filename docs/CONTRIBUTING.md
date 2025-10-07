@@ -3,14 +3,31 @@
 ## Code Organization
 
 ```
-ADO-Work-Item-MSP/
-├── docs/              # Essential documentation only
-├── mcp_server/        # Server implementation
-│   ├── src/           # TypeScript source
-│   ├── prompts/       # AI prompt templates
-│   └── resources/     # Quick reference guides
-├── tasklist/          # Development notes (don't touch unless asked)
-└── README.md          # Main documentation
+enhanced-ado-mcp/
+├── docs/                           # Essential documentation only
+│   ├── feature_specs/              # Feature specifications
+│   ├── guides/                     # User guides
+│   ├── ARCHITECTURE.md             # System architecture
+│   ├── CONTRIBUTING.md             # This file
+│   └── README.md                   # Documentation index
+├── mcp_server/                     # Server implementation
+│   ├── src/                        # TypeScript source
+│   │   ├── config/                 # Configuration & schemas
+│   │   ├── services/               # Business logic
+│   │   │   ├── handlers/           # Tool implementations
+│   │   │   │   ├── core/           # Basic operations
+│   │   │   │   ├── query/          # WIQL & OData
+│   │   │   │   ├── bulk-operations/ # Bulk updates
+│   │   │   │   ├── ai-powered/     # AI enhancements
+│   │   │   │   └── ...             # Other categories
+│   │   │   └── analyzers/          # AI-powered analysis
+│   │   ├── types/                  # TypeScript types
+│   │   └── utils/                  # Shared utilities
+│   ├── prompts/                    # AI prompt templates
+│   ├── resources/                  # Quick reference guides
+│   └── test/                       # Unit & integration tests
+├── tasklist/                       # Development notes (don't touch unless asked)
+└── README.md                       # Main documentation
 ```
 
 ## Documentation Rules

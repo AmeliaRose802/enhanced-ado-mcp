@@ -1,12 +1,45 @@
-- AI Powered Features
-  AI_POWERED_FEATURES.md
-- Enhanced Query Handle Pattern
-  ENHANCED_QUERY_HANDLE_PATTERN.md
-- Model Selection
-  MODEL_SELECTION.md
-- OData Query Optimization
-  ODATA_QUERY_OPTIMIZATION.md
-- Resources Feature
-  RESOURCES_FEATURE.md
+# Feature Specifications Table of Contents
+
+## Core Operations
+- Work Item Creation
+  WORK_ITEM_CREATION.md
+- Work Item Context Retrieval
+  WORK_ITEM_CONTEXT.md
+- Configuration & Discovery
+  ANALYSIS_TOOLS.md
+
+## Query & Search
+- Query Tools (WIQL & OData)
+  QUERY_TOOLS.md
 - WIQL Hierarchical Queries
   WIQL_HIERARCHICAL_QUERIES.md
+- OData Query Optimization
+  ODATA_QUERY_OPTIMIZATION.md
+
+## Query Handle Pattern
+- Enhanced Query Handle Pattern
+  ENHANCED_QUERY_HANDLE_PATTERN.md
+- Query Handle Operations
+  QUERY_HANDLE_OPERATIONS.md
+
+## Bulk Operations
+- Bulk Operations
+  BULK_OPERATIONS.md
+- Bulk AI Enhancement
+  BULK_AI_ENHANCEMENT.md
+
+## Analysis & Validation
+- Analysis & Validation Tools
+  ANALYSIS_TOOLS.md
+
+## AI-Powered Features
+- AI-Powered Features Overview
+  AI_POWERED_FEATURES.md
+- AI Intelligence & Planning Tools
+  AI_INTELLIGENCE_TOOLS.md
+- Model Selection
+  MODEL_SELECTION.md
+
+## Resources & Guidance
+- Resources Feature
+  RESOURCES_FEATURE.md

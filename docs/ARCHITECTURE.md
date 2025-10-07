@@ -141,7 +141,17 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 
 **Purpose:** Thin wrappers for tool implementations
 
-**Pattern:** One handler per MCP tool
+**Pattern:** One handler per MCP tool, organized by category
+
+**Handler Categories:**
+- `core/` - Basic operations (create-new-item, get-configuration, batch-context)
+- `context/` - Context retrieval (get-work-item-context-package)
+- `query/` - Query operations (wiql-query, odata-analytics, generate-wiql-query, generate-odata-query)
+- `query-handles/` - Query handle management (inspect, validate, select, list)
+- `bulk-operations/` - Bulk updates (bulk-comment, bulk-update, bulk-assign, bulk-remove)
+- `integration/` - External integrations (assign-to-copilot, new-copilot-item)
+- `analysis/` - Pattern detection and validation (detect-patterns, validate-hierarchy, get-last-substantive-change, extract-security-links)
+- `ai-powered/` - AI-enhanced operations (analyze-by-query-handle, bulk-enhance-descriptions, bulk-assign-story-points, bulk-add-acceptance-criteria)
 
 **Responsibilities:**
 - Parse and validate input
@@ -165,10 +175,12 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 **Purpose:** Complex AI-powered analysis implementations
 
 **Components:**
-- `work-item-intelligence.ts` - Completeness analysis
-- `ai-assignment.ts` - AI suitability scoring
-- `feature-decomposer.ts` - Break down large features
-- `hierarchy-validator.ts` - Parent-child validation
+- `work-item-intelligence.ts` - Completeness and quality analysis
+- `ai-assignment.ts` - AI assignment suitability scoring
+- `hierarchy-validator.ts` - Parent-child hierarchy validation
+- `personal-workload.ts` - Burnout and workload risk analysis
+- `sprint-planner.ts` - AI-assisted sprint planning and capacity balancing
+- `tool-discovery.ts` - Natural language tool discovery
 
 **Pattern:** Use SamplingService for LLM calls
 

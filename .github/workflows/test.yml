@@ -18,6 +18,10 @@ jobs:
         working-directory: ./mcp_server
         run: npm install
       
+      - name: Run linter
+        working-directory: ./mcp_server
+        run: npm run lint
+      
       - name: Run tests
         working-directory: ./mcp_server
         run: npm test

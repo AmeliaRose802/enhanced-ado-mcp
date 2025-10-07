@@ -2,8 +2,13 @@
 
 **Feature Category:** AI-Powered Analysis  
 **Status:** ✅ Implemented  
-**Version:** 1.0  
-**Last Updated:** 2025-10-01
+**Version:** 1.5  
+**Last Updated:** 2025-10-07
+
+> **Note:** This document provides an overview of AI-powered features. For detailed specifications:
+> - **Individual tool specs:** [AI Intelligence Tools](./AI_INTELLIGENCE_TOOLS.md), [Bulk AI Enhancement](./BULK_AI_ENHANCEMENT.md)
+> - **Model configuration:** [Model Selection](./MODEL_SELECTION.md)
+> - **Query generation:** [Query Tools](./QUERY_TOOLS.md)
 
 ## Overview
 
