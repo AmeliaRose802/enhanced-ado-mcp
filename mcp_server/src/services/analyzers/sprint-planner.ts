@@ -47,7 +47,9 @@ export class SprintPlanningAnalyzer {
         area_path: areaPath,
         consider_dependencies: args.considerDependencies ?? true,
         consider_skills: args.considerSkills ?? true,
-        additional_constraints: args.additionalConstraints || null
+        additional_constraints: args.additionalConstraints || null,
+        include_full_analysis: args.includeFullAnalysis ?? false,
+        raw_analysis_on_error: args.rawAnalysisOnError ?? false
       };
 
       const result = await this.performAnalysis(analysisInput);
@@ -169,7 +171,6 @@ export class SprintPlanningAnalyzer {
 
   private buildResultFromJSON(json: any, analysisInput: any): SprintPlanningResult {
     // Build a structured result from JSON response
-    // Note: fullAnalysisText will be added by the caller
     const result: SprintPlanningResult = {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
@@ -194,9 +195,13 @@ export class SprintPlanningAnalyzer {
       },
       teamAssignments: json.teamAssignments ?? [],
       unassignedItems: json.unassignedItems ?? [],
-      actionableSteps: json.actionableSteps ?? [],
-      fullAnalysisText: JSON.stringify(json, null, 2)
+      actionableSteps: json.actionableSteps ?? []
     };
+
+    // Conditionally add fullAnalysisText if requested
+    if (analysisInput.include_full_analysis) {
+      result.fullAnalysisText = JSON.stringify(json, null, 2);
+    }
 
     // Conditionally add confidenceLevel if it's not "Unknown"
     const confidenceLevel = json.confidenceLevel ?? "Medium";
@@ -283,9 +288,13 @@ export class SprintPlanningAnalyzer {
       actionableSteps: [
         "Review the full analysis text for planning insights",
         "Consider manual sprint planning based on the analysis"
-      ],
-      fullAnalysisText: text
+      ]
     };
+
+    // Conditionally add fullAnalysisText if requested
+    if (analysisInput.include_full_analysis) {
+      result.fullAnalysisText = text;
+    }
 
     return result;
   }

@@ -578,7 +578,12 @@ export const toolConfigs: ToolConfig[] = [
           description: "Style: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)" 
         },
         preserveExisting: { type: "boolean", description: "Append to existing description (default true)" },
-        dryRun: { type: "boolean", description: "Preview without updating (default true)" }
+        dryRun: { type: "boolean", description: "Preview without updating (default true)" },
+        returnFormat: {
+          type: "string",
+          enum: ["summary", "preview", "full"],
+          description: "Response format: 'summary' (counts only, ~70% reduction), 'preview' (200 char previews, ~40% reduction), 'full' (complete text). Defaults to 'summary' for dry-run, 'preview' for execute."
+        }
       },
       required: ["queryHandle"]
     }
