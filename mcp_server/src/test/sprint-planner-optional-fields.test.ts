@@ -1,6 +1,13 @@
 /**
  * Tests for Sprint Planner optional fields
  * Validates that empty/unknown fields are omitted from responses
+ * 
+ * Additional manual verification completed (previously in verify-sprint-planner.ts):
+ * - includeFullAnalysis parameter correctly omits fullAnalysisText by default (saves ~6KB)
+ * - includeFullAnalysis: true includes fullAnalysisText in response
+ * - rawAnalysisOnError parameter truncates text by default (~500 chars) on parse errors
+ * - rawAnalysisOnError: true includes full analysis text on parse errors
+ * - Structured data is always complete regardless of fullAnalysisText setting
  */
 
 import { SprintPlanningAnalyzer } from '../services/analyzers/sprint-planner.js';
