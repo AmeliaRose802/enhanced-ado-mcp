@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"
+    },
+    "assignTo": {
+      "type": "string",
+      "description": "User email or display name to assign work items to"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Preview operation without making changes (default false)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle",
+    "assignTo"
+  ],
+  "$id": "#/components/schemas/wit-bulk-assign-by-query-handle",
+  "title": "wit-bulk-assign-by-query-handle",
+  "description": "Assign multiple work items to a user, identified by query handle. Supports dry-run mode.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

@@ -1,0 +1,36 @@
+{
+  "type": "object",
+  "properties": {
+    "workItemId": {
+      "type": "number",
+      "description": "Work item ID to analyze"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    },
+    "historyCount": {
+      "type": "number",
+      "description": "Number of revisions to analyze (default 50)"
+    },
+    "automatedPatterns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])"
+    }
+  },
+  "required": [
+    "workItemId"
+  ],
+  "$id": "#/components/schemas/wit-get-last-substantive-change",
+  "title": "wit-get-last-substantive-change",
+  "description": "Efficiently determine the last substantive (meaningful) change to a work item by analyzing revision history server-side and filtering out automated changes like iteration path bulk updates. Returns minimal data to avoid context window bloat.",
+  "category": "Bulk Operations",
+  "aiPowered": false
+}

@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "includeSensitive": {
+      "type": "boolean",
+      "description": "Include potentially sensitive configuration values"
+    },
+    "section": {
+      "type": "string",
+      "enum": [
+        "all",
+        "azureDevOps",
+        "gitRepository",
+        "gitHubCopilot"
+      ],
+      "description": "Specific configuration section to retrieve"
+    }
+  },
+  "required": [],
+  "$id": "#/components/schemas/wit-get-configuration",
+  "title": "wit-get-configuration",
+  "description": "Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults that agents can use for work item creation",
+  "category": "Copilot Integration",
+  "aiPowered": false
+}
