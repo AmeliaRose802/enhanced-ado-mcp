@@ -154,16 +154,7 @@ New tool: `wit-inspect-query-handle`
       "staleness_analysis_included": true,
       "staleness_success_count": 159,
       "staleness_failure_count": 0,
-      "staleness_coverage": "100.0%",
-      "staleness_statistics": {
-        "min_days_inactive": 92,
-        "max_days_inactive": 1247,
-        "avg_days_inactive": 423,
-        "median_days_inactive": 387,
-        "items_over_90_days": 159,
-        "items_over_180_days": 142,
-        "items_over_365_days": 89
-      }
+      "staleness_coverage": "100.0%"
     },
     "preview": {
       "showing": "First 10 of 159 items",

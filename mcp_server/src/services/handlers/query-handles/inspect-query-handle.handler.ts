@@ -53,25 +53,9 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
           'N/A'
       };
 
-      // Calculate staleness statistics if we have the data
-      if (queryData.workItemContext && queryData.analysisMetadata.includeSubstantiveChange) {
-        const stalenessData = Array.from(queryData.workItemContext.values())
-          .filter(context => context.daysInactive !== undefined && typeof context.daysInactive === 'number')
-          .map(context => context.daysInactive as number);
-
-        if (stalenessData.length > 0) {
-          const sortedDays = [...stalenessData].sort((a, b) => a - b);
-          response.analysis.staleness_statistics = {
-            min_days_inactive: Math.min(...stalenessData),
-            max_days_inactive: Math.max(...stalenessData),
-            avg_days_inactive: Math.round(stalenessData.reduce((a, b) => a + b, 0) / stalenessData.length),
-            median_days_inactive: sortedDays[Math.floor(sortedDays.length / 2)],
-            items_over_90_days: stalenessData.filter(d => d > 90).length,
-            items_over_180_days: stalenessData.filter(d => d > 180).length,
-            items_over_365_days: stalenessData.filter(d => d > 365).length
-          };
-        }
-      }
+      // Note: Verbose staleness statistics have been removed to reduce token usage.
+      // Individual work items in the preview still contain last_activity (as last_substantive_change)
+      // and days_inactive for basic staleness checks.
     }
 
     // Include preview of work items with indices and selection hints
