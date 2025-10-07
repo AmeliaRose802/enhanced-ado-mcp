@@ -291,15 +291,9 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
       },
       metadata: {
         source: "bulk-enhance-descriptions",
-        totalWorkItems: totalItems,
-        selectedWorkItems: selectedCount,
-        processedWorkItems: itemsToProcess.length,
         itemSelector,
         enhancementStyle,
-        dryRun,
-        successful: successCount,
-        skipped: skippedCount,
-        failed: failureCount
+        dryRun
       },
       errors: failureCount > 0 
         ? results.filter(r => r.error).map(r => `Work item ${r.workItemId}: ${r.error}`)

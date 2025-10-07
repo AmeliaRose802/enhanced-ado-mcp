@@ -86,8 +86,6 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
         metadata: { 
           source: "bulk-remove-by-query-handle",
           dryRun: true,
-          selectedCount,
-          totalItems,
           itemSelector
         },
         errors: [],
@@ -163,11 +161,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       },
       metadata: {
         source: "bulk-remove-by-query-handle",
-        totalWorkItems: totalItems,
-        selectedWorkItems: selectedCount,
-        itemSelector,
-        successful: successCount,
-        failed: failureCount
+        itemSelector
       },
       errors: failureCount > 0 
         ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)

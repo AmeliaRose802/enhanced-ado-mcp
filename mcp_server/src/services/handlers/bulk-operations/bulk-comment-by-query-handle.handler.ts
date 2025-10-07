@@ -135,8 +135,6 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         metadata: { 
           source: "bulk-comment-by-query-handle",
           dryRun: true,
-          selectedCount,
-          totalItems,
           itemSelector,
           hasTemplateVariables,
           contextDataAvailable: !!queryData.workItemContext
@@ -193,11 +191,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       },
       metadata: {
         source: "bulk-comment-by-query-handle",
-        totalWorkItems: totalItems,
-        selectedWorkItems: selectedCount,
-        itemSelector,
-        successful: successCount,
-        failed: failureCount
+        itemSelector
       },
       errors: failureCount > 0 
         ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)

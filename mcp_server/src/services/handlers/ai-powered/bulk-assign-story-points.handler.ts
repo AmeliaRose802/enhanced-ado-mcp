@@ -328,15 +328,9 @@ Estimate the story points for this work item using the ${pointScale} scale.
       },
       metadata: {
         source: "bulk-assign-story-points",
-        totalWorkItems: totalItems,
-        selectedWorkItems: selectedCount,
-        processedWorkItems: itemsToProcess.length,
         itemSelector,
         pointScale,
-        dryRun,
-        successful: successCount,
-        skipped: skippedCount,
-        failed: failureCount
+        dryRun
       },
       errors: failureCount > 0 
         ? results.filter(r => r.error).map(r => `Work item ${r.workItemId}: ${r.error}`)

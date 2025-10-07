@@ -309,15 +309,9 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
       },
       metadata: {
         source: "bulk-add-acceptance-criteria",
-        totalWorkItems: totalItems,
-        selectedWorkItems: selectedCount,
-        processedWorkItems: itemsToProcess.length,
         itemSelector,
         criteriaFormat,
-        dryRun,
-        successful: successCount,
-        skipped: skippedCount,
-        failed: failureCount
+        dryRun
       },
       errors: failureCount > 0 
         ? results.filter(r => r.error).map(r => `Work item ${r.workItemId}: ${r.error}`)
