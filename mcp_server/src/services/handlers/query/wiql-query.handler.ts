@@ -84,11 +84,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       // Build work item context map if we have work items data
       const workItemContext = new Map<number, WorkItemContext>();
       for (const wi of result.workItems) {
-        // Parse tags from semicolon/comma-separated string to array for criteria-based selection
+        // Get tags from System.Tags field (stored as semicolon-separated string)
         const tagsString = wi.additionalFields?.['System.Tags'] || '';
-        const tags = tagsString 
-          ? tagsString.split(/[;,]/).map((t: string) => t.trim()).filter((t: string) => t.length > 0)
-          : [];
         
         workItemContext.set(wi.id, {
           title: wi.title,
@@ -98,7 +95,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
           assignedTo: wi.assignedTo,
           areaPath: wi.areaPath,
           iterationPath: wi.iterationPath,
-          tags, // Parsed tags array for criteria-based selection
+          changedDate: wi.changedDate,
+          tags: tagsString, // Store as string for service to parse
           ...(wi.lastSubstantiveChangeDate && { lastSubstantiveChangeDate: wi.lastSubstantiveChangeDate }),
           ...(wi.daysInactive !== undefined && { daysInactive: wi.daysInactive }),
           ...(wi.additionalFields && wi.additionalFields)

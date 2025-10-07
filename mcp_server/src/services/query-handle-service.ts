@@ -32,6 +32,7 @@ interface QueryHandleData {
     lastSubstantiveChangeDate?: string;
     daysInactive?: number;
     createdDate?: string;
+    changedDate?: string;
     assignedTo?: string;
     areaPath?: string;
     [key: string]: any; // For additional fields
@@ -124,7 +125,7 @@ class QueryHandleService {
         state: context?.state || 'Unknown',
         type: context?.type || 'Unknown',
         daysInactive: context?.daysInactive,
-        lastChange: context?.lastSubstantiveChangeDate,
+        lastChange: context?.lastSubstantiveChangeDate || context?.changedDate,
         tags: context?.tags 
           ? (Array.isArray(context.tags) 
               ? context.tags 
