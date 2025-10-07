@@ -475,7 +475,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(3); // Only first 3
+      expect(result.data.preview_items).toHaveLength(5); // Default is now 5, not 3
       expect(result.data.selected_items_count).toBe(5); // But all 5 selected
     });
   });

@@ -373,6 +373,7 @@ export const bulkCommentByQueryHandleSchema = z.object({
   comment: z.string().describe("Comment text to add to all work items (supports Markdown)"),
   itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -386,6 +387,7 @@ export const bulkUpdateByQueryHandleSchema = z.object({
   })).min(1).describe("Array of JSON Patch operations to apply to selected work items"),
   itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -395,6 +397,7 @@ export const bulkAssignByQueryHandleSchema = z.object({
   assignTo: z.string().describe("User email or display name to assign work items to"),
   itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -404,6 +407,7 @@ export const bulkRemoveByQueryHandleSchema = z.object({
   removeReason: z.string().optional().describe("Reason for removing work items (added as comment before removal)"),
   itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -460,6 +464,7 @@ export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
   enhancementStyle: z.enum(['detailed', 'concise', 'technical', 'business']).optional().default('detailed').describe("Style of enhanced description: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)"),
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing description rather than replace (default true)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-generated descriptions without updating work items (default true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   returnFormat: z.enum(['summary', 'preview', 'full']).optional().describe("Response format: 'summary' (counts only, ~70% reduction), 'preview' (200 char previews, ~40% reduction), 'full' (complete text). Defaults to 'summary' for dry-run, 'preview' for execute."),
   includeTitles: z.boolean().optional().default(false).describe("Include work item titles in 'full' format response (default false, saves ~10-50 tokens per item)"),
   includeConfidence: z.boolean().optional().default(false).describe("Include AI confidence scores in 'full' format response (default false, only shows scores < 0.85 when true)"),
@@ -479,6 +484,7 @@ export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
   onlyUnestimated: z.boolean().optional().default(true).describe("Only assign points to items without existing effort estimates (default true)"),
   includeCompleted: z.boolean().optional().default(false).describe("Include completed/done items for historical analysis (default false)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-estimated story points without updating work items (default true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -496,6 +502,7 @@ export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
   maxCriteria: z.number().int().min(1).max(15).optional().default(7).describe("Maximum number of acceptance criteria to generate (default 7)"),
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing acceptance criteria rather than replace (default true)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-generated acceptance criteria without updating work items (default true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });

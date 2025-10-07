@@ -25,7 +25,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, assignTo, itemSelector, dryRun, organization, project } = parsed.data;
+    const { queryHandle, assignTo, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
 
     // Retrieve work item IDs from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
@@ -52,7 +52,8 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
 
     if (dryRun) {
       // Show preview of selected items
-      const previewItems = selectedWorkItemIds.slice(0, 5).map((id: number) => {
+      const previewLimit = maxPreviewItems || 5;
+      const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
         const context = queryData.itemContext.find(item => item.id === id);
         return {
           work_item_id: id,
@@ -62,6 +63,10 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
           current_assignee: queryData.workItemContext?.get(id)?.assignedTo || "Unassigned"
         };
       });
+
+      const previewMessage = selectedCount > previewLimit 
+        ? `Showing ${previewLimit} of ${selectedCount} items...` 
+        : undefined;
 
       return {
         success: true,
@@ -74,6 +79,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
           work_item_ids: selectedWorkItemIds,
           assign_to: assignTo,
           preview_items: previewItems,
+          preview_message: previewMessage,
           summary: `DRY RUN: Would assign ${selectedCount} of ${totalItems} work item(s) to '${assignTo}'`
         },
         metadata: { 

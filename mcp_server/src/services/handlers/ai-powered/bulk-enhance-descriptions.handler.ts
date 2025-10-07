@@ -126,6 +126,7 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
       enhancementStyle, 
       preserveExisting, 
       dryRun, 
+      maxPreviewItems,
       returnFormat: userReturnFormat,
       includeTitles,
       includeConfidence,
@@ -270,6 +271,13 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
     const skippedCount = results.filter(r => r.skipped).length;
     const failureCount = results.filter(r => !r.success && !r.skipped).length;
 
+    // Apply preview limit for dry-run mode
+    const previewLimit = dryRun ? (maxPreviewItems || 5) : results.length;
+    const displayResults = results.slice(0, previewLimit);
+    const previewMessage = dryRun && results.length > previewLimit 
+      ? `Showing ${previewLimit} of ${results.length} items...` 
+      : undefined;
+
     // Format results based on returnFormat
     let formattedResults;
     if (returnFormat === 'summary') {
@@ -277,7 +285,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
       formattedResults = undefined;
     } else if (returnFormat === 'preview') {
       // Preview: Include 200 char preview of enhanced description
-      formattedResults = results.map(r => ({
+      formattedResults = displayResults.map(r => ({
         work_item_id: r.workItemId,
         status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
         preview: r.enhancedDescription ? r.enhancedDescription.substring(0, 200) + (r.enhancedDescription.length > 200 ? '...' : '') : undefined,
@@ -286,7 +294,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
       }));
     } else {
       // Full: Complete details (respects includeTitles and includeConfidence params)
-      formattedResults = results.map(r => {
+      formattedResults = displayResults.map(r => {
         const result: any = {
           work_item_id: r.workItemId,
           status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed'
@@ -340,6 +348,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         skipped: skippedCount,
         failed: failureCount,
         results: formattedResults,
+        preview_message: previewMessage,
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} enhanced descriptions (${skippedCount} skipped, ${failureCount} failed)`
           : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`

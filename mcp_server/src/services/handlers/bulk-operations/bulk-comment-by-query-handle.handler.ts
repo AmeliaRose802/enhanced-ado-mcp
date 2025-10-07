@@ -25,7 +25,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, comment, itemSelector, dryRun, organization, project } = parsed.data;
+    const { queryHandle, comment, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
 
     // Retrieve work item IDs and context from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
@@ -94,7 +94,8 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
 
     if (dryRun) {
       // Show preview with template substitution for first few items
-      const previewItems = selectedWorkItemIds.slice(0, 3).map((id: number) => {
+      const previewLimit = maxPreviewItems || 5;
+      const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
         const context = queryData.workItemContext?.get(id);
         const substitutedComment = substituteTemplate(comment, id, context);
         return {
@@ -118,6 +119,10 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         warnings.push("Comment contains template variables (e.g., {daysInactive}) but query handle has no context data. Variables will not be substituted.");
       }
 
+      const previewMessage = selectedCount > previewLimit 
+        ? `Showing ${previewLimit} of ${selectedCount} items...` 
+        : undefined;
+
       return {
         success: true,
         data: {
@@ -130,6 +135,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
           has_template_variables: hasTemplateVariables,
           context_data_available: !!queryData.workItemContext,
           preview_items: previewItems,
+          preview_message: previewMessage,
           summary: `DRY RUN: Would add ${hasTemplateVariables ? 'templated' : 'static'} comment to ${selectedCount} of ${totalItems} work item(s)`
         },
         metadata: { 

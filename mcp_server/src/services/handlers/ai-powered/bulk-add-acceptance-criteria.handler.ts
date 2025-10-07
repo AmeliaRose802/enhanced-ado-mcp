@@ -121,6 +121,7 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
       maxCriteria, 
       preserveExisting, 
       dryRun, 
+      maxPreviewItems,
       organization, 
       project 
     } = parsed.data;
@@ -274,6 +275,13 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
     const failureCount = results.filter(r => !r.success && !r.skipped).length;
     const lowConfidence = results.filter(r => r.insufficientInfo).length;
 
+    // Apply preview limit for dry-run mode
+    const previewLimit = dryRun ? (maxPreviewItems || 5) : results.length;
+    const displayResults = results.slice(0, previewLimit);
+    const previewMessage = dryRun && results.length > previewLimit 
+      ? `Showing ${previewLimit} of ${results.length} items...` 
+      : undefined;
+
     return {
       success: failureCount === 0,
       data: {
@@ -291,7 +299,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
         skipped: skippedCount,
         failed: failureCount,
         low_confidence: lowConfidence,
-        results: results.map(r => ({
+        results: displayResults.map(r => ({
           work_item_id: r.workItemId,
           title: r.title,
           status: r.success ? 'criteria_added' : r.skipped ? 'skipped' : 'failed',
@@ -303,6 +311,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
           error: r.error,
           skip_reason: r.skipped
         })),
+        preview_message: previewMessage,
         summary: dryRun 
           ? `DRY RUN: Generated acceptance criteria for ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`
           : `Successfully added acceptance criteria to ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`
