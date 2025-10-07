@@ -27,16 +27,16 @@ const cfg = () => loadConfiguration();
  * Only override them when you need to deviate from defaults.
  */
 export const createNewItemSchema = z.object({
-  title: z.string().describe("Title of the work item (mandatory)"),
+  title: z.string().min(1, "Title cannot be empty. Provide a descriptive title for the work item.").describe("Title of the work item (mandatory)"),
   workItemType: z.string().optional().describe("Azure DevOps work item type, e.g. 'Task', 'Product Backlog Item', 'Bug'").default(() => cfg().azureDevOps.defaultWorkItemType),
-  parentWorkItemId: z.number().int().optional().describe("Optional parent work item ID"),
+  parentWorkItemId: z.number().int("Parent work item ID must be an integer. Example: 12345").positive("Parent work item ID must be positive. Example: 12345").optional().describe("Optional parent work item ID"),
   description: z.string().optional().describe("Markdown description / repro steps"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   areaPath: z.string().optional().describe("Area path override").default(() => cfg().azureDevOps.areaPath || ''),
   iterationPath: z.string().optional().describe("Iteration path override").default(() => cfg().azureDevOps.iterationPath || ''),
   assignedTo: z.string().optional().describe("User email or @me for current user").default(() => cfg().azureDevOps.defaultAssignedTo),
-  priority: z.number().int().optional().describe("Priority (default 2)").default(() => cfg().azureDevOps.defaultPriority),
+  priority: z.number().int("Priority must be an integer (1-4). Example: 2").min(1, "Priority must be at least 1. Valid range: 1-4").max(4, "Priority must be at most 4. Valid range: 1-4").optional().describe("Priority (default 2)").default(() => cfg().azureDevOps.defaultPriority),
   tags: z.string().optional().describe("Semicolon or comma separated tags"),
   inheritParentPaths: z.boolean().optional().describe("Inherit Area/Iteration from parent if not supplied").default(() => cfg().azureDevOps.inheritParentPaths)
 });
@@ -58,10 +58,10 @@ export const createNewItemSchema = z.object({
  * Requires gitHubCopilotGuid to be configured or provided.
  */
 export const assignToCopilotSchema = z.object({
-  workItemId: z.number().int().describe("Existing work item ID to assign"),
+  workItemId: z.number().int("Work item ID must be an integer. Example: 12345").positive("Work item ID must be positive. Example: 12345").describe("Existing work item ID to assign"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
-  repository: z.string().describe("Git repository name (required)"),
+  repository: z.string().min(1, "Repository name cannot be empty. Example: 'my-repo'").describe("Git repository name (required)"),
   branch: z.string().optional().default(() => cfg().gitRepository.defaultBranch),
   gitHubCopilotGuid: z.string().optional().default(() => cfg().gitHubCopilot.defaultGuid || '').refine(val => val.length > 0, {
     message: "GitHub Copilot GUID is required. Please provide it as a parameter or set gitHubCopilot.defaultGuid in your configuration."
@@ -86,13 +86,13 @@ export const assignToCopilotSchema = z.object({
  * Inherits configuration defaults for most fields.
  */
 export const newCopilotItemSchema = z.object({
-  title: z.string(),
-  parentWorkItemId: z.number().int().describe("Parent work item ID under which to create the new item"),
+  title: z.string().min(1, "Title cannot be empty. Provide a descriptive title for the work item."),
+  parentWorkItemId: z.number().int("Parent work item ID must be an integer. Example: 12345").positive("Parent work item ID must be positive. Example: 12345").describe("Parent work item ID under which to create the new item"),
   workItemType: z.string().optional().default(() => cfg().azureDevOps.defaultWorkItemType),
   description: z.string().optional(),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
-  repository: z.string().describe("Git repository name (required)"),
+  repository: z.string().min(1, "Repository name cannot be empty. Example: 'my-repo'").describe("Git repository name (required)"),
   branch: z.string().optional().default(() => cfg().gitRepository.defaultBranch),
   gitHubCopilotGuid: z.string().optional().default(() => cfg().gitHubCopilot.defaultGuid || '').refine(val => val.length > 0, {
     message: "GitHub Copilot GUID is required. Please provide it as a parameter or set gitHubCopilot.defaultGuid in your configuration."
@@ -121,10 +121,12 @@ export const newCopilotItemSchema = z.object({
  * Supports multiple security scanners (BinSkim, CodeQL, CredScan).
  */
 export const extractSecurityLinksSchema = z.object({
-  workItemId: z.number().int().describe("Azure DevOps work item ID to extract instruction links from"),
+  workItemId: z.number().int("Work item ID must be an integer. Example: 12345").positive("Work item ID must be positive. Example: 12345").describe("Azure DevOps work item ID to extract instruction links from"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
-  scanType: z.enum(["BinSkim", "CodeQL", "CredScan", "General", "All"]).optional().default("All").describe("Type of security scanner to filter links for"),
+  scanType: z.enum(["BinSkim", "CodeQL", "CredScan", "General", "All"], {
+    errorMap: () => ({ message: "scanType must be one of: BinSkim, CodeQL, CredScan, General, All" })
+  }).optional().default("All").describe("Type of security scanner to filter links for"),
   includeWorkItemDetails: z.boolean().optional().default(false).describe("Include detailed work item information in the response"),
   extractFromComments: z.boolean().optional().default(false).describe("Also extract links from work item comments"),
   dryRun: z.boolean().optional().default(false).describe("Run in dry-run mode without making actual API calls")
@@ -148,15 +150,17 @@ export const extractSecurityLinksSchema = z.object({
  * and enhancement suggestions. Requires VS Code sampling support.
  */
 export const workItemIntelligenceSchema = z.object({
-  title: z.string().describe("Work item title to analyze"),
+  title: z.string().min(1, "Title cannot be empty. Provide a descriptive title for the work item.").describe("Work item title to analyze"),
   description: z.string().optional().describe("Work item description/content to analyze"),
   workItemType: z.string().optional().describe("Type of work item (Task, Bug, PBI, etc.)"),
   acceptanceCriteria: z.string().optional().describe("Current acceptance criteria if any"),
-  analysisType: z.enum(["completeness", "ai-readiness", "enhancement", "categorization", "full"]).optional().default("full").describe("Type of analysis to perform"),
+  analysisType: z.enum(["completeness", "ai-readiness", "enhancement", "categorization", "full"], {
+    errorMap: () => ({ message: "analysisType must be one of: completeness, ai-readiness, enhancement, categorization, full" })
+  }).optional().default("full").describe("Type of analysis to perform"),
   contextInfo: z.string().optional().describe("Additional context about the project, team, or requirements"),
   enhanceDescription: z.boolean().optional().default(false).describe("Generate an enhanced, AI-ready description"),
   createInADO: z.boolean().optional().default(false).describe("Automatically create the enhanced item in Azure DevOps"),
-  parentWorkItemId: z.number().int().optional().describe("Parent work item ID if creating in ADO"),
+  parentWorkItemId: z.number().int("Parent work item ID must be an integer. Example: 12345").positive("Parent work item ID must be positive. Example: 12345").optional().describe("Parent work item ID if creating in ADO"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -179,10 +183,12 @@ export const workItemIntelligenceSchema = z.object({
  * Requires VS Code sampling support.
  */
 export const aiAssignmentAnalyzerSchema = z.object({
-  workItemId: z.number().int().describe("Azure DevOps work item ID to analyze for AI assignment suitability"),
+  workItemId: z.number().int("Work item ID must be an integer. Example: 12345").positive("Work item ID must be positive. Example: 12345").describe("Azure DevOps work item ID to analyze for AI assignment suitability"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
-  outputFormat: z.enum(["detailed", "json"]).optional().default("detailed").describe("Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)")
+  outputFormat: z.enum(["detailed", "json"], {
+    errorMap: () => ({ message: "outputFormat must be either 'detailed' or 'json'" })
+  }).optional().default("detailed").describe("Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)")
 });
 
 // Configuration and discovery tool schemas
@@ -208,21 +214,21 @@ export const getConfigurationSchema = z.object({
  * Can optionally compute metrics like daysInactive and substantive change dates.
  */
 export const wiqlQuerySchema = z.object({
-  wiqlQuery: z.string().describe("WIQL (Work Item Query Language) query string to execute. Example: SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = 'Active'"),
+  wiqlQuery: z.string().min(1, "WIQL query cannot be empty. Example: SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'").describe("WIQL (Work Item Query Language) query string to execute. Example: SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = 'Active'"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   includeFields: z.array(z.string()).optional().describe("Additional fields to include in work item details (default includes Id, Title, Type, State, AreaPath, IterationPath, AssignedTo)"),
-  maxResults: z.number().int().optional().default(200).describe("Maximum number of work items to return per page (default 200)"),
-  skip: z.number().int().optional().default(0).describe("Number of work items to skip for pagination (default 0). Use with top for pagination."),
-  top: z.number().int().optional().describe("Maximum number of work items to return (alias for maxResults). When specified, overrides maxResults."),
+  maxResults: z.number().int("maxResults must be an integer").positive("maxResults must be positive").max(1000, "maxResults cannot exceed 1000 items. Use pagination for larger result sets.").optional().default(200).describe("Maximum number of work items to return per page (default 200)"),
+  skip: z.number().int("skip must be an integer").min(0, "skip must be 0 or greater").optional().default(0).describe("Number of work items to skip for pagination (default 0). Use with top for pagination."),
+  top: z.number().int("top must be an integer").positive("top must be positive").max(1000, "top cannot exceed 1000 items").optional().describe("Maximum number of work items to return (alias for maxResults). When specified, overrides maxResults."),
   includeSubstantiveChange: z.boolean().optional().default(false).describe("Include computed fields lastSubstantiveChangeDate and daysInactive for each work item - automatically filters out automated changes like iteration path updates. Essential for backlog hygiene workflows. Minimal overhead: only 2 fields per item."),
-  substantiveChangeHistoryCount: z.number().int().optional().default(50).describe("Number of revisions to analyze when computing substantive change (default 50)"),
+  substantiveChangeHistoryCount: z.number().int("substantiveChangeHistoryCount must be an integer").min(1, "substantiveChangeHistoryCount must be at least 1").max(200, "substantiveChangeHistoryCount cannot exceed 200 revisions").optional().default(50).describe("Number of revisions to analyze when computing substantive change (default 50)"),
   filterBySubstantiveChangeAfter: z.string().optional().describe("Filter results to only include work items with lastSubstantiveChangeDate after this date (ISO 8601 format, e.g., '2024-01-01T00:00:00Z'). Automatically enables includeSubstantiveChange. Use for finding recently active items."),
   filterBySubstantiveChangeBefore: z.string().optional().describe("Filter results to only include work items with lastSubstantiveChangeDate before this date (ISO 8601 format, e.g., '2024-01-01T00:00:00Z'). Automatically enables includeSubstantiveChange. Use for finding stale items."),
-  filterByDaysInactiveMin: z.number().int().optional().describe("Filter results to only include work items with daysInactive >= this value. Automatically enables includeSubstantiveChange. Use for finding stale items."),
-  filterByDaysInactiveMax: z.number().int().optional().describe("Filter results to only include work items with daysInactive <= this value. Automatically enables includeSubstantiveChange. Use for finding recently active items."),
+  filterByDaysInactiveMin: z.number().int("filterByDaysInactiveMin must be an integer").min(0, "filterByDaysInactiveMin must be 0 or greater").optional().describe("Filter results to only include work items with daysInactive >= this value. Automatically enables includeSubstantiveChange. Use for finding stale items."),
+  filterByDaysInactiveMax: z.number().int("filterByDaysInactiveMax must be an integer").min(0, "filterByDaysInactiveMax must be 0 or greater").optional().describe("Filter results to only include work items with daysInactive <= this value. Automatically enables includeSubstantiveChange. Use for finding recently active items."),
   computeMetrics: z.boolean().optional().default(false).describe("Include computed metrics: daysInactive (from changed date), daysSinceCreated, hasDescription (>50 chars), isStale (inactive >180 days)"),
-  staleThresholdDays: z.number().int().optional().default(180).describe("Number of days to consider a work item stale (default 180)"),
+  staleThresholdDays: z.number().int("staleThresholdDays must be an integer").positive("staleThresholdDays must be positive").optional().default(180).describe("Number of days to consider a work item stale (default 180)"),
   filterByMissingDescription: z.boolean().optional().default(false).describe("Filter results to only include work items with missing or empty description (after stripping HTML, less than 10 characters). Useful for finding incomplete work items that need documentation."),
   filterByMissingAcceptanceCriteria: z.boolean().optional().default(false).describe("Filter results to only include work items with missing or empty acceptance criteria (after stripping HTML, less than 10 characters). Useful for finding PBIs/Features that need completion criteria defined."),
   returnQueryHandle: z.boolean().optional().default(true).describe("🔐 ANTI-HALLUCINATION: Return a query handle along with full work item details. Handle enables safe bulk operations without ID hallucination risk. Set to false only if you need IDs for immediate display to user. Handle expires after 1 hour. RECOMMENDED: Always keep true for analysis workflows."),
@@ -254,7 +260,9 @@ export const odataAnalyticsQuerySchema = z.object({
     "velocityMetrics",
     "cycleTimeMetrics",
     "customQuery"
-  ]).describe("Type of analytics query to execute"),
+  ], {
+    errorMap: () => ({ message: "queryType must be one of: workItemCount, groupByState, groupByType, groupByAssignee, velocityMetrics, cycleTimeMetrics, customQuery" })
+  }).describe("Type of analytics query to execute"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   filters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().describe("Filter conditions (e.g., { State: 'Active', WorkItemType: 'Bug' })"),
@@ -262,12 +270,14 @@ export const odataAnalyticsQuerySchema = z.object({
   select: z.array(z.string()).optional().describe("Specific fields to return in results"),
   orderBy: z.string().optional().describe("Field to order results by (e.g., 'Count desc')"),
   customODataQuery: z.string().optional().describe("Custom OData query string for advanced scenarios (used when queryType is 'customQuery')"),
-  dateRangeField: z.enum(["CreatedDate", "ChangedDate", "CompletedDate", "ClosedDate"]).optional().describe("Date field to filter by"),
+  dateRangeField: z.enum(["CreatedDate", "ChangedDate", "CompletedDate", "ClosedDate"], {
+    errorMap: () => ({ message: "dateRangeField must be one of: CreatedDate, ChangedDate, CompletedDate, ClosedDate" })
+  }).optional().describe("Date field to filter by"),
   dateRangeStart: z.string().optional().describe("Start date for date range filter (ISO 8601 format: YYYY-MM-DD)"),
   dateRangeEnd: z.string().optional().describe("End date for date range filter (ISO 8601 format: YYYY-MM-DD)"),
   areaPath: z.string().optional().describe("Filter by Area Path"),
   iterationPath: z.string().optional().describe("Filter by Iteration Path"),
-  top: z.number().int().optional().default(100).describe("Maximum number of results to return (default 100)"),
+  top: z.number().int("top must be an integer").positive("top must be positive").max(10000, "top cannot exceed 10000 items for analytics queries").optional().default(100).describe("Maximum number of results to return (default 100)"),
   computeCycleTime: z.boolean().optional().default(false).describe("Compute cycle time (CompletedDate - CreatedDate) for completed items"),
   includeMetadata: z.boolean().optional().default(false).describe("Include query and URL metadata in response"),
   includeOdataMetadata: z.boolean().optional().default(false).describe("Include OData metadata fields (@odata.context, @odata.count, @odata.nextLink) in response (default: false)")
@@ -275,11 +285,11 @@ export const odataAnalyticsQuerySchema = z.object({
 
 // Full context package retrieval (single work item)
 export const workItemContextPackageSchema = z.object({
-  workItemId: z.number().int().describe("Primary work item ID to retrieve full context for"),
+  workItemId: z.number().int("Work item ID must be an integer. Example: 12345").positive("Work item ID must be positive. Example: 12345").describe("Primary work item ID to retrieve full context for"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   includeHistory: z.boolean().optional().default(false).describe("Include recent change history (disabled by default to save ~40KB per work item)"),
-  maxHistoryRevisions: z.number().int().optional().default(5).describe("Maximum number of recent history revisions to include when history is enabled (sorted by revision number descending)"),
+  maxHistoryRevisions: z.number().int("maxHistoryRevisions must be an integer").min(1, "maxHistoryRevisions must be at least 1").max(50, "maxHistoryRevisions cannot exceed 50 revisions").optional().default(5).describe("Maximum number of recent history revisions to include when history is enabled (sorted by revision number descending)"),
   includeComments: z.boolean().optional().default(true).describe("Include work item comments/discussion"),
   includeRelations: z.boolean().optional().default(true).describe("Include related links (parent, children, related, attachments, commits, PRs)"),
   includeChildren: z.boolean().optional().default(true).describe("Include all child hierarchy (one level) if item is a Feature/Epic"),
@@ -289,15 +299,15 @@ export const workItemContextPackageSchema = z.object({
   includeHtml: z.boolean().optional().default(false).describe("Return original HTML field values alongside Markdown/plain text"),
   includeHtmlFields: z.boolean().optional().default(false).describe("Whether to include original HTML-formatted fields (System.Description, Microsoft.VSTS.TCM.ReproSteps, Microsoft.VSTS.Common.AcceptanceCriteria). When false, HTML is stripped. Saves ~10-30% context window usage."),
   stripHtmlFormatting: z.boolean().optional().default(true).describe("Whether to convert HTML fields to plain text by removing tags and decoding entities. When true, converts HTML to readable plain text preserving line breaks."),
-  maxChildDepth: z.number().int().optional().default(1).describe("Depth of child hierarchy to traverse (1 = immediate children)"),
-  maxRelatedItems: z.number().int().optional().default(50).describe("Maximum number of related items to expand"),
+  maxChildDepth: z.number().int("maxChildDepth must be an integer").min(1, "maxChildDepth must be at least 1").max(5, "maxChildDepth cannot exceed 5 levels").optional().default(1).describe("Depth of child hierarchy to traverse (1 = immediate children)"),
+  maxRelatedItems: z.number().int("maxRelatedItems must be an integer").min(1, "maxRelatedItems must be at least 1").max(200, "maxRelatedItems cannot exceed 200 items").optional().default(50).describe("Maximum number of related items to expand"),
   includeAttachments: z.boolean().optional().default(false).describe("Include attachment metadata (names, urls, sizes)"),
   includeTags: z.boolean().optional().default(true).describe("Include tags list")
 });
 
 // Batch context package retrieval for multiple work items (returns graph)
 export const workItemsBatchContextSchema = z.object({
-  workItemIds: z.array(z.number().int()).min(1).max(50).describe("List of work item IDs to retrieve with relationship context (max 50)"),
+  workItemIds: z.array(z.number().int("Each work item ID must be an integer")).min(1, "At least one work item ID is required").max(50, "Maximum 50 work item IDs allowed. Use multiple calls for larger batches.").describe("List of work item IDs to retrieve with relationship context (max 50)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   includeRelations: z.boolean().optional().default(true).describe("Include relationship edges between provided items (parent-child, related, blocks)"),
@@ -310,8 +320,10 @@ export const workItemsBatchContextSchema = z.object({
   includeAIAssignmentHeuristic: z.boolean().optional().default(false).describe("Include lightweight AI suitability heuristic (not full analyzer)"),
   includeParentOutsideSet: z.boolean().optional().default(true).describe("If an item has a parent not in set, include minimal parent reference"),
   includeChildrenOutsideSet: z.boolean().optional().default(false).describe("Include minimal references to children not in requested set"),
-  maxOutsideReferences: z.number().int().optional().default(50).describe("Cap number of outside references added"),
-  returnFormat: z.enum(["graph", "array"]).optional().default("graph").describe("Return as graph (nodes/edges) or simple array")
+  maxOutsideReferences: z.number().int("maxOutsideReferences must be an integer").min(1, "maxOutsideReferences must be at least 1").max(200, "maxOutsideReferences cannot exceed 200 items").optional().default(50).describe("Cap number of outside references added"),
+  returnFormat: z.enum(["graph", "array"], {
+    errorMap: () => ({ message: "returnFormat must be either 'graph' or 'array'" })
+  }).optional().default("graph").describe("Return as graph (nodes/edges) or simple array")
 });
 
 export const getLastSubstantiveChangeSchema = z.object({
@@ -458,14 +470,18 @@ export const selectItemsFromQueryHandleSchema = z.object({
  * Uses AI to generate improved descriptions for work items identified by query handle
  */
 export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  queryHandle: z.string().min(1, "Query handle cannot be empty. Get handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true").describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
   itemSelector: itemSelectorSchema,
-  sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100 for performance)"),
-  enhancementStyle: z.enum(['detailed', 'concise', 'technical', 'business']).optional().default('detailed').describe("Style of enhanced description: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)"),
+  sampleSize: z.number().int("sampleSize must be an integer").min(1, "sampleSize must be at least 1").max(100, "sampleSize cannot exceed 100 items for performance").optional().default(10).describe("Max items to process in one call (default 10, max 100 for performance)"),
+  enhancementStyle: z.enum(['detailed', 'concise', 'technical', 'business'], {
+    errorMap: () => ({ message: "enhancementStyle must be one of: detailed, concise, technical, business" })
+  }).optional().default('detailed').describe("Style of enhanced description: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)"),
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing description rather than replace (default true)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-generated descriptions without updating work items (default true for safety)"),
-  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
-  returnFormat: z.enum(['summary', 'preview', 'full']).optional().describe("Response format: 'summary' (counts only, ~70% reduction), 'preview' (200 char previews, ~40% reduction), 'full' (complete text). Defaults to 'summary' for dry-run, 'preview' for execute."),
+  maxPreviewItems: z.number().int("maxPreviewItems must be an integer").min(1, "maxPreviewItems must be at least 1").max(50, "maxPreviewItems cannot exceed 50 items").optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
+  returnFormat: z.enum(['summary', 'preview', 'full'], {
+    errorMap: () => ({ message: "returnFormat must be one of: summary, preview, full" })
+  }).optional().describe("Response format: 'summary' (counts only, ~70% reduction), 'preview' (200 char previews, ~40% reduction), 'full' (complete text). Defaults to 'summary' for dry-run, 'preview' for execute."),
   includeTitles: z.boolean().optional().default(false).describe("Include work item titles in 'full' format response (default false, saves ~10-50 tokens per item)"),
   includeConfidence: z.boolean().optional().default(false).describe("Include AI confidence scores in 'full' format response (default false, only shows scores < 0.85 when true)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
@@ -477,14 +493,16 @@ export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
  * Uses AI to estimate story points based on work item context
  */
 export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle identifying work items to estimate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  queryHandle: z.string().min(1, "Query handle cannot be empty. Get handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true").describe("Query handle identifying work items to estimate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
   itemSelector: itemSelectorSchema,
-  sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
-  pointScale: z.enum(['fibonacci', 'linear', 't-shirt']).optional().default('fibonacci').describe("Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)"),
+  sampleSize: z.number().int("sampleSize must be an integer").min(1, "sampleSize must be at least 1").max(100, "sampleSize cannot exceed 100 items").optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
+  pointScale: z.enum(['fibonacci', 'linear', 't-shirt'], {
+    errorMap: () => ({ message: "pointScale must be one of: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)" })
+  }).optional().default('fibonacci').describe("Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)"),
   onlyUnestimated: z.boolean().optional().default(true).describe("Only assign points to items without existing effort estimates (default true)"),
   includeCompleted: z.boolean().optional().default(false).describe("Include completed/done items for historical analysis (default false)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-estimated story points without updating work items (default true for safety)"),
-  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
+  maxPreviewItems: z.number().int("maxPreviewItems must be an integer").min(1, "maxPreviewItems must be at least 1").max(50, "maxPreviewItems cannot exceed 50 items").optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -494,15 +512,17 @@ export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
  * Uses AI to generate acceptance criteria based on work item context
  */
 export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  queryHandle: z.string().min(1, "Query handle cannot be empty. Get handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true").describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
   itemSelector: itemSelectorSchema,
-  sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
-  criteriaFormat: z.enum(['gherkin', 'checklist', 'user-story']).optional().default('gherkin').describe("Format: gherkin (Given/When/Then), checklist (bullet points), user-story (As a/I want/So that)"),
-  minCriteria: z.number().int().min(1).max(10).optional().default(3).describe("Minimum number of acceptance criteria to generate (default 3)"),
-  maxCriteria: z.number().int().min(1).max(15).optional().default(7).describe("Maximum number of acceptance criteria to generate (default 7)"),
+  sampleSize: z.number().int("sampleSize must be an integer").min(1, "sampleSize must be at least 1").max(100, "sampleSize cannot exceed 100 items").optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
+  criteriaFormat: z.enum(['gherkin', 'checklist', 'user-story'], {
+    errorMap: () => ({ message: "criteriaFormat must be one of: gherkin (Given/When/Then), checklist (bullet points), user-story (As a/I want/So that)" })
+  }).optional().default('gherkin').describe("Format: gherkin (Given/When/Then), checklist (bullet points), user-story (As a/I want/So that)"),
+  minCriteria: z.number().int("minCriteria must be an integer").min(1, "minCriteria must be at least 1").max(10, "minCriteria cannot exceed 10 criteria").optional().default(3).describe("Minimum number of acceptance criteria to generate (default 3)"),
+  maxCriteria: z.number().int("maxCriteria must be an integer").min(1, "maxCriteria must be at least 1").max(15, "maxCriteria cannot exceed 15 criteria").optional().default(7).describe("Maximum number of acceptance criteria to generate (default 7)"),
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing acceptance criteria rather than replace (default true)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-generated acceptance criteria without updating work items (default true for safety)"),
-  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
+  maxPreviewItems: z.number().int("maxPreviewItems must be an integer").min(1, "maxPreviewItems must be at least 1").max(50, "maxPreviewItems cannot exceed 50 items").optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -521,12 +541,12 @@ export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
  * ```
  */
 export const generateWiqlQuerySchema = z.object({
-  description: z.string().describe("Natural language description of the desired query"),
+  description: z.string().min(1, "Description cannot be empty. Example: 'Find all active bugs assigned to me that were created in the last 7 days'").describe("Natural language description of the desired query"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Default area path to use in queries (optional context)"),
   iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Default iteration path to use in queries (optional context)"),
-  maxIterations: z.number().int().min(1).max(5).optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
+  maxIterations: z.number().int("maxIterations must be an integer").min(1, "maxIterations must be at least 1").max(5, "maxIterations cannot exceed 5 attempts").optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
   includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
   testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)")
 });
@@ -545,12 +565,12 @@ export const generateWiqlQuerySchema = z.object({
  * ```
  */
 export const generateODataQuerySchema = z.object({
-  description: z.string().describe("Natural language description of the desired OData Analytics query"),
+  description: z.string().min(1, "Description cannot be empty. Example: 'Count all active bugs assigned to John in the last 30 days'").describe("Natural language description of the desired OData Analytics query"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Default area path to use in queries (optional context)"),
   iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Default iteration path to use in queries (optional context)"),
-  maxIterations: z.number().int().min(1).max(5).optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
+  maxIterations: z.number().int("maxIterations must be an integer").min(1, "maxIterations must be at least 1").max(5, "maxIterations cannot exceed 5 attempts").optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
   includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
   testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)")
 });
