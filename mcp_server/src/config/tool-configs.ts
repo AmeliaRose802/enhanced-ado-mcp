@@ -289,7 +289,8 @@ export const toolConfigs: ToolConfig[] = [
         iterationPath: { type: "string", description: "Filter by Iteration Path" },
         top: { type: "number", description: "Maximum number of results (default 100)" },
         computeCycleTime: { type: "boolean", description: "Compute cycle time for completed items" },
-        includeMetadata: { type: "boolean", description: "Include OData metadata in response" }
+        includeMetadata: { type: "boolean", description: "Include query and URL metadata in response" },
+        includeOdataMetadata: { type: "boolean", description: "Include OData metadata fields (@odata.*) in response (default: false)" }
       },
       required: ["queryType"]
     }
