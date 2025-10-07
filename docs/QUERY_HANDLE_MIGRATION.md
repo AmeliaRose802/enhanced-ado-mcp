@@ -1,338 +1,445 @@
 # Query Handle Migration Guide
 
-This guide helps you migrate from manual ID-based workflows to the safer query handle pattern.
+This guide helps you migrate to the enhanced query handle pattern with item selection. The new pattern eliminates ID hallucination and provides safe, validated item selection for bulk operations.
 
 ## Why Migrate?
 
-**Problem**: AI agents sometimes hallucinate work item IDs, leading to:
-- Operations on wrong work items (5-10% error rate observed)
-- Data corruption from bulk operations on incorrect items
-- Time wasted debugging mysterious issues
+### The Old Problem: ID Hallucination
 
-**Solution**: Query handles eliminate hallucination by using opaque tokens instead of explicit IDs.
-
-## Before and After Examples
-
-### Example 1: Bulk Comment on Stale Items
-
-**❌ BEFORE (Manual IDs - Hallucination Risk)**
-
+**Before (Problematic Pattern):**
 ```typescript
-// Agent might hallucinate these IDs
-const staleIds = [12345, 12346, 12347]; // ⚠️ Where did these come from?
+// AI queries for work items
+const result = await queryWorkItems("SELECT [System.Id] FROM WorkItems WHERE ...");
+const ids = result.workItems.map(wi => wi.id);
+// IDs: [12345, 12346, 12347]
 
-await tools.execute('wit-bulk-add-comments', {
-  items: staleIds.map(id => ({
-    workItemId: id,
-    comment: 'This item has been inactive for 90+ days'
-  }))
-});
+// Later, AI tries to use those IDs
+await bulkComment(ids, "Update needed");  
+// ❌ PROBLEM: AI might hallucinate IDs like [12348, 12349] that don't exist
+// ❌ PROBLEM: User can't verify which items will be affected
+// ❌ PROBLEM: No audit trail of what was selected
 ```
 
-**✅ AFTER (Query Handle - Safe)**
-
+**After (Safe Pattern):**
 ```typescript
-// Step 1: Get query handle from WIQL
-const result = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: `
-    SELECT [System.Id] 
-    FROM WorkItems 
-    WHERE [System.State] = 'Active'
-    AND [System.ChangedDate] < @Today - 90
-  `,
-  returnQueryHandle: true // Default: true
-});
+// AI queries and gets a validated handle
+const queryHandle = await queryWithHandle("SELECT...");
+// queryHandle: "qh_abc123"
 
-// Step 2: Use handle for bulk operation (no IDs needed!)
-await tools.execute('wit-bulk-comment-by-query-handle', {
-  queryHandle: result.data.query_handle,
-  comment: 'This item has been inactive for 90+ days',
-  dryRun: true // Preview first!
-});
+// User can inspect what's in the handle
+await inspectQueryHandle(queryHandle);
+// Shows: 3 items with titles, states, indices
+
+// AI selects using validated criteria
+await bulkCommentByHandle(queryHandle, {itemSelector: "all"}, "Update needed");
+// ✅ SAFE: IDs never leave the server
+// ✅ VALIDATED: Selection uses verified indices/criteria
+// ✅ AUDITABLE: Clear trail of what was selected
 ```
 
-### Example 2: Assign Work Items to User
+### Benefits of New Pattern
 
-**❌ BEFORE (Manual IDs)**
+1. **No ID Hallucination** - IDs stay server-side, AI never invents fake IDs
+2. **Validated Selection** - All selections validated against real query results
+3. **User Preview** - Inspect and preview before executing
+4. **Flexible Filtering** - Select subsets by index, state, tags, or other criteria
+5. **Audit Trail** - Clear record of selection criteria used
+6. **Safety** - Dry-run mode and preview tools prevent mistakes
 
+## Migration Steps
+
+### Step 1: Update WIQL Queries
+
+**Before:**
 ```typescript
-// Agent might make up these IDs
-const unassignedIds = [100, 101, 102]; // ⚠️ Hallucinated?
-
-await tools.execute('wit-bulk-add-comments', {
-  items: unassignedIds.map(id => ({
-    workItemId: id,
-    comment: 'Assigning to Sarah'
-  }))
-});
+const result = await queryWIQL(
+  "SELECT [System.Id], [System.Title] FROM WorkItems WHERE ..."
+);
+const ids = result.workItems.map(wi => wi.id);
 ```
 
-**✅ AFTER (Query Handle)**
-
+**After:**
 ```typescript
-// Step 1: Query for unassigned items
-const result = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: `
-    SELECT [System.Id] 
-    FROM WorkItems 
-    WHERE [System.AssignedTo] = '' 
-    AND [System.State] = 'New'
-  `,
-  returnQueryHandle: true
-});
-
-// Step 2: Assign using handle
-await tools.execute('wit-bulk-assign-by-query-handle', {
-  queryHandle: result.data.query_handle,
-  assignTo: 'sarah@company.com',
-  dryRun: true
-});
+const queryHandle = await queryWIQL(
+  "SELECT [System.Id], [System.Title] FROM WorkItems WHERE ...",
+  { returnQueryHandle: true }
+);
+// Returns: "qh_abc123"
 ```
 
-### Example 3: Selective Operations with Item Selector
+### Step 2: Update Bulk Operations
 
-**✅ NEW: Item Selector Pattern**
-
+**Before:**
 ```typescript
-// Step 1: Get query handle
-const result = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: 'SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] = "MyProject\\MyArea"',
-  includeFields: ['System.Tags', 'System.State'],
-  returnQueryHandle: true
-});
+await bulkComment(ids, "Comment text", template);
+```
 
-// Step 2: Preview selection before bulk operation
-await tools.execute('wit-select-items-from-query-handle', {
-  queryHandle: result.data.query_handle,
-  itemSelector: {
-    states: ['Active', 'New'],
-    tags: ['NeedsReview'],
-    daysInactiveMin: 30
+**After:**
+```typescript
+await bulkCommentByHandle(
+  queryHandle,
+  { itemSelector: "all" },  // or other selection
+  "Comment text",
+  template
+);
+```
+
+### Step 3: Add Preview Steps
+
+**New Workflow:**
+```typescript
+// 1. Query with handle
+const queryHandle = await queryWIQL(..., { returnQueryHandle: true });
+
+// 2. Inspect (optional but recommended)
+await inspectQueryHandle(queryHandle);
+
+// 3. Preview selection (optional for "all", recommended for criteria)
+await selectItemsFromQueryHandle(queryHandle, { states: ["Active"] });
+
+// 4. Execute
+await bulkOperationByHandle(queryHandle, { itemSelector: "all" }, ...);
+```
+
+## Common Migration Scenarios
+
+### Scenario 1: Simple "Affect All Items"
+
+**Before:**
+```typescript
+// Get all Active bugs
+const result = await queryWIQL("SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] = 'Bug'");
+const ids = result.workItems.map(wi => wi.id);
+
+// Assign to user
+await bulkAssign(ids, "user@company.com");
+```
+
+**After:**
+```typescript
+// Get all Active bugs
+const queryHandle = await queryWIQL(
+  "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] = 'Bug'",
+  { returnQueryHandle: true }
+);
+
+// Assign to user
+await bulkAssignByHandle(
+  queryHandle,
+  { itemSelector: "all" },  // All items from query
+  "user@company.com"
+);
+```
+
+### Scenario 2: Select Subset by Criteria
+
+**Before:**
+```typescript
+// Get all items, then filter in code
+const result = await queryWIQL("SELECT [System.Id], [System.State] FROM WorkItems WHERE ...");
+const activeIds = result.workItems
+  .filter(wi => wi.fields['System.State'] === 'Active')
+  .map(wi => wi.id);
+
+await bulkUpdate(activeIds, { field: "System.Priority", value: "1" });
+```
+
+**After:**
+```typescript
+// Get all items
+const queryHandle = await queryWIQL(
+  "SELECT [System.Id], [System.State] FROM WorkItems WHERE ...",
+  { returnQueryHandle: true }
+);
+
+// Select Active items server-side
+await bulkUpdateByHandle(
+  queryHandle,
+  { itemSelector: { states: ["Active"] } },  // Filter on server
+  { field: "System.Priority", value: "1" }
+);
+```
+
+### Scenario 3: User-Specified Selection
+
+**Before:**
+```typescript
+// User says "update the first 3 items"
+const result = await queryWIQL(...);
+const ids = result.workItems.slice(0, 3).map(wi => wi.id);
+await bulkUpdate(ids, ...);
+```
+
+**After:**
+```typescript
+// User says "update the first 3 items"
+const queryHandle = await queryWIQL(..., { returnQueryHandle: true });
+
+// Show user what they'll get
+await inspectQueryHandle(queryHandle);
+// User confirms: "Yes, update items 0, 1, 2"
+
+await bulkUpdateByHandle(
+  queryHandle,
+  { itemSelector: [0, 1, 2] },  // First 3 by index
+  ...
+);
+```
+
+### Scenario 4: Complex Filtering
+
+**Before:**
+```typescript
+// Get items, filter by multiple criteria in code
+const result = await queryWIQL(...);
+const filtered = result.workItems.filter(wi => 
+  wi.fields['System.State'] === 'Active' &&
+  wi.fields['System.Tags']?.includes('critical') &&
+  // ... complex logic ...
+);
+const ids = filtered.map(wi => wi.id);
+await bulkOperation(ids, ...);
+```
+
+**After:**
+```typescript
+// Get items
+const queryHandle = await queryWIQL(..., { returnQueryHandle: true });
+
+// Filter server-side with criteria
+await bulkOperationByHandle(
+  queryHandle,
+  { 
+    itemSelector: {
+      states: ["Active"],
+      tags: ["critical"]
+    }
   },
-  previewCount: 10
-});
-
-// Step 3: Apply operation to selected items only
-await tools.execute('wit-bulk-comment-by-query-handle', {
-  queryHandle: result.data.query_handle,
-  itemSelector: {
-    states: ['Active', 'New'],
-    tags: ['NeedsReview'],
-    daysInactiveMin: 30
-  },
-  comment: 'This item needs review and has been inactive for 30+ days',
-  dryRun: false
-});
+  ...
+);
 ```
 
-## Migration Checklist
+## Common Pitfalls & Solutions
 
-### 1. Identify Manual ID Workflows
+### Pitfall 1: Forgetting to Request Query Handle
 
-Search your codebase for:
-- Direct work item ID arrays: `[12345, 12346, ...]`
-- Manual ID input to bulk operations
-- Hardcoded work item IDs
-
-### 2. Replace with Query Handle Pattern
-
-For each workflow:
-
-1. **Write a WIQL query** that selects the items you need
-2. **Execute with `returnQueryHandle: true`** (default)
-3. **Use the handle** in subsequent bulk operations
-4. **Always preview first** with `dryRun: true`
-
-### 3. Add Safety Checks
-
+**Problem:**
 ```typescript
-// Validate handle before use
-const validation = await tools.execute('wit-validate-query-handle', {
-  queryHandle: handle,
-  includeSampleItems: true
-});
+const result = await queryWIQL("SELECT...");
+// result = { workItems: [...] }  - NO QUERY HANDLE!
+await bulkOperationByHandle(result, ...);  // ❌ Doesn't work
+```
 
-if (!validation.success) {
-  console.error('Handle expired or invalid');
-  return;
+**Solution:**
+```typescript
+const queryHandle = await queryWIQL("SELECT...", { returnQueryHandle: true });
+// queryHandle = "qh_abc123"  ✅
+await bulkOperationByHandle(queryHandle, ...);  // ✅ Works
+```
+
+### Pitfall 2: Using Expired Query Handles
+
+**Problem:**
+```typescript
+const queryHandle = await queryWIQL(..., { returnQueryHandle: true });
+// ... wait 2 hours ...
+await bulkOperationByHandle(queryHandle, ...);  // ❌ Handle expired (default 1 hour TTL)
+```
+
+**Solution:**
+```typescript
+// For long-running workflows, re-query:
+if (handleExpired) {
+  queryHandle = await queryWIQL(..., { returnQueryHandle: true });
 }
-
-// Inspect what the handle contains
-const inspection = await tools.execute('wit-inspect-query-handle', {
-  queryHandle: handle,
-  includePreview: true,
-  includeStats: true
-});
-
-console.log(`Handle contains ${inspection.data.itemCount} items`);
+await bulkOperationByHandle(queryHandle, ...);  // ✅ Fresh handle
 ```
 
-## Common Migration Patterns
+### Pitfall 3: Not Previewing Destructive Operations
 
-### Pattern: Stale Item Cleanup
+**Problem:**
+```typescript
+await bulkRemoveByHandle(queryHandle, { itemSelector: { states: ["Done"] } });
+// ❌ Didn't preview - might have deleted wrong items!
+```
+
+**Solution:**
+```typescript
+// Always preview removals
+const preview = await selectItemsFromQueryHandle(
+  queryHandle,
+  { itemSelector: { states: ["Done"] } }
+);
+// Shows: "Would select 5 items: [list of items]"
+
+// User confirms
+await bulkRemoveByHandle(
+  queryHandle,
+  { itemSelector: { states: ["Done"] } },
+  { dryRun: false }  // Execute after confirmation
+);
+```
+
+### Pitfall 4: Confusing Index 0 vs ID
+
+**Problem:**
+```typescript
+// User says "update item 1"
+await bulkUpdateByHandle(queryHandle, { itemSelector: [1] }, ...);
+// ❌ This selects the SECOND item (index 1), not item with ID 1!
+```
+
+**Solution:**
+```typescript
+// Always clarify: "Do you mean the first item (index 0) or item with ID 1?"
+
+// If they mean "first item":
+await bulkUpdateByHandle(queryHandle, { itemSelector: [0] }, ...);
+
+// If they mean "item with specific ID":
+// Run query that gets only that ID:
+const queryHandle = await queryWIQL("SELECT [System.Id] FROM WorkItems WHERE [System.Id] = 1", { returnQueryHandle: true });
+await bulkUpdateByHandle(queryHandle, { itemSelector: "all" }, ...);
+```
+
+### Pitfall 5: Over-Complicated Criteria
+
+**Problem:**
+```typescript
+// Trying to replicate complex WIQL filtering with itemSelector
+await bulkOperationByHandle(
+  queryHandle,
+  { itemSelector: {
+    states: ["Active", "New"],
+    tags: ["critical", "important", "urgent"],
+    titleContains: "authentication",
+    daysInactiveMin: 3,
+    daysInactiveMax: 10
+  }},
+  ...
+);
+// ❌ Too complex - hard to understand what will be selected
+```
+
+**Solution:**
+```typescript
+// Use WIQL for complex filtering, itemSelector for simple refinement:
+const queryHandle = await queryWIQL(
+  "SELECT [System.Id] FROM WorkItems WHERE [System.State] IN ('Active', 'New') AND [System.Tags] CONTAINS 'critical' AND [System.Title] CONTAINS 'authentication'",
+  { returnQueryHandle: true, includeSubstantiveChange: true }
+);
+
+// Simple itemSelector for final filter
+await bulkOperationByHandle(
+  queryHandle,
+  { itemSelector: { daysInactiveMin: 3 } },  // ✅ Simple, clear
+  ...
+);
+```
+
+## FAQ
+
+### Q: When should I use itemSelector: "all" vs criteria?
+
+**A:** Use "all" when:
+- Your WIQL query already filtered to exactly what you want
+- You've inspected the query handle and confirmed all items should be affected
+- The query result is small and manageable
+
+Use criteria when:
+- You need a subset based on states, tags, or activity
+- The WIQL query was broad and you want to refine server-side
+- You want to filter without writing more WIQL
+
+### Q: What happens to old bulk operation functions?
+
+**A:** Old functions still work for backward compatibility but should be avoided:
+- `bulkComment(ids, ...)` - Still works but allows ID hallucination
+- `bulkAssign(ids, ...)` - Still works but lacks audit trail
+- **Recommendation:** Migrate to `*ByHandle` variants for safety
+
+### Q: How do I migrate prompts/workflows?
+
+**A:** Update prompts to use the new pattern:
+
+**Old Prompt:**
+```
+Query for all Active bugs, extract their IDs, and assign them to the security team.
+```
+
+**New Prompt:**
+```
+Query for all Active bugs using returnQueryHandle: true, then use bulkAssignByHandle with itemSelector: "all" to assign them to the security team.
+```
+
+### Q: Can I still get work item details?
+
+**A:** Yes! Use `includeFields` in the WIQL query:
 
 ```typescript
-// Old way: Manual ID list (hallucination risk)
-const staleIds = findStaleItems(); // ⚠️ How?
+const queryHandle = await queryWIQL(
+  "SELECT [System.Id], [System.Title], [System.State], [System.AssignedTo] FROM WorkItems WHERE ...",
+  { 
+    returnQueryHandle: true,
+    includeFields: true  // Returns full details
+  }
+);
 
-// New way: Query-based
-const { data } = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: `
-    SELECT [System.Id] 
-    FROM WorkItems 
-    WHERE [System.State] IN ('Active', 'New')
-    ORDER BY [System.ChangedDate] DESC
-  `,
-  includeSubstantiveChange: true, // Compute staleness
-  staleThresholdDays: 90,
-  returnQueryHandle: true
-});
-
-// Use itemSelector for criteria-based filtering
-await tools.execute('wit-bulk-comment-by-query-handle', {
-  queryHandle: data.query_handle,
-  itemSelector: { daysInactiveMin: 90 },
-  comment: 'Stale item detected: {daysInactive} days inactive',
-  dryRun: true
-});
+// Then inspect to see details:
+await inspectQueryHandle(queryHandle);
+// Shows: full field data for all items
 ```
 
-### Pattern: Hierarchy-Based Operations
+### Q: What about performance with large result sets?
+
+**A:** Query handles scale well:
+- Handles store references, not full item data
+- Selection operations are O(n) where n = items in handle
+- For very large sets (>1000 items), consider:
+  - More specific WIQL queries
+  - Batching operations
+  - Using criteria-based selection (more efficient than indices)
+
+### Q: How do I test with the new pattern?
+
+**A:** Use dry-run mode:
 
 ```typescript
-// Select all child items under a feature
-const { data } = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: `
-    SELECT [System.Id] 
-    FROM WorkItemLinks 
-    WHERE [Source].[System.Id] = 12345 
-    AND [System.Links.LinkType] = 'Child'
-    MODE (MustContain)
-  `,
-  returnQueryHandle: true
-});
+// Test without executing
+await bulkOperationByHandle(
+  queryHandle,
+  { itemSelector: ... },
+  ...params,
+  { dryRun: true }  // Shows what WOULD happen
+);
 
-await tools.execute('wit-bulk-update-by-query-handle', {
-  queryHandle: data.query_handle,
-  updates: [
-    { op: 'replace', path: '/fields/System.State', value: 'Closed' }
-  ],
-  dryRun: true
-});
+// Then execute for real
+await bulkOperationByHandle(
+  queryHandle,
+  { itemSelector: ... },
+  ...params,
+  { dryRun: false }
+);
 ```
 
-## Item Selector Reference
+## Summary
 
-The `itemSelector` parameter allows fine-grained control over which items are affected:
+**Key Takeaways:**
+1. Always use `returnQueryHandle: true` for bulk operations
+2. Never extract IDs manually - use query handles
+3. Preview selections before destructive operations
+4. Use itemSelector for safe, validated selection
+5. Leverage dry-run mode for testing
 
-```typescript
-// Select all items
-itemSelector: "all"
+**Migration Checklist:**
+- [ ] Update all WIQL queries to return handles
+- [ ] Replace `bulk*` with `bulk*ByHandle` functions
+- [ ] Add itemSelector to all bulk operations
+- [ ] Add preview steps for destructive operations
+- [ ] Test with dry-run mode before executing
+- [ ] Update prompts/workflows to use new pattern
 
-// Select by index (zero-based)
-itemSelector: [0, 1, 2, 5, 10]
-
-// Select by criteria
-itemSelector: {
-  states: ['Active', 'New'],           // Filter by state
-  titleContains: ['bug', 'issue'],     // Filter by title keywords
-  tags: ['Priority1', 'Security'],     // Filter by tags (requires System.Tags in query)
-  daysInactiveMin: 30,                 // Minimum days inactive
-  daysInactiveMax: 180                 // Maximum days inactive
-}
-```
-
-## Best Practices
-
-### 1. Always Use Dry Run First
-
-```typescript
-// Preview changes
-await bulkOperation({ ..., dryRun: true });
-
-// Review output carefully
-// Then apply for real
-await bulkOperation({ ..., dryRun: false });
-```
-
-### 2. Check Handle Validity
-
-```typescript
-// Handles expire after 1 hour
-const validation = await tools.execute('wit-validate-query-handle', {
-  queryHandle: handle
-});
-
-if (!validation.success) {
-  // Re-run query to get fresh handle
-}
-```
-
-### 3. Use Item Selector for Safety
-
-```typescript
-// Instead of operating on ALL items
-await tools.execute('wit-select-items-from-query-handle', {
-  queryHandle: handle,
-  itemSelector: { states: ['Active'] }, // Only active items
-  previewCount: 50
-});
-```
-
-### 4. Include Required Fields in Query
-
-```typescript
-// For criteria-based selection, include necessary fields
-const { data } = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: 'SELECT [System.Id] FROM WorkItems WHERE ...',
-  includeFields: [
-    'System.Tags',        // For tag-based filtering
-    'System.State',       // For state-based filtering
-    'System.Title'        // For title-based filtering
-  ],
-  includeSubstantiveChange: true, // For staleness filtering
-  returnQueryHandle: true
-});
-```
-
-## Troubleshooting
-
-### "Query handle not found or expired"
-
-**Cause**: Handle expired (1 hour TTL) or was never created
-
-**Solution**: Re-run the WIQL query with `returnQueryHandle: true`
-
-### "itemSelector returned no items"
-
-**Cause**: Criteria didn't match any items in the handle
-
-**Solution**: 
-1. Use `wit-inspect-query-handle` to see what data is available
-2. Adjust your criteria
-3. Ensure required fields are included in the original query
-
-### "Criteria-based selection not working"
-
-**Cause**: Missing fields in the query handle
-
-**Solution**: Add required fields to your WIQL query:
-
-```typescript
-const { data } = await tools.execute('wit-get-work-items-by-query-wiql', {
-  wiqlQuery: '...',
-  includeFields: ['System.Tags', 'System.State'], // ✅ Add these!
-  includeSubstantiveChange: true, // ✅ For daysInactive filtering
-  returnQueryHandle: true
-});
-```
-
-## Support and Resources
-
-- **Query Handle Pattern Guide**: `/mcp_server/resources/query-handle-pattern.md`
-- **Tool Selection Guide**: `/mcp_server/resources/tool-selection-guide.md`
-- **WIQL Quick Reference**: `/mcp_server/resources/wiql-quick-reference.md`
-
-## Questions?
-
-If you encounter issues during migration, check the logs for deprecation warnings and hallucination detection alerts.
+**Still Have Questions?**
+- See `resources/query-handle-pattern.md` for detailed pattern documentation
+- See `resources/tool-selection-guide.md` for selection strategy guidance
+- File an issue if you encounter migration problems
