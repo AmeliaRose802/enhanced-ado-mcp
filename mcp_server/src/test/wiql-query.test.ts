@@ -97,6 +97,122 @@ async function testPagination() {
   }
 }
 
+async function testConditionalPagination() {
+  console.log("\n🧪 Testing conditional pagination...");
+  
+  try {
+    // Test 1: Query with single result (totalCount <= top) - should omit pagination
+    console.log("\n  Test 1: Single-page result without includePaginationDetails");
+    const singlePageResult = await executeTool("wit-get-work-items-by-query-wiql", {
+      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+      top: 200,
+      skip: 0,
+      returnQueryHandle: false
+    });
+    
+    if (!singlePageResult.success) {
+      console.log("❌ Single-page query failed");
+      console.log(`   Errors: ${singlePageResult.errors?.join(", ")}`);
+      return false;
+    }
+    
+    const totalCount = singlePageResult.data?.count || 0;
+    const top = 200;
+    
+    if (totalCount <= top) {
+      // For single page results, pagination should be omitted
+      if (singlePageResult.data?.pagination) {
+        console.log("❌ Pagination should be omitted for single-page results");
+        console.log(`   totalCount: ${totalCount}, top: ${top}`);
+        return false;
+      }
+      console.log("✅ Pagination correctly omitted for single-page result");
+      console.log(`   totalCount: ${totalCount}, top: ${top}`);
+    } else {
+      // For multi-page results, pagination should be included
+      if (!singlePageResult.data?.pagination) {
+        console.log("❌ Pagination should be included for multi-page results");
+        console.log(`   totalCount: ${totalCount}, top: ${top}`);
+        return false;
+      }
+      console.log("✅ Pagination correctly included for multi-page result");
+      console.log(`   totalCount: ${totalCount}, top: ${top}`);
+    }
+    
+    // Test 2: Query with includePaginationDetails=true - should always include pagination
+    console.log("\n  Test 2: Result with includePaginationDetails=true");
+    const forcedPaginationResult = await executeTool("wit-get-work-items-by-query-wiql", {
+      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+      top: 200,
+      skip: 0,
+      returnQueryHandle: false,
+      includePaginationDetails: true
+    });
+    
+    if (!forcedPaginationResult.success) {
+      console.log("❌ Forced pagination query failed");
+      console.log(`   Errors: ${forcedPaginationResult.errors?.join(", ")}`);
+      return false;
+    }
+    
+    if (!forcedPaginationResult.data?.pagination) {
+      console.log("❌ Pagination should be included when includePaginationDetails=true");
+      return false;
+    }
+    
+    console.log("✅ Pagination correctly included with includePaginationDetails=true");
+    console.log(`   skip: ${forcedPaginationResult.data.pagination.skip}`);
+    console.log(`   top: ${forcedPaginationResult.data.pagination.top}`);
+    console.log(`   totalCount: ${forcedPaginationResult.data.pagination.totalCount}`);
+    console.log(`   hasMore: ${forcedPaginationResult.data.pagination.hasMore}`);
+    
+    // Test 3: Query with multi-page results - should include pagination
+    console.log("\n  Test 3: Multi-page result (top=5)");
+    const multiPageResult = await executeTool("wit-get-work-items-by-query-wiql", {
+      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+      top: 5,
+      skip: 0,
+      returnQueryHandle: false
+    });
+    
+    if (!multiPageResult.success) {
+      console.log("❌ Multi-page query failed");
+      console.log(`   Errors: ${multiPageResult.errors?.join(", ")}`);
+      return false;
+    }
+    
+    const multiPageTotalCount = multiPageResult.data?.pagination?.totalCount || 0;
+    const multiPageTop = 5;
+    
+    if (multiPageTotalCount > multiPageTop) {
+      if (!multiPageResult.data?.pagination) {
+        console.log("❌ Pagination should be included for multi-page results");
+        return false;
+      }
+      console.log("✅ Pagination correctly included for multi-page result");
+      console.log(`   totalCount: ${multiPageTotalCount}, top: ${multiPageTop}`);
+      
+      // Verify nextSkip is included when hasMore is true
+      if (multiPageResult.data.pagination.hasMore && !multiPageResult.data.pagination.nextSkip) {
+        console.log("❌ nextSkip should be included when hasMore=true");
+        return false;
+      }
+      if (multiPageResult.data.pagination.hasMore) {
+        console.log("✅ nextSkip correctly included when hasMore=true");
+        console.log(`   nextSkip: ${multiPageResult.data.pagination.nextSkip}`);
+      }
+    } else {
+      console.log("⚠️  Not enough items to test multi-page scenario");
+    }
+    
+    return true;
+  } catch (error) {
+    console.log("❌ Exception during conditional pagination test:");
+    console.log(`   ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
 async function main() {
   console.log("═══════════════════════════════════════════════════════");
   console.log("  Testing WIQL Query Tool Implementation  ");
@@ -105,14 +221,16 @@ async function main() {
   try {
     const basicPassed = await testBasicWiqlQuery();
     const paginationPassed = await testPagination();
+    const conditionalPaginationPassed = await testConditionalPagination();
     
     console.log("\n═══════════════════════════════════════════════════════");
     console.log("  Test Results Summary  ");
     console.log("═══════════════════════════════════════════════════════");
-    console.log(`Basic WIQL query:    ${basicPassed ? "✅ PASS" : "❌ FAIL"}`);
-    console.log(`Pagination test:     ${paginationPassed ? "✅ PASS" : "❌ FAIL"}`);
+    console.log(`Basic WIQL query:         ${basicPassed ? "✅ PASS" : "❌ FAIL"}`);
+    console.log(`Pagination test:          ${paginationPassed ? "✅ PASS" : "❌ FAIL"}`);
+    console.log(`Conditional pagination:   ${conditionalPaginationPassed ? "✅ PASS" : "❌ FAIL"}`);
     
-    if (basicPassed && paginationPassed) {
+    if (basicPassed && paginationPassed && conditionalPaginationPassed) {
       console.log("\n🎉 All WIQL query tests passed!");
       process.exit(0);
     } else {
@@ -124,3 +242,5 @@ async function main() {
     process.exit(1);
   }
 }
+
+main();

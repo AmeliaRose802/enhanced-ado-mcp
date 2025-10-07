@@ -464,7 +464,7 @@ The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps wor
   "skip": 0
 }
 ```
-Use `skip: 50` to get the next page, `skip: 100` for the third page, etc. The response includes pagination metadata with `hasMore` and `nextSkip` fields.
+Use `skip: 50` to get the next page, `skip: 100` for the third page, etc. The response includes pagination metadata with `hasMore` and `nextSkip` fields when there are multiple pages (totalCount > top). For single-page results, pagination is omitted to save context window tokens. To force include pagination metadata even for complete results, set `includePaginationDetails: true`.
 
 ### Complex Query - Recently Changed Tasks
 ```json
