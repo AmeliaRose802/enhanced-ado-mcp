@@ -376,21 +376,29 @@ export const validateHierarchyFastSchema = z.object({
  * These tools eliminate ID hallucination risk by using query handles
  */
 
+/**
+ * Reusable item selector schema for bulk operations
+ * Allows selecting items by:
+ * - "all" - operate on all items in the query handle
+ * - number[] - operate on specific indices (e.g., [0, 5, 12])
+ * - criteria object - operate on items matching server-side criteria
+ */
+const itemSelectorSchema = z.union([
+  z.literal("all"),
+  z.array(z.number()).max(100),
+  z.object({
+    states: z.array(z.string()).optional(),
+    titleContains: z.array(z.string()).optional(),
+    tags: z.array(z.string()).optional(),
+    daysInactiveMin: z.number().optional(),
+    daysInactiveMax: z.number().optional()
+  })
+]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering");
+
 export const bulkCommentByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
   comment: z.string().describe("Comment text to add to all work items (supports Markdown)"),
-  // NEW: Item selection within handle
-  itemSelector: z.union([
-    z.literal("all"),                    // Operate on all items
-    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
-    z.object({                           // Operate by server-side criteria
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
@@ -403,18 +411,7 @@ export const bulkUpdateByQueryHandleSchema = z.object({
     path: z.string().describe("Field path (e.g., '/fields/System.State', '/fields/System.AssignedTo')"),
     value: z.union([z.string(), z.number(), z.boolean()]).optional().describe("Value to set (not needed for 'remove' operation)")
   })).min(1).describe("Array of JSON Patch operations to apply to selected work items"),
-  // NEW: Item selection within handle
-  itemSelector: z.union([
-    z.literal("all"),                    // Operate on all items
-    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
-    z.object({                           // Operate by server-side criteria
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
@@ -423,18 +420,7 @@ export const bulkUpdateByQueryHandleSchema = z.object({
 export const bulkAssignByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
   assignTo: z.string().describe("User email or display name to assign work items to"),
-  // NEW: Item selection within handle
-  itemSelector: z.union([
-    z.literal("all"),                    // Operate on all items
-    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
-    z.object({                           // Operate by server-side criteria
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
@@ -443,18 +429,7 @@ export const bulkAssignByQueryHandleSchema = z.object({
 export const bulkRemoveByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
   removeReason: z.string().optional().describe("Reason for removing work items (added as comment before removal)"),
-  // NEW: Item selection within handle
-  itemSelector: z.union([
-    z.literal("all"),                    // Operate on all items
-    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
-    z.object({                           // Operate by server-side criteria
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
+  itemSelector: itemSelectorSchema,
   dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
@@ -506,17 +481,7 @@ export const selectItemsFromQueryHandleSchema = z.object({
  */
 export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
-  itemSelector: z.union([
-    z.literal("all"),
-    z.array(z.number()).max(100),
-    z.object({
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all', array of indices, or criteria object"),
+  itemSelector: itemSelectorSchema,
   sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100 for performance)"),
   enhancementStyle: z.enum(['detailed', 'concise', 'technical', 'business']).optional().default('detailed').describe("Style of enhanced description: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)"),
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing description rather than replace (default true)"),
@@ -531,17 +496,7 @@ export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
  */
 export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle identifying work items to estimate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
-  itemSelector: z.union([
-    z.literal("all"),
-    z.array(z.number()).max(100),
-    z.object({
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all', array of indices, or criteria object"),
+  itemSelector: itemSelectorSchema,
   sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
   pointScale: z.enum(['fibonacci', 'linear', 't-shirt']).optional().default('fibonacci').describe("Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)"),
   onlyUnestimated: z.boolean().optional().default(true).describe("Only assign points to items without existing effort estimates (default true)"),
@@ -557,17 +512,7 @@ export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
  */
 export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle identifying work items to enhance (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
-  itemSelector: z.union([
-    z.literal("all"),
-    z.array(z.number()).max(100),
-    z.object({
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).default("all").describe("Item selection: 'all', array of indices, or criteria object"),
+  itemSelector: itemSelectorSchema,
   sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
   criteriaFormat: z.enum(['gherkin', 'checklist', 'user-story']).optional().default('gherkin').describe("Format: gherkin (Given/When/Then), checklist (bullet points), user-story (As a/I want/So that)"),
   minCriteria: z.number().int().min(1).max(10).optional().default(3).describe("Minimum number of acceptance criteria to generate (default 3)"),
