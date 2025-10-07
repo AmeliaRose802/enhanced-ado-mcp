@@ -6,12 +6,90 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ADOWorkItem, ADOApiResponse } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
+
+// Type definitions for analysis results
+interface EffortAnalysisResult {
+  total_items: number;
+  items_with_story_points: number;
+  items_without_story_points: number;
+  total_story_points: number;
+  average_story_points: number;
+  type_distribution: Record<string, { count: number; storyPoints: number }>;
+  estimation_coverage: number;
+}
+
+interface VelocityAnalysisResult {
+  total_completed: number;
+  completion_by_month: Record<string, { count: number; storyPoints: number }>;
+  avg_monthly_items: number;
+  avg_monthly_story_points: number;
+}
+
+interface AssignmentAnalysisResult {
+  total_items: number;
+  assigned_items: number;
+  unassigned_items: number;
+  unique_assignees: number;
+  assignment_distribution: Record<string, number>;
+  assignment_coverage: number;
+}
+
+interface RiskAnalysisResult {
+  total_items?: number;
+  risk_score: number;
+  risk_level: string;
+  identified_risks: string[];
+  risk_details: {
+    unestimated_count: number;
+    blocked_count: number;
+    stale_count: number;
+    unassigned_high_priority_count: number;
+  };
+}
+
+interface CompletionAnalysisResult {
+  total_items: number;
+  completed_items: number;
+  active_items: number;
+  backlog_items: number;
+  completion_percentage: number;
+  state_distribution: Record<string, number>;
+  health_indicator: string;
+}
+
+interface PriorityAnalysisResult {
+  total_items: number;
+  high_priority: number;
+  medium_priority: number;
+  low_priority: number;
+  priority_distribution: Record<string, number>;
+  priority_balance: string;
+}
+
+interface WorkItemAnalysisResults {
+  effort?: EffortAnalysisResult;
+  velocity?: VelocityAnalysisResult;
+  assignments?: AssignmentAnalysisResult;
+  risks?: RiskAnalysisResult;
+  completion?: CompletionAnalysisResult;
+  priorities?: PriorityAnalysisResult;
+  [key: string]: EffortAnalysisResult | VelocityAnalysisResult | AssignmentAnalysisResult | RiskAnalysisResult | CompletionAnalysisResult | PriorityAnalysisResult | { error: string } | undefined;
+}
+
+interface WorkItemAnalysis {
+  query_handle: string;
+  item_count: number;
+  original_query: string;
+  analysis_types: string[];
+  results: WorkItemAnalysisResults;
+}
 
 export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -48,7 +126,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
     const proj = project || cfg.azureDevOps.project;
     const httpClient = new ADOHttpClient(org, proj);
 
-    const analysis: any = {
+    const analysis: WorkItemAnalysis = {
       query_handle: queryHandle,
       item_count: workItemIds.length,
       original_query: queryData.query,
@@ -67,7 +145,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
         ];
         
         const batchSize = 50; // ADO batch limit
-        const workItems: any[] = [];
+        const workItems: ADOWorkItem[] = [];
         
         logger.debug(`Fetching ${workItemIds.length} work items in batches of ${batchSize}`);
         
@@ -76,7 +154,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
           const idsParam = batch.join(',');
           
           try {
-            const response = await httpClient.get<any>(
+            const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
               `wit/workitems?ids=${idsParam}&fields=${fields.join(',')}`
             );
             
@@ -158,7 +236,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
 }
 
 // Analysis functions
-function analyzeEffort(workItems: any[]) {
+function analyzeEffort(workItems: ADOWorkItem[]): EffortAnalysisResult {
   const withStoryPoints = workItems.filter(wi => wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints']);
   const totalStoryPoints = withStoryPoints.reduce((sum, wi) => sum + (wi.fields['Microsoft.VSTS.Scheduling.StoryPoints'] || 0), 0);
   
@@ -183,7 +261,7 @@ function analyzeEffort(workItems: any[]) {
   };
 }
 
-function analyzeVelocity(workItems: any[]) {
+function analyzeVelocity(workItems: ADOWorkItem[]): VelocityAnalysisResult {
   const completedItems = workItems.filter(wi => 
     ['Done', 'Closed', 'Resolved', 'Completed'].includes(wi.fields?.['System.State'])
   );
@@ -211,7 +289,7 @@ function analyzeVelocity(workItems: any[]) {
   };
 }
 
-function analyzeAssignments(workItems: any[]) {
+function analyzeAssignments(workItems: ADOWorkItem[]): AssignmentAnalysisResult {
   const assignmentDistribution: { [key: string]: number } = {};
   let unassignedCount = 0;
 
@@ -242,7 +320,7 @@ function analyzeAssignments(workItems: any[]) {
   };
 }
 
-function analyzeRisks(workItems: any[]) {
+function analyzeRisks(workItems: ADOWorkItem[]): RiskAnalysisResult {
   const risks: string[] = [];
   let riskScore = 0;
 
@@ -298,7 +376,7 @@ function analyzeRisks(workItems: any[]) {
       : (typeof assignedToField === 'string' ? assignedToField : '');
     
     return (!assignedTo || assignedTo.trim() === '') &&
-           (wi.fields?.['Microsoft.VSTS.Common.Priority'] <= 2);
+           ((wi.fields?.['Microsoft.VSTS.Common.Priority'] ?? 999) <= 2);
   });
   if (unassignedHighPriority.length > 0) {
     risks.push(`Unassigned high-priority: ${unassignedHighPriority.length} high-priority items lack assignment`);
@@ -319,7 +397,7 @@ function analyzeRisks(workItems: any[]) {
   };
 }
 
-function analyzeCompletion(workItems: any[]) {
+function analyzeCompletion(workItems: ADOWorkItem[]): CompletionAnalysisResult {
   const stateDistribution: { [key: string]: number } = {};
   workItems.forEach(wi => {
     const state = wi.fields?.['System.State'] || 'Unknown';
@@ -346,7 +424,7 @@ function analyzeCompletion(workItems: any[]) {
   };
 }
 
-function analyzePriorities(workItems: any[]) {
+function analyzePriorities(workItems: ADOWorkItem[]): PriorityAnalysisResult {
   const priorityDistribution: { [key: string]: number } = {};
   workItems.forEach(wi => {
     const priority = wi.fields?.['Microsoft.VSTS.Common.Priority']?.toString() || 'Unset';
