@@ -150,28 +150,28 @@ Language model access is managed by VS Code and persists across sessions. To res
 ### Configuration & Discovery Tools
 
 8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
-8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
-9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
-10. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
-11. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
-12. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
-13. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, computed metrics, and **query handle generation** for safe bulk operations
+10. `wit-inspect-query-handle` - 🆕 **Inspect query handle contents** - Preview work items in a query handle with indices, states, tags, and staleness info
+11. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
+12. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
+13. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
+14. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
 
-### Bulk Operations & Backlog Hygiene Tools
+### Query Handle & Item Selection Tools (NEW in v1.5.0)
 
-14. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
-15. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
-16. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
-9. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
-10. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
-11. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
-12. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+15. `wit-select-items-from-query-handle` - 🎯 **Preview item selection** before bulk operations - Shows exactly which items will be selected using index-based or criteria-based selection (states, tags, staleness)
+16. `wit-bulk-comment-by-query-handle` - Add same comment to multiple items selected from query handle
+17. `wit-bulk-update-by-query-handle` - Update fields on items selected from query handle
+18. `wit-bulk-assign-by-query-handle` - Assign items selected from query handle to a user
+19. `wit-bulk-remove-by-query-handle` - Remove items selected from query handle (supports dry-run)
 
-### Bulk Operations & Backlog Hygiene Tools
+All bulk operations support `itemSelector` for safe, validated item targeting.
 
-13. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
-14. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
-15. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
+### Backlog Hygiene Tools
+
+20. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
+21. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
+22. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
 
 **Bulk State Transitions:** Use the official **Azure DevOps MCP server** `ado_update-workitems` tool for bulk state updates, which provides native ADO integration and better performance.
 
@@ -214,6 +214,7 @@ Prompts are loaded from the `prompts/` directory and support template variable s
 4. **Hierarchy Query Patterns** (`ado://docs/hierarchy-patterns`) - Patterns for querying work item hierarchies
 5. **Common Workflow Examples** (`ado://docs/common-workflows`) - End-to-end workflow examples combining multiple tools
 6. **Tool Selection Guide** (`ado://docs/tool-selection-guide`) - Decision guide for choosing the right tool
+7. **Query Handle Pattern** (`ado://docs/query-handle-pattern`) - 🆕 **Anti-hallucination architecture** - Learn the handle-first pattern with item selection for safe bulk operations
 
 ### How Agents Use Resources
 
@@ -274,6 +275,129 @@ ORDER BY [System.CreatedDate] DESC
 - "High priority bugs assigned to me" → Multi-criteria filtered query
 
 See the [WIQL Generator Guide](mcp_server/resources/wiql-generator-guide.md) for comprehensive examples and patterns.
+
+## 🎯 Item Selection & Safe Bulk Operations
+
+**New in v1.5.0:** Enhanced query handle pattern with intelligent item selection for safe, validated bulk operations. This feature eliminates ID hallucination and provides multiple selection strategies for precise targeting of work items.
+
+### Why Item Selection?
+
+- **Prevent Wrong Item Operations**: Preview exactly which items will be affected before executing
+- **Flexible Selection**: Choose all items, specific indices, or filter by criteria (state, tags, staleness)
+- **Anti-Hallucination**: Work with query handles instead of manually specifying IDs
+- **Safety First**: Always validate selections before destructive operations
+
+### Selection Strategies
+
+#### 1. Select All Items
+```typescript
+itemSelector: "all"  // Affects every item in the query result
+```
+Use when your WIQL query already filtered to exactly the items you want.
+
+#### 2. Index-Based Selection
+```typescript
+itemSelector: [0, 2, 5]  // Select items at specific positions (zero-based)
+```
+Use when you've inspected items and want specific ones by position.
+
+#### 3. Criteria-Based Selection
+```typescript
+// Select by state
+itemSelector: { states: ["Active", "In Progress"] }
+
+// Select by tags
+itemSelector: { tags: ["critical", "security"] }
+
+// Select by staleness
+itemSelector: { daysInactiveMin: 7 }
+
+// Combine criteria (AND logic)
+itemSelector: {
+  states: ["Active"],
+  tags: ["critical"],
+  daysInactiveMin: 3
+}
+```
+Use for precise filtering based on work item attributes.
+
+### Safe Bulk Operation Workflow
+
+**Always follow this pattern for bulk operations:**
+
+```typescript
+// Step 1: Query with handle
+const queryHandle = await queryWIQL("...", { returnQueryHandle: true });
+// Returns: queryHandle "qh_abc123"
+
+// Step 2: Inspect available items
+await inspectQueryHandle(queryHandle);
+// Shows: 10 items with indices, states, tags
+
+// Step 3: Preview selection (NEW!)
+await selectItemsFromQueryHandle(queryHandle, {
+  itemSelector: { states: ["Active"] }
+});
+// Result: "Would select 5 of 10 items"
+
+// Step 4: Execute bulk operation
+await bulkCommentByQueryHandle(queryHandle, {
+  itemSelector: { states: ["Active"] },
+  comment: "Needs review"
+});
+```
+
+### Example: Selective Update
+
+```typescript
+// Query all bugs in current sprint
+const handle = await queryWIQL(
+  "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug'",
+  { returnQueryHandle: true }
+);
+
+// Preview critical bugs only
+await selectItemsFromQueryHandle(handle, {
+  itemSelector: { tags: ["critical"] }
+});
+// Shows: "Would select 3 of 12 items"
+
+// Update only critical bugs
+await bulkAssignByQueryHandle(handle, {
+  itemSelector: { tags: ["critical"] },
+  assignTo: "security-team@company.com"
+});
+```
+
+### Available Bulk Operations with Item Selection
+
+All bulk operations support the `itemSelector` parameter:
+
+- `wit-select-items-from-query-handle` - **Preview selection** before executing (NEW!)
+- `wit-bulk-comment-by-query-handle` - Add comments to selected items
+- `wit-bulk-update-by-query-handle` - Update fields on selected items
+- `wit-bulk-assign-by-query-handle` - Assign selected items to user
+- `wit-bulk-remove-by-query-handle` - Remove selected items (destructive - always preview!)
+
+### Migration from Old Pattern
+
+**Old Pattern (Deprecated):**
+```typescript
+// ❌ Manual ID extraction - prone to hallucination
+const items = await queryWIQL("...");
+const ids = items.map(i => i.id);  // Manual extraction
+await bulkComment(ids, "...");      // No validation
+```
+
+**New Pattern (v1.5.0):**
+```typescript
+// ✅ Handle-based with selection
+const handle = await queryWIQL("...", { returnQueryHandle: true });
+await selectItemsFromQueryHandle(handle, { itemSelector: "all" });  // Preview
+await bulkCommentByQueryHandle(handle, { itemSelector: "all", comment: "..." });
+```
+
+See the [Query Handle Migration Guide](docs/QUERY_HANDLE_MIGRATION.md) for detailed migration instructions.
 
 ## WIQL Query Examples
 
