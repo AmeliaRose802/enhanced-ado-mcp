@@ -15,7 +15,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, includePreview = true, includeStats = true } = parsed.data;
+    const { queryHandle, includePreview = true, includeStats = true, includeExamples = false } = parsed.data;
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
@@ -196,7 +196,10 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
         byTags: tagStats
       };
       
-      response.exampleSelectors = selectionExamples;
+      // Only include examples when explicitly requested (saves ~300 tokens by default)
+      if (includeExamples) {
+        response.exampleSelectors = selectionExamples;
+      }
 
       // Add legacy preview format for backward compatibility
       response.preview = {
@@ -207,15 +210,19 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       // Add legacy selection_info for backward compatibility
       response.selection_info = {
         total_selectable_indices: queryData.selectionMetadata.selectableIndices.length,
-        available_criteria_tags: queryData.selectionMetadata.criteriaTags,
-        selection_examples: {
+        available_criteria_tags: queryData.selectionMetadata.criteriaTags
+      };
+      
+      // Only include selection_examples when explicitly requested
+      if (includeExamples) {
+        response.selection_info.selection_examples = {
           select_all: "itemSelector: 'all'",
           select_first_item: "itemSelector: [0]",
           select_multiple_by_index: "itemSelector: [0, 2, 5]",
           select_by_state: "itemSelector: { states: ['Active', 'New'] }",
           select_stale_items: "itemSelector: { daysInactiveMin: 90 }"
-        }
-      };
+        };
+      }
     }
 
     // Time until expiration

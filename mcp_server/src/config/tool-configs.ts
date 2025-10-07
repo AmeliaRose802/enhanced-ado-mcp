@@ -501,7 +501,8 @@ export const toolConfigs: ToolConfig[] = [
       properties: {
         queryHandle: { type: "string", description: "Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
         includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
-        includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" }
+        includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" },
+        includeExamples: { type: "boolean", description: "Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)" }
       },
       required: ["queryHandle"]
     }
