@@ -4,11 +4,13 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
+import { queryHandleService } from "../../query-handle-service.js";
 
 interface GenerateODataQueryArgs {
   description: string;
@@ -19,6 +21,9 @@ interface GenerateODataQueryArgs {
   testQuery?: boolean;
   areaPath?: string;
   iterationPath?: string;
+  returnQueryHandle?: boolean;
+  maxResults?: number;
+  includeFields?: string[];
   serverInstance?: any; // Server instance for sampling
 }
 
@@ -47,7 +52,10 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       includeExamples = true,
       testQuery = true,
       areaPath,
-      iterationPath
+      iterationPath,
+      returnQueryHandle = false,
+      maxResults = 200,
+      includeFields = []
     } = parsed.data as GenerateODataQueryArgs;
 
     logger.info(`Generating OData query from description: "${description}"`);
@@ -127,6 +135,172 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         isValid = true;
         logger.info(`Query generated (validation skipped as requested)`);
         break;
+      }
+    }
+
+    // If returnQueryHandle is true and query is valid, execute and store results
+    if (returnQueryHandle && isValid && currentQuery) {
+      try {
+        logger.info(`Executing OData query to create query handle (maxResults: ${maxResults})...`);
+        
+        // Execute the query with proper fields selection
+        const token = await getAzureDevOpsToken();
+        const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
+        
+        // Build the full query with $top and $select
+        const fieldsToSelect = includeFields.length > 0 
+          ? includeFields.join(',')
+          : 'WorkItemId,Title,State,WorkItemType,CreatedDate,ChangedDate,AssignedTo,AreaPath,IterationPath,Tags';
+        
+        let fullQuery = currentQuery;
+        if (!fullQuery.includes('$select')) {
+          fullQuery += (fullQuery.includes('?') ? '&' : '?') + `$select=${fieldsToSelect}`;
+        }
+        if (!fullQuery.includes('$top')) {
+          fullQuery += (fullQuery.includes('?') || fullQuery.includes('$') ? '&' : '?') + `$top=${maxResults}`;
+        }
+        
+        const url = fullQuery.startsWith('http') ? fullQuery : `${baseUrl}?${fullQuery}`;
+        
+        logger.debug(`Fetching work items from: ${url}`);
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to execute OData query: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        const workItems = data.value || [];
+        
+        if (workItems.length === 0) {
+          logger.warn(`OData query returned 0 results - cannot create query handle`);
+          
+          return {
+            success: true,
+            data: {
+              query: currentQuery,
+              isValidated: testQuery && isValid,
+              resultCount: 0,
+              summary: `Successfully generated OData query but it returned 0 results. No query handle created.`
+            },
+            metadata: {
+              source: "ai-sampling-odata-generator",
+              validated: isValid,
+              iterationCount: iterations.length,
+              ...(cumulativeUsage && { usage: cumulativeUsage })
+            },
+            errors: [],
+            warnings: ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"]
+          };
+        }
+        
+        // Extract work item IDs from OData results
+        const workItemIds = workItems.map((wi: any) => wi.WorkItemId || wi.workItemId || wi.id);
+        
+        // Build work item context map for query handle
+        const workItemContext = new Map<number, WorkItemContext>();
+        for (const wi of workItems) {
+          const id = wi.WorkItemId || wi.workItemId || wi.id;
+          const tags = wi.Tags || wi.tags || '';
+          
+          workItemContext.set(id, {
+            title: wi.Title || wi.title || '',
+            state: wi.State || wi.state || '',
+            type: wi.WorkItemType || wi.workItemType || wi.type || '',
+            createdDate: wi.CreatedDate || wi.createdDate,
+            assignedTo: wi.AssignedTo ? (wi.AssignedTo.UserName || wi.AssignedTo) : undefined,
+            areaPath: wi.AreaPath || wi.areaPath,
+            iterationPath: wi.IterationPath || wi.iterationPath,
+            changedDate: wi.ChangedDate || wi.changedDate,
+            tags: typeof tags === 'string' ? tags : ''
+          });
+        }
+        
+        // Store in query handle service
+        const handle = queryHandleService.storeQuery(
+          workItemIds,
+          currentQuery,
+          {
+            project: project,
+            queryType: 'odata'
+          },
+          60 * 60 * 1000, // 1 hour TTL
+          workItemContext,
+          {
+            analysisTimestamp: new Date().toISOString()
+          }
+        );
+        
+        logger.info(`Query handle created: ${handle} (${workItemIds.length} work items)`);
+        
+        return {
+          success: true,
+          data: {
+            query_handle: handle,
+            query: currentQuery,
+            work_item_count: workItemIds.length,
+            work_items: workItems,
+            isValidated: testQuery && isValid,
+            summary: `Query handle created for ${workItemIds.length} work item(s). Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`,
+            next_steps: [
+              "Review the work_items array to see what will be affected",
+              "Use wit-bulk-comment-by-query-handle to add comments to all items",
+              "Use wit-bulk-update-by-query-handle to update fields on all items",
+              "Use wit-bulk-assign-by-query-handle to assign all items to a user",
+              "Use wit-bulk-remove-by-query-handle to remove all items",
+              "Always use dryRun: true first to preview changes before applying them"
+            ],
+            expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+          },
+          metadata: {
+            source: "ai-sampling-odata-generator",
+            validated: isValid,
+            iterationCount: iterations.length,
+            queryHandleMode: true,
+            handle,
+            count: workItemIds.length,
+            ...(cumulativeUsage && { usage: cumulativeUsage })
+          },
+          errors: [],
+          warnings: [
+            ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : [])
+          ]
+        };
+        
+      } catch (error) {
+        logger.error('Failed to create query handle:', error);
+        
+        // Fall back to returning just the query without handle
+        return {
+          success: true,
+          data: {
+            query: currentQuery,
+            isValidated: testQuery && isValid,
+            ...(testResults && {
+              resultCount: testResults.resultCount,
+              sampleResults: testResults.sampleResults
+            }),
+            summary: `Successfully generated OData query but failed to create query handle: ${error instanceof Error ? error.message : String(error)}`
+          },
+          metadata: {
+            source: "ai-sampling-odata-generator",
+            validated: isValid,
+            iterationCount: iterations.length,
+            ...(cumulativeUsage && { usage: cumulativeUsage })
+          },
+          errors: [],
+          warnings: [
+            `Failed to create query handle: ${error instanceof Error ? error.message : String(error)}`,
+            ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : [])
+          ]
+        };
       }
     }
 
