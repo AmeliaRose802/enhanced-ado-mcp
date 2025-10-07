@@ -49,6 +49,7 @@ interface EnhancementResult {
  *   - enhancementStyle?: string - Style for descriptions: 'concise' | 'detailed' | 'technical' | 'business' (default: 'detailed')
  *   - preserveExisting?: boolean - Append to existing description vs replace (default: true)
  *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
+ *   - returnFormat?: string - Response format: 'summary' | 'preview' | 'full' (default: 'summary' for dry-run, 'preview' for execute)
  *   - organization?: string - Azure DevOps organization (defaults to config value)
  *   - project?: string - Azure DevOps project (defaults to config value)
  * @param server - MCP server instance for AI sampling capabilities
@@ -63,14 +64,14 @@ interface EnhancementResult {
  *       * enhancement_style: string - Style used for descriptions
  *       * preserve_existing: boolean - Whether existing content was preserved
  *       * dry_run: boolean - Whether changes were applied
+ *       * return_format: string - Response format used ('summary' | 'preview' | 'full')
  *       * successful: number - Count of successfully enhanced items
  *       * skipped: number - Count of skipped items (completed/closed)
  *       * failed: number - Count of failed items
- *       * results: Array of per-item enhancement results with:
- *           - work_item_id: number
- *           - enhanced_description: string (if dry_run)
- *           - improvement_reason: string - Why enhancement was needed
- *           - confidence: number (0-1) - AI confidence in enhancement
+ *       * results: Array of per-item results (format depends on returnFormat):
+ *           - 'summary': undefined (only counts provided)
+ *           - 'preview': work_item_id, status, preview (200 chars), error, skip_reason
+ *           - 'full': work_item_id, title, status, enhanced_description, improvement_reason, confidence, error, skip_reason
  *       * summary: string - Human-readable summary
  *   - metadata: Processing statistics and context
  *   - errors: Array of error messages for failed items
