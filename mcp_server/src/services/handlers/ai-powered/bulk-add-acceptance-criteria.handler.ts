@@ -5,6 +5,8 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { MCPServer } from "../../../types/mcp.js";
+import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -26,7 +28,7 @@ interface CriteriaResult {
   skipped?: string;
 }
 
-export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: unknown, server: any): Promise<ToolExecutionResult> {
+export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: unknown, server: MCPServer): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -91,7 +93,7 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
       try {
         // Fetch work item
         const response = await httpClient.get(`wit/workitems/${workItemId}?api-version=7.1`);
-        const workItem = response.data as any;
+        const workItem = response.data as ADOWorkItem;
 
         const title = workItem.fields['System.Title'] as string;
         const description = (workItem.fields['System.Description'] as string) || '';
