@@ -46,6 +46,32 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
     const selectedCount = selectedWorkItemIds.length;
 
     logger.info(`Bulk update operation: ${selectedCount} of ${totalItems} work items selected (dry_run: ${dryRun})`);
+    logger.info(`Selected ${selectedCount} of ${totalItems} items for update`);
+    if (itemSelector !== 'all') {
+      logger.info(`Selection criteria: ${JSON.stringify(itemSelector)}`);
+    }
+
+    // Build selected items context for validation
+    const selectedItems = selectedWorkItemIds.map(id => {
+      const context = queryData.itemContext.find(item => item.id === id);
+      return {
+        id,
+        title: context?.title || "Unknown",
+        state: context?.state || "Unknown",
+        type: context?.type || "Unknown"
+      };
+    });
+
+    // Validate that selected items can accept the field updates (optional but recommended)
+    const invalidItems = selectedItems.filter(item => {
+      // Example: Basic validation - this can be extended based on specific field requirements
+      // For now, just check if item has basic required fields
+      return !item.type || item.type === "Unknown";
+    });
+    
+    if (invalidItems.length > 0) {
+      logger.warn(`${invalidItems.length} items may not accept all field updates due to missing context`);
+    }
 
     if (dryRun) {
       // Show preview of selected items and updates
@@ -60,6 +86,10 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
         };
       });
 
+      const summary = itemSelector === 'all'
+        ? `DRY RUN: Would update ${updates.length} fields on all ${selectedCount} items`
+        : `DRY RUN: Would update ${updates.length} fields on ${selectedCount} selected items (from ${totalItems} total)`;
+
       return {
         success: true,
         data: {
@@ -71,7 +101,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
           work_item_ids: selectedWorkItemIds,
           updates_preview: updates,
           preview_items: previewItems,
-          summary: `DRY RUN: Would apply ${updates.length} update(s) to ${selectedCount} of ${totalItems} work item(s)`
+          summary
         },
         metadata: { 
           source: "bulk-update-by-query-handle",
@@ -111,6 +141,24 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
 
+    // Enhanced error reporting with selection context
+    if (failureCount > 0) {
+      const errorMsg = itemSelector === 'all'
+        ? `Failed to update ${failureCount} of ${selectedCount} items`
+        : `Failed to update ${failureCount} of ${selectedCount} selected items (selection: ${JSON.stringify(itemSelector)})`;
+      
+      logger.error(errorMsg);
+    }
+
+    // Update summary messages with selection context
+    const summary = itemSelector === 'all'
+      ? `Updated ${updates.length} fields on all ${successCount} of ${selectedCount} items`
+      : `Updated ${updates.length} fields on ${successCount} of ${selectedCount} selected items (from ${totalItems} total)`;
+
+    const fullSummary = failureCount > 0 
+      ? `${summary} (${failureCount} failed)` 
+      : summary;
+
     return {
       success: failureCount === 0,
       data: {
@@ -121,7 +169,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
         successful: successCount,
         failed: failureCount,
         results,
-        summary: `Successfully updated ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
+        summary: fullSummary
       },
       metadata: {
         source: "bulk-update-by-query-handle",
