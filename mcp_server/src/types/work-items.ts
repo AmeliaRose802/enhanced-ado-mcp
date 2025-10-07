@@ -43,6 +43,76 @@ export interface WorkItemContext {
 }
 
 /**
+ * Work Item Context Package - Comprehensive work item data with relations and history
+ * Returned by the wit-get-work-item-context-package tool
+ */
+export interface WorkItemContextPackage {
+  id: number;
+  title?: string;
+  type?: string;
+  state?: string;
+  areaPath?: string;
+  iterationPath?: string;
+  assignedTo?: string;
+  createdDate?: string;
+  createdBy?: string;
+  changedDate?: string;
+  changedBy?: string;
+  priority?: number;
+  storyPoints?: number;
+  remainingWork?: number;
+  acceptanceCriteria?: string;
+  description?: string | { html?: string; text?: string };
+  tags?: string[];
+  url?: string;
+  parent?: {
+    id: number;
+    title?: string;
+    type?: string;
+    state?: string;
+  } | null;
+  children?: Array<{
+    id: number;
+    title?: string;
+    type?: string;
+    state?: string;
+  }>;
+  related?: Array<{
+    type: string;
+    id: number;
+    title?: string;
+    state?: string;
+  }>;
+  pullRequests?: Array<{
+    name: string;
+    url: string;
+  }>;
+  commits?: Array<{
+    name: string;
+    url: string;
+  }>;
+  attachments?: Array<{
+    name: string;
+    url: string;
+  }>;
+  comments?: Array<{
+    id: number;
+    text: string;
+    createdBy?: string;
+    createdDate?: string;
+  }>;
+  history?: Array<{
+    rev: number;
+    changedDate: string;
+    changedBy?: string;
+    fields: Record<string, string | number | boolean | undefined>;
+  }>;
+  _raw?: {
+    fields: Record<string, string | number | boolean | undefined>;
+  };
+}
+
+/**
  * Work Item with Context - Full work item + computed context
  */
 export interface WorkItemWithContext extends WorkItem {

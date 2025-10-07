@@ -3,6 +3,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { WorkItemContext, WorkItemContextPackage } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
@@ -35,7 +36,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     const pageSize = parsed.data.top ?? parsed.data.maxResults ?? 200;
 
     // If fetchFullPackages is enabled, fetch full context packages for each work item
-    let fullPackages: any[] | undefined = undefined;
+    let fullPackages: WorkItemContextPackage[] | undefined = undefined;
     if (parsed.data.fetchFullPackages) {
       logger.info(`Fetching full context packages for ${result.workItems.length} work items...`);
       const packagePromises = result.workItems.map(async (wi: any) => {
@@ -81,7 +82,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       const workItemIds = result.workItems.map((wi: any) => wi.id);
       
       // Build work item context map if we have work items data
-      const workItemContext = new Map<number, any>();
+      const workItemContext = new Map<number, WorkItemContext>();
       for (const wi of result.workItems) {
         // Parse tags from semicolon/comma-separated string to array for criteria-based selection
         const tagsString = wi.additionalFields?.['System.Tags'] || '';
