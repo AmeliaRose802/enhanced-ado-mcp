@@ -460,6 +460,9 @@ export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
   enhancementStyle: z.enum(['detailed', 'concise', 'technical', 'business']).optional().default('detailed').describe("Style of enhanced description: detailed (comprehensive), concise (brief), technical (dev-focused), business (stakeholder-focused)"),
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing description rather than replace (default true)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-generated descriptions without updating work items (default true for safety)"),
+  returnFormat: z.enum(['summary', 'preview', 'full']).optional().describe("Response format: 'summary' (counts only, ~70% reduction), 'preview' (200 char previews, ~40% reduction), 'full' (complete text). Defaults to 'summary' for dry-run, 'preview' for execute."),
+  includeTitles: z.boolean().optional().default(false).describe("Include work item titles in 'full' format response (default false, saves ~10-50 tokens per item)"),
+  includeConfidence: z.boolean().optional().default(false).describe("Include AI confidence scores in 'full' format response (default false, only shows scores < 0.85 when true)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
@@ -630,6 +633,8 @@ export const sprintPlanningAnalyzerSchema = z.object({
   considerDependencies: z.boolean().optional().default(true).describe("Consider work item dependencies in planning (default true)"),
   considerSkills: z.boolean().optional().default(true).describe("Match work items to team member skills (default true)"),
   additionalConstraints: z.string().optional().describe("Additional planning constraints or preferences (e.g., 'prioritize bugs', 'balance frontend/backend work')"),
+  includeFullAnalysis: z.boolean().optional().default(false).describe("Include full AI-generated analysis text in response (default false, saves ~6KB)"),
+  rawAnalysisOnError: z.boolean().optional().default(false).describe("When AI response parsing fails, include full raw analysis instead of truncated version (default false)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Area path to filter work items (uses configured default if not provided)")

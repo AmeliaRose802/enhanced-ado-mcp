@@ -47,7 +47,9 @@ export class SprintPlanningAnalyzer {
         area_path: areaPath,
         consider_dependencies: args.considerDependencies ?? true,
         consider_skills: args.considerSkills ?? true,
-        additional_constraints: args.additionalConstraints || null
+        additional_constraints: args.additionalConstraints || null,
+        include_full_analysis: args.includeFullAnalysis ?? false,
+        raw_analysis_on_error: args.rawAnalysisOnError ?? false
       };
 
       const result = await this.performAnalysis(analysisInput);
@@ -103,18 +105,80 @@ export class SprintPlanningAnalyzer {
     return this.buildResultFromText(text, analysisInput);
   }
 
+  /**
+   * Check if balanceMetrics should be omitted (all scores are 0 or assessments are empty/unknown)
+   */
+  private shouldOmitBalanceMetrics(metrics: any): boolean {
+    if (!metrics) return true;
+    
+    const allScoresZero = (
+      (metrics.workloadBalance?.score ?? 0) === 0 &&
+      (metrics.skillCoverage?.score ?? 0) === 0 &&
+      (metrics.dependencyRisk?.score ?? 0) === 0 &&
+      (metrics.overallBalance?.score ?? 0) === 0
+    );
+    
+    const allAssessmentsEmpty = (
+      (!metrics.workloadBalance?.assessment || metrics.workloadBalance.assessment === "Not available" || metrics.workloadBalance.assessment === "") &&
+      (!metrics.skillCoverage?.assessment || metrics.skillCoverage.assessment === "Not available" || metrics.skillCoverage.assessment === "") &&
+      (!metrics.dependencyRisk?.assessment || metrics.dependencyRisk.assessment === "Not available" || metrics.dependencyRisk.assessment === "") &&
+      (!metrics.overallBalance?.assessment || metrics.overallBalance.assessment === "Not available" || metrics.overallBalance.assessment === "")
+    );
+    
+    return allScoresZero && allAssessmentsEmpty;
+  }
+
+  /**
+   * Check if alternativePlans should be omitted (empty or all invalid)
+   */
+  private shouldOmitAlternativePlans(plans: any[]): boolean {
+    if (!plans || plans.length === 0) return true;
+    
+    // Check if all plans are invalid (missing required fields)
+    const allInvalid = plans.every(plan => 
+      !plan.planName || !plan.description
+    );
+    
+    return allInvalid;
+  }
+
+  /**
+   * Check if confidenceLevel should be omitted (unknown or unavailable)
+   */
+  private shouldOmitConfidenceLevel(level: string | undefined): boolean {
+    return !level || level === "Unknown" || level === "unknown";
+  }
+
+  /**
+   * Check if risks should be omitted (all arrays empty)
+   */
+  private shouldOmitRisks(risks: any): boolean {
+    if (!risks) return true;
+    
+    return (
+      (!risks.critical || risks.critical.length === 0) &&
+      (!risks.warnings || risks.warnings.length === 0) &&
+      (!risks.recommendations || risks.recommendations.length === 0)
+    );
+  }
+
+  /**
+   * Check if dependencies should be omitted (empty array)
+   */
+  private shouldOmitDependencies(dependencies: any[]): boolean {
+    return !dependencies || dependencies.length === 0;
+  }
+
   private buildResultFromJSON(json: any, analysisInput: any): SprintPlanningResult {
     // Build a structured result from JSON response
-    // Note: fullAnalysisText will be added by the caller
-    return {
+    const result: SprintPlanningResult = {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
         teamSize: analysisInput.team_members.length,
         totalCapacityHours: analysisInput.sprint_capacity_hours || 
           (analysisInput.team_members.length * 60), // Default 60 hours/person
         totalCandidateItems: analysisInput.candidate_work_item_ids?.length || 0,
-        healthScore: json.healthScore ?? 75,
-        confidenceLevel: json.confidenceLevel ?? "Medium"
+        healthScore: json.healthScore ?? 75
       },
       velocityAnalysis: json.velocityAnalysis ?? {
         historicalVelocity: {
@@ -131,34 +195,67 @@ export class SprintPlanningAnalyzer {
       },
       teamAssignments: json.teamAssignments ?? [],
       unassignedItems: json.unassignedItems ?? [],
-      sprintRisks: json.sprintRisks ?? {
-        critical: [],
-        warnings: [],
-        recommendations: []
-      },
-      balanceMetrics: json.balanceMetrics ?? {
-        workloadBalance: { score: 0, assessment: "" },
-        skillCoverage: { score: 0, assessment: "" },
-        dependencyRisk: { score: 0, assessment: "" },
-        overallBalance: { score: 0, assessment: "" }
-      },
-      alternativePlans: json.alternativePlans ?? [],
-      actionableSteps: json.actionableSteps ?? [],
-      fullAnalysisText: JSON.stringify(json, null, 2)
+      actionableSteps: json.actionableSteps ?? []
     };
+
+    // Conditionally add fullAnalysisText if requested
+    if (analysisInput.include_full_analysis) {
+      result.fullAnalysisText = JSON.stringify(json, null, 2);
+    }
+
+    // Conditionally add confidenceLevel if it's not "Unknown"
+    const confidenceLevel = json.confidenceLevel ?? "Medium";
+    if (!this.shouldOmitConfidenceLevel(confidenceLevel)) {
+      result.sprintSummary.confidenceLevel = confidenceLevel;
+    }
+
+    // Conditionally add sprintRisks if not empty
+    const sprintRisks = json.sprintRisks ?? {
+      critical: [],
+      warnings: [],
+      recommendations: []
+    };
+    if (!this.shouldOmitRisks(sprintRisks)) {
+      result.sprintRisks = sprintRisks;
+    }
+
+    // Conditionally add balanceMetrics if meaningful data exists
+    const balanceMetrics = json.balanceMetrics ?? {
+      workloadBalance: { score: 0, assessment: "" },
+      skillCoverage: { score: 0, assessment: "" },
+      dependencyRisk: { score: 0, assessment: "" },
+      overallBalance: { score: 0, assessment: "" }
+    };
+    if (!this.shouldOmitBalanceMetrics(balanceMetrics)) {
+      result.balanceMetrics = balanceMetrics;
+    }
+
+    // Conditionally add alternativePlans if valid plans exist
+    const alternativePlans = json.alternativePlans ?? [];
+    if (!this.shouldOmitAlternativePlans(alternativePlans)) {
+      result.alternativePlans = alternativePlans;
+    }
+
+    // Conditionally add dependencies if they exist
+    const dependencies = json.dependencies ?? [];
+    if (!this.shouldOmitDependencies(dependencies)) {
+      result.dependencies = dependencies;
+    }
+
+    return result;
   }
 
   private buildResultFromText(text: string, analysisInput: any): SprintPlanningResult {
     // Fallback for when AI returns markdown instead of JSON
-    return {
+    const result: SprintPlanningResult = {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
         teamSize: analysisInput.team_members.length,
         totalCapacityHours: analysisInput.sprint_capacity_hours || 
           (analysisInput.team_members.length * 60),
         totalCandidateItems: analysisInput.candidate_work_item_ids?.length || 0,
-        healthScore: 50,
-        confidenceLevel: "Unknown"
+        healthScore: 50
+        // confidenceLevel omitted because it would be "Unknown"
       },
       velocityAnalysis: {
         historicalVelocity: {
@@ -175,6 +272,7 @@ export class SprintPlanningAnalyzer {
       },
       teamAssignments: [],
       unassignedItems: [],
+      // sprintRisks included because parse error is critical information
       sprintRisks: {
         critical: [{
           title: "Parse Error",
@@ -184,18 +282,20 @@ export class SprintPlanningAnalyzer {
         warnings: [],
         recommendations: ["Review the full analysis text for planning insights"]
       },
-      balanceMetrics: {
-        workloadBalance: { score: 0, assessment: "Not available" },
-        skillCoverage: { score: 0, assessment: "Not available" },
-        dependencyRisk: { score: 0, assessment: "Not available" },
-        overallBalance: { score: 0, assessment: "Not available" }
-      },
-      alternativePlans: [],
+      // balanceMetrics omitted - all scores would be 0 with "Not available"
+      // alternativePlans omitted - would be empty array
+      // dependencies omitted - would be empty array
       actionableSteps: [
         "Review the full analysis text for planning insights",
         "Consider manual sprint planning based on the analysis"
-      ],
-      fullAnalysisText: text
+      ]
     };
+
+    // Conditionally add fullAnalysisText if requested
+    if (analysisInput.include_full_analysis) {
+      result.fullAnalysisText = text;
+    }
+
+    return result;
   }
 }
