@@ -481,13 +481,15 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-list-query-handles",
-    description: "📋 HANDLE REGISTRY: List all active query handles to track and manage them. Shows handle statistics, cleanup status, and provides guidance on handle management. Makes handles feel like persistent resources rather than ephemeral strings.",
+    description: "📋 HANDLE REGISTRY: List all active query handles to track and manage them. Shows handle statistics, cleanup status, and provides guidance on handle management. Makes handles feel like persistent resources rather than ephemeral strings. Supports pagination for large numbers of handles.",
     script: "", // Handled internally
     schema: listQueryHandlesSchema,
     inputSchema: {
       type: "object",
       properties: {
-        includeExpired: { type: "boolean", description: "Include expired handles in the list (default false). Useful for debugging handle lifecycle issues." }
+        includeExpired: { type: "boolean", description: "Include expired handles in the list (default false). Useful for debugging handle lifecycle issues." },
+        top: { type: "number", description: "Maximum number of handles to return (default 50, max 200)" },
+        skip: { type: "number", description: "Number of handles to skip for pagination (default 0)" }
       },
       required: []
     }

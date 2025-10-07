@@ -23,23 +23,24 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { includeExpired } = parsed.data;
+    const { includeExpired, top, skip } = parsed.data;
 
-    logger.info("Listing active query handles");
+    logger.info(`Listing query handles (top: ${top}, skip: ${skip}, includeExpired: ${includeExpired})`);
 
     // Get stats from the service
     const stats = queryHandleService.getStats();
     
-    // Get all handles with their details
-    const handles = queryHandleService.getAllHandles(includeExpired);
+    // Get paginated handles with their details
+    const result = queryHandleService.getAllHandles(includeExpired, top, skip);
     
     const now = new Date();
-    const result = {
+    const responseData = {
       total_handles: stats.totalHandles,
       active_handles: stats.activeHandles,
       expired_handles: stats.expiredHandles,
       timestamp: now.toISOString(),
-      handles: handles,
+      handles: result.handles,
+      pagination: result.pagination,
       guidance: {
         handle_lifetime: "1 hour (default)",
         cleanup_frequency: "Every 5 minutes",
@@ -62,10 +63,17 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
       warnings.push(`High number of active handles (${stats.activeHandles}). Consider cleaning up unused handles.`);
     }
 
+    if (result.pagination.hasMore) {
+      warnings.push(`Showing ${result.pagination.returned} of ${result.pagination.total} handles. Use skip=${result.pagination.nextSkip} to get the next page.`);
+    }
+
     return {
       success: true,
-      data: result,
-      metadata: { source: "list-query-handles" },
+      data: responseData,
+      metadata: { 
+        source: "list-query-handles",
+        pagination: result.pagination
+      },
       errors: [],
       warnings
     };

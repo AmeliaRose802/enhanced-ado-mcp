@@ -427,7 +427,9 @@ export const analyzeByQueryHandleSchema = z.object({
 });
 
 export const listQueryHandlesSchema = z.object({
-  includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)")
+  includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)"),
+  top: z.number().int().min(1).max(200).optional().default(50).describe("Maximum number of handles to return (default 50, max 200)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of handles to skip for pagination (default 0)")
 });
 
 export const inspectQueryHandleSchema = z.object({
