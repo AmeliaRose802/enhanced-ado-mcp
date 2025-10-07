@@ -716,7 +716,7 @@ export const toolConfigs: ToolConfig[] = [
         intent: { type: "string", description: "Natural language description of what you want to accomplish (e.g., 'I want to find all stale bugs and update their priority')" },
         context: { type: "string", description: "Additional context about your project, team, or specific requirements" },
         maxRecommendations: { type: "number", description: "Maximum number of tool recommendations to return (1-10, default 3)" },
-        includeExamples: { type: "boolean", description: "Include example usage for each recommended tool (default true)" },
+        includeExamples: { type: "boolean", description: "Include detailed usage examples for each recommended tool (default false, saves ~100-300 tokens per tool)" },
         filterCategory: { 
           type: "string", 
           enum: ["creation", "analysis", "bulk-operations", "query", "ai-powered", "all"],
