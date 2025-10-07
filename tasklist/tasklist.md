@@ -1,5 +1,5 @@
 # TASKLIST
-- Update the docs directory so it is clear and AI ready. Add an index of all files in toc.yml. Make sure all docs are up to date and relevent. 
+- Update each doc in the docs directory so that it accuratly reflects the current state of the project. Add a speclit for each feature that exists.
 - Add ESLint configuration: No .eslintrc.json found - add linting rules for consistency. Put as pipelines so it is required before merging
 - Add discriminated unions for tool results: Different tool categories return different shapes - use TypeScript discriminated unions for type safety
 - Add Prettier configuration: No .prettierrc found - add code formatting rules. Put as pipelines so it is required before merging

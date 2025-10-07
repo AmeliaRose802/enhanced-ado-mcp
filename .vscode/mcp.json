@@ -34,6 +34,21 @@
         "--copilot-guid",
         "${input:copilot_guid}"
       ]
+    },
+    "code-context-provider": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "code-context-provider-mcp"
+      ]
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
     }
   }
 }
