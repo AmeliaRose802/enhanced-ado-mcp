@@ -47,7 +47,9 @@ export class SprintPlanningAnalyzer {
         area_path: areaPath,
         consider_dependencies: args.considerDependencies ?? true,
         consider_skills: args.considerSkills ?? true,
-        additional_constraints: args.additionalConstraints || null
+        additional_constraints: args.additionalConstraints || null,
+        include_full_analysis: args.includeFullAnalysis ?? false,
+        raw_analysis_on_error: args.rawAnalysisOnError ?? false
       };
 
       const result = await this.performAnalysis(analysisInput);
@@ -105,8 +107,7 @@ export class SprintPlanningAnalyzer {
 
   private buildResultFromJSON(json: any, analysisInput: any): SprintPlanningResult {
     // Build a structured result from JSON response
-    // Note: fullAnalysisText will be added by the caller
-    return {
+    const result: SprintPlanningResult = {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
         teamSize: analysisInput.team_members.length,
@@ -143,14 +144,20 @@ export class SprintPlanningAnalyzer {
         overallBalance: { score: 0, assessment: "" }
       },
       alternativePlans: json.alternativePlans ?? [],
-      actionableSteps: json.actionableSteps ?? [],
-      fullAnalysisText: JSON.stringify(json, null, 2)
+      actionableSteps: json.actionableSteps ?? []
     };
+
+    // Only include fullAnalysisText if requested
+    if (analysisInput.include_full_analysis) {
+      result.fullAnalysisText = JSON.stringify(json, null, 2);
+    }
+
+    return result;
   }
 
   private buildResultFromText(text: string, analysisInput: any): SprintPlanningResult {
     // Fallback for when AI returns markdown instead of JSON
-    return {
+    const result: SprintPlanningResult = {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
         teamSize: analysisInput.team_members.length,
@@ -194,8 +201,23 @@ export class SprintPlanningAnalyzer {
       actionableSteps: [
         "Review the full analysis text for planning insights",
         "Consider manual sprint planning based on the analysis"
-      ],
-      fullAnalysisText: text
+      ]
     };
+
+    // Handle fullAnalysisText based on parameters
+    if (analysisInput.include_full_analysis) {
+      // Include full text when explicitly requested
+      result.fullAnalysisText = text;
+    } else if (analysisInput.raw_analysis_on_error) {
+      // Include full text on error when debugging is enabled
+      result.fullAnalysisText = text;
+    } else {
+      // Default: include truncated text (first 500 chars) for error context
+      result.fullAnalysisText = text.length > 500 
+        ? text.substring(0, 500) + "\n\n[Truncated - set rawAnalysisOnError: true for full output]"
+        : text;
+    }
+
+    return result;
   }
 }
