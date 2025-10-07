@@ -278,6 +278,7 @@ export const odataAnalyticsQuerySchema = z.object({
   areaPath: z.string().optional().describe("Filter by Area Path"),
   iterationPath: z.string().optional().describe("Filter by Iteration Path"),
   top: z.number().int("top must be an integer").positive("top must be positive").max(10000, "top cannot exceed 10000 items for analytics queries").optional().default(100).describe("Maximum number of results to return (default 100)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of results to skip for pagination (default 0)"),
   computeCycleTime: z.boolean().optional().default(false).describe("Compute cycle time (CompletedDate - CreatedDate) for completed items"),
   includeMetadata: z.boolean().optional().default(false).describe("Include query and URL metadata in response"),
   includeOdataMetadata: z.boolean().optional().default(false).describe("Include OData metadata fields (@odata.context, @odata.count, @odata.nextLink) in response (default: false)")
@@ -439,7 +440,9 @@ export const analyzeByQueryHandleSchema = z.object({
 });
 
 export const listQueryHandlesSchema = z.object({
-  includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)")
+  includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)"),
+  top: z.number().int().min(1).max(200).optional().default(50).describe("Maximum number of handles to return (default 50, max 200)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of handles to skip for pagination (default 0)")
 });
 
 export const inspectQueryHandleSchema = z.object({

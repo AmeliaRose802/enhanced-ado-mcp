@@ -538,17 +538,29 @@ class QueryHandleService {
    * Get all handles with their details
    * 
    * @param includeExpired Whether to include expired handles (default: false)
-   * @returns Array of handle details
+   * @param top Maximum number of handles to return (default: 50)
+   * @param skip Number of handles to skip for pagination (default: 0)
+   * @returns Object containing paginated handles and metadata
    */
-  getAllHandles(includeExpired: boolean = false): Array<{
-    id: string;
-    created_at: string;
-    expires_at: string;
-    item_count: number;
-    has_context: boolean;
-  }> {
+  getAllHandles(includeExpired: boolean = false, top: number = 50, skip: number = 0): {
+    handles: Array<{
+      id: string;
+      created_at: string;
+      expires_at: string;
+      item_count: number;
+      has_context: boolean;
+    }>;
+    pagination: {
+      total: number;
+      skip: number;
+      top: number;
+      returned: number;
+      hasMore: boolean;
+      nextSkip?: number;
+    };
+  } {
     const now = new Date();
-    const handles: Array<{
+    const allHandles: Array<{
       id: string;
       created_at: string;
       expires_at: string;
@@ -563,7 +575,7 @@ class QueryHandleService {
         continue;
       }
 
-      handles.push({
+      allHandles.push({
         id: handle,
         created_at: data.createdAt.toISOString(),
         expires_at: data.expiresAt.toISOString(),
@@ -572,7 +584,23 @@ class QueryHandleService {
       });
     }
 
-    return handles;
+    // Apply pagination
+    const total = allHandles.length;
+    const paginatedHandles = allHandles.slice(skip, skip + top);
+    const returned = paginatedHandles.length;
+    const hasMore = (skip + returned) < total;
+
+    return {
+      handles: paginatedHandles,
+      pagination: {
+        total,
+        skip,
+        top,
+        returned,
+        hasMore,
+        ...(hasMore && { nextSkip: skip + returned })
+      }
+    };
   }
 
   /**

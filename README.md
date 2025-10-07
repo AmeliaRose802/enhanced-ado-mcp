@@ -483,6 +483,61 @@ Use `skip: 50` to get the next page, `skip: 100` for the third page, etc. The re
 
 **WIQL Reference:** For more information on WIQL syntax, see the [official Azure DevOps WIQL documentation](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax).
 
+## Pagination Support
+
+All list operations in the Enhanced ADO MCP Server support pagination to prevent unbounded data returns:
+
+### WIQL Queries (`wit-get-work-items-by-query-wiql`)
+- **Default limit:** 200 items
+- **Parameters:** `skip` (default: 0), `top` (default: 200)
+- **Metadata:** Returns `hasMore`, `nextSkip`, `totalCount`
+- **Example:**
+  ```json
+  {
+    "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+    "top": 50,
+    "skip": 0
+  }
+  ```
+
+### Query Handles (`wit-list-query-handles`)
+- **Default limit:** 50 handles
+- **Max limit:** 200 handles
+- **Parameters:** `skip` (default: 0), `top` (default: 50, max: 200)
+- **Metadata:** Returns `total`, `hasMore`, `nextSkip`, `returned`
+- **Example:**
+  ```json
+  {
+    "top": 100,
+    "skip": 0,
+    "includeExpired": false
+  }
+  ```
+
+### OData Analytics (`wit-query-analytics-odata`)
+- **Default limit:** 100 results
+- **Max limit:** 1000 results
+- **Parameters:** `skip` (default: 0), `top` (default: 100, max: 1000)
+- **Metadata:** Returns `hasMore`, `nextSkip`, `skip`, `top`, `returned`
+- **Note:** Pagination only available for queries without aggregation (velocityMetrics and customQuery support it)
+- **Example:**
+  ```json
+  {
+    "queryType": "velocityMetrics",
+    "dateRangeField": "CompletedDate",
+    "dateRangeStart": "2024-01-01",
+    "top": 50,
+    "skip": 0
+  }
+  ```
+
+### Batch Operations
+- **wit-get-work-items-context-batch:** Limited to 50 items max (input constraint)
+- **Bulk operations:** Bounded by query handle results (use pagination on the initial query)
+
+All paginated responses include warnings when more results are available with instructions on how to fetch the next page.
+
+
 ## Bulk Operations Examples
 
 The Enhanced ADO MCP Server provides powerful bulk operation tools for efficient backlog management and hygiene.
