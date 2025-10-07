@@ -160,22 +160,25 @@ This plan maximizes parallelization by grouping work based on **file conflict po
 ## Wave 5: Tool Consolidation - Removals (3 tasks)
 
 **Conflict Domain**: Tool configs, handler files (deletions)  
-**Can run in parallel**: Independent file deletions
+**⚠️ MUST RUN SERIALLY**: All tasks modify `tool-configs.ts` - run one at a time to avoid merge conflicts
 
 ### 5.1: Remove Redundant Context Batch Tool
 - Delete `wit-get-work-items-context-batch` tool (redundant with context-package)
 - **Files**: Delete handler, remove from `tool-configs.ts`, update docs
 - **Spec**: Remove tool entirely, update migration guide
+- **⚠️ Run FIRST**
 
-### 8.2: Remove Last Substantive Change Tool
+### 5.2: Remove Last Substantive Change Tool
 - Delete `wit-get-last-substantive-change` tool (data in query results)
 - **Files**: Delete handler, remove from `tool-configs.ts`, update docs
 - **Spec**: Remove tool entirely, document data location
+- **⚠️ Run SECOND** (after 5.1 merges)
 
-### 8.3: Remove Generic Analysis Tool
+### 5.3: Remove Generic Analysis Tool
 - Delete `wit-analyze-by-query-handle` tool (rarely useful)
 - **Files**: Delete handler, remove from `tool-configs.ts`, update docs
 - **Spec**: Remove tool entirely, explain alternative tools
+- **⚠️ Run THIRD** (after 5.2 merges)
 
 ---
 
@@ -332,6 +335,7 @@ This plan maximizes parallelization by grouping work based on **file conflict po
 - **Conflict Resolution**: 
   - Wave 2: Tasks 2.1 and 2.2 must run serially (same file)
   - Wave 3: Task 3.5 runs last (touches files modified by 3.1-3.2)
+  - **Wave 5: All 3 tasks must run serially (all modify tool-configs.ts)**
   - Wave 6: Tasks 6.1 and 6.2 must run serially (both modify tool-configs.ts)
 - **GitHub Integration**: Generate issue specs from this plan when executing each wave
 
