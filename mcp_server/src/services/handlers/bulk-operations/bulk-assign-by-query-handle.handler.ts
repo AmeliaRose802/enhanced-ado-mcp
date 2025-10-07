@@ -46,6 +46,9 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
     const selectedCount = selectedWorkItemIds.length;
 
     logger.info(`Bulk assign operation: ${selectedCount} of ${totalItems} work items to '${assignTo}' (dry_run: ${dryRun})`);
+    if (itemSelector !== 'all') {
+      logger.info(`Selection criteria: ${JSON.stringify(itemSelector)}`);
+    }
 
     if (dryRun) {
       // Show preview of selected items
@@ -120,6 +123,43 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
 
+    // Build assignment summary with item details
+    const assignedItems = results
+      .filter(r => r.success)
+      .map(r => {
+        const context = queryData.itemContext.find(item => item.id === r.workItemId);
+        return {
+          id: r.workItemId,
+          title: context?.title || "Unknown",
+          type: context?.type || "Unknown",
+          previousState: context?.state || "Unknown"
+        };
+      });
+
+    const assignmentSummary = {
+      assignedTo: assignTo,
+      totalInHandle: totalItems,
+      selectedForAssignment: selectedCount,
+      selectionCriteria: itemSelector === 'all' ? 'All items' : JSON.stringify(itemSelector),
+      assignedItems: assignedItems.slice(0, 10) // Limit to first 10 for logging
+    };
+
+    logger.info(`Assignment details: ${JSON.stringify(assignmentSummary, null, 2)}`);
+
+    // Create success message with context
+    const successMsg = itemSelector === 'all'
+      ? `Assigned all ${successCount} work items to '${assignTo}'`
+      : `Assigned ${successCount} selected items to '${assignTo}' (from ${totalItems} total, criteria: ${JSON.stringify(itemSelector)})`;
+
+    // Handle partial failures with context
+    if (failureCount > 0) {
+      const failureContext = itemSelector === 'all'
+        ? `${failureCount} of ${selectedCount} assignments failed`
+        : `${failureCount} of ${selectedCount} selected items failed (selection: ${JSON.stringify(itemSelector)})`;
+      
+      logger.warn(failureContext);
+    }
+
     return {
       success: failureCount === 0,
       data: {
@@ -131,7 +171,8 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
         successful: successCount,
         failed: failureCount,
         results,
-        summary: `Successfully assigned ${successCount} of ${selectedCount} selected work items to '${assignTo}'${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
+        assigned_items: assignedItems,
+        summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : '')
       },
       metadata: {
         source: "bulk-assign-by-query-handle",
