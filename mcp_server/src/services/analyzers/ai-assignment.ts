@@ -3,7 +3,7 @@ import type { AIAssignmentAnalyzerArgs, AIAssignmentResult } from '../sampling-t
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
-import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
+import { extractJSON } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
 import type { ADOWorkItem } from '../../types/ado.js';
@@ -81,11 +81,36 @@ export class AIAssignmentAnalyzer {
   }
 
   private async performAnalysis(analysisInput: any): Promise<AIAssignmentResult> {
+    // Build variables for the system prompt to auto-fill work item context
+    const variables: Record<string, string> = {
+      WORK_ITEM_ID: String(analysisInput.work_item_id || ''),
+      WORK_ITEM_TYPE: analysisInput.work_item_type || 'Not specified',
+      WORK_ITEM_TITLE: analysisInput.work_item_title || 'Not specified',
+      WORK_ITEM_STATE: analysisInput.state || 'Not specified',
+      WORK_ITEM_PRIORITY: analysisInput.priority || 'Not specified',
+      WORK_ITEM_DESCRIPTION: analysisInput.work_item_description || 'No description provided',
+      ACCEPTANCE_CRITERIA: analysisInput.acceptance_criteria || 'No acceptance criteria specified',
+      AREA_PATH: analysisInput.area_path || 'Not specified',
+      ITERATION_PATH: analysisInput.iteration_path || 'Not specified',
+      TAGS: analysisInput.tags || 'None',
+      ASSIGNED_TO: analysisInput.assigned_to || 'Unassigned'
+    };
+
     // Add timeout wrapper to prevent hanging
     const timeoutMs = 30000; // 30 seconds (AI assignment should be fast)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'ai-assignment-analyzer',
-      userContent: formatForAI(analysisInput),
+      userContent: `Analyze the work item provided in the context above and determine if it is suitable for AI assignment (GitHub Copilot).
+
+Consider:
+- Task clarity and definition
+- Scope and complexity
+- Risk factors
+- Required guardrails
+- Missing information
+
+Output format: ${analysisInput.output_format}`,
+      variables,
       maxTokens: 400,
       temperature: 0.2
     });
