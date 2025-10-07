@@ -114,6 +114,12 @@ const resourceDefinitions: MCPResource[] = [
     name: "Sprint Planning Guide - AI-Powered Sprint Planning",
     description: "AI-powered sprint planning tool for optimal work assignment. Includes velocity analysis, capacity assessment, balanced work distribution, and risk mitigation.",
     mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/tool-limitations",
+    name: "Tool Limitations and Constraints Guide",
+    description: "Comprehensive guide to tool limitations, constraints, and restrictions. Covers WIQL vs OData limitations, bulk operations, AI tools, ADO API limits, performance constraints, and common workarounds.",
+    mimeType: "text/markdown"
   }
 ];
 
@@ -144,7 +150,8 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     "ado://docs/query-handle-pattern": "query-handle-pattern.md",
     "ado://docs/wiql-generator-guide": "wiql-generator-guide.md",
     "ado://docs/personal-workload-analyzer-guide": "personal-workload-analyzer-guide.md",
-    "ado://docs/sprint-planning-guide": "sprint-planning-guide.md"
+    "ado://docs/sprint-planning-guide": "sprint-planning-guide.md",
+    "ado://docs/tool-limitations": "tool-limitations.md"
   };
 
   const filename = contentMap[uri];

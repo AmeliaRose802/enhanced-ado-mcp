@@ -93,7 +93,8 @@ describe('Validate Query Handle Handler', () => {
 
     expect(result.success).toBe(false);
     expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('not found or expired');
+    expect(result.errors[0]).toContain('not found');
+    expect(result.metadata.errorCategory).toBe('not-found');
   });
 
   it('should return error for expired query handle', async () => {
@@ -110,7 +111,8 @@ describe('Validate Query Handle Handler', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.errors[0]).toContain('not found or expired');
+    expect(result.errors[0]).toContain('not found');
+    expect(result.metadata.errorCategory).toBe('not-found');
   });
 
   it('should include metadata when present', async () => {

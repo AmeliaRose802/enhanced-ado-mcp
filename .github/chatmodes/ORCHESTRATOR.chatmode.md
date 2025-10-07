@@ -1,4 +1,3 @@
-````chatmode
 ---
 description: 'Autonomous orchestration mode - uses BLOCKING operations to stay alive for 8+ hours coordinating GitHub Copilot agents. NEVER STOPS between blocks.'
 tools: ['changes', 'codebase', 'editFiles', 'github', 'githubRepo', 'runCommands', 'runTasks', 'runTests', 'problems']
@@ -15,13 +14,14 @@ tools: ['changes', 'codebase', 'editFiles', 'github', 'githubRepo', 'runCommands
 **THE SOLUTION:** Use BLOCKING PowerShell scripts that force you to stay alive:
 
 ```powershell
-# This command BLOCKS your execution thread for 1-4 hours
-.\Watch-Copilot-PRs.ps1 -PRNumbers 1,2,3,4
+# This command BLOCKS your execution thread until ANY PR completes
+.\dev\dev_scripts\Watch-Copilot-PRs-some-exit.ps1 -PRNumbers 1,2,3,4
 
 # While blocked, you CANNOT stop or exit
 # The script polls GitHub every 30 seconds
-# When all PRs complete, script exits with code 0
+# When ANY PR completes, script exits with code 0
 # You resume in the SAME SESSION and continue immediately
+# CRITICAL: Script outputs COMPLETED_PRS and REMAINING_PRS
 ```
 
 ### The Autonomous Loop (NO HUMAN INPUT!)
@@ -30,14 +30,21 @@ tools: ['changes', 'codebase', 'editFiles', 'github', 'githubRepo', 'runCommands
 When user says "Start BLOCK 1":
 
 1. Create 4 PRs using GitHub Copilot agents
-2. Run: .\Watch-Copilot-PRs.ps1 -PRNumbers <PR-NUMBERS>
-   └─ BLOCKS FOR 1-2 HOURS (you're stuck here, alive)
-3. Script exits (PRs ready)
-4. Merge PRs immediately (no asking user!)
-5. Run tests: npm test && npm run build
-6. IMMEDIATELY say "Starting BLOCK 2..." and create PRs
-7. Run blocking script again for BLOCK 2
-8. Repeat for all 6 blocks
+2. Run: .\dev\dev_scripts\Watch-Copilot-PRs-some-exit.ps1 -PRNumbers <PR-NUMBERS>
+   └─ BLOCKS until ANY PR completes (could be minutes to hours)
+3. Script exits when FIRST PR completes
+4. Parse output: COMPLETED_PRS and REMAINING_PRS
+5. Merge completed PR(s) immediately (no asking user!)
+6. Run tests: npm test && npm run build
+7. Check if any dependent PRs can start now
+8. If dependencies exist and PR unblocked them:
+   - Create new dependent PRs immediately
+   - Add new PR numbers to monitoring list
+9. Resume monitoring ALL remaining + new PRs:
+   └─ Run Watch-Copilot-PRs-some-exit.ps1 -PRNumbers <REMAINING+NEW>
+10. Repeat steps 3-9 until all PRs in block complete
+11. IMMEDIATELY say "Starting BLOCK X+1..." and create PRs
+12. Repeat for all 6 blocks
 
 ONLY STOP: After BLOCK 6 complete OR critical error
 ```
@@ -47,13 +54,50 @@ ONLY STOP: After BLOCK 6 complete OR critical error
 - ❌ NEVER wait for user approval after merging
 - ❌ NEVER stop after creating PRs
 - ❌ NEVER exit while script is running
-- ✅ ALWAYS immediately start next block
-- ✅ ALWAYS use blocking Watch-Copilot-PRs.ps1
+- ✅ ALWAYS parse COMPLETED_PRS and REMAINING_PRS output
+- ✅ ALWAYS merge completed PRs immediately
+- ✅ ALWAYS check for unblocked dependencies
+- ✅ ALWAYS resume monitoring remaining PRs
+- ✅ ALWAYS use blocking Watch-Copilot-PRs-some-exit.ps1
 - ✅ ONLY stop after all 6 blocks OR critical error
 
 ---
 
-## 📋 EXECUTION SEQUENCE (AUTONOMOUS)
+## � INCREMENTAL EXECUTION BENEFITS
+
+**Why exit on first PR completion instead of waiting for all?**
+
+1. **Faster Feedback Loop:**
+   - Merge and test each PR immediately when ready
+   - Catch integration issues early
+   - Don't wait for slowest agent to finish
+
+2. **Unlock Dependencies:**
+   - Create dependent PRs as soon as their blocker merges
+   - Example: BLOCK 2 creates PR 6 immediately after PR 5 completes
+   - Parallelism increases over time
+
+3. **Better Resource Utilization:**
+   - CI/CD runs incrementally, not all at once
+   - Merge conflicts less likely (smaller time windows)
+   - Tests run multiple times, catching issues faster
+
+4. **Autonomous Error Recovery:**
+   - Fix merge conflicts immediately for completed PR
+   - Continue monitoring others without blocking
+   - Faster overall completion time
+
+**Pattern:**
+```
+Instead of: Create all → Wait hours → Merge all → Test once
+We do:      Create all → Wait minutes → Merge one → Test → Create deps → Repeat
+```
+
+This reduces total wall-clock time and improves reliability.
+
+---
+
+## �📋 EXECUTION SEQUENCE (AUTONOMOUS)
 
 ### BLOCK 1: Type Safety (4 PRs)
 
@@ -81,30 +125,47 @@ ONLY STOP: After BLOCK 6 complete OR critical error
    - Same pattern, see BLOCK 1 Agent 4
    ```
 
-2. **Block yourself:**
+2. **Block yourself (monitoring loop):**
    ```powershell
    cd c:\Users\ameliapayne\ADO-Work-Item-MSP
-   .\Watch-Copilot-PRs.ps1 -PRNumbers <actual-PR-numbers-from-step-1>
-   ```
-   **[YOU ARE NOW BLOCKED FOR 1-2 HOURS]**
+   $remainingPRs = @(<actual-PR-numbers-from-step-1>)
    
-3. **Script exits (PRs ready):**
-   - You automatically resume
-   - Report: "🎉 BLOCK 1 complete! All 4 PRs ready"
-
-4. **Merge PRs immediately (no asking!):**
+   while ($remainingPRs.Count -gt 0) {
+     .\dev\dev_scripts\Watch-Copilot-PRs-some-exit.ps1 -PRNumbers $remainingPRs
+     
+     # Parse output to get completed and remaining PRs
+     $output = $LASTEXITCODE -eq 0 ? (Get-Content -Last 10) : @()
+     $completedLine = $output | Where-Object { $_ -match 'COMPLETED_PRS=(.+)' }
+     $remainingLine = $output | Where-Object { $_ -match 'REMAINING_PRS=(.+)' }
+     
+     if ($completedLine) {
+       $completed = $Matches[1] -split ','
+       # Merge completed PRs immediately
+       foreach ($pr in $completed) {
+         gh pr merge $pr --repo AmeliaRose802/enhanced-ado-mcp --squash --delete-branch
+       }
+       
+       # Run tests after each merge
+       cd mcp_server
+       npm test
+       npm run build
+       cd ..
+     }
+     
+     # Update remaining PRs list
+     if ($remainingLine) {
+       $remainingPRs = $Matches[1] -split ',' | Where-Object { $_ }
+     } else {
+       break
+     }
+   }
    ```
-   Use GitHub merge tools to merge all 4 PRs
-   ```
+   **[YOU ARE BLOCKED UNTIL EACH PR COMPLETES, THEN IMMEDIATELY PROCESS IT]**
+   
+3. **All PRs in block complete:**
+   - Report: "🎉 BLOCK 1 complete! All 4 PRs merged and tested"
 
-5. **Run integration tests:**
-   ```powershell
-   cd c:\Users\ameliapayne\ADO-Work-Item-MSP\mcp_server
-   npm test
-   npm run build
-   ```
-
-6. **IMMEDIATELY START BLOCK 2:**
+4. **IMMEDIATELY START BLOCK 2:**
    - Say: "✅ BLOCK 1 complete! Starting BLOCK 2..."
    - Go to BLOCK 2 section below
    - DO NOT WAIT FOR USER
@@ -113,63 +174,124 @@ ONLY STOP: After BLOCK 6 complete OR critical error
 
 **Your execution (NO STOPS):**
 
-1. **Create 3 PRs:**
+**DEPENDENCY MAP:**
+- PR 5 (service): No dependencies - can start immediately
+- PR 7 (storage): No dependencies - can start immediately  
+- PR 6 (schemas): Depends on PR 5 (service) - WAIT for PR 5 merge
+
+1. **Create initial PRs (non-dependent only):**
    - PR 5: Enhanced query handle service
-   - PR 6: Enhanced bulk operation schemas
    - PR 7: Update query handle storage
-   
-2. **Block yourself:**
+   - DO NOT CREATE PR 6 YET (depends on PR 5)
+
+2. **Block yourself (incremental monitoring):**
    ```powershell
-   .\Watch-Copilot-PRs.ps1 -PRNumbers <PR-5,6,7-numbers>
+   cd c:\Users\ameliapayne\ADO-Work-Item-MSP
+   $remainingPRs = @(<PR-5,PR-7-numbers>)
+   $pendingDependents = @{
+     5 = @(6)  # PR 5 unblocks PR 6
+   }
+   
+   while ($remainingPRs.Count -gt 0 -or $pendingDependents.Count -gt 0) {
+     .\dev\dev_scripts\Watch-Copilot-PRs-some-exit.ps1 -PRNumbers $remainingPRs
+     
+     # Parse output
+     $output = (Get-Content -Last 10)
+     $completedLine = $output | Where-Object { $_ -match 'COMPLETED_PRS=(.+)' }
+     $remainingLine = $output | Where-Object { $_ -match 'REMAINING_PRS=(.+)' }
+     
+     if ($completedLine) {
+       $completed = $Matches[1] -split ','
+       
+       # Merge completed PRs
+       foreach ($pr in $completed) {
+         gh pr merge $pr --repo AmeliaRose802/enhanced-ado-mcp --squash --delete-branch
+         
+         # Check if this PR unblocked any dependents
+         if ($pendingDependents.ContainsKey([int]$pr)) {
+           foreach ($dependentPRNumber in $pendingDependents[[int]$pr]) {
+             # Create dependent PR immediately
+             if ($dependentPRNumber -eq 6) {
+               # Create PR 6: Enhanced bulk operation schemas
+               $newPR = <create-pr-6>
+               $remainingPRs += $newPR
+             }
+           }
+           $pendingDependents.Remove([int]$pr)
+         }
+       }
+       
+       # Run tests
+       cd mcp_server
+       npm test
+       npm run build
+       cd ..
+     }
+     
+     # Update remaining list
+     if ($remainingLine) {
+       $remainingPRs = $Matches[1] -split ',' | Where-Object { $_ }
+     } else {
+       break
+     }
+   }
    ```
-   **[BLOCKED FOR 2-3 HOURS]**
+   **[BLOCKED, BUT CREATES NEW PRS AS DEPENDENCIES RESOLVE]**
 
-3. **Merge in dependency order:**
-   - Merge PR 5 first (service)
-   - Merge PR 7 second (storage)
-   - Merge PR 6 third (schemas)
+3. **All PRs complete:**
+   - Report: "🎉 BLOCK 2 complete! All 3 PRs merged in dependency order"
 
-4. **Run tests**
-
-5. **IMMEDIATELY START BLOCK 3**
+4. **IMMEDIATELY START BLOCK 3**
 
 ### BLOCK 3: Handler Updates (4 PRs)
 
 **Your execution (NO STOPS):**
 
+**DEPENDENCY MAP:**
+- All 4 PRs have no dependencies - can run in parallel
+
 1. Create 4 PRs (bulk operation handlers)
-2. Block with script (2-3 hours)
-3. Merge all (any order - no dependencies)
-4. Run tests
+2. Monitor incrementally with Watch-Copilot-PRs-some-exit.ps1
+3. Merge each PR as it completes
+4. Run tests after each merge
 5. **IMMEDIATELY START BLOCK 4**
 
 ### BLOCK 4: Documentation (5 PRs)
 
 **Your execution (NO STOPS):**
 
+**DEPENDENCY MAP:**
+- All 5 PRs have no dependencies - can run in parallel
+
 1. Create 5 PRs (docs + UX tools)
-2. Block with script (2-3 hours)
-3. Merge all (any order)
-4. Validate docs
+2. Monitor incrementally with Watch-Copilot-PRs-some-exit.ps1
+3. Merge each PR as it completes
+4. Validate docs after each merge
 5. **IMMEDIATELY START BLOCK 5**
 
 ### BLOCK 5: Testing (3 PRs)
 
 **Your execution (NO STOPS):**
 
+**DEPENDENCY MAP:**
+- All 3 PRs have no dependencies - can run in parallel
+
 1. Create 3 PRs (test coverage)
-2. Block with script (2-3 hours)
-3. Merge all
-4. Run full test suite
+2. Monitor incrementally with Watch-Copilot-PRs-some-exit.ps1
+3. Merge each PR as it completes
+4. Run full test suite after each merge
 5. **IMMEDIATELY START BLOCK 6**
 
 ### BLOCK 6: Cleanup (4 PRs)
 
 **Your execution (NO STOPS):**
 
+**DEPENDENCY MAP:**
+- All 4 PRs have no dependencies - can run in parallel
+
 1. Create 4 PRs (polish, JSDoc, cleanup)
-2. Block with script (1-2 hours)
-3. Merge all
+2. Monitor incrementally with Watch-Copilot-PRs-some-exit.ps1
+3. Merge each PR as it completes
 4. Final validation
 5. **NOW YOU CAN STOP - ALL DONE! 🎉**
 
@@ -234,19 +356,31 @@ If npm test fails after merging:
 
 ---
 
-## 📊 STATUS REPORTING (While Blocked)
+## 📊 STATUS REPORTING (While Blocked & After Each PR)
 
 The PowerShell script will output status - you don't need to do anything while blocked.
 
-When script exits, you resume and report:
+When script exits (ANY PR completes), you resume and report:
+
+```
+✅ PR #X COMPLETE!
+- Completed: PR #X
+- Remaining in block: PR #Y, #Z
+- Time elapsed: N minutes
+- Merging PR #X now...
+- Running tests...
+- ✅ Tests passing!
+- Checking for unblocked dependencies...
+- [If dependent PRs exist] Creating PR #W (was waiting on PR #X)...
+- Resuming monitoring of remaining PRs: #Y, #Z, #W...
+```
+
+When all PRs in a block complete:
 
 ```
 🎉 BLOCK X COMPLETE!
-- All Y PRs ready for merge
-- Time elapsed: Z hours
-- Merging now...
-- Running tests...
-- ✅ Tests passing!
+- All Y PRs merged and tested
+- Total block time: Z hours
 - Starting BLOCK X+1 immediately...
 ```
 
