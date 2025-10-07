@@ -31,6 +31,7 @@ interface DetectPatternsArgs {
   patterns?: string[];
   maxResults?: number;
   includeSubAreas?: boolean;
+  format?: 'summary' | 'categorized' | 'flat';
 }
 
 interface PatternMatch {
@@ -60,7 +61,8 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
       project,
       patterns = ['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation'],
       maxResults = 200,
-      includeSubAreas = true
+      includeSubAreas = true,
+      format = 'categorized'
     } = parsed.data as DetectPatternsArgs;
 
     logger.debug(`Detecting patterns: ${patterns.join(', ')}`);
@@ -226,29 +228,81 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
       info: matches.filter(m => m.severity === 'info')
     };
 
-    return {
-      success: true,
-      data: {
+    // Build response based on format
+    let responseData: any;
+
+    if (format === 'summary') {
+      // Summary format: Only counts, no work item arrays
+      responseData = {
+        totalItemsAnalyzed: workItems.length,
+        totalMatches: matches.length,
+        patternsDetected: Object.keys(patternSummary).length,
+        bySeverity: {
+          critical_count: categorized.critical.length,
+          warning_count: categorized.warning.length,
+          info_count: categorized.info.length
+        },
+        byPattern: patternSummary,
+        patternsSearched: patterns,
+        message: `Found ${matches.length} pattern matches across ${workItems.length} work items`
+      };
+    } else if (format === 'flat') {
+      // Flat format: Single array with pattern type field
+      const flatMatches = matches.map(match => ({
+        pattern: match.patterns[0], // Primary pattern
+        workItemId: match.workItemId,
+        title: match.title,
+        severity: match.severity,
+        details: match.details
+      }));
+      
+      responseData = {
+        matches: flatMatches,
         summary: {
           totalItemsAnalyzed: workItems.length,
           totalMatches: matches.length,
           patternsDetected: Object.keys(patternSummary).length,
-          bySeverity: {
-            critical: categorized.critical.length,
-            warning: categorized.warning.length,
-            info: categorized.info.length
-          },
           byPattern: patternSummary
         },
-        matches: matches,
-        categorized: categorized,
         patternsSearched: patterns,
         message: `Found ${matches.length} pattern matches across ${workItems.length} work items`
-      },
+      };
+    } else {
+      // Categorized format (default): Grouped by severity
+      responseData = {
+        categorized: {
+          critical: {
+            count: categorized.critical.length,
+            matches: categorized.critical
+          },
+          warning: {
+            count: categorized.warning.length,
+            matches: categorized.warning
+          },
+          info: {
+            count: categorized.info.length,
+            matches: categorized.info
+          }
+        },
+        summary: {
+          totalItemsAnalyzed: workItems.length,
+          totalMatches: matches.length,
+          patternsDetected: Object.keys(patternSummary).length,
+          byPattern: patternSummary
+        },
+        patternsSearched: patterns,
+        message: `Found ${matches.length} pattern matches across ${workItems.length} work items`
+      };
+    }
+
+    return {
+      success: true,
+      data: responseData,
       metadata: {
         source: "detect-patterns",
         itemsAnalyzed: workItems.length,
-        matchCount: matches.length
+        matchCount: matches.length,
+        format: format
       },
       errors: [],
       warnings: []

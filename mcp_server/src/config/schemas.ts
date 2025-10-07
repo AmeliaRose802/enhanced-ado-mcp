@@ -328,7 +328,8 @@ export const detectPatternsSchema = z.object({
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   patterns: z.array(z.enum(['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation', 'no_description'])).optional().default(['duplicates', 'placeholder_titles', 'unassigned_committed', 'no_description']).describe("Patterns to detect"),
   maxResults: z.number().int().optional().default(200).describe("Maximum number of results when using areaPath"),
-  includeSubAreas: z.boolean().optional().default(true).describe("Include sub-area paths when using areaPath")
+  includeSubAreas: z.boolean().optional().default(true).describe("Include sub-area paths when using areaPath"),
+  format: z.enum(['summary', 'categorized', 'flat']).optional().default('categorized').describe("Response format: 'summary' (counts only, ~50-70% context reduction), 'categorized' (grouped by severity, default), 'flat' (single array with pattern field)")
 });
 
 export const validateHierarchyFastSchema = z.object({
