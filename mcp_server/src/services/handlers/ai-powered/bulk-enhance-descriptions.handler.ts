@@ -49,6 +49,8 @@ interface EnhancementResult {
  *   - enhancementStyle?: string - Style for descriptions: 'concise' | 'detailed' | 'technical' | 'business' (default: 'detailed')
  *   - preserveExisting?: boolean - Append to existing description vs replace (default: true)
  *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
+ *   - includeTitles?: boolean - Include work item titles in response (default: false, saves ~10-50 tokens per item)
+ *   - includeConfidence?: boolean - Include AI confidence scores (default: false, only shows scores < 0.85 when true)
  *   - organization?: string - Azure DevOps organization (defaults to config value)
  *   - project?: string - Azure DevOps project (defaults to config value)
  * @param server - MCP server instance for AI sampling capabilities
@@ -123,6 +125,8 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
       enhancementStyle, 
       preserveExisting, 
       dryRun, 
+      includeTitles,
+      includeConfidence,
       organization, 
       project 
     } = parsed.data;
@@ -275,16 +279,42 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         successful: successCount,
         skipped: skippedCount,
         failed: failureCount,
-        results: results.map(r => ({
-          work_item_id: r.workItemId,
-          title: r.title,
-          status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
-          enhanced_description: dryRun ? r.enhancedDescription : undefined,
-          improvement_reason: r.improvementReason,
-          confidence: r.confidence,
-          error: r.error,
-          skip_reason: r.skipped
-        })),
+        results: results.map(r => {
+          const result: any = {
+            work_item_id: r.workItemId,
+            status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed'
+          };
+          
+          // Only include title if requested (default: false to save tokens)
+          if (includeTitles) {
+            result.title = r.title;
+          }
+          
+          // Include enhanced description in dry run mode
+          if (dryRun) {
+            result.enhanced_description = r.enhancedDescription;
+          }
+          
+          // Include improvement reason
+          if (r.improvementReason) {
+            result.improvement_reason = r.improvementReason;
+          }
+          
+          // Only include confidence when requested AND score < 0.85 (uncertainty threshold)
+          if (includeConfidence && r.confidence !== undefined && r.confidence < 0.85) {
+            result.confidence = r.confidence;
+          }
+          
+          // Include error/skip messages
+          if (r.error) {
+            result.error = r.error;
+          }
+          if (r.skipped) {
+            result.skip_reason = r.skipped;
+          }
+          
+          return result;
+        }),
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} enhanced descriptions (${skippedCount} skipped, ${failureCount} failed)`
           : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`
