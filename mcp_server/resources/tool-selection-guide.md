@@ -169,6 +169,216 @@ const result = await wit_bulk_remove_by_query_handle({
 
 ---
 
+## Bulk Operations & Item Selection
+
+When performing bulk operations on work items, choosing the right item selection strategy is critical for safety and efficiency.
+
+### Selection Strategy Decision Tree
+
+```
+Do you want to affect ALL items from a query?
+├─ YES → Use itemSelector: "all"
+│
+└─ NO → Do you know specific item positions/indices?
+   ├─ YES → Use itemSelector: [0, 1, 2, ...]
+   │
+   └─ NO → Do items share common attributes (state, tags, etc.)?
+      ├─ YES → Use itemSelector: { states: [...], tags: [...], ... }
+      │
+      └─ NO → Use wit-inspect-query-handle first, then decide
+```
+
+### When to Use Each Selection Type
+
+#### Use `itemSelector: "all"` When:
+- ✅ Your WIQL query already filtered to exactly the items you want
+- ✅ You want to affect every single item in the result
+- ✅ The query result is small and manageable (<50 items)
+- ✅ You've inspected the query handle and confirmed all items should be affected
+
+**Example Use Cases:**
+- "Comment on all items in Sprint 23"
+- "Assign all bugs to the triage team"
+- "Update all items tagged 'needs-review'"
+
+**Performance:** Fastest - no additional filtering
+
+#### Use Index-Based Selection `[0, 1, 2]` When:
+- ✅ User specified "update the first N items"
+- ✅ You inspected items and need specific ones by position
+- ✅ Random sampling (e.g., "update every 3rd item")
+- ✅ Preview showed exactly which items you want by their listed order
+
+**Example Use Cases:**
+- "Assign the first 5 unassigned bugs"
+- "Comment on items at positions 0, 2, 4, 6 (every other item)"
+- "After inspection, update items shown as #1, #3, and #7"
+
+**Performance:** Very fast - direct index lookup
+
+**Important:** Indices are 0-based. First item = index 0.
+
+#### Use Criteria-Based Selection When:
+- ✅ Items share common state, tags, or title keywords
+- ✅ You need items matching specific conditions
+- ✅ You want items based on activity (daysInactive)
+- ✅ The selection logic needs to be criteria-driven, not positional
+
+**Example Use Cases:**
+- "Assign all Active bugs tagged 'security' to security team"
+- "Comment on all stale items (inactive >7 days)"
+- "Update all items with 'authentication' in the title"
+- "Bulk-assign all New + In Progress items"
+
+**Performance:** Good - O(n) filtering, but handles large result sets well
+
+**Criteria Options:**
+```typescript
+{
+  states: ["Active", "New"],           // Filter by work item state
+  tags: ["critical", "security"],      // Filter by tags
+  titleContains: "authentication",     // Filter by title keyword
+  daysInactiveMin: 7,                  // Items inactive >= 7 days
+  daysInactiveMax: 30                  // Items inactive <= 30 days
+}
+```
+
+Multiple criteria use AND logic (all must match).
+
+### Selection Safety Guidelines
+
+#### ALWAYS Preview Before Destructive Operations
+
+For `wit-bulk-remove-by-query-handle`:
+1. Run `wit-select-items-from-query-handle` first
+2. Show user what will be deleted
+3. Get explicit confirmation
+4. Then execute removal
+
+#### Use Dry-Run Mode
+
+Most bulk operations support `dryRun: true`:
+```
+wit-bulk-update-by-query-handle(
+  queryHandle, 
+  itemSelector: { states: ["Done"] },
+  dryRun: true  // Shows what WOULD happen without executing
+)
+```
+
+#### Inspect Query Handles
+
+Before selecting, inspect to see what's available:
+```
+wit-inspect-query-handle(queryHandle)
+// Returns: indices, states, tags, counts, examples
+```
+
+### Selection Performance Considerations
+
+**Small Result Sets (<20 items):**
+- Any selection method works well
+- Prefer "all" if affecting everything
+- Use indices if user specified positions
+
+**Medium Result Sets (20-100 items):**
+- Prefer criteria-based selection for filtering
+- Use indices only if you know specific positions
+- Always preview before bulk operations
+
+**Large Result Sets (>100 items):**
+- Avoid index-based unless necessary (hard to manage 100+ indices)
+- Prefer criteria-based selection
+- Consider breaking into multiple WIQL queries instead
+- Always use dry-run mode first
+
+### Real-World Examples
+
+#### Example 1: Bulk Assign Critical Bugs
+```
+User: "Assign all critical Active bugs to the security team"
+
+1. Query:
+   wit-query-wiql(
+     wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.Tags] CONTAINS 'critical'",
+     returnQueryHandle: true
+   )
+   Result: queryHandle "qh_xyz789"
+
+2. Preview:
+   wit-select-items-from-query-handle(
+     queryHandle: "qh_xyz789",
+     itemSelector: "all"  // Query already filtered to critical + Active
+   )
+   Result: "Would select all 8 items"
+
+3. Execute:
+   wit-bulk-assign-by-query-handle(
+     queryHandle: "qh_xyz789",
+     itemSelector: "all",
+     assignTo: "security-team@company.com"
+   )
+```
+
+#### Example 2: Comment on Stale Items
+```
+User: "Add 'needs update' comment to all stale Active items"
+
+1. Query (get Active items):
+   wit-query-wiql(
+     wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+     returnQueryHandle: true,
+     includeSubstantiveChange: true  // Get activity data
+   )
+   Result: queryHandle "qh_abc123"
+
+2. Preview (select only stale ones):
+   wit-select-items-from-query-handle(
+     queryHandle: "qh_abc123",
+     itemSelector: { daysInactiveMin: 7 }
+   )
+   Result: "Would select 12 of 45 Active items"
+
+3. Execute:
+   wit-bulk-comment-by-query-handle(
+     queryHandle: "qh_abc123",
+     itemSelector: { daysInactiveMin: 7 },
+     comment: "This item needs an update - inactive for {{daysInactive}} days"
+   )
+```
+
+#### Example 3: Selective Update
+```
+User: "Update the first 3 unassigned PBIs"
+
+1. Query:
+   wit-query-wiql(
+     wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Product Backlog Item' AND [System.AssignedTo] = ''",
+     returnQueryHandle: true
+   )
+   Result: queryHandle "qh_def456"
+
+2. Inspect:
+   wit-inspect-query-handle(queryHandle: "qh_def456")
+   Shows: 10 items with indices 0-9
+
+3. Preview:
+   wit-select-items-from-query-handle(
+     queryHandle: "qh_def456",
+     itemSelector: [0, 1, 2]  // First 3
+   )
+   Result: "Would select 3 of 10 items by index"
+
+4. Execute:
+   wit-bulk-update-by-query-handle(
+     queryHandle: "qh_def456",
+     itemSelector: [0, 1, 2],
+     updateFields: [{ field: "System.State", value: "Active" }]
+   )
+```
+
+---
+
 ## 🤖 AI-Powered Query Generation (NEW)
 
 ### Generate WIQL Queries from Natural Language
