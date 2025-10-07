@@ -23,6 +23,15 @@ export interface AIAssignmentAnalyzerArgs {
   outputFormat?: "detailed" | "json";
 }
 
+export interface PersonalWorkloadAnalyzerArgs {
+  assignedToEmail: string;
+  analysisPeriodDays?: number;
+  additionalIntent?: string;
+  organization?: string;
+  project?: string;
+  areaPath?: string;
+}
+
 export interface FeatureDecomposerArgs {
   Title: string;
   Description?: string;
@@ -188,4 +197,192 @@ export interface HierarchyValidationResult {
     improvementSuggestions: string[];
     bestPractices: string[];
   };
+}
+
+export interface PersonalWorkloadAnalysisResult {
+  executiveSummary: {
+    email: string;
+    analysisPeriod: { startDate: string; endDate: string; days: number };
+    overallHealthScore: number;
+    healthStatus: "Healthy" | "Concerning" | "At Risk" | "Critical";
+    primaryConcerns: string[];
+    additionalIntent?: string;
+  };
+  workSummary: {
+    completed: {
+      totalItems: number;
+      storyPoints: number;
+      velocityPerWeek: number;
+      workTypes: Record<string, { count: number; percentage: number }>;
+      averageCycleTime: number;
+    };
+    active: {
+      totalItems: number;
+      weightedLoad: number;
+      capacityMultiplier: number;
+      wipStatus: "Healthy" | "Concerning" | "Critical";
+      highPriorityCount: number;
+      oldestItemAge: number;
+    };
+    estimationQuality: {
+      manualPercentage: number;
+      aiEstimatedPercentage: number;
+      lowConfidenceCount: number;
+      status: "Good" | "Needs Review";
+    };
+  };
+  riskFlags: {
+    critical: Array<{ title: string; description: string; score: number }>;
+    concerning: Array<{ title: string; description: string }>;
+    minor: Array<{ title: string; description: string }>;
+    positive: string[];
+  };
+  detailedAnalysis: {
+    workloadBalance: { score: number; assessment: string; recommendation: string };
+    workVariety: { 
+      score: number; 
+      workTypeDistribution: Record<string, { count: number; percentage: number }>; 
+      specializationRisk: "Low" | "Medium" | "High"; 
+      recommendation: string 
+    };
+    codingBalance: { 
+      score: number; 
+      codingPercentage: number; 
+      nonCodingPercentage: number; 
+      assessment: string; 
+      recommendation: string 
+    };
+    complexityGrowth: { 
+      score: number; 
+      trend: "Increasing" | "Stable" | "Decreasing"; 
+      challengeLevel: "Appropriate" | "Under-challenged" | "Overwhelmed"; 
+      recommendation: string 
+    };
+    temporalHealth: { 
+      score: number; 
+      afterHoursFrequency: string; 
+      continuousWorkPattern: string; 
+      assessment: string; 
+      recommendation: string 
+    };
+    growthTrajectory: { score: number; assessment: string };
+  };
+  customIntentAnalysis?: {
+    intent: string;
+    keyFindings: string[];
+    recommendations: string[];
+    supportingEvidence: string[];
+  };
+  actionItems: {
+    immediate: Array<{ what: string; why: string; owner: string }>;
+    shortTerm: string[];
+    longTerm: string[];
+    managerDiscussion: string[];
+    selfCare: string[];
+  };
+  topWorkItems: Array<{
+    id: number;
+    title: string;
+    type: string;
+    state: string;
+    storyPoints?: number;
+    ageInDays: number;
+    complexity: "High" | "Medium" | "Low";
+  }>;
+}
+
+export interface SprintPlanningAnalyzerArgs {
+  iterationPath: string;
+  teamMembers: Array<{
+    email: string;
+    name: string;
+    capacityHours?: number;
+    skills?: string[];
+    preferredWorkTypes?: string[];
+  }>;
+  sprintCapacityHours?: number;
+  historicalSprintsToAnalyze?: number;
+  candidateWorkItemIds?: number[];
+  considerDependencies?: boolean;
+  considerSkills?: boolean;
+  additionalConstraints?: string;
+  organization?: string;
+  project?: string;
+  areaPath?: string;
+}
+
+export interface TeamMemberAssignment {
+  email: string;
+  name: string;
+  allocatedCapacityHours: number;
+  assignedWorkItems: Array<{
+    workItemId: number;
+    title: string;
+    type: string;
+    storyPoints?: number;
+    estimatedHours?: number;
+    priority: number;
+    rationale: string;
+  }>;
+  totalStoryPoints: number;
+  totalEstimatedHours: number;
+  capacityUtilization: number;
+  workloadBalance: "Under" | "Optimal" | "Over";
+  skillMatch: "Poor" | "Good" | "Excellent";
+}
+
+export interface SprintPlanningResult {
+  sprintSummary: {
+    iterationPath: string;
+    teamSize: number;
+    totalCapacityHours: number;
+    totalCandidateItems: number;
+    healthScore: number;
+    confidenceLevel: "High" | "Medium" | "Low" | "Unknown";
+  };
+  velocityAnalysis: {
+    historicalVelocity: {
+      averagePointsPerSprint: number;
+      trendDirection: "Increasing" | "Stable" | "Decreasing" | "Unknown";
+      consistency: "High" | "Moderate" | "Low" | "Unknown";
+      lastThreeSprints: Array<{
+        iterationPath: string;
+        completedPoints: number;
+        plannedPoints: number;
+        commitmentAccuracy: number;
+      }>;
+    };
+    predictedVelocity: {
+      estimatedPoints: number;
+      confidenceRange: { min: number; max: number };
+      assumptions: string[];
+    };
+  };
+  teamAssignments: TeamMemberAssignment[];
+  unassignedItems: Array<{
+    workItemId: number;
+    title: string;
+    type: string;
+    reason: string;
+    recommendation: string;
+  }>;
+  sprintRisks: {
+    critical: Array<{ title: string; description: string; mitigation: string }>;
+    warnings: Array<{ title: string; description: string }>;
+    recommendations: string[];
+  };
+  balanceMetrics: {
+    workloadBalance: { score: number; assessment: string };
+    skillCoverage: { score: number; assessment: string };
+    dependencyRisk: { score: number; assessment: string };
+    overallBalance: { score: number; assessment: string };
+  };
+  alternativePlans?: Array<{
+    planName: string;
+    description: string;
+    keyDifferences: string[];
+    tradeoffs: string[];
+  }>;
+  actionableSteps: string[];
+  fullAnalysisText: string;
 }

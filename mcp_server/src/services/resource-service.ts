@@ -102,6 +102,18 @@ const resourceDefinitions: MCPResource[] = [
     name: "WIQL Generator Guide - AI-Powered Query Creation",
     description: "Guide to generating WIQL queries from natural language using AI. Includes examples, patterns, and best practices for query generation.",
     mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/personal-workload-analyzer-guide",
+    name: "Personal Workload Analyzer Guide",
+    description: "Individual workload health analysis for burnout prevention and career development. Includes burnout risk assessment, overspecialization detection, and custom intent analysis.",
+    mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/sprint-planning-guide",
+    name: "Sprint Planning Guide - AI-Powered Sprint Planning",
+    description: "AI-powered sprint planning tool for optimal work assignment. Includes velocity analysis, capacity assessment, balanced work distribution, and risk mitigation.",
+    mimeType: "text/markdown"
   }
 ];
 
@@ -130,7 +142,9 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     "ado://docs/common-workflows": "common-workflows.md",
     "ado://docs/tool-selection-guide": "tool-selection-guide.md",
     "ado://docs/query-handle-pattern": "query-handle-pattern.md",
-    "ado://docs/wiql-generator-guide": "wiql-generator-guide.md"
+    "ado://docs/wiql-generator-guide": "wiql-generator-guide.md",
+    "ado://docs/personal-workload-analyzer-guide": "personal-workload-analyzer-guide.md",
+    "ado://docs/sprint-planning-guide": "sprint-planning-guide.md"
   };
 
   const filename = contentMap[uri];

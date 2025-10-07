@@ -13,6 +13,7 @@ import { handleGetWorkItemsContextBatch } from './handlers/core/get-work-items-c
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
 import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
 import { handleGenerateWiqlQuery } from './handlers/query/generate-wiql-query.handler.js';
+import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.handler.js';
 
 // Query handle handlers
 import { handleValidateQueryHandle } from './handlers/query-handles/validate-query-handle.handler.js';
@@ -99,6 +100,36 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     
     const samplingService = new SamplingService(serverInstance);
     return await samplingService.analyzeAIAssignment(args as Parameters<typeof samplingService.analyzeAIAssignment>[0]);
+  }
+
+  // Personal workload analysis (uses sampling if available)
+  if (name === 'wit-personal-workload-analyzer') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    
+    const samplingService = new SamplingService(serverInstance);
+    return await samplingService.analyzePersonalWorkload(args as Parameters<typeof samplingService.analyzePersonalWorkload>[0]);
+  }
+
+  // Sprint planning analysis (uses sampling if available)
+  if (name === 'wit-sprint-planning-analyzer') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    
+    const samplingService = new SamplingService(serverInstance);
+    return await samplingService.analyzeSprintPlanning(args as Parameters<typeof samplingService.analyzeSprintPlanning>[0]);
+  }
+
+  // AI-powered tool discovery (uses sampling if available)
+  if (name === 'wit-discover-tools') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    
+    const samplingService = new SamplingService(serverInstance);
+    return await samplingService.discoverTools(args as Parameters<typeof samplingService.discoverTools>[0]);
   }
 
   // Create work item using REST API (TypeScript implementation)
@@ -229,6 +260,14 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
       throw new Error("Server instance not available for sampling");
     }
     return await handleGenerateWiqlQuery(config, args, serverInstance);
+  }
+
+  // AI-powered OData query generator
+  if (name === 'wit-generate-odata-query') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleGenerateODataQuery(config, args, serverInstance);
   }
 
   // All tools should be handled by the cases above

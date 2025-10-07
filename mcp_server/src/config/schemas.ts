@@ -602,3 +602,118 @@ export const generateWiqlQuerySchema = z.object({
   testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)")
 });
 
+/**
+ * Schema for AI-powered OData Analytics query generation from natural language
+ * Generates valid OData queries with iterative validation
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   description: "Count all active bugs assigned to John in the last 30 days",
+ *   testQuery: true,
+ *   maxIterations: 3
+ * }
+ * ```
+ */
+export const generateODataQuerySchema = z.object({
+  description: z.string().describe("Natural language description of the desired OData Analytics query"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Default area path to use in queries (optional context)"),
+  iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Default iteration path to use in queries (optional context)"),
+  maxIterations: z.number().int().min(1).max(5).optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
+  includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
+  testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)")
+});
+
+/**
+ * Schema for AI-powered tool discovery
+ * Matches natural language intent to appropriate MCP server tools
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   intent: "I want to find all stale work items and add a comment to them",
+ *   context: "My team area path is ProjectName\\TeamArea",
+ *   maxRecommendations: 3
+ * }
+ * ```
+ */
+export const toolDiscoverySchema = z.object({
+  intent: z.string().describe("Natural language description of what you want to accomplish"),
+  context: z.string().optional().describe("Additional context about your project, team, or requirements"),
+  maxRecommendations: z.number().int().min(1).max(10).optional().default(3).describe("Maximum number of tool recommendations to return (default 3)"),
+  includeExamples: z.boolean().optional().default(true).describe("Include example usage for each recommended tool (default true)"),
+  filterCategory: z.enum(['creation', 'analysis', 'bulk-operations', 'query', 'ai-powered', 'all']).optional().default('all').describe("Filter recommendations to a specific category (default 'all')")
+});
+
+/**
+ * Schema for personal workload analysis
+ * Analyzes an individual's work over a time period for burnout risk, overspecialization, and other health indicators
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   assignedToEmail: "user@domain.com",
+ *   analysisPeriodDays: 90,
+ *   additionalIntent: "check for career growth opportunities"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Automatically fetches completed and active work, analyzes patterns, and provides AI-powered insights.
+ * Can include custom analysis intent for targeted recommendations (e.g., promotion readiness, skill development).
+ * Requires VS Code sampling support for AI-powered insights.
+ */
+export const personalWorkloadAnalyzerSchema = z.object({
+  assignedToEmail: z.string().email().describe("Email address of the person to analyze (e.g., user@domain.com)"),
+  analysisPeriodDays: z.number().int().min(7).max(365).optional().default(90).describe("Number of days to analyze backwards from today (default 90)"),
+  additionalIntent: z.string().optional().describe("Optional custom analysis intent (e.g., 'check for career growth opportunities', 'assess readiness for promotion', 'evaluate technical skill development')"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Area path to filter work items (uses configured default if not provided)")
+});
+
+/**
+ * Schema for sprint planning analysis
+ * AI-powered sprint planning that analyzes team capacity, historical velocity, and proposes optimal work assignments
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   iterationPath: "Project\\Sprint 10",
+ *   teamMembers: [
+ *     { email: "alice@company.com", name: "Alice", capacityHours: 60, skills: ["frontend", "react"] },
+ *     { email: "bob@company.com", name: "Bob", capacityHours: 50, skills: ["backend", "api"] }
+ *   ],
+ *   candidateWorkItemIds: [12345, 12346, 12347],
+ *   historicalSprintsToAnalyze: 3
+ * }
+ * ```
+ * 
+ * @remarks
+ * Analyzes historical velocity, team member capacity, skills, and workload to propose balanced sprint assignments.
+ * Considers dependencies, skills matching, and workload distribution for optimal sprint planning.
+ * Requires VS Code sampling support for AI-powered planning.
+ */
+export const sprintPlanningAnalyzerSchema = z.object({
+  iterationPath: z.string().describe("Target iteration/sprint path (e.g., 'Project\\Sprint 10')"),
+  teamMembers: z.array(z.object({
+    email: z.string().email().describe("Team member email address"),
+    name: z.string().describe("Team member display name"),
+    capacityHours: z.number().optional().describe("Available capacity in hours for this sprint (default 60)"),
+    skills: z.array(z.string()).optional().describe("Team member skills/specializations"),
+    preferredWorkTypes: z.array(z.string()).optional().describe("Preferred work item types (e.g., ['Task', 'Bug'])")
+  })).min(1).describe("Team members participating in the sprint"),
+  sprintCapacityHours: z.number().optional().describe("Total team capacity in hours (overrides individual capacities if provided)"),
+  historicalSprintsToAnalyze: z.number().int().min(1).max(10).optional().default(3).describe("Number of previous sprints to analyze for velocity calculation (default 3)"),
+  candidateWorkItemIds: z.array(z.number().int()).optional().describe("Work item IDs to consider for sprint assignment (if not provided, will query backlog)"),
+  considerDependencies: z.boolean().optional().default(true).describe("Consider work item dependencies in planning (default true)"),
+  considerSkills: z.boolean().optional().default(true).describe("Match work items to team member skills (default true)"),
+  additionalConstraints: z.string().optional().describe("Additional planning constraints or preferences (e.g., 'prioritize bugs', 'balance frontend/backend work')"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Area path to filter work items (uses configured default if not provided)")
+});
+
+

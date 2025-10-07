@@ -169,6 +169,48 @@ const result = await wit_bulk_remove_by_query_handle({
 
 ---
 
+## 🤖 AI-Powered Query Generation (NEW)
+
+### Generate WIQL Queries from Natural Language
+**Tool:** `wit-generate-wiql-query`  
+**When:** Need to construct complex WIQL queries from descriptions  
+**Example:** "Find all active bugs assigned to me created in the last 30 days"
+
+```json
+{
+  "description": "active bugs assigned to me from last 30 days",
+  "includeExamples": true,
+  "testQuery": true
+}
+```
+
+**Benefits:**
+- Converts natural language to valid WIQL syntax
+- Iterative validation with up to 3 refinement attempts
+- Auto-injects organization, project, area path, iteration path from config
+- Returns validated query with sample results
+
+### Generate OData Queries for Analytics
+**Tool:** `wit-generate-odata-query`  
+**When:** Need metrics, aggregations, or historical data queries from descriptions  
+**Example:** "Count completed items by type in the last 90 days"
+
+```json
+{
+  "description": "count completed items grouped by type in last 90 days",
+  "includeExamples": true,
+  "testQuery": true
+}
+```
+
+**Benefits:**
+- Converts natural language to valid OData Analytics queries
+- Handles complex aggregations, filters, grouping
+- Iterative validation with error feedback
+- Returns validated query with sample results
+
+---
+
 ## Query Work Items
 
 ### Get Individual Work Items
@@ -184,6 +226,8 @@ const result = await wit_bulk_remove_by_query_handle({
 }
 ```
 
+**💡 Tip:** Use `wit-generate-wiql-query` to construct complex queries from natural language descriptions.
+
 ### Get Metrics/Aggregations
 **Tool:** `wit-query-analytics-odata`  
 **When:** Need counts, grouping, velocity, cycle time  
@@ -195,6 +239,8 @@ const result = await wit_bulk_remove_by_query_handle({
   "filters": {"State": "Active"}
 }
 ```
+
+**💡 Tip:** Use `wit-generate-odata-query` to construct complex analytics queries from natural language descriptions.
 
 ## Get Work Item Details
 
@@ -475,6 +521,10 @@ const result = await wit_bulk_remove_by_query_handle({
 ## Decision Flow
 
 ```
+Need to build a query?
+├─ Complex WIQL needed? → wit-generate-wiql-query (natural language → WIQL)
+└─ Analytics/metrics query? → wit-generate-odata-query (natural language → OData)
+
 Need data?
 ├─ Individual items? → wit-get-work-items-by-query-wiql
 ├─ Metrics/counts? → wit-query-analytics-odata
@@ -517,21 +567,34 @@ Configuration?
 
 ## Common Combinations
 
+### Advanced Query Construction
+1. `wit-generate-wiql-query` - Convert natural language to WIQL
+2. `wit-get-work-items-by-query-wiql` - Execute generated query
+3. Review results and refine if needed
+
+### Metrics Analysis
+1. `wit-generate-odata-query` - Convert description to OData query
+2. `wit-query-analytics-odata` - Execute analytics query
+3. Review metrics and trends
+
 ### Feature Decomposition
 1. `wit-intelligence-analyzer` - Analyze feature
 2. `wit-create-new-item` - Create child items
 3. `wit-validate-hierarchy-fast` - Verify structure
 
 ### Backlog Cleanup
-1. `wit-get-work-items-by-query-wiql` - Get items
-2. `wit-detect-patterns` - Find issues
-3. `wit-bulk-add-comments` - Notify owners
+1. `wit-generate-wiql-query` - Build query for stale items
+2. `wit-get-work-items-by-query-wiql` - Get items with query handle
+3. `wit-detect-patterns` - Find issues
+4. `wit-bulk-add-comments` - Notify owners
 
 ### Sprint Planning
-1. `wit-query-analytics-odata` - Get velocity metrics
-2. `wit-get-work-items-by-query-wiql` - Get candidates
-3. `wit-ai-assignment-analyzer` - Check Copilot suitability
-4. `wit-assign-to-copilot` - Delegate to AI
+1. `wit-generate-odata-query` - Build velocity query
+2. `wit-query-analytics-odata` - Get velocity metrics
+3. `wit-generate-wiql-query` - Build backlog query
+4. `wit-get-work-items-by-query-wiql` - Get candidates
+5. `wit-ai-assignment-analyzer` - Check Copilot suitability
+6. `wit-assign-to-copilot` - Delegate to AI
 
 ### Project Completion Planning
 1. `project_completion_planner` prompt - Comprehensive project analysis

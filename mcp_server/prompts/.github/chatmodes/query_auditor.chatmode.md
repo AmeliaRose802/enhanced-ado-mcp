@@ -1,6 +1,6 @@
 ---
 name: ado-query-auditor
-tools: ['edit', "wit-get-work-items-by-query-wiql", "wit-query-analytics-odata", "wit-get-configuration"]
+tools: ['edit', "wit-get-work-items-by-query-wiql", "wit-query-analytics-odata", "wit-get-configuration", "wit-generate-wiql-query", "wit-generate-odata-query"]
 description: "Audit, validate and fix WIQL/OData queries found in Markdown files"
 ---
 

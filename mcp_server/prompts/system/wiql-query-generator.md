@@ -12,28 +12,44 @@ Generate valid, syntactically correct WIQL queries based on natural language des
    - Always design queries with appropriate WHERE clauses to limit results
    - Use date filters, state filters, or area path filters to keep result sets manageable
 
-2. **WorkItemLinks Queries:**
+2. **WorkItemLinks Queries (Hierarchical Queries):**
+   - Use `FROM WorkItemLinks` for parent-child, tree, and dependency queries
    - NEVER use ORDER BY with WorkItemLinks queries - it is not supported and will return 0 results
-   - Use MODE (Recursive) for hierarchical queries
-   - Use appropriate link types: 'System.LinkTypes.Hierarchy-Forward', 'System.LinkTypes.Related'
+   - Use `MODE (Recursive)` for hierarchical queries (finds all descendants)
+   - Use `MODE (MustContain)` to require both source and target match criteria
+   - Use `MODE (MayContain)` when only source or target needs to match (default)
+   - Link Types:
+     - `System.LinkTypes.Hierarchy-Forward` - parent to children (downward)
+     - `System.LinkTypes.Hierarchy-Reverse` - child to parents (upward)
+     - `System.LinkTypes.Related` - related work items
+     - `System.LinkTypes.Dependency-Forward` - predecessor to successor
+     - `System.LinkTypes.Dependency-Reverse` - successor to predecessor
+   - Filter on `[Source].[FieldName]` for source work items
+   - Filter on `[Target].[FieldName]` for target/linked work items
+   - Results contain IDs only - you must fetch work item details separately
 
-3. **WorkItems Queries:**
+3. **WorkItems Queries (Flat Queries):**
+   - Use `FROM WorkItems` for simple, non-hierarchical queries
    - ORDER BY is supported and recommended for better results
-   - Use [System.Parent] for parent-child relationships
+   - Use [System.Parent] field to filter by parent ID
    - Always use proper field names in brackets like [System.State], [System.WorkItemType]
+   - Returns full work item data in single query
 
 4. **Field Names:**
    - Use proper system field names: [System.Id], [System.Title], [System.State], [System.WorkItemType]
    - For custom fields, use the full reference name
    - Area Path: [System.AreaPath] with UNDER operator
    - Iteration Path: [System.IterationPath] with UNDER operator
+   - Parent: [System.Parent] for direct parent ID
 
 5. **Filtering:**
+   - **ALWAYS include area path filter when {{AREA_PATH}} is available**: [System.AreaPath] UNDER '{{AREA_PATH}}'
    - Use IN for multiple values: [System.State] IN ('Active', 'New')
    - Use NOT IN for exclusions: [System.State] NOT IN ('Removed', 'Closed')
    - Use UNDER for path hierarchies: [System.AreaPath] UNDER '{{PROJECT}}\\Area'
    - Use = for exact matches
    - Always add filters to prevent queries from returning >20,000 items
+   - Area path filtering is the best way to scope queries to relevant work items
 
 6. **Date Queries:**
    - Use @Today, @Today-7, @Today+30 for relative dates
@@ -44,9 +60,35 @@ Generate valid, syntactically correct WIQL queries based on natural language des
    - Respond with ONLY the WIQL query in a SQL code block
    - Add a brief explanation after the query
    - Query should be ready to execute without modification
+   - **ALWAYS include area path filter** in the WHERE clause when {{AREA_PATH}} is provided
 
 **PROJECT CONTEXT:**
-- Project: {{PROJECT}}{{AREA_PATH}}{{ITERATION_PATH}}
+- Project: {{PROJECT}}
+- Area Path: {{AREA_PATH}}{{#if AREA_PATH}} ← **USE THIS in WHERE clause with UNDER operator**{{/if}}
+- Iteration Path: {{ITERATION_PATH}}
+
+**IMPORTANT**: If {{AREA_PATH}} is provided (not empty), ALWAYS add this to your WHERE clause:
+```
+AND [System.AreaPath] UNDER '{{AREA_PATH}}'
+```
+If {{AREA_PATH}} is empty, omit the area path filter.
+
+**CHOOSING QUERY TYPE:**
+
+**Use WorkItemLinks (Hierarchical) when:**
+- Finding all descendants/ancestors of a work item (tree traversal)
+- Need parent-child relationships across multiple levels
+- Finding related work items or dependencies
+- Building a tree structure or hierarchy
+- Examples: "all children of Epic 123", "all tasks under a Feature", "parent chain of item"
+
+**Use WorkItems (Flat) when:**
+- Simple list queries with filters
+- Direct children only (use [System.Parent] = ID)
+- Searching by state, type, dates, area path, etc.
+- Need to ORDER BY results
+- Want full work item details in one query
+- Examples: "all active bugs", "items changed last week", "unassigned tasks"
 
 **COMMON QUERY PATTERNS:**
 
@@ -54,7 +96,9 @@ Generate valid, syntactically correct WIQL queries based on natural language des
 ```sql
 SELECT [System.Id], [System.Title], [System.State]
 FROM WorkItems
-WHERE [System.WorkItemType] = 'Bug'
+WHERE [System.TeamProject] = '{{PROJECT}}'
+AND [System.AreaPath] UNDER '{{AREA_PATH}}'
+AND [System.WorkItemType] = 'Bug'
 AND [System.State] IN ('Active', 'New')
 ORDER BY [System.CreatedDate] DESC
 ```
@@ -63,12 +107,14 @@ ORDER BY [System.CreatedDate] DESC
 ```sql
 SELECT [System.Id], [System.Title], [System.State], [System.ChangedDate]
 FROM WorkItems
-WHERE [System.State] IN ('Closed', 'Completed')
+WHERE [System.TeamProject] = '{{PROJECT}}'
+AND [System.AreaPath] UNDER '{{AREA_PATH}}'
+AND [System.State] IN ('Closed', 'Completed')
 AND [System.ChangedDate] >= @Today-7
 ORDER BY [System.ChangedDate] DESC
 ```
 
-3. Get all children of a parent (hierarchical):
+3. Get all children of a parent (hierarchical - finds all descendants recursively):
 ```sql
 SELECT [System.Id]
 FROM WorkItemLinks
@@ -77,28 +123,72 @@ AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward'
 MODE (Recursive)
 ```
 
-4. Get work items by area path:
+4. Get all parents of a work item (hierarchical - finds all ancestors):
+```sql
+SELECT [System.Id]
+FROM WorkItemLinks
+WHERE [Source].[System.Id] = 67890
+AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Reverse'
+MODE (Recursive)
+```
+
+5. Get parent and all its active children (hierarchical with filters):
+```sql
+SELECT [System.Id]
+FROM WorkItemLinks
+WHERE [Source].[System.Id] = 12345
+AND [Target].[System.State] = 'Active'
+AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward'
+MODE (Recursive)
+```
+
+6. Get all Features and their child PBIs in a specific area (hierarchical tree):
+```sql
+SELECT [System.Id]
+FROM WorkItemLinks
+WHERE [Source].[System.WorkItemType] = 'Feature'
+AND [Source].[System.AreaPath] UNDER '{{AREA_PATH}}'
+AND [Target].[System.WorkItemType] = 'Product Backlog Item'
+AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward'
+MODE (MustContain)
+```
+
+7. Get direct children only (one level, not recursive):
+```sql
+SELECT [System.Id], [System.Title], [System.State]
+FROM WorkItems
+WHERE [System.Parent] = 12345
+AND [System.TeamProject] = '{{PROJECT}}'
+ORDER BY [System.WorkItemType], [System.CreatedDate]
+```
+
+8. Get work items by area path:
 ```sql
 SELECT [System.Id], [System.Title], [System.WorkItemType]
 FROM WorkItems
-WHERE [System.AreaPath] UNDER '{{PROJECT}}\\Team\\Area'
+WHERE [System.TeamProject] = '{{PROJECT}}'
+AND [System.AreaPath] UNDER '{{AREA_PATH}}'
 AND [System.State] <> 'Removed'
 ORDER BY [System.WorkItemType], [System.Title]
 ```
 
-5. Get recently modified items:
+9. Get recently modified items:
 ```sql
 SELECT [System.Id], [System.Title], [System.ChangedDate]
 FROM WorkItems
-WHERE [System.ChangedDate] >= @Today-7
+WHERE [System.TeamProject] = '{{PROJECT}}'
+AND [System.AreaPath] UNDER '{{AREA_PATH}}'
+AND [System.ChangedDate] >= @Today-7
 ORDER BY [System.ChangedDate] DESC
 ```
 
-6. Get unassigned work items:
+10. Get unassigned work items:
 ```sql
 SELECT [System.Id], [System.Title], [System.WorkItemType]
 FROM WorkItems
-WHERE [System.AssignedTo] = ''
+WHERE [System.TeamProject] = '{{PROJECT}}'
+AND [System.AreaPath] UNDER '{{AREA_PATH}}'
+AND [System.AssignedTo] = ''
 AND [System.State] NOT IN ('Closed', 'Removed')
 ORDER BY [System.CreatedDate] DESC
 ```
@@ -122,12 +212,29 @@ ORDER BY [System.CreatedDate] DESC
 4. ❌ **Missing brackets**: `System.Id` instead of `[System.Id]`
    - Always wrap field names in square brackets
 
+5. ❌ **Wrong link type direction**:
+   - Use `Hierarchy-Forward` to go from parent → children (downward)
+   - Use `Hierarchy-Reverse` to go from child → parents (upward)
+   - Common mistake: using Forward when you want parents
+
+6. ❌ **Filtering hierarchical queries incorrectly**:
+   - Use `[Source].[System.State]` for source work item filters
+   - Use `[Target].[System.State]` for linked work item filters
+   - Example: `WHERE [Source].[System.Id] = 123 AND [Target].[System.State] = 'Active'`
+
+7. ❌ **Using WorkItemLinks when WorkItems is simpler**:
+   - For direct children only, use: `FROM WorkItems WHERE [System.Parent] = 123`
+   - WorkItemLinks is for multi-level (recursive) or complex link queries
+
 **RESULT SIZE MANAGEMENT:**
 When querying for closed/completed items:
+- ✅ **ALWAYS add area path filter**: `[System.AreaPath] UNDER '{{AREA_PATH}}'` (most important!)
 - ✅ Use narrow date ranges: `@Today-7` (1 week) or `@Today-14` (2 weeks)
-- ✅ Combine with area path filters when possible
+- ✅ Add project filter: `[System.TeamProject] = '{{PROJECT}}'`
 - ✅ Consider adding work item type filters: `[System.WorkItemType] IN ('Bug', 'Task')`
 - ✅ The API caller can use `maxResults` parameter to limit returned items
+
+**Note**: Area path filtering is the single most effective way to limit results and ensure relevance!
 
 **ERROR CORRECTION:**
 If given feedback about a previous query failure, carefully analyze the error and fix the specific issue.

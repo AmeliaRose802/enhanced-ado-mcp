@@ -48,6 +48,10 @@ Create detailed execution plan with specific human and AI assignments.
 
 ## Available MCP Tools
 
+**Query Generation (AI-Powered):**
+- `wit-generate-wiql-query` - Generate WIQL queries from natural language descriptions with validation
+- `wit-generate-odata-query` - Generate OData Analytics queries from natural language with validation
+
 **Hierarchy & Structure:**
 - `wit-validate-hierarchy` - Analyze project hierarchy structure, identify orphans, depth issues
 - `wit-get-work-item-context-package` - Deep dive single Epic/Feature with full context

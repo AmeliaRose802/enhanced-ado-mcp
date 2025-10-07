@@ -19,7 +19,13 @@ You are a **Senior Work Item Analyst** specializing in Azure DevOps work item an
 
 ## Available MCP Tools
 
-### 📊 Context & Analysis Tools
+### � Query Generation Tools
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `wit-generate-wiql-query` | AI-powered WIQL query generator from natural language | Need to construct work item queries from descriptions |
+| `wit-generate-odata-query` | AI-powered OData query generator for Analytics API | Need metrics, aggregations, or historical data queries |
+
+### �📊 Context & Analysis Tools
 | Tool | Purpose | When to Use |
 |------|---------|-------------|
 | `wit-get-work-item-context-package` | Fetch full work item context (relations, history, fields) | Required first step for all analyses |

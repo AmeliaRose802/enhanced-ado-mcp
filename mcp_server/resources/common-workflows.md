@@ -2,6 +2,71 @@
 
 End-to-end workflows combining multiple tools.
 
+---
+
+## Workflow 0: Building Queries with AI (NEW)
+
+**Goal:** Construct complex WIQL or OData queries from natural language
+
+### Option A: Generate WIQL Query for Work Items
+```json
+// Tool: wit-generate-wiql-query
+{
+  "description": "Find all active bugs assigned to me created in the last 30 days with high priority",
+  "includeExamples": true,
+  "testQuery": true,
+  "maxIterations": 3
+}
+```
+
+**Returns:**
+- Validated WIQL query string
+- Sample results (if testQuery: true)
+- Query summary and validation status
+
+**Then execute:**
+```json
+// Tool: wit-get-work-items-by-query-wiql
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.AssignedTo] = @Me AND [System.CreatedDate] >= @Today - 30 AND [Microsoft.VSTS.Common.Priority] = 1",
+  "includeFields": ["System.Title", "System.State", "Microsoft.VSTS.Common.Priority"],
+  "maxResults": 200
+}
+```
+
+### Option B: Generate OData Query for Analytics
+```json
+// Tool: wit-generate-odata-query
+{
+  "description": "Count completed work items grouped by type in the last 90 days",
+  "includeExamples": true,
+  "testQuery": true,
+  "maxIterations": 3
+}
+```
+
+**Returns:**
+- Validated OData query string
+- Sample results showing counts by type
+- Query summary and validation status
+
+**Then execute directly or use in further analysis:**
+```json
+// Tool: wit-query-analytics-odata
+{
+  "queryType": "custom",
+  "customODataQuery": "$apply=filter(CompletedDate ge 2024-10-01Z)/groupby((WorkItemType), aggregate($count as Count))"
+}
+```
+
+**Benefits:**
+- No need to memorize WIQL/OData syntax
+- Iterative validation catches errors
+- Auto-injects organization, project, area path from config
+- Returns working queries ready to execute
+
+---
+
 ## Workflow 1: Feature Decomposition
 
 **Goal:** Break down a large feature into smaller work items
@@ -63,6 +128,15 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Get All Items in Area
 ```json
+// Option A: Build query with AI
+// Tool: wit-generate-wiql-query
+{
+  "description": "all items in my area that are not removed or done",
+  "includeExamples": false,
+  "testQuery": true
+}
+
+// Option B: Use direct WIQL query
 // Tool: wit-get-work-items-by-query-wiql
 {
   "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",

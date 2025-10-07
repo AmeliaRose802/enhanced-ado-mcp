@@ -1,10 +1,26 @@
 ```markdown
 # TODO
 
+## 🤖 ORCHESTRATION PLAN - Autonomous AI Agent Coordination
+**Created:** October 6, 2025
+**Status:** Ready for Execution
+**Orchestrator:** GitHub Copilot (this agent)
+**Workers:** GitHub Copilot Coding Agents
+
+See `tasklist/orchestration-execution-plan.md` for detailed parallel execution strategy.
+
+---
+
+- The generate wiql tool should return a handle to get the remaining result so the caller doesn't have to rerun to get or analysis all results
+
+- Is ai-readiness-analyzer.md or ai-readiness-analyzer.md being used? Remove the one that is not used
+
 - Staleness threshold days not correctly defined in stalenessThresholdDays. It's not populating to the prompt. 
 - Comphrensivly audit the resources to make sure they are still accurate with all our changes
 
 - Add a new tool for descovering tools and their schemas. Agents are struggling to figure out what to use
+
+- Add tool for odata queries
 
 - Add an intellegent sampling based tool for writing wiql queries. Caller should specify what they want in plane langugage and tool should write them the correct query. Ideally it would try out the query and iterate until there are no syntax errors. 
 
@@ -57,6 +73,17 @@ We are ending up with a unmanagable number of handler files all in the same dire
 
 
 # DONE
+
+- ✅ **FIXED** - Query generator needs to respect the callers context window by only showing the successful query and results not the iterations
+  - Fixed: Removed `iterations` array from response data (previously showed all attempts with queries and errors)
+  - Fixed: Removed `iterationCount` from response data
+  - Fixed: Removed `usage` object (organization, project, description) from response data
+  - Fixed: Simplified `summary` message to remove iteration count details
+  - Fixed: Removed iteration count warning from warnings array
+  - Kept: `iterationCount` in metadata for debugging/logging purposes only
+  - Result: Response now only contains: query, isValidated, resultCount, sampleResults, summary
+  - Context Window Savings: Significant reduction especially for multi-iteration scenarios
+  - Status: Build successful, ready for testing
 
 - ✅ **COMPLETED** - Bulk intelligent sampling-based enhancement tools
   - Added: `wit-bulk-enhance-descriptions-by-query-handle` - AI-powered description enhancement

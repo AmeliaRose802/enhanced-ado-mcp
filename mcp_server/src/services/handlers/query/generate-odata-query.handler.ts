@@ -1,6 +1,6 @@
 /**
- * Handler for wit-generate-wiql-query tool
- * Generates WIQL queries from natural language using AI sampling with iterative validation
+ * Handler for wit-generate-odata-query tool
+ * Generates OData Analytics queries from natural language using AI sampling with iterative validation
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
@@ -8,10 +8,9 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
-import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { extractWiqlQuery, cleanWiqlQuery } from "../../../utils/wiql-helpers.js";
+import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 
-interface GenerateWiqlQueryArgs {
+interface GenerateODataQueryArgs {
   description: string;
   organization: string;
   project: string;
@@ -23,7 +22,7 @@ interface GenerateWiqlQueryArgs {
   serverInstance?: any; // Server instance for sampling
 }
 
-export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown, serverInstance: any): Promise<ToolExecutionResult> {
+export async function handleGenerateODataQuery(config: ToolConfig, args: unknown, serverInstance: any): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -49,9 +48,9 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       testQuery = true,
       areaPath,
       iterationPath
-    } = parsed.data as GenerateWiqlQueryArgs;
+    } = parsed.data as GenerateODataQueryArgs;
 
-    logger.info(`Generating WIQL query from description: "${description}"`);
+    logger.info(`Generating OData query from description: "${description}"`);
     if (areaPath) {
       logger.debug(`Using area path for query context: ${areaPath}`);
     }
@@ -73,6 +72,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       const generatedQuery = await generateQueryWithAI(
         samplingClient,
         description,
+        organization,
         project,
         areaPath,
         iterationPath,
@@ -89,7 +89,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
 
       // Test the query if requested
       if (testQuery) {
-        const testResult = await testWiqlQuery(currentQuery, organization, project);
+        const testResult = await testODataQuery(currentQuery, organization, project);
         
         if (testResult.success) {
           isValid = true;
@@ -127,30 +127,29 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
           sampleResults: testResults.sampleResults
         }),
         summary: isValid
-          ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ''}`
+          ? `Successfully generated OData query${testResults ? ` (found ${testResults.resultCount} results)` : ''}`
           : `Failed to generate valid query. Last error: ${lastError}`
       },
       metadata: {
-        source: "ai-sampling-wiql-generator",
+        source: "ai-sampling-odata-generator",
         validated: isValid,
         iterationCount: iterations.length
       },
       errors: isValid ? [] : [lastError || "Failed to generate valid query"],
       warnings: [
         ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : []),
-        ...(testResults && testResults.resultCount === 0 ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"] : []),
-        ...(testResults && testResults.resultCount > 1000 ? [`⚠️ Query returned ${testResults.resultCount} results - consider adding more specific filters`] : [])
+        ...(testResults && testResults.resultCount === 0 ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"] : [])
       ]
     };
 
     return result;
 
   } catch (error) {
-    logger.error('WIQL query generation handler error:', error);
+    logger.error('OData query generation handler error:', error);
     return {
       success: false,
       data: null,
-      metadata: { source: "ai-sampling-wiql-generator" },
+      metadata: { source: "ai-sampling-odata-generator" },
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: []
     };
@@ -158,11 +157,12 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
 }
 
 /**
- * Generate WIQL query using AI sampling
+ * Generate OData query using AI sampling
  */
 async function generateQueryWithAI(
   samplingClient: SamplingClient,
   description: string,
+  organization: string,
   project: string,
   areaPath: string | undefined,
   iterationPath: string | undefined,
@@ -173,18 +173,19 @@ async function generateQueryWithAI(
   // Build variables for the system prompt
   const variables: Record<string, string> = {
     PROJECT: project,
+    ORGANIZATION: organization,
     AREA_PATH: areaPath || '',
     ITERATION_PATH: iterationPath || ''
-  }
+  };
   
-  let userContent = `Generate a WIQL query for the following request:\n\n${description}`;
+  let userContent = `Generate an OData Analytics query for the following request:\n\n${description}`;
   
   if (feedback?.previousQuery && feedback?.error) {
-    userContent += `\n\n---\n\n**PREVIOUS ATTEMPT FAILED**\n\nPrevious Query:\n\`\`\`sql\n${feedback.previousQuery}\n\`\`\`\n\nError:\n${feedback.error}\n\nPlease fix the query to address this error.`;
+    userContent += `\n\n---\n\n**PREVIOUS ATTEMPT FAILED**\n\nPrevious Query:\n${feedback.previousQuery}\n\nError:\n${feedback.error}\n\nPlease fix the query to address this error.`;
   }
 
   const aiResult = await samplingClient.createMessage({
-    systemPromptName: "wiql-query-generator",
+    systemPromptName: "odata-query-generator",
     userContent,
     variables,
     maxTokens: 800,
@@ -192,56 +193,103 @@ async function generateQueryWithAI(
   });
 
   const responseText = samplingClient.extractResponseText(aiResult);
-  const query = extractWiqlQuery(responseText);
+  const query = extractODataQuery(responseText);
   
   if (!query) {
-    throw new Error("Failed to extract WIQL query from AI response");
+    throw new Error("Failed to extract OData query from AI response");
   }
 
-  return cleanWiqlQuery(query);
+  return cleanODataQuery(query);
 }
 
 /**
- * Test a WIQL query by executing it and checking for errors
+ * Extract OData query from AI response
  */
-async function testWiqlQuery(
+function extractODataQuery(responseText: string): string | null {
+  // Try to find query in code blocks first
+  const codeBlockMatch = responseText.match(/```(?:odata|sql|text)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) {
+    return codeBlockMatch[1].trim();
+  }
+
+  // Try to find query starting with $apply or $filter
+  const queryMatch = responseText.match(/(\$(?:apply|filter|orderby|top)=[\s\S]*?)(?:\n\n|\n[A-Z]|$)/);
+  if (queryMatch) {
+    return queryMatch[1].trim();
+  }
+
+  // If no match, return the whole response (might be just the query)
+  const cleaned = responseText.trim();
+  if (cleaned.startsWith('$')) {
+    return cleaned;
+  }
+
+  return null;
+}
+
+/**
+ * Clean OData query string
+ */
+function cleanODataQuery(query: string): string {
+  return query
+    .replace(/^\s*```(?:odata|sql|text)?\s*/gm, '') // Remove code block starts
+    .replace(/\s*```\s*$/gm, '') // Remove code block ends
+    .trim();
+}
+
+/**
+ * Test an OData query by executing it and checking for errors
+ */
+async function testODataQuery(
   query: string,
   organization: string,
   project: string
 ): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: any[] }> {
   try {
-    // Execute with a limit to avoid large result sets during testing
-    const result = await queryWorkItemsByWiql({
-      wiqlQuery: query,
-      organization,
-      project,
-      top: 10, // Only fetch first 10 for validation
-      includeFields: ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State']
+    const token = await getAzureDevOpsToken();
+    const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
+    const url = `${baseUrl}?${query}${query.includes('$top') ? '' : '&$top=5'}`;
+
+    logger.debug(`Testing OData query: ${url}`);
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.warn(`OData test failed: ${response.status} ${errorText}`);
+      return {
+        success: false,
+        error: `Analytics API error: ${response.status} ${response.statusText} - ${errorText}`
+      };
+    }
+
+    const data = await response.json();
+    const results = data.value || [];
+    const count = data['@odata.count'] !== undefined ? data['@odata.count'] : results.length;
 
     return {
       success: true,
-      resultCount: result.totalCount || result.count,
-      sampleResults: result.workItems.slice(0, 5).map((wi: any) => ({
-        id: wi.id,
-        title: wi.title,
-        type: wi.type,
-        state: wi.state
-      }))
+      resultCount: count,
+      sampleResults: results.slice(0, 3) // Return max 3 samples
     };
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     
-    // Parse common WIQL errors for better feedback
+    // Parse common OData errors for better feedback
     let parsedError = errorMessage;
     
-    if (errorMessage.includes("ORDER BY")) {
-      parsedError = "ORDER BY clause is not supported in WorkItemLinks queries. Use WorkItems query instead or remove ORDER BY.";
-    } else if (errorMessage.includes("syntax error") || errorMessage.includes("VS402337")) {
-      parsedError = `WIQL syntax error: ${errorMessage}. Check field names, brackets, and operators.`;
-    } else if (errorMessage.includes("field")) {
-      parsedError = `Invalid field name: ${errorMessage}. Ensure field names are in brackets and use proper system names.`;
+    if (errorMessage.includes("400")) {
+      parsedError = `OData syntax error: ${errorMessage}. Check field names, quotes, and operators.`;
+    } else if (errorMessage.includes("not valid")) {
+      parsedError = `Invalid OData query: ${errorMessage}. Check field names and navigation properties.`;
+    } else if (errorMessage.includes("Property")) {
+      parsedError = `Field not found: ${errorMessage}. Ensure field names are correct for Analytics API.`;
     }
 
     return {

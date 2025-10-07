@@ -62,6 +62,7 @@ End-to-end workflows combining multiple tools:
 **URI:** `ado://docs/tool-selection-guide`
 
 Decision guide for choosing the right tool:
+- **NEW:** AI-powered query generation (WIQL and OData from natural language)
 - Query vs metrics tools
 - Single vs batch operations
 - AI-powered analysis tools
@@ -95,9 +96,70 @@ AI-powered bulk enhancement tools for work items:
 
 **Use when:** Agent needs to enhance multiple work items with AI-generated content (descriptions, estimates, acceptance criteria)
 
-## How Agents Access Resources
+### 8. Tool Discovery Guide (`tool-discovery-guide.md`)
+**URI:** `ado://docs/tool-discovery-guide`
 
-### List Available Resources
+AI-powered tool discovery for finding the right tools:
+- Using natural language to find tools
+- Understanding confidence scores
+- Common usage patterns
+- Workflow recommendations
+- Filter by category
+
+**Use when:** Agent is unsure which tool to use or wants to explore capabilities with natural language
+
+### 9. Handle-First Analysis Guide (`handle-first-analysis-guide.md`)
+**URI:** `ado://docs/handle-first-analysis-guide`
+
+Query handle patterns for safe analysis workflows:
+- Prevention of ID hallucination in AI workflows
+- Complete analyze-then-act patterns
+- Validation and inspection workflows
+- Handle lifecycle management
+- Best practices for multi-step operations
+
+**Use when:** Agent needs to analyze work items before performing bulk operations
+
+### 10. WIQL Generator Guide (`wiql-generator-guide.md`)
+**URI:** `ado://docs/wiql-generator-guide`
+
+AI-powered WIQL query generation from natural language:
+- Converting natural language to WIQL
+- Iterative validation and refinement
+- Common query patterns
+- Testing and verification
+- Troubleshooting failed generations
+
+**Use when:** Agent needs to construct complex WIQL queries from descriptions
+
+### 11. Personal Workload Analyzer Guide (`personal-workload-analyzer-guide.md`)
+**URI:** `ado://docs/personal-workload-analyzer-guide`
+
+Individual workload health analysis for burnout prevention and career development:
+- Burnout risk assessment
+- Overspecialization detection
+- Work-life balance patterns
+- Career growth opportunities
+- Custom intent analysis (promotion readiness, skill development)
+- Responsible use and privacy guidelines
+
+**Use when:** Agent needs to analyze an individual's work patterns for health risks, career development, or growth opportunities
+
+### 12. Sprint Planning Guide (`sprint-planning-guide.md`)
+**URI:** `ado://docs/sprint-planning-guide`
+
+AI-powered sprint planning for optimal work assignment:
+- Historical velocity analysis
+- Team capacity assessment
+- Balanced work distribution
+- Skill matching and load balancing
+- Risk assessment and mitigation
+- Sprint planning workflows
+- Integration with other tools
+
+**Use when:** Agent needs to create a sprint plan, analyze team capacity, or propose work assignments
+
+## How Agents Access Resources
 ```typescript
 // MCP Protocol: resources/list
 const resources = await mcp.listResources();
