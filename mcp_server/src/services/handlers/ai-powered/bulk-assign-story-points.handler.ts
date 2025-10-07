@@ -128,6 +128,7 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
       onlyUnestimated, 
       includeCompleted, 
       dryRun, 
+      maxPreviewItems,
       organization, 
       project 
     } = parsed.data;
@@ -295,6 +296,13 @@ Estimate the story points for this work item using the ${pointScale} scale.
     const failureCount = results.filter(r => !r.success && !r.skipped).length;
     const needsDecomposition = results.filter(r => r.suggestDecomposition).length;
 
+    // Apply preview limit for dry-run mode
+    const previewLimit = dryRun ? (maxPreviewItems || 5) : results.length;
+    const displayResults = results.slice(0, previewLimit);
+    const previewMessage = dryRun && results.length > previewLimit 
+      ? `Showing ${previewLimit} of ${results.length} items...` 
+      : undefined;
+
     return {
       success: failureCount === 0,
       data: {
@@ -310,7 +318,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
         skipped: skippedCount,
         failed: failureCount,
         needs_decomposition: needsDecomposition,
-        results: results.map(r => ({
+        results: displayResults.map(r => ({
           work_item_id: r.workItemId,
           title: r.title,
           status: r.success ? 'estimated' : r.skipped ? 'skipped' : 'failed',
@@ -322,6 +330,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
           error: r.error,
           skip_reason: r.skipped
         })),
+        preview_message: previewMessage,
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} story point estimates (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`
           : `Successfully estimated ${successCount} story points (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`

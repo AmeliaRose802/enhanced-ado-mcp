@@ -27,7 +27,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, removeReason, itemSelector, dryRun, organization, project } = parsed.data;
+    const { queryHandle, removeReason, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
 
     // Retrieve work item IDs from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
@@ -55,11 +55,12 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
 
     if (dryRun) {
       // Show preview of selected items for destructive operation
+      const previewLimit = maxPreviewItems || 5;
       const dryRunInfo = {
         totalInHandle: totalItems,
         selectedForRemoval: selectedCount,
         selectionCriteria: itemSelector === 'all' ? 'All items' : JSON.stringify(itemSelector),
-        itemsToRemove: selectedWorkItemIds.slice(0, 5).map((id: number) => {
+        itemsToRemove: selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
           const context = queryData.itemContext.find(item => item.id === id);
           return {
             id: id,
@@ -69,6 +70,10 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           };
         })
       };
+
+      const previewMessage = selectedCount > previewLimit 
+        ? `Showing ${previewLimit} of ${selectedCount} items...` 
+        : undefined;
 
       return {
         success: true,
@@ -81,6 +86,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           work_item_ids: selectedWorkItemIds,
           remove_reason: removeReason,
           preview_items: dryRunInfo.itemsToRemove,
+          preview_message: previewMessage,
           summary: `DRY RUN - Would remove ${selectedCount} items:\n${JSON.stringify(dryRunInfo, null, 2)}`
         },
         metadata: { 

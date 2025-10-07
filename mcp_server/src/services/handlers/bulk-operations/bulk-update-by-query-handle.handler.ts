@@ -25,7 +25,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, updates, itemSelector, dryRun, organization, project } = parsed.data;
+    const { queryHandle, updates, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
 
     // Retrieve work item IDs from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
@@ -75,7 +75,8 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
 
     if (dryRun) {
       // Show preview of selected items and updates
-      const previewItems = selectedWorkItemIds.slice(0, 5).map((id: number) => {
+      const previewLimit = maxPreviewItems || 5;
+      const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
         const context = queryData.itemContext.find(item => item.id === id);
         return {
           work_item_id: id,
@@ -90,6 +91,10 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
         ? `DRY RUN: Would update ${updates.length} fields on all ${selectedCount} items`
         : `DRY RUN: Would update ${updates.length} fields on ${selectedCount} selected items (from ${totalItems} total)`;
 
+      const previewMessage = selectedCount > previewLimit 
+        ? `Showing ${previewLimit} of ${selectedCount} items...` 
+        : undefined;
+
       return {
         success: true,
         data: {
@@ -101,6 +106,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
           work_item_ids: selectedWorkItemIds,
           updates_preview: updates,
           preview_items: previewItems,
+          preview_message: previewMessage,
           summary
         },
         metadata: { 
