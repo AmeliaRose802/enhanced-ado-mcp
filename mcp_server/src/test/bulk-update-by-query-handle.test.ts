@@ -46,6 +46,11 @@ describe('Bulk Update By Query Handle Handler', () => {
     jest.clearAllMocks();
   });
 
+  afterAll(() => {
+    // Stop the cleanup interval to prevent "Jest did not exit one second after the test run" warning
+    queryHandleService.stopCleanup();
+  });
+
   describe('Item Selection with Enhanced Logging', () => {
     it('should log selection information for "all" selector', async () => {
       // Create test query handle
