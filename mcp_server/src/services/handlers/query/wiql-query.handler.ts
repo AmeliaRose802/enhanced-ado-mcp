@@ -6,7 +6,12 @@ import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { WorkItemContext, WorkItemContextPackage } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { 
+  buildValidationErrorResponse, 
+  buildAzureCliErrorResponse,
+  buildSuccessResponseWithWarnings,
+  buildCatchErrorResponse
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "../context/get-work-item-context-package.handler.js";
@@ -126,9 +131,19 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
 
       logger.info(`Query handle created: ${handle} (${workItemIds.length} work items)`);
 
-      return {
-        success: true,
-        data: {
+      const warnings: string[] = [];
+      if (result.hasMore) {
+        warnings.push(`Query returned ${result.totalCount} total results. Handle contains first ${workItemIds.length} items. Use pagination if you need all results.`);
+      }
+      if (fullPackages && fullPackages.length < result.workItems.length) {
+        warnings.push(`Successfully fetched ${fullPackages.length} of ${result.workItems.length} full context packages. Some packages may have failed to load.`);
+      }
+      if (parsed.data.fetchFullPackages && workItemIds.length > 50) {
+        warnings.push(`⚠️ Fetching full packages for ${workItemIds.length} items made ${workItemIds.length * 2} API calls. Consider using pagination or filtering for smaller result sets.`);
+      }
+
+      return buildSuccessResponseWithWarnings(
+        {
           query_handle: handle,
           work_items: result.workItems,
           ...(fullPackages && { full_packages: fullPackages }),
@@ -165,7 +180,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
             fullPackagesCount: fullPackages.length
           })
         },
-        metadata: {
+        warnings,
+        {
           source: "rest-api-wiql",
           queryHandleMode: true,
           handle,
@@ -173,26 +189,24 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
           totalCount: result.totalCount,
           substantiveChangeAnalysis: parsed.data.includeSubstantiveChange || false,
           fullPackagesFetched: !!fullPackages
-        },
-        errors: [],
-        warnings: [
-          ...(result.hasMore
-            ? [`Query returned ${result.totalCount} total results. Handle contains first ${workItemIds.length} items. Use pagination if you need all results.`]
-            : []),
-          ...(fullPackages && fullPackages.length < result.workItems.length
-            ? [`Successfully fetched ${fullPackages.length} of ${result.workItems.length} full context packages. Some packages may have failed to load.`]
-            : []),
-          ...(parsed.data.fetchFullPackages && workItemIds.length > 50
-            ? [`⚠️ Fetching full packages for ${workItemIds.length} items made ${workItemIds.length * 2} API calls. Consider using pagination or filtering for smaller result sets.`]
-            : [])
-        ]
-      };
+        }
+      );
     }
     
     // Standard response with full work item details
-    return {
-      success: true,
-      data: {
+    const warnings: string[] = [];
+    if (result.hasMore) {
+      warnings.push(`Query returned ${result.totalCount} total results. Showing page ${Math.floor(result.skip / result.top) + 1}. Use skip=${result.skip + result.top} to get the next page.`);
+    }
+    if (fullPackages && fullPackages.length < result.workItems.length) {
+      warnings.push(`Successfully fetched ${fullPackages.length} of ${result.workItems.length} full context packages. Some packages may have failed to load.`);
+    }
+    if (parsed.data.fetchFullPackages && result.count > 50) {
+      warnings.push(`⚠️ Fetching full packages for ${result.count} items made ${result.count * 2} API calls. Consider using pagination or filtering for smaller result sets.`);
+    }
+
+    return buildSuccessResponseWithWarnings(
+      {
         work_items: result.workItems,
         ...(fullPackages && { full_packages: fullPackages }),
         count: result.count,
@@ -220,7 +234,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
           fullPackagesCount: fullPackages.length
         })
       },
-      metadata: { 
+      warnings,
+      { 
         source: "rest-api-wiql",
         count: result.count,
         totalCount: result.totalCount,
@@ -230,28 +245,10 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         maxResults: pageSize,
         substantiveChangeAnalysis: parsed.data.includeSubstantiveChange || false,
         fullPackagesFetched: !!fullPackages
-      },
-      errors: [],
-      warnings: [
-        ...(result.hasMore
-          ? [`Query returned ${result.totalCount} total results. Showing page ${Math.floor(result.skip / result.top) + 1}. Use skip=${result.skip + result.top} to get the next page.`]
-          : []),
-        ...(fullPackages && fullPackages.length < result.workItems.length
-          ? [`Successfully fetched ${fullPackages.length} of ${result.workItems.length} full context packages. Some packages may have failed to load.`]
-          : []),
-        ...(parsed.data.fetchFullPackages && result.count > 50
-          ? [`⚠️ Fetching full packages for ${result.count} items made ${result.count * 2} API calls. Consider using pagination or filtering for smaller result sets.`]
-          : [])
-      ]
-    };
+      }
+    );
   } catch (error) {
     logger.error('WIQL query handler error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "rest-api-wiql" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildCatchErrorResponse(error, 'rest-api-wiql');
   }
 }

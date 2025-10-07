@@ -5,7 +5,14 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { 
+  buildValidationErrorResponse, 
+  buildAzureCliErrorResponse, 
+  buildSamplingUnavailableResponse,
+  buildSuccessResponseWithWarnings,
+  buildPartialSuccessResponse,
+  buildCatchErrorResponse
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
@@ -161,13 +168,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
 
   } catch (error) {
     logger.error('WIQL query generation handler error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "ai-sampling-wiql-generator" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildCatchErrorResponse(error, 'ai-sampling-wiql-generator');
   }
 }
 
