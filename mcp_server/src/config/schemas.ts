@@ -268,7 +268,8 @@ export const odataAnalyticsQuerySchema = z.object({
   iterationPath: z.string().optional().describe("Filter by Iteration Path"),
   top: z.number().int().optional().default(100).describe("Maximum number of results to return (default 100)"),
   computeCycleTime: z.boolean().optional().default(false).describe("Compute cycle time (CompletedDate - CreatedDate) for completed items"),
-  includeMetadata: z.boolean().optional().default(false).describe("Include OData metadata in response")
+  includeMetadata: z.boolean().optional().default(false).describe("Include query and URL metadata in response"),
+  includeOdataMetadata: z.boolean().optional().default(false).describe("Include OData metadata fields (@odata.context, @odata.count, @odata.nextLink) in response (default: false)")
 });
 
 // Full context package retrieval (single work item)

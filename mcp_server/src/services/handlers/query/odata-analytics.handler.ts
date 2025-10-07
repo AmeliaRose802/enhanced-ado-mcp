@@ -27,19 +27,28 @@ interface ODataAnalyticsArgs {
   top?: number;
   computeCycleTime?: boolean;
   includeMetadata?: boolean;
+  includeOdataMetadata?: boolean;
 }
 
 interface ODataResponse {
   "@odata.context"?: string;
   "@odata.count"?: number;
+  "@odata.nextLink"?: string;
   value: any[];
 }
 
 /**
  * Clean OData metadata from results to reduce response size
  * Removes all @odata.* fields and filters out null values to minimize context usage
+ * @param results - Array of result items from OData response
+ * @param stripMetadata - Whether to strip @odata.* fields (default true)
  */
-function cleanODataResults(results: any[]): any[] {
+function cleanODataResults(results: any[], stripMetadata: boolean = true): any[] {
+  if (!stripMetadata) {
+    // Return results as-is when metadata should be included
+    return results;
+  }
+  
   return results.map(item => {
     const cleaned: any = {};
     for (const [key, value] of Object.entries(item)) {
@@ -272,8 +281,11 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
 
     const data = await response.json() as ODataResponse;
     
-    // Clean OData metadata from results to reduce response size
-    const cleanedResults = cleanODataResults(data.value);
+    // Determine whether to include OData metadata (default: false)
+    const includeOdataMetadata = queryArgs.includeOdataMetadata ?? false;
+    
+    // Clean OData metadata from results based on parameter
+    const cleanedResults = cleanODataResults(data.value, !includeOdataMetadata);
     const resultCount = data["@odata.count"] || cleanedResults.length || 0;
     const summary = generateSummary(queryArgs.queryType, resultCount, cleanedResults);
 
@@ -283,6 +295,19 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       count: resultCount,
       results: cleanedResults
     };
+    
+    // Include top-level OData metadata if requested
+    if (includeOdataMetadata) {
+      if (data["@odata.context"]) {
+        responseData["@odata.context"] = data["@odata.context"];
+      }
+      if (data["@odata.count"] !== undefined) {
+        responseData["@odata.count"] = data["@odata.count"];
+      }
+      if (data["@odata.nextLink"]) {
+        responseData["@odata.nextLink"] = data["@odata.nextLink"];
+      }
+    }
     
     // Only include full metadata if explicitly requested
     if (queryArgs.includeMetadata) {
