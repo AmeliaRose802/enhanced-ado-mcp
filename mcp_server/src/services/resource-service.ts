@@ -96,6 +96,12 @@ const resourceDefinitions: MCPResource[] = [
     name: "Query Handle Pattern - Anti-Hallucination Architecture",
     description: "Comprehensive guide to using query handles for bulk operations. Eliminates ID hallucination by ensuring work item IDs come from Azure DevOps, not LLM memory.",
     mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/wiql-generator-guide",
+    name: "WIQL Generator Guide - AI-Powered Query Creation",
+    description: "Guide to generating WIQL queries from natural language using AI. Includes examples, patterns, and best practices for query generation.",
+    mimeType: "text/markdown"
   }
 ];
 
@@ -123,7 +129,8 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     "ado://docs/hierarchy-patterns": "hierarchy-patterns.md",
     "ado://docs/common-workflows": "common-workflows.md",
     "ado://docs/tool-selection-guide": "tool-selection-guide.md",
-    "ado://docs/query-handle-pattern": "query-handle-pattern.md"
+    "ado://docs/query-handle-pattern": "query-handle-pattern.md",
+    "ado://docs/wiql-generator-guide": "wiql-generator-guide.md"
   };
 
   const filename = contentMap[uri];

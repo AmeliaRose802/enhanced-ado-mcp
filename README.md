@@ -97,7 +97,7 @@ When you first use an AI-powered tool (tools 5-8 below), VS Code will prompt you
 
 ### Model Selection for Performance
 
-**New in v1.5.0:** All AI-powered tools now automatically request **GPT-4o mini** or **o3-mini** for faster performance. These smaller, efficient models provide:
+**New in v1.5.0:** All AI-powered tools now automatically request **free models** (GPT-4o mini, GPT-4.1, GPT-4o) to avoid rate limits. These models provide:
 - ⚡ **2-5x faster response times** (1-3 seconds vs 5-10 seconds)
 - 💰 **Lower token costs** for bulk operations
 - ✅ **Excellent quality** for structured work item analysis
@@ -145,11 +145,23 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
 6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning (analysis only - use `wit-assign-to-copilot` separately to perform assignment)
+7. `wit-generate-wiql-query` - 🆕 **Generate WIQL queries from natural language descriptions** with automatic validation and iterative refinement. Converts plain English like "all active bugs created last week" into valid WIQL syntax.
 
 ### Configuration & Discovery Tools
 
-7. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
-8. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
+8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
+8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
+9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, and computed metrics (daysInactive, daysSinceCreated, hasDescription, isStale)
+10. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
+11. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
+12. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
+13. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+
+### Bulk Operations & Backlog Hygiene Tools
+
+14. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
+15. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
+16. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
 9. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
 10. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
 11. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
@@ -197,10 +209,11 @@ Prompts are loaded from the `prompts/` directory and support template variable s
 ### Quick Reference Resources
 
 1. **WIQL Quick Reference** (`ado://docs/wiql-quick-reference`) - Common WIQL query patterns and examples
-2. **OData Quick Reference** (`ado://docs/odata-quick-reference`) - OData Analytics query examples for metrics and aggregations
-3. **Hierarchy Query Patterns** (`ado://docs/hierarchy-patterns`) - Patterns for querying work item hierarchies
-4. **Common Workflow Examples** (`ado://docs/common-workflows`) - End-to-end workflow examples combining multiple tools
-5. **Tool Selection Guide** (`ado://docs/tool-selection-guide`) - Decision guide for choosing the right tool
+2. **WIQL Generator Guide** (`ado://docs/wiql-generator-guide`) - 🆕 **AI-powered query generation guide** - Learn to generate WIQL from natural language
+3. **OData Quick Reference** (`ado://docs/odata-quick-reference`) - OData Analytics query examples for metrics and aggregations
+4. **Hierarchy Query Patterns** (`ado://docs/hierarchy-patterns`) - Patterns for querying work item hierarchies
+5. **Common Workflow Examples** (`ado://docs/common-workflows`) - End-to-end workflow examples combining multiple tools
+6. **Tool Selection Guide** (`ado://docs/tool-selection-guide`) - Decision guide for choosing the right tool
 
 ### How Agents Use Resources
 
@@ -221,6 +234,46 @@ const content = await mcp.readResource("ado://docs/wiql-quick-reference");
 - ✅ Tool selection guidance prevents wrong tool usage
 
 See the [Resources README](mcp_server/resources/README.md) for detailed documentation.
+
+## AI-Powered WIQL Query Generation
+
+**New in v1.5.0:** The `wit-generate-wiql-query` tool converts natural language descriptions into valid WIQL queries with automatic validation and iterative refinement.
+
+### Why Use Query Generation?
+
+- **No WIQL Knowledge Required**: Describe what you want in plain English
+- **Automatic Validation**: Tests queries and fixes syntax errors automatically  
+- **Best Practices**: Avoids common mistakes like ORDER BY in WorkItemLinks queries
+- **Iterative Refinement**: Learns from errors and improves the query
+
+### Example: Natural Language to WIQL
+
+```json
+{
+  "description": "Find all active bugs created in the last 7 days",
+  "testQuery": true
+}
+```
+
+**Generated Query:**
+```sql
+SELECT [System.Id], [System.Title], [System.State], [System.CreatedDate]
+FROM WorkItems
+WHERE [System.WorkItemType] = 'Bug'
+AND [System.State] = 'Active'
+AND [System.CreatedDate] >= @Today-7
+ORDER BY [System.CreatedDate] DESC
+```
+
+### More Natural Language Examples
+
+- "All unassigned tasks" → Query for tasks where AssignedTo is empty
+- "Features in Engineering area" → Query with AreaPath UNDER filter
+- "Items modified this week" → Query with ChangedDate >= @Today-7
+- "Children of work item 12345" → WorkItemLinks hierarchical query
+- "High priority bugs assigned to me" → Multi-criteria filtered query
+
+See the [WIQL Generator Guide](mcp_server/resources/wiql-generator-guide.md) for comprehensive examples and patterns.
 
 ## WIQL Query Examples
 

@@ -3,11 +3,11 @@
  * Allows adding comments to multiple work items efficiently
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { validateAzureCLI } from "../ado-discovery-service.js";
-import { logger } from "../../utils/logger.js";
-import { createADOHttpClient } from '../../utils/ado-http-client.js';
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { logger } from "../../../utils/logger.js";
+import { createADOHttpClient } from '../../../utils/ado-http-client.js';
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 
 interface CommentItem {
   workItemId: number;

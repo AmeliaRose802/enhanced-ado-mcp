@@ -545,6 +545,7 @@ export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
   sampleSize: z.number().int().min(1).max(100).optional().default(10).describe("Max items to process in one call (default 10, max 100)"),
   pointScale: z.enum(['fibonacci', 'linear', 't-shirt']).optional().default('fibonacci').describe("Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)"),
   onlyUnestimated: z.boolean().optional().default(true).describe("Only assign points to items without existing effort estimates (default true)"),
+  includeCompleted: z.boolean().optional().default(false).describe("Include completed/done items for historical analysis (default false)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-estimated story points without updating work items (default true for safety)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
@@ -577,4 +578,27 @@ export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
 
+/**
+ * Schema for AI-powered WIQL query generation from natural language
+ * Generates valid WIQL queries with iterative validation
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   description: "Find all active bugs assigned to me that were created in the last 7 days",
+ *   testQuery: true,
+ *   maxIterations: 3
+ * }
+ * ```
+ */
+export const generateWiqlQuerySchema = z.object({
+  description: z.string().describe("Natural language description of the desired query"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Default area path to use in queries (optional context)"),
+  iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Default iteration path to use in queries (optional context)"),
+  maxIterations: z.number().int().min(1).max(5).optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
+  includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
+  testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)")
+});
 

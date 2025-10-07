@@ -1,11 +1,12 @@
 ```markdown
 # TODO
 
-- ⏳ **CRITICAL ARCHITECTURE ISSUE** - Query Handle Architecture Fundamental Problem  
-  - Issue: Two competing paradigms for bulk operations causing user confusion and ID hallucination
-  - Status: NEEDS IMMEDIATE ATTENTION - See `tasklist/architecture-fix-plan.md`
-  - Impact: Users abandon query handles → revert to hallucination-prone manual ID operations  
-  - Priority: P0 - Blocks reliable bulk operations
+- Staleness threshold days not correctly defined in stalenessThresholdDays. It's not populating to the prompt. 
+- Comphrensivly audit the resources to make sure they are still accurate with all our changes
+
+- Add a new tool for descovering tools and their schemas. Agents are struggling to figure out what to use
+
+- Add an intellegent sampling based tool for writing wiql queries. Caller should specify what they want in plane langugage and tool should write them the correct query. Ideally it would try out the query and iterate until there are no syntax errors. 
 
 - Too many backlog cleanup report prompt flow. Just keep one. Dead items should also be combined into the single backlog cleanup prompt
 
@@ -45,9 +46,11 @@
   - Investigation: Check if prompt argument is being passed correctly to tools
   - Location: team_velocity_analyzer.md prompt
 
-- ⏳ **DEFERRED** - Add an intellegent tool for assigning story points to an item.
-  - Status: Deferred until P0/P1 items complete (see IMPLEMENTATION_PLAN.md Task 8)
-  - Requires: AI-powered estimation logic, historical velocity data, confidence scoring
+  - ⏳ **CRITICAL ARCHITECTURE ISSUE** - Query Handle Architecture Fundamental Problem  
+  - Issue: Two competing paradigms for bulk operations causing user confusion and ID hallucination
+  - Status: NEEDS IMMEDIATE ATTENTION - See `tasklist/architecture-fix-plan.md`
+  - Impact: Users abandon query handles → revert to hallucination-prone manual ID operations  
+  - Priority: P0 - Blocks reliable bulk operations
 
 
 We are ending up with a unmanagable number of handler files all in the same directory. Please reorgnize the repo to use a sensible folder structure without breaking things. Add clear docs explaining where things belong so future code is placed correctly.

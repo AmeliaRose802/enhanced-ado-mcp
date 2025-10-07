@@ -1,0 +1,43 @@
+{
+  "success": false,
+  "data": {
+    "query": "SELECT TOP 1000 [System.Id], [System.Title], [System.State], [System.ChangedDate]\nFROM WorkItems\nWHERE [System.State] IN ('Closed', 'Completed')\nAND [System.ChangedDate] >= @Today-30\nORDER BY [System.ChangedDate] DESC",
+    "isValidated": false,
+    "iterationCount": 3,
+    "iterations": [
+      {
+        "attempt": 1,
+        "query": "SELECT [System.Id], [System.Title], [System.State], [System.ChangedDate]\nFROM WorkItems\nWHERE [System.State] IN ('Closed', 'Completed')\nAND [System.ChangedDate] >= @Today-30\nORDER BY [System.ChangedDate] DESC",
+        "error": "WIQL syntax error: Failed to execute WIQL query: VS402337: The number of work items returned exceeds the size limit of 20000. Change the query to return fewer items.. Check field names, brackets, and operators."
+      },
+      {
+        "attempt": 2,
+        "query": "SELECT [System.Id], [System.Title], [System.State], [System.ChangedDate]\nFROM WorkItems\nWHERE [System.State] IN ('Closed', 'Completed')\nAND [System.ChangedDate] >= @Today-30\nORDER BY [System.ChangedDate] DESC",
+        "error": "WIQL syntax error: Failed to execute WIQL query: VS402337: The number of work items returned exceeds the size limit of 20000. Change the query to return fewer items.. Check field names, brackets, and operators."
+      },
+      {
+        "attempt": 3,
+        "query": "SELECT TOP 1000 [System.Id], [System.Title], [System.State], [System.ChangedDate]\nFROM WorkItems\nWHERE [System.State] IN ('Closed', 'Completed')\nAND [System.ChangedDate] >= @Today-30\nORDER BY [System.ChangedDate] DESC",
+        "error": "Failed to execute WIQL query: TF51006: The query statement is missing a FROM clause. The error is caused by «1000»."
+      }
+    ],
+    "usage": {
+      "organization": "msazure",
+      "project": "One",
+      "description": "all work items that were completed or closed in the past 30 days"
+    },
+    "summary": "Generated WIQL query but validation failed after 3 iterations. Last error: Failed to execute WIQL query: TF51006: The query statement is missing a FROM clause. The error is caused by «1000»."
+  },
+  "metadata": {
+    "source": "ai-sampling-wiql-generator",
+    "validated": false,
+    "iterations": 3,
+    "maxIterations": 3
+  },
+  "errors": [
+    "Failed to execute WIQL query: TF51006: The query statement is missing a FROM clause. The error is caused by «1000»."
+  ],
+  "warnings": [
+    "Required 3 iterations to generate valid query"
+  ]
+}

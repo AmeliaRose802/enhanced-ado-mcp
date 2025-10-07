@@ -11,6 +11,7 @@ function getCurrentDir(): string {
   }
   
   // In production - use __dirname equivalent with import.meta.url for ES modules
+  // @ts-ignore - import.meta is only available in ES modules at runtime
   return dirname(fileURLToPath(import.meta.url));
 }
 

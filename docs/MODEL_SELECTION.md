@@ -7,7 +7,7 @@
 
 ## Overview
 
-The Enhanced ADO MCP Server's AI-powered tools now support **model selection** via VS Code's language model sampling API. By default, all intelligent tools are configured to use **faster, smaller models** (GPT-4o mini, o3-mini) for optimal performance.
+The Enhanced ADO MCP Server's AI-powered tools now support **model selection** via VS Code's language model sampling API. By default, all intelligent tools are configured to use **free models** (GPT-4o mini, GPT-4.1, GPT-4o) to avoid rate limits and ensure reliability.
 
 ## Default Model Preferences
 
@@ -16,10 +16,11 @@ All AI-powered tools now automatically request:
 ```typescript
 {
   hints: [
-    { name: 'gpt-4o-mini' },  // Primary: GPT-4o mini (fast, efficient)
-    { name: 'o3-mini' },       // Fallback: o3-mini
-    { name: 'gpt-3.5' },       // Fallback: GPT-3.5
-    { name: 'mini' }           // Generic: Any mini model
+    { name: 'gpt-4o-mini' },  // FREE: GPT-4o mini for speed (0x tokens)
+    { name: 'gpt-4.1' },       // FREE: GPT-4.1 balanced (0x tokens)
+    { name: 'gpt-4o' },        // FREE: GPT-4o general purpose (0x tokens)
+    { name: 'gpt-3.5' },       // FREE: GPT-3.5 fallback (0x tokens)
+    { name: 'mini' }           // Generic mini model fallback
   ],
   speedPriority: 0.9,          // Speed is very important
   costPriority: 0.7,           // Cost efficiency matters
@@ -29,8 +30,10 @@ All AI-powered tools now automatically request:
 
 ### Why These Defaults?
 
-- **GPT-4o mini**: Best balance of speed and capability for work item analysis
-- **o3-mini**: Alternative fast model with good performance
+- **GPT-4o mini**: Best balance of speed and capability, FREE (0x tokens)
+- **GPT-4.1**: Balanced performance, FREE (0x tokens)
+- **GPT-4o**: Strong general purpose model, FREE (0x tokens)
+- **No paid models**: Avoids rate limiting issues (o3-mini, Claude models have usage limits)
 - **Speed Priority (0.9)**: Prioritizes fast response times for interactive use
 - **Cost Priority (0.7)**: Efficient token usage for bulk operations
 - **Intelligence Priority (0.5)**: Sufficient capability for structured analysis tasks
@@ -164,7 +167,7 @@ All AI-powered tools now use model preferences:
 - Higher token usage
 
 ### After (With Model Selection)
-- Explicitly requests GPT-4o mini or o3-mini
+- Explicitly requests free models (GPT-4o mini, GPT-4.1, GPT-4o)
 - Average response time: 1-3 seconds ⚡
 - Lower token usage 💰
 - More consistent performance

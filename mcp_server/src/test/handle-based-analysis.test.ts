@@ -2,8 +2,8 @@
  * Tests for new handle-based analysis tools
  */
 
-import { handleAnalyzeByQueryHandle } from '../services/handlers/analyze-by-query-handle.handler.js';
-import { handleListQueryHandles } from '../services/handlers/list-query-handles.handler.js';
+import { handleAnalyzeByQueryHandle } from '../services/handlers/ai-powered/analyze-by-query-handle.handler.js';
+import { handleListQueryHandles } from '../services/handlers/query-handles/list-query-handles.handler.js';
 import { queryHandleService } from '../services/query-handle-service.js';
 import { analyzeByQueryHandleSchema, listQueryHandlesSchema } from '../config/schemas.js';
 

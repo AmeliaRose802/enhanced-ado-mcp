@@ -4,15 +4,15 @@
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { validateAzureCLI } from "../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../utils/response-builder.js";
-import { logger } from "../../utils/logger.js";
-import { queryHandleService } from "../query-handle-service.js";
-import { ADOHttpClient } from "../../utils/ado-http-client.js";
-import { loadConfiguration } from "../../config/config.js";
-import { SamplingClient } from "../../utils/sampling-client.js";
-import { extractJSON } from "../../utils/ai-helpers.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
+import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { loadConfiguration } from "../../../config/config.js";
+import { SamplingClient } from "../../../utils/sampling-client.js";
+import { extractJSON } from "../../../utils/ai-helpers.js";
 
 interface EstimationResult {
   workItemId: number;
@@ -45,6 +45,7 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
       sampleSize, 
       pointScale, 
       onlyUnestimated, 
+      includeCompleted, 
       dryRun, 
       organization, 
       project 
@@ -99,13 +100,13 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
         const acceptanceCriteria = (workItem.fields['Microsoft.VSTS.Common.AcceptanceCriteria'] as string) || '';
         const currentEffort = workItem.fields['Microsoft.VSTS.Scheduling.Effort'] as number | undefined;
 
-        // Skip completed items
-        if (['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        // Skip completed items (unless includeCompleted is true for historical analysis)
+        if (!includeCompleted && ['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
           results.push({
             workItemId,
             title,
             success: false,
-            skipped: `Item is in ${state} state - not estimating completed work`
+            skipped: `Item is in ${state} state - not estimating completed work (set includeCompleted=true for historical analysis)`
           });
           continue;
         }

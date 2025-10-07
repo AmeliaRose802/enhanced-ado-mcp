@@ -3,10 +3,10 @@
  * Allows inspection of query handle contents including staleness data
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { buildValidationErrorResponse } from "../../utils/response-builder.js";
-import { logger } from "../../utils/logger.js";
-import { queryHandleService } from "../query-handle-service.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
+import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
 
 /**
  * Handler for wit-select-items-from-query-handle tool

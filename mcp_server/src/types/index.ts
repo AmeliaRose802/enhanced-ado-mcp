@@ -1,6 +1,9 @@
 import type { Tool, Prompt } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
+// Re-export types from MCP SDK for convenience
+export type { Tool, Prompt };
+
 export interface ExecResult {
   stdout: string;
   stderr: string;
@@ -38,4 +41,6 @@ export interface ToolExecutionResult {
   warnings: string[];
 }
 
-export { Tool, Prompt };
+export * from './ado.js';
+export * from './mcp.js';
+export * from './work-items.js';

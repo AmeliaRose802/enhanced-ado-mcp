@@ -5,7 +5,7 @@
  * metadata about stored query handles.
  */
 
-import { handleValidateQueryHandle } from '../services/handlers/validate-query-handle.handler.js';
+import { handleValidateQueryHandle } from '../services/handlers/query-handles/validate-query-handle.handler.js';
 import { queryHandleService } from '../services/query-handle-service.js';
 import { validateQueryHandleSchema } from '../config/schemas.js';
 

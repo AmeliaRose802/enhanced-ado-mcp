@@ -2,13 +2,13 @@
  * Handler for wit-get-work-items-by-query-wiql tool
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { validateAzureCLI } from "../ado-discovery-service.js";
-import { queryWorkItemsByWiql } from "../ado-work-item-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
-import { logger } from "../../utils/logger.js";
-import { queryHandleService } from "../query-handle-service.js";
-import { handleGetWorkItemContextPackage } from "./get-work-item-context-package.handler.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
+import { handleGetWorkItemContextPackage } from "../context/get-work-item-context-package.handler.js";
 
 export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -72,8 +72,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       });
       
       const packages = await Promise.all(packagePromises);
-      fullPackages = packages.filter(p => p !== null);
-      logger.info(`Successfully fetched ${fullPackages.length} of ${result.workItems.length} context packages`);
+      fullPackages = packages.filter((p: any): p is NonNullable<typeof p> => p !== null);
+      logger.info(`Successfully fetched ${fullPackages?.length ?? 0} of ${result.workItems.length} context packages`);
     }
 
     // If returnQueryHandle is true, store results and return handle along with work items

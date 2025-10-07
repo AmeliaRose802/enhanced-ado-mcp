@@ -3,10 +3,10 @@
  * Extracts instruction links from security scan work items
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { extractSecurityInstructionLinks } from "../ado-work-item-service.js";
-import { getRequiredConfig } from "../../config/config.js";
-import { logger } from "../../utils/logger.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { extractSecurityInstructionLinks } from "../../ado-work-item-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
+import { logger } from "../../../utils/logger.js";
 
 export async function handleExtractSecurityLinks(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {

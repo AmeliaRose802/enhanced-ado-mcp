@@ -5,14 +5,14 @@
  * Useful for checking if a handle is still valid before using it in bulk operations.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import type { ADOWorkItem } from "../../types/ado.js";
-import { validateAzureCLI } from "../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
-import { logger } from "../../utils/logger.js";
-import { queryHandleService } from "../query-handle-service.js";
-import { ADOHttpClient } from "../../utils/ado-http-client.js";
-import { loadConfiguration } from "../../config/config.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ADOWorkItem } from "../../../types/ado.js";
+import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
+import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { loadConfiguration } from "../../../config/config.js";
 
 export async function handleValidateQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {

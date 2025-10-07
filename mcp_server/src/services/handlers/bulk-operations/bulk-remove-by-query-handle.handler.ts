@@ -1,18 +1,19 @@
 /**
  * Handler for wit-bulk-remove-by-query-handle tool
  * 
- * Removes (deletes) multiple work items identified by a query handle.
- * Optionally adds a comment with removal reason before deletion.
+ * Moves multiple work items to "Removed" state (does NOT permanently delete).
+ * Sets work item state to "Removed" for items identified by a query handle.
+ * Optionally adds a comment with removal reason before state change.
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { validateAzureCLI } from "../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
-import { logger } from "../../utils/logger.js";
-import { queryHandleService } from "../query-handle-service.js";
-import { ADOHttpClient } from "../../utils/ado-http-client.js";
-import { loadConfiguration } from "../../config/config.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
+import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { loadConfiguration } from "../../../config/config.js";
 
 export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -71,7 +72,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           work_item_ids: selectedWorkItemIds,
           remove_reason: removeReason,
           preview_items: previewItems,
-          summary: `DRY RUN: Would remove ${selectedCount} of ${totalItems} work item(s)${removeReason ? ' with reason comment' : ''}`
+          summary: `DRY RUN: Would move ${selectedCount} of ${totalItems} work item(s) to "Removed" state${removeReason ? ' with reason comment' : ''}`
         },
         metadata: { 
           source: "bulk-remove-by-query-handle",
@@ -81,7 +82,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           itemSelector
         },
         errors: [],
-        warnings: ['⚠️ DESTRUCTIVE OPERATION: Work items will be permanently deleted']
+        warnings: ['⚠️ State Change: Work items will be moved to "Removed" state (not permanently deleted)']
       };
     }
 
@@ -111,12 +112,18 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           }
         }
 
-        // Delete the work item
-        const deleteUrl = `wit/workItems/${workItemId}?api-version=7.1`;
-        await httpClient.delete(deleteUrl);
+        // Update the work item state to "Removed" instead of deleting
+        const updateUrl = `wit/workItems/${workItemId}?api-version=7.1`;
+        await httpClient.patch(updateUrl, [
+          {
+            op: "add",
+            path: "/fields/System.State",
+            value: "Removed"
+          }
+        ]);
 
         results.push({ workItemId, success: true, commentAdded });
-        logger.debug(`Removed work item ${workItemId}`);
+        logger.debug(`Set work item ${workItemId} to Removed state`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         results.push({ workItemId, success: false, error: errorMsg });
@@ -139,7 +146,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
         failed: failureCount,
         comments_added: removeReason ? commentsAdded : undefined,
         results,
-        summary: `Successfully removed ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}${removeReason && commentsAdded > 0 ? ` with reason comments on ${commentsAdded} items` : ''}`
+        summary: `Successfully moved ${successCount} of ${selectedCount} selected work items to "Removed" state${failureCount > 0 ? ` (${failureCount} failed)` : ''}${removeReason && commentsAdded > 0 ? ` with reason comments on ${commentsAdded} items` : ''}`
       },
       metadata: {
         source: "bulk-remove-by-query-handle",
@@ -152,7 +159,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
       errors: failureCount > 0 
         ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
         : [],
-      warnings: ['⚠️ DESTRUCTIVE OPERATION COMPLETED: Work items have been permanently deleted']
+      warnings: ['✅ State Change Complete: Work items have been moved to "Removed" state (not permanently deleted)']
     };
   } catch (error) {
     logger.error('Bulk remove by query handle error:', error);

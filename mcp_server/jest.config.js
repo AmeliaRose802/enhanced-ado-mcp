@@ -14,12 +14,7 @@ export default {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        tsconfig: {
-          module: 'commonjs',
-          target: 'ES2022',
-          moduleResolution: 'node',
-          esModuleInterop: true
-        }
+        tsconfig: 'tsconfig.test.json'
       }
     ]
   },
@@ -46,7 +41,9 @@ export default {
     'sampling-feature.test.ts',
     'hierarchy-validator-integration.test.ts',
     'ai-assignment-integration.test.ts',
-    'ai-assignment-analyzer.test.ts'
+    'ai-assignment-analyzer.test.ts',
+    'wiql-full-packages.test.ts',
+    'wiql-missing-fields-filter.test.ts'
   ],
   
   // Coverage configuration

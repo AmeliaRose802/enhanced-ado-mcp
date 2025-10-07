@@ -47,14 +47,16 @@ export function checkSamplingSupport(server: any): boolean {
 }
 
 /**
- * Get default model preferences optimized for speed with mini models
+ * Get default model preferences optimized for speed with FREE models only
+ * These models have 0x token cost and no rate limits
  */
 export function getDefaultModelPreferences(): ModelPreferences {
   return {
     hints: [
-      { name: 'gpt-4o-mini' },      // Prefer GPT-4o mini for speed
-      { name: 'o3-mini' },           // Fallback to o3-mini
-      { name: 'gpt-3.5' },           // Fallback to GPT-3.5
+      { name: 'gpt-4o-mini' },      // FREE: GPT-4o mini for speed (0x tokens)
+      { name: 'gpt-4.1' },           // FREE: GPT-4.1 balanced (0x tokens)
+      { name: 'gpt-4o' },            // FREE: GPT-4o general purpose (0x tokens)
+      { name: 'gpt-3.5' },           // FREE: GPT-3.5 fallback (0x tokens)
       { name: 'mini' }               // Generic mini model fallback
     ],
     speedPriority: 0.9,              // Speed is very important

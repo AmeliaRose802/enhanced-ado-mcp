@@ -13,6 +13,16 @@ arguments:
 
 **Version:** Enhanced with two-pass query strategy and comprehensive staleness analysis
 
+## 📌 Quick Reference
+
+**Primary Use Cases:**
+- 🧹 **Dead Item Removal** → [Workflow 1: Two-Pass Strategy](#workflow-1-find-and-remove-dead-items-two-pass-strategy)
+- 📊 **Quality Analysis** → [Comprehensive Quality Analysis](#recommended-starting-workflow-comprehensive-quality-analysis)
+- 🤖 **AI Enhancement** → [AI-Powered Tools](#-ai-powered-enhancement-tools)
+- 🎯 **Targeted Fixes** → [Complete Workflow Templates](#-complete-workflow-templates)
+
+**Key Capabilities:** Dead item detection • Description enhancement • Story point estimation • Acceptance criteria generation • Metadata validation • Staleness analysis
+
 ## 🎯 Purpose
 
 Perform comprehensive backlog hygiene analysis to identify and remediate quality issues across Azure DevOps work items using both manual and AI-powered tools.
@@ -28,30 +38,35 @@ Perform comprehensive backlog hygiene analysis to identify and remediate quality
 
 ## 🚨 Critical Guardrails
 
-- **ANTI-HALLUCINATION: NEVER manually specify work item IDs.** Always use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true` to get a handle, then pass the handle to bulk operations. Manual IDs lead to operations on wrong items.
-- **REQUIRED PATTERN:** Query → Handle → Bulk Operation (never Query → Manual IDs → Bulk Operation)
-- **CRITICAL: Only analyze ACTIVE work items.** Completely ignore and filter out work items already in Done, Completed, Closed, Resolved, or Removed states. These are already "dead" in the system and should never appear in the analysis.
-- **EXCLUSIVE FOCUS: Tasks, Product Backlog Items (PBIs), and Bugs ONLY.** These are the actionable work items that represent actual development work. **Always exclude Features, Epics, and other planning items** from all queries and analysis. Use `[System.WorkItemType] IN ('Task', 'Product Backlog Item', 'Bug')` in every WIQL query.
-- When evaluating staleness, filter out automated updates (iteration/area path sweeps, system accounts, mass transitions).
-- Pull revision history via `includeSubstantiveChange: true` to get server-side filtered staleness data (`daysInactive`, `lastSubstantiveChangeDate`).
-- Never recommend removing items that are already in terminal states (Done, Completed, Closed, Resolved, Removed).
+### 1. Anti-Hallucination Pattern (MANDATORY)
+**NEVER manually specify work item IDs.** Always use the safe pattern:
+```
+Query → Handle → Bulk Operation
+```
+Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`, then pass the handle to bulk operations.
+
+### 2. Work Item Scope (MANDATORY FILTERS)
+**Only analyze actionable development work:**
+- ✅ **Include:** Tasks, Product Backlog Items (PBIs), Bugs
+- ❌ **Exclude:** Features, Epics, planning items
+- ❌ **Exclude:** Terminal states (Done, Completed, Closed, Resolved, Removed)
+
+**Required WIQL clause:**
+```sql
+[System.WorkItemType] IN ('Task', 'Product Backlog Item', 'Bug')
+AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')
+```
+
+### 3. Staleness Analysis (BEST PRACTICE)
+- Use `includeSubstantiveChange: true` for server-side filtered staleness data
+- `daysInactive` field automatically excludes automated updates (iteration sweeps, system changes)
+- Apply `filterByDaysInactiveMin` for server-side filtering when possible
 
 ### What This Prompt Detects
 
 | Issue Type | Description | Impact |
 |------------|-------------|--------|
 | 💀 **Dead Items** | Inactive >{{stalenessThresholdDays}} days with no substantive changes | Clutters backlog, obscures real work |
-
-### Dead Item Signals (flag if any apply)
-1. Last substantive change (from `daysInactive` field) is older than {{stalenessThresholdDays}} days.
-2. Passive state (New, Proposed, Backlog, To Do) and age greater than {{stalenessThresholdDays}} / 2.
-3. Description missing or shorter than 20 characters.
-4. Unassigned, or assigned but idle longer than {{stalenessThresholdDays}} days.
-5. Title is a placeholder ("TBD", "foo", "test", "spike").
-
-**Note:** The `daysInactive` field is computed server-side by analyzing revision history and already excludes automated changes (iteration/area path sweeps, system accounts). This is the TRUE measure of staleness.
-
-| Issue Type | Description | Impact |
 | 📝 **Poor Descriptions** | Missing, vague, or insufficient content | Team confusion, poor handoffs |
 | 🏷️ **Bad Titles** | Generic, unclear, or non-descriptive | Hard to search, identify, prioritize |
 | 🔍 **Missing Metadata** | Unassigned, no priority, missing area/iteration | Cannot plan or track effectively |
@@ -59,6 +74,17 @@ Perform comprehensive backlog hygiene analysis to identify and remediate quality
 | 🏗️ **Orphaned Items** | Missing parent links in hierarchies | Lost context, unclear scope |
 | 🔄 **State Issues** | Stuck in limbo states, blocked without reason | Work stalls, unclear status |
 | 📊 **Planning Gaps** | Missing acceptance criteria, tags, planning fields | Cannot validate completion |
+
+### Dead Item Detection Criteria
+
+**Primary Signal:** `daysInactive > {{stalenessThresholdDays}}`  
+*(Server-computed, excludes automated updates)*
+
+**Additional Risk Factors:**
+- Passive state (New, Proposed, Backlog, To Do) + age > {{stalenessThresholdDays}}/2
+- Description missing or < 20 characters
+- Unassigned or assigned but idle > {{stalenessThresholdDays}} days
+- Placeholder title ("TBD", "foo", "test", "spike")
 
 ### Core Technical Pattern
 
@@ -109,7 +135,75 @@ itemSelector: {
 itemSelector: "all"
 ```
 
-## 🔍 Analysis Workflows
+## � Available Template Variables
+
+### Prompt Arguments
+- `{{stalenessThresholdDays}}` - Days threshold for staleness detection (default: 180)
+
+### Configuration Variables
+- `{{area_path}}` - Full escaped area path for WIQL queries (e.g., `'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway'`)
+  - **Usage in WIQL:** `[System.AreaPath] UNDER '{{area_path}}'`
+  - **Note:** Backslashes must be escaped as `\\` in WIQL queries
+- `{{area_path_simple_substring}}` - Simple substring for OData contains() queries (e.g., `Azure Host Gateway`)
+  - **Usage in OData:** `$filter=contains(Area/AreaPath, '{{area_path_simple_substring}}')`
+  - **Note:** No backslash escaping needed, use the last segment or meaningful substring
+- `{{project}}` - Project name (e.g., `One`)
+- `{{organization}}` - Organization name (e.g., `msazure`)
+
+### Bulk Operation Variables
+*Available in query handles with staleness context for comments and updates:*
+
+- `{id}` - Work item ID
+- `{title}` - Work item title
+- `{type}` - Work item type (Task, Product Backlog Item, Bug)
+- `{state}` - Current state
+- `{assignedTo}` - Assigned user (display name)
+- `{daysInactive}` - Days since last substantive change
+- `{lastSubstantiveChangeDate}` - Date of last substantive change (ISO 8601)
+- `{url}` - Direct link to work item
+
+**Example:**
+```json
+{
+  "comment": "Item {id}: '{title}' inactive for {daysInactive} days (last change: {lastSubstantiveChangeDate})"
+}
+```
+
+## �🔍 Analysis Workflows
+
+## 📊 Available Template Variables
+
+### Prompt Arguments
+- `{{stalenessThresholdDays}}` - Days threshold for staleness detection (default: 180)
+
+### Configuration Variables
+- `{{area_path}}` - Full escaped area path for WIQL queries (e.g., `'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway'`)
+  - **Usage in WIQL:** `[System.AreaPath] UNDER '{{area_path}}'`
+  - **Note:** Backslashes must be escaped as `\\` in WIQL queries
+- `{{area_path_simple_substring}}` - Simple substring for OData contains() queries (e.g., `Azure Host Gateway`)
+  - **Usage in OData:** `$filter=contains(Area/AreaPath, '{{area_path_simple_substring}}')`
+  - **Note:** No backslash escaping needed, use the last segment or meaningful substring
+- `{{project}}` - Project name (e.g., `One`)
+- `{{organization}}` - Organization name (e.g., `msazure`)
+
+### Bulk Operation Variables
+*Available in query handles with staleness context for comments and updates:*
+
+- `{id}` - Work item ID
+- `{title}` - Work item title
+- `{type}` - Work item type (Task, Product Backlog Item, Bug)
+- `{state}` - Current state
+- `{assignedTo}` - Assigned user (display name)
+- `{daysInactive}` - Days since last substantive change
+- `{lastSubstantiveChangeDate}` - Date of last substantive change (ISO 8601)
+- `{url}` - Direct link to work item
+
+**Example:**
+```json
+{
+  "comment": "Item {id}: '{title}' inactive for {daysInactive} days (last change: {lastSubstantiveChangeDate})"
+}
+```
 
 ### Recommended Starting Workflow: Comprehensive Quality Analysis
 
@@ -275,48 +369,23 @@ Present summary to user:
 }
 ```
 
-**Error Handling & Safety:**
-- **Pre-removal validation:** Before any removal action, verify the item's current state is NOT already in ['Done', 'Completed', 'Closed', 'Resolved', 'Removed']. Skip items already in terminal states.
-- If `Removed` is invalid, attempt `Closed` or surface valid states.
-- If comment creation fails, proceed with the state change but warn that the audit trail is incomplete.
-- Always log actions for traceability.
-- Do not remove items in active working states (In Progress, Active with recent updates) or touched within the last 30 days without additional confirmation.
-- Validate state transitions are allowed by the work item type's workflow before attempting updates.
+**Error Handling & Safety Checks:**
+
+1. **Pre-removal validation:** Verify item state is NOT in terminal states (Done, Completed, Closed, Resolved, Removed)
+2. **State transition fallback:** If `Removed` is invalid, attempt `Closed` or query valid transitions
+3. **Audit trail:** If comment creation fails, proceed with state change but warn user
+4. **Recent activity protection:** Never remove items touched within last 30 days without explicit confirmation
+5. **Workflow validation:** Check allowed state transitions for work item type before updating
+6. **Action logging:** Always log operations for traceability
 
 ### Other Common Workflows
 
-All follow the pattern: **Query → Analyze → Remediate**
+**Pattern:** Query → Analyze → Remediate
 
-**Available Tools:**
-
-**Discovery & Analysis**
-- `wit-query-analytics-odata` - ⭐ PREFERRED for getting counts and distributions of stale items
-- `wit-get-work-items-by-query-wiql` - Query for candidate IDs **with optional substantive change analysis** ⭐ NEW
-  - ⚠️ **Pagination:** Returns first 200 items by default. For large backlogs (>200 items), use `skip` and `top` parameters to paginate
-- `wit-inspect-query-handle` - ⭐ **NEW** Inspect query handle contents, verify staleness data, see template variables
-- `wit-get-work-items-context-batch` - ⚠️ Batch details (max 25-30 items per call)
-- `wit-get-work-item-context-package` - ⚠️ Single item deep dive (large payload)
-- `wit-get-last-substantive-change` - Single item activity check (usually not needed if using WIQL enhancement)
-
-**Cleanup Actions** ⭐ **ENHANCED QUERY HANDLE APPROACH**
-- `wit-bulk-comment-by-query-handle` - Add comments with template variables
-- `wit-bulk-update-by-query-handle` - Update multiple work items safely using handles
-- `wit-bulk-assign-by-query-handle` - Assign multiple work items safely using handles
-- `wit-bulk-remove-by-query-handle` - Remove multiple work items safely using handles
-
-**AI-Powered Enhancement Tools**
-- `wit-bulk-enhance-descriptions-by-query-handle` - Generate improved descriptions
-- `wit-bulk-assign-story-points-by-query-handle` - AI-powered effort estimation
-- `wit-bulk-add-acceptance-criteria-by-query-handle` - Generate testable acceptance criteria
-
-| Workflow | Query Target | Key Checks | Remediation |
-|----------|-------------|------------|-------------|
-| **Poor Descriptions** | Active items with Description field | Empty, <20 chars, "TBD"/"TODO" | AI-enhance or tag for review |
-| **Poor Titles** | All active items | Generic, <15 or >120 chars, no verb | AI-enhance or manual fix |
-| **Missing Metadata** | Items with metadata fields | Unassigned, no priority/iteration/points | Tag and assign for completion |
-| **Blocked/Stuck Items** | Active or "Blocked" tagged | Stale >30 days, no blocker details | Request details or reassign |
-| **Missing Story Points** | PBIs/Stories without estimates | No effort value | AI-estimate with reasoning |
-| **Comprehensive Health** | Entire active backlog | Score across all dimensions | Prioritized action plan |
+**Key Tools:**
+- **Discovery:** `wit-query-analytics-odata`, `wit-get-work-items-by-query-wiql` (with `returnQueryHandle: true`), `wit-inspect-query-handle`
+- **Bulk Actions:** `wit-bulk-comment-by-query-handle`, `wit-bulk-update-by-query-handle`, `wit-bulk-assign-by-query-handle`, `wit-bulk-remove-by-query-handle`
+- **AI Enhancement:** `wit-bulk-enhance-descriptions-by-query-handle`, `wit-bulk-assign-story-points-by-query-handle`, `wit-bulk-add-acceptance-criteria-by-query-handle`
 
 ## 🎯 Quality Scoring Rubrics
 
@@ -555,22 +624,7 @@ Generate testable acceptance criteria for stories and features.
 
 ## ✅ Pre-Execution Validation
 
-Before executing bulk operations:
-
-**Data Validation:**
-- [ ] Query returned expected item count
-- [ ] Work items array reviewed and accurate
-- [ ] Staleness data confirms items are truly inactive
-
-**Approval & Safety:**
-- [ ] Stakeholder approved the operation
-- [ ] Dry-run executed successfully
-- [ ] Query handle is fresh (<1 hour old)
-
-**Documentation:**
-- [ ] Audit comments added for state changes
-- [ ] Issues documented and reported to owners
-- [ ] Bulk changes >10 items reviewed with team
+**Before bulk operations:** Verify query results • Get stakeholder approval • Run dry-run • Ensure handle is fresh (<1hr) • Add audit comments • Review with team if >10 items
 
 ### Query Pattern: Single Call with Optional Filtering
 
@@ -605,64 +659,19 @@ Before executing bulk operations:
 
 ### Essential Workflow Steps
 
-**1. Review Before Acting**
-
-After querying, analyze the returned `work_items` array:
-- Check total count matches expectations
-- Review sample of item IDs and titles
-- Verify staleness data (if applicable)
-- Present summary to user and get approval
-
-**2. Always Use Dry-Run First**
-```json
-{"queryHandle": "qh_...", "dryRun": true}
-```
-
-**3. Add Audit Trail**
-```json
-{"queryHandle": "qh_...", "comment": "Reason: ...", "dryRun": false}
-```
-
-**4. Handle Expiration**
-
-Query handles expire after 1 hour. If you encounter an expiration error:
-- Re-run the same WIQL query with `returnQueryHandle: true`
-- The handle will be regenerated with current data
-- Resume bulk operations with the new handle
-
-**5. Quality Standards**
-
-Establish team agreements:
-- User Stories require acceptance criteria
-- Titles: 25-80 chars with action verbs
-- Descriptions explain "what", "why", "how"
-- Active items have assigned owners
-- Child items link to parents
-- Stories/PBIs have effort estimates
+1. **Review** - Analyze `work_items` array, verify counts, present summary, get approval
+2. **Dry-Run** - Always test first: `{"queryHandle": "qh_...", "dryRun": true}`
+3. **Audit Trail** - Add comments: `{"queryHandle": "qh_...", "comment": "Reason: ..."}`
+4. **Handle Expiration** - Handles expire after 1hr; re-run query to regenerate
+5. **Quality Standards** - Stories need criteria • Titles 25-80 chars • Descriptions explain what/why/how • Active items assigned • PBIs estimated
 
 ## 🎯 Key Takeaways
 
-### Technical Patterns
-1. **Single Query Pattern** - `returnQueryHandle: true` returns BOTH handle AND full data
-2. **Staleness Analysis** - Use `filterByDaysInactiveMin` for server-side filtering
-3. **Handle Lifecycle** - Handles expire after 1 hour; re-query if needed
-4. **Dry-Run First** - Always preview before executing bulk operations
+**Technical:** Single query returns handle+data • Use `filterByDaysInactiveMin` • Handles expire in 1hr • Always dry-run first
 
-### Quality Analysis
-5. **Multi-Dimensional Assessment** - Evaluate content, metadata, freshness, hierarchy
-6. **Scoring Rubrics** - Use objective criteria to prioritize improvements
-7. **Comprehensive Coverage** - Check dead items + quality + completeness + clarity
+**Quality:** Multi-dimensional assessment (content, metadata, freshness, hierarchy) • Use scoring rubrics • Comprehensive coverage
 
-### Process & Governance
-8. **Analysis Before Action** - Understand problem space before making changes
-9. **Audit Trail** - Comment before destructive operations
-10. **Team Ownership** - Get stakeholder approval for bulk operations
-11. **Continuous Improvement** - Regular health checks prevent technical debt
-
-### Impact Focus
-12. **Story Point Priority** - Missing estimates block sprint planning and velocity tracking
-13. **Quality Over Quantity** - Well-documented items > numerous vague ones
-14. **Enable Self-Service** - Tag for owner action rather than centralized fixes
+**Process:** Analyze before action • Add audit trail • Get team approval for bulk ops • Enable self-service via tags
 
 ## 📊 Recommended Cadence
 
@@ -689,12 +698,15 @@ Establish team agreements:
 - `{{stalenessThresholdDays}}` - Days threshold for staleness detection (default: 180)
 
 **Configuration Variables:**
-- `{{area_path}}` - Full escaped area path for WIQL queries (e.g., `'Project\\Team\\Component'`)
-- `{{area_path_simple_substring}}` - Simple substring for OData contains() queries without backslashes (e.g., `Component`)
-  - Extracted from: `One\Azure Compute\OneFleet Node\Azure Host` → `Azure Host`
-  - Use in OData: `$apply=filter(contains(Area/AreaPath, '{{area_path_simple_substring}}'))`
-- `{{project}}` - Project name
-- `{{organization}}` - Organization name
+- `{{area_path}}` - Full escaped area path for WIQL queries (e.g., `'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway'`)
+  - **Usage in WIQL:** `[System.AreaPath] UNDER '{{area_path}}'`
+  - **Note:** Backslashes must be escaped as `\\` in WIQL queries
+- `{{area_path_simple_substring}}` - Simple substring for OData contains() queries (e.g., `Azure Host Gateway`)
+  - **Usage in OData:** `$filter=contains(Area/AreaPath, '{{area_path_simple_substring}}')`
+  - **Example extraction:** `One\Azure Compute\OneFleet Node\Azure Host Agent\Azure Host Gateway` → `Azure Host Gateway`
+  - **Note:** No backslash escaping needed, use the last segment or meaningful substring
+- `{{project}}` - Project name (e.g., `One`)
+- `{{organization}}` - Organization name (e.g., `msazure`)
 
 **Bulk Operation Template Variables** (available in query handles with staleness context):
 - `{daysInactive}` - Days since last substantive change
@@ -888,57 +900,37 @@ Establish team agreements:
 ## 🎓 Best Practices for Quality Analysis
 
 ### 1. Start with Comprehensive Analysis and Categorized Listings
-**Approach:**
-1. Run comprehensive query for all active actionable work items (Tasks, PBIs, Bugs)
+
+**Always follow this pattern:**
+1. Run comprehensive query for all actionable work items (Tasks, PBIs, Bugs only)
 2. Categorize items by issue type (dead, poor descriptions, missing metadata, etc.)
 3. Present detailed listings with ALL items in each category
-4. Enable targeted remediation commands like:
-   - "Enhance descriptions for all items in Poor/Missing Descriptions"
-   - "Estimate story points for active PBIs in Missing Story Points"
-   - "Remove all dead Tasks"
-   - "Add acceptance criteria to PBIs with missing criteria"
+4. Enable targeted remediation commands
 
-**Never:** Jump directly to bulk operations without showing user the complete item list for each category.
+**❌ Never:** Jump directly to bulk operations without showing complete categorized listings.
 
 ### 2. Use Category-Based Remediation Commands
-The report format provides named categories that users can reference:
-- **"Dead Items"** - For removal or commenting
-- **"Poor/Missing Descriptions"** - For AI enhancement
-- **"Poor/Generic Titles"** - For title improvements
-- **"Missing Story Points/Estimates"** - For AI estimation
-- **"Missing Critical Metadata"** - For assignment/tagging
-- **"Missing Acceptance Criteria"** - For criteria generation
 
-Users can filter within categories:
-- "...for Tasks" or "...for PBIs" or "...for Bugs"
-- "...for active items" or "...for unassigned items"
-- "...for items assigned to [person]"
+**Standard category names for user commands:**
+- `Dead Items` - For removal or commenting
+- `Poor/Missing Descriptions` - For AI enhancement
+- `Poor/Generic Titles` - For title improvements
+- `Missing Story Points/Estimates` - For AI estimation
+- `Missing Critical Metadata` - For assignment/tagging
+- `Missing Acceptance Criteria` - For criteria generation
 
-### 2. Use Progressive Disclosure
-- **First Pass:** High-level metrics (counts, percentages)
-- **Second Pass:** Detailed breakdown by category
-- **Third Pass:** Specific items requiring action
-- **Final Step:** Remediation plan with priorities
+**Filtering within categories:**
+- By type: "...for Tasks" | "...for PBIs" | "...for Bugs"
+- By state: "...for active items" | "...for unassigned items"
+- By owner: "...for items assigned to [person]"
 
-### 3. Combine Multiple Quality Dimensions
-Don't analyze in isolation - combine:
-- Staleness (daysInactive)
-- Content quality (description, title)
-- Metadata completeness (assignee, priority, story points)
-- Hierarchy (parent links, work item type)
+### 3. Apply Best Practices
 
-### 4. Provide Context, Not Just Data
-For each issue found:
-- **What:** The specific problem
-- **Why:** Business impact or risk
-- **How:** Suggested remediation
-- **Who:** Responsible party
-- **When:** Recommended timeline
+**Progressive Disclosure:** Metrics → Category breakdown → Specific items → Remediation plan
 
-### 5. Enable Self-Service
-Tag items for owner action rather than making all changes centrally:
-- Add "NeedsReview" tags
-- Post templated comments with clear actions
-- Set reasonable deadlines
-- Follow up on non-compliance
+**Multi-Dimensional:** Combine staleness + content quality + metadata + hierarchy
+
+**Provide Context:** What (problem) • Why (impact) • How (fix) • Who (owner) • When (timeline)
+
+**Enable Self-Service:** Tag for owner action • Use templated comments • Set deadlines • Follow up
 

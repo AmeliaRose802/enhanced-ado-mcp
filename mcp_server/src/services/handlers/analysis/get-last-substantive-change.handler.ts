@@ -6,10 +6,10 @@
  * Returns minimal data to avoid context window bloat.
  */
 
-import { logger } from '../../utils/logger.js';
-import { createADOHttpClient } from '../../utils/ado-http-client.js';
-import { loadConfiguration } from '../../config/config.js';
-import type { ADOWorkItem, ADOApiResponse, ADOWorkItemRevision } from '../../types/ado.js';
+import { logger } from '../../../utils/logger.js';
+import { createADOHttpClient } from '../../../utils/ado-http-client.js';
+import { loadConfiguration } from '../../../config/config.js';
+import type { ADOWorkItem, ADOApiResponse, ADOWorkItemRevision } from '../../../types/ado.js';
 
 interface WorkItemRevision {
   id?: number;

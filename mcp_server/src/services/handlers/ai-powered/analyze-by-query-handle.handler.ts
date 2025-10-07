@@ -5,13 +5,13 @@
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../types/index.js";
-import { validateAzureCLI } from "../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../utils/response-builder.js";
-import { logger } from "../../utils/logger.js";
-import { queryHandleService } from "../query-handle-service.js";
-import { ADOHttpClient } from "../../utils/ado-http-client.js";
-import { loadConfiguration } from "../../config/config.js";
+import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
+import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { loadConfiguration } from "../../../config/config.js";
 
 export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {

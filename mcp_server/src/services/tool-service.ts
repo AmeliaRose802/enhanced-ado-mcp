@@ -4,28 +4,44 @@ import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
 import { logger } from "../utils/logger.js";
 import { checkSamplingSupport } from "../utils/sampling-client.js";
 import { SamplingService } from "./sampling-service.js";
-import { handleGetConfiguration } from "./handlers/get-configuration.handler.js";
-import { handleCreateNewItem } from "./handlers/create-new-item.handler.js";
-import { handleWiqlQuery } from "./handlers/wiql-query.handler.js";
-import { handleODataAnalytics } from "./handlers/odata-analytics.handler.js";
-import { handleGetWorkItemContextPackage } from './handlers/get-work-item-context-package.handler.js';
-import { handleGetWorkItemsContextBatch } from './handlers/get-work-items-context-batch.handler.js';
-import { handleAssignToCopilot } from './handlers/assign-to-copilot.handler.js';
-import { handleNewCopilotItem } from './handlers/new-copilot-item.handler.js';
-import { handleExtractSecurityLinks } from './handlers/extract-security-links.handler.js';
-import { handleDetectPatterns } from './handlers/detect-patterns.handler.js';
-import { handleValidateHierarchy } from './handlers/validate-hierarchy.handler.js';
-import { handleBulkCommentByQueryHandle } from './handlers/bulk-comment-by-query-handle.handler.js';
-import { handleBulkUpdateByQueryHandle } from './handlers/bulk-update-by-query-handle.handler.js';
-import { handleBulkAssignByQueryHandle } from './handlers/bulk-assign-by-query-handle.handler.js';
-import { handleBulkRemoveByQueryHandle } from './handlers/bulk-remove-by-query-handle.handler.js';
-import { handleValidateQueryHandle } from './handlers/validate-query-handle.handler.js';
-import { handleAnalyzeByQueryHandle } from './handlers/analyze-by-query-handle.handler.js';
-import { handleListQueryHandles } from './handlers/list-query-handles.handler.js';
-import { handleInspectQueryHandle, handleSelectItemsFromQueryHandle } from './handlers/inspect-query-handle.handler.js';
-import { handleBulkEnhanceDescriptions } from './handlers/bulk-enhance-descriptions.handler.js';
-import { handleBulkAssignStoryPoints } from './handlers/bulk-assign-story-points.handler.js';
-import { handleBulkAddAcceptanceCriteria } from './handlers/bulk-add-acceptance-criteria.handler.js';
+// Core handlers
+import { handleGetConfiguration } from "./handlers/core/get-configuration.handler.js";
+import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
+import { handleGetWorkItemsContextBatch } from './handlers/core/get-work-items-context-batch.handler.js';
+
+// Query handlers
+import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
+import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
+import { handleGenerateWiqlQuery } from './handlers/query/generate-wiql-query.handler.js';
+
+// Query handle handlers
+import { handleValidateQueryHandle } from './handlers/query-handles/validate-query-handle.handler.js';
+import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
+import { handleInspectQueryHandle, handleSelectItemsFromQueryHandle } from './handlers/query-handles/inspect-query-handle.handler.js';
+
+// Bulk operation handlers
+import { handleBulkCommentByQueryHandle } from './handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
+import { handleBulkUpdateByQueryHandle } from './handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
+import { handleBulkAssignByQueryHandle } from './handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
+import { handleBulkRemoveByQueryHandle } from './handlers/bulk-operations/bulk-remove-by-query-handle.handler.js';
+
+// AI-powered handlers
+import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
+import { handleBulkEnhanceDescriptions } from './handlers/ai-powered/bulk-enhance-descriptions.handler.js';
+import { handleBulkAssignStoryPoints } from './handlers/ai-powered/bulk-assign-story-points.handler.js';
+import { handleBulkAddAcceptanceCriteria } from './handlers/ai-powered/bulk-add-acceptance-criteria.handler.js';
+
+// Analysis handlers
+import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
+import { handleDetectPatterns } from './handlers/analysis/detect-patterns.handler.js';
+import { handleValidateHierarchy } from './handlers/analysis/validate-hierarchy.handler.js';
+
+// Integration handlers
+import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
+import { handleNewCopilotItem } from './handlers/integration/new-copilot-item.handler.js';
+
+// Context handlers
+import { handleGetWorkItemContextPackage } from './handlers/context/get-work-item-context-package.handler.js';
 
 // Global server instance for sampling service
 let serverInstance: MCPServer | null = null;
@@ -112,7 +128,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   // Get last substantive change for a work item
   if (name === 'wit-get-last-substantive-change') {
-    const { getLastSubstantiveChange } = await import('./handlers/get-last-substantive-change.handler.js');
+    const { getLastSubstantiveChange } = await import('./handlers/analysis/get-last-substantive-change.handler.js');
     const result = await getLastSubstantiveChange(args as Parameters<typeof getLastSubstantiveChange>[0]);
     return { 
       success: true, 
@@ -205,6 +221,14 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkAddAcceptanceCriteria(config, args, serverInstance);
+  }
+
+  // AI-powered WIQL query generator
+  if (name === 'wit-generate-wiql-query') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleGenerateWiqlQuery(config, args, serverInstance);
   }
 
   // All tools should be handled by the cases above

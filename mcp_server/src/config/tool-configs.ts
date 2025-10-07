@@ -25,7 +25,8 @@ import {
   listQueryHandlesSchema,
   bulkEnhanceDescriptionsByQueryHandleSchema,
   bulkAssignStoryPointsByQueryHandleSchema,
-  bulkAddAcceptanceCriteriaByQueryHandleSchema
+  bulkAddAcceptanceCriteriaByQueryHandleSchema,
+  generateWiqlQuerySchema
 } from "./schemas.js";
 import { z } from 'zod';
 
@@ -401,14 +402,14 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-bulk-remove-by-query-handle",
-    description: "Remove (delete) multiple work items identified by a query handle. Optionally add a comment with removal reason before deletion. Supports dry-run mode.",
+    description: "Move multiple work items to 'Removed' state (does NOT permanently delete). Sets work item state to 'Removed' for items identified by a query handle. Optionally add a comment with removal reason. Supports dry-run mode.",
     script: "", // Handled internally
     schema: bulkRemoveByQueryHandleSchema,
     inputSchema: {
       type: "object",
       properties: {
         queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
-        removeReason: { type: "string", description: "Optional reason for removing work items (added as comment before removal)" },
+        removeReason: { type: "string", description: "Optional reason for removing work items (added as comment before state change)" },
         dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
@@ -592,6 +593,7 @@ export const toolConfigs: ToolConfig[] = [
           description: "Story point scale: fibonacci (1,2,3,5,8,13), linear (1-10), t-shirt (XS,S,M,L,XL)" 
         },
         onlyUnestimated: { type: "boolean", description: "Only estimate items without existing effort (default true)" },
+        includeCompleted: { type: "boolean", description: "Include completed/done items for historical analysis (default false)" },
         dryRun: { type: "boolean", description: "Preview without updating (default true)" }
       },
       required: ["queryHandle"]
@@ -637,6 +639,24 @@ export const toolConfigs: ToolConfig[] = [
       },
       required: ["queryHandle"]
     }
+  },
+  {
+    name: "wit-generate-wiql-query",
+    description: "🤖 AI-POWERED: Generate valid WIQL queries from natural language descriptions with iterative validation. Automatically tests and refines queries until they work correctly. Great for users unfamiliar with WIQL syntax.",
+    script: "",
+    schema: generateWiqlQuerySchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        description: { type: "string", description: "Natural language description of what you want to find (e.g., 'all active bugs created in the last week')" },
+        maxIterations: { type: "number", description: "Maximum attempts to generate valid query (1-5, default 3)" },
+        includeExamples: { type: "boolean", description: "Include example patterns in prompt (default true)" },
+        testQuery: { type: "boolean", description: "Test query by executing it (default true)" },
+        areaPath: { type: "string", description: "Optional area path context for queries" },
+        iterationPath: { type: "string", description: "Optional iteration path context for queries" }
+      },
+      required: ["description"]
+    }
   }
 ];
 
@@ -648,7 +668,8 @@ export const AI_POWERED_TOOLS = [
   'wit-ai-assignment-analyzer',
   'wit-bulk-enhance-descriptions-by-query-handle',
   'wit-bulk-assign-story-points-by-query-handle',
-  'wit-bulk-add-acceptance-criteria-by-query-handle'
+  'wit-bulk-add-acceptance-criteria-by-query-handle',
+  'wit-generate-wiql-query'
 ];
 
 /**
