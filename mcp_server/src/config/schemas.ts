@@ -565,7 +565,7 @@ export const toolDiscoverySchema = z.object({
   intent: z.string().describe("Natural language description of what you want to accomplish"),
   context: z.string().optional().describe("Additional context about your project, team, or requirements"),
   maxRecommendations: z.number().int().min(1).max(10).optional().default(3).describe("Maximum number of tool recommendations to return (default 3)"),
-  includeExamples: z.boolean().optional().default(true).describe("Include example usage for each recommended tool (default true)"),
+  includeExamples: z.boolean().optional().default(false).describe("Include detailed usage examples for each recommended tool (default false, saves ~100-300 tokens per tool)"),
   filterCategory: z.enum(['creation', 'analysis', 'bulk-operations', 'query', 'ai-powered', 'all']).optional().default('all').describe("Filter recommendations to a specific category (default 'all')")
 });
 
