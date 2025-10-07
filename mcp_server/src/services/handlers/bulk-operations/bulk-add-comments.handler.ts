@@ -129,9 +129,7 @@ export async function handleBulkAddComments(config: ToolConfig, args: unknown): 
         message: `Bulk comment addition complete. ${successCount} succeeded, ${failureCount} failed.`
       },
       metadata: { 
-        source: "bulk-add-comments",
-        successCount,
-        failureCount
+        source: "bulk-add-comments"
       },
       errors: results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`),
       warnings: []
