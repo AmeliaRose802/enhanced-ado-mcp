@@ -63,13 +63,14 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
     let lastError: string | null = null;
     let isValid = false;
     let testResults: any = null;
+    let cumulativeUsage: any = null;
 
     // Iterative generation and validation
     for (let attempt = 1; attempt <= maxIterations; attempt++) {
       logger.debug(`Generation attempt ${attempt}/${maxIterations}`);
 
       // Generate query using AI sampling
-      const generatedQuery = await generateQueryWithAI(
+      const { query: generatedQuery, usage } = await generateQueryWithAI(
         samplingClient,
         description,
         organization,
@@ -86,6 +87,18 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         query: currentQuery,
         timestamp: new Date().toISOString()
       });
+
+      // Accumulate usage information for metadata
+      if (usage) {
+        if (!cumulativeUsage) {
+          cumulativeUsage = { ...usage };
+        } else {
+          // Sum up token counts if present
+          if (usage.inputTokens) cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
+          if (usage.outputTokens) cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
+          if (usage.totalTokens) cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
+        }
+      }
 
       // Test the query if requested
       if (testQuery) {
@@ -133,7 +146,8 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       metadata: {
         source: "ai-sampling-odata-generator",
         validated: isValid,
-        iterationCount: iterations.length
+        iterationCount: iterations.length,
+        ...(cumulativeUsage && { usage: cumulativeUsage })
       },
       errors: isValid ? [] : [lastError || "Failed to generate valid query"],
       warnings: [
@@ -168,7 +182,7 @@ async function generateQueryWithAI(
   iterationPath: string | undefined,
   includeExamples: boolean,
   feedback?: { previousQuery: string | null; error: string | null }
-): Promise<string> {
+): Promise<{ query: string; usage?: any }> {
   
   // Build variables for the system prompt
   const variables: Record<string, string> = {
@@ -199,7 +213,13 @@ async function generateQueryWithAI(
     throw new Error("Failed to extract OData query from AI response");
   }
 
-  return cleanODataQuery(query);
+  // Extract usage information from aiResult if present
+  const usage = (aiResult as any).usage;
+
+  return {
+    query: cleanODataQuery(query),
+    usage
+  };
 }
 
 /**
