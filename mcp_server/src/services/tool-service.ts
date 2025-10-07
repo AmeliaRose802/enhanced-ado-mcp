@@ -60,7 +60,7 @@ export function setServerInstance(server: MCPServer | null | any): void {
  * Execute a tool by name with the given arguments
  */
 export async function executeTool(name: string, args: unknown): Promise<ToolExecutionResult> {
-  let config = toolConfigs.find(t => t.name === name);
+  const config = toolConfigs.find(t => t.name === name);
   
   if (!config) {
     throw new Error(`Unknown tool: ${name}`);

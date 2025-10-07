@@ -137,7 +137,7 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
     const frontmatterLines = lines.slice(1, frontmatterEnd);
     const frontmatter: PromptFrontmatter = {};
     let inArguments = false;
-    let argumentsObject: Record<string, PromptArgument> = {};
+    const argumentsObject: Record<string, PromptArgument> = {};
     
     for (const line of frontmatterLines) {
       const trimmed = line.trim();
@@ -301,7 +301,7 @@ export async function getPromptContent(name: string, args: Record<string, unknow
       const parsed = await parsePromptFile(filePath);
       
       if (parsed && parsed.name === name) {
-        let content = parsed.content;
+        const content = parsed.content;
         
         // Import config after prompt is found to avoid circular dependencies
         const { loadConfiguration } = await import('../config/config.js');
