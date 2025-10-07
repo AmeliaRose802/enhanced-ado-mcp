@@ -20,7 +20,6 @@ ADO-Work-Item-MSP/
 - `*_COMPLETE.md` files
 - `*_REPORT.md` files
 - `IMPLEMENTATION_STATUS.md`
-- Changelog files (use git commits)
 - Verbose architecture docs
 - Duplicate guides
 
@@ -64,6 +63,121 @@ If you answered "no" to any, reconsider creating it.
 - Write tests for new features
 - Keep functions focused and small
 - Use meaningful variable names
+
+## Testing Guidelines
+
+### Test Organization
+
+Tests are located in `/mcp_server/src/test/` and follow these patterns:
+
+- **Unit Tests**: Test individual functions in isolation with mocked dependencies
+- **Integration Tests**: Test complete workflows with real-ish data
+- **Test Naming**: `feature-name.test.ts` (e.g., `query-handle-selection.test.ts`)
+
+### Writing Tests for Selection Features
+
+When adding or modifying item selection functionality:
+
+1. **Test All Selection Types**:
+   ```typescript
+   // Test "all" selector
+   itemSelector: "all"
+   
+   // Test index-based selector
+   itemSelector: [0, 2, 5]
+   
+   // Test criteria-based selector
+   itemSelector: { states: ["Active"], tags: ["critical"] }
+   ```
+
+2. **Test Edge Cases**:
+   - Empty query results
+   - Invalid indices (negative, out of bounds)
+   - No items matching criteria
+   - Expired query handles
+   - Combined criteria (AND logic)
+
+3. **Test Validation**:
+   - Invalid selector types should fail gracefully
+   - Partial index matches should include warnings
+   - Empty selections should return success with warning
+
+### Example Selection Test
+
+```typescript
+describe('item selection', () => {
+  it('should select items by criteria', async () => {
+    const handle = createTestHandle([
+      { id: 1, state: 'Active', tags: ['critical'] },
+      { id: 2, state: 'Done', tags: [] }
+    ]);
+    
+    const result = await selectItems(handle, {
+      itemSelector: { states: ['Active'] }
+    });
+    
+    expect(result.selected_items_count).toBe(1);
+    expect(result.preview_items[0].id).toBe(1);
+  });
+});
+```
+
+### Extending Selection Criteria
+
+To add new selection criteria:
+
+1. **Update Type Definitions** (`src/config/schemas.ts`):
+   ```typescript
+   const criteriaSchema = z.object({
+     states: z.array(z.string()).optional(),
+     tags: z.array(z.string()).optional(),
+     // Add new criteria here:
+     priority: z.array(z.string()).optional()
+   });
+   ```
+
+2. **Implement Selection Logic** (`src/services/query-handle-service.ts`):
+   ```typescript
+   selectByCriteria(criteria: SelectionCriteria): number[] {
+     return this.itemContext.values()
+       .filter(item => {
+         // Add new criteria check:
+         if (criteria.priority && 
+             !criteria.priority.includes(item.priority))
+           return false;
+         // ... other checks
+       })
+       .map(item => item.id);
+   }
+   ```
+
+3. **Add Tests** (`src/test/query-handle-selection.test.ts`):
+   ```typescript
+   it('should select by priority criteria', async () => {
+     // Test new criteria
+   });
+   ```
+
+4. **Update Documentation**:
+   - Update `docs/QUERY_HANDLE_MIGRATION.md` with examples
+   - Update `mcp_server/resources/query-handle-pattern.md`
+   - Update tool descriptions in `src/config/tool-configs.ts`
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test query-handle-selection.test.ts
+
+# Run with coverage
+npm run test:coverage
+
+# Watch mode for development
+npm run test:watch
+```
 
 ## Commit Messages
 

@@ -4,12 +4,14 @@
 
 import { logger } from './logger.js';
 import { loadSystemPrompt } from './prompt-loader.js';
+import type { MCPServer } from '../types/mcp.js';
 
 export interface ModelPreferences {
   hints?: Array<{ name: string }>;
   costPriority?: number;        // 0-1, higher = prefer cheaper models
   speedPriority?: number;       // 0-1, higher = prefer faster models
   intelligencePriority?: number; // 0-1, higher = prefer more capable models
+  [key: string]: unknown;
 }
 
 export interface SamplingRequest {
@@ -21,12 +23,20 @@ export interface SamplingRequest {
   modelPreferences?: ModelPreferences;
 }
 
+export interface SamplingResponse {
+  content: {
+    text: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 /**
  * Check if the server supports sampling capabilities (standalone function)
  * @param server The MCP server instance
  * @returns true if sampling is supported, false otherwise
  */
-export function checkSamplingSupport(server: any): boolean {
+export function checkSamplingSupport(server: MCPServer): boolean {
   if (!server) {
     logger.debug('No server instance available for sampling');
     return false;
@@ -66,35 +76,33 @@ export function getDefaultModelPreferences(): ModelPreferences {
 }
 
 export class SamplingClient {
-  constructor(private server: any) {}
+  constructor(private server: MCPServer) {}
 
   hasSamplingSupport(): boolean {
     return checkSamplingSupport(this.server);
   }
 
-  async createMessage(request: SamplingRequest): Promise<any> {
+  async createMessage(request: SamplingRequest): Promise<SamplingResponse> {
     const systemPrompt = loadSystemPrompt(request.systemPromptName, request.variables);
     
-    const samplingParams: any = {
+    const samplingParams = {
       systemPrompt,
       messages: [{
-        role: 'user',
+        role: 'user' as const,
         content: {
-          type: 'text',
+          type: 'text' as const,
           text: request.userContent
         }
       }],
       maxTokens: request.maxTokens || 500,
-      temperature: request.temperature || 0.3
+      temperature: request.temperature || 0.3,
+      modelPreferences: request.modelPreferences || getDefaultModelPreferences()
     };
-
-    // Add model preferences - use provided or default to fast mini models
-    samplingParams.modelPreferences = request.modelPreferences || getDefaultModelPreferences();
     
-    return await this.server.createMessage(samplingParams);
+    return await this.server.createMessage(samplingParams) as SamplingResponse;
   }
 
-  extractResponseText(aiResult: any): string {
+  extractResponseText(aiResult: SamplingResponse): string {
     return aiResult?.content?.text || JSON.stringify(aiResult) || 'No analysis available';
   }
 }

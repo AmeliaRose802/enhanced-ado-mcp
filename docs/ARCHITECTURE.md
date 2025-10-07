@@ -366,6 +366,285 @@ test/
     └── ...
 ```
 
+## Query Handle Service & Item Selection (v1.5.0)
+
+### Overview
+
+The Query Handle Service provides an anti-hallucination architecture for safe bulk operations. Instead of manually extracting and passing work item IDs, clients work with opaque query handles that maintain validated item context.
+
+### Architecture
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    Query Handle Lifecycle                 │
+└──────────────────────────────────────────────────────────┘
+
+1. Query Phase
+   ┌─────────────────┐
+   │  WIQL Query     │
+   │  + Handle Flag  │
+   └────────┬────────┘
+            │
+            ▼
+   ┌─────────────────┐
+   │ Query Handle    │  "qh_abc123"
+   │ Created         │
+   └────────┬────────┘
+            │
+            ▼
+   ┌─────────────────┐
+   │ Item Context    │  Map<id, {state, tags, title, ...}>
+   │ Stored          │
+   └─────────────────┘
+
+2. Inspection Phase (Optional)
+   ┌─────────────────┐
+   │ Inspect Handle  │
+   │ Preview Items   │
+   └────────┬────────┘
+            │
+            ▼
+   ┌─────────────────┐
+   │ Display Items   │  Index, ID, Title, State, Tags
+   │ With Metadata   │
+   └─────────────────┘
+
+3. Selection Phase (NEW!)
+   ┌─────────────────┐
+   │ Select Items    │
+   │ + Selector      │
+   └────────┬────────┘
+            │
+            ▼
+   ┌─────────────────┐
+   │ Preview Match   │  "Would select 5 of 10 items"
+   │ Display Items   │
+   └─────────────────┘
+
+4. Execution Phase
+   ┌─────────────────┐
+   │ Bulk Operation  │
+   │ + Selector      │
+   └────────┬────────┘
+            │
+            ▼
+   ┌─────────────────┐
+   │ Select Items    │  Apply selector criteria
+   │ From Context    │
+   └────────┬────────┘
+            │
+            ▼
+   ┌─────────────────┐
+   │ Execute Action  │  Update, comment, assign, etc.
+   │ On Selected     │
+   └─────────────────┘
+```
+
+### Query Handle Storage
+
+**Data Structure:**
+```typescript
+interface QueryHandleData {
+  workItemIds: number[];              // Ordered list of IDs
+  wiqlQuery: string;                  // Original query
+  createdAt: Date;                    // For expiration
+  itemContext: Map<number, ItemContext>;  // Rich metadata
+}
+
+interface ItemContext {
+  id: number;
+  title: string;
+  state: string;
+  type: string;
+  tags: string[];
+  index: number;                      // Position in result
+  changedDate?: Date;
+  daysInactive?: number;              // For staleness
+}
+```
+
+**Storage Characteristics:**
+- In-memory storage with 5-minute expiration
+- Atomic operations (store, retrieve, delete)
+- Thread-safe access patterns
+- Automatic cleanup of expired handles
+
+### Item Selection Mechanisms
+
+#### 1. Select All
+```typescript
+itemSelector: "all"
+```
+**Implementation:**
+- Returns all work item IDs from handle
+- No filtering or validation needed
+- O(1) complexity
+
+**Use Cases:**
+- WIQL already filtered to target items
+- Small result sets (<50 items)
+- Non-destructive operations
+
+#### 2. Index-Based Selection
+```typescript
+itemSelector: [0, 2, 5]  // Zero-based indices
+```
+**Implementation:**
+```typescript
+selectByIndices(indices: number[]): number[] {
+  const validIndices = indices.filter(i => 
+    i >= 0 && i < this.workItemIds.length
+  );
+  return validIndices.map(i => this.workItemIds[i]);
+}
+```
+**Validation:**
+- Bounds checking (0 <= index < length)
+- Duplicate removal
+- Invalid indices logged as warnings
+
+**Use Cases:**
+- User specifies "items 1, 3, and 5"
+- After inspection, select specific positions
+- Testing with specific items
+
+#### 3. Criteria-Based Selection
+```typescript
+itemSelector: {
+  states: ["Active", "In Progress"],
+  tags: ["critical"],
+  titleContains: "auth",
+  daysInactiveMin: 7,
+  daysInactiveMax: 30
+}
+```
+**Implementation:**
+```typescript
+selectByCriteria(criteria: SelectionCriteria): number[] {
+  return this.itemContext.values()
+    .filter(item => {
+      // AND logic for all criteria
+      if (criteria.states && !criteria.states.includes(item.state)) 
+        return false;
+      if (criteria.tags && !criteria.tags.some(t => item.tags.includes(t)))
+        return false;
+      if (criteria.titleContains && !item.title.includes(criteria.titleContains))
+        return false;
+      if (criteria.daysInactiveMin && item.daysInactive < criteria.daysInactiveMin)
+        return false;
+      if (criteria.daysInactiveMax && item.daysInactive > criteria.daysInactiveMax)
+        return false;
+      return true;
+    })
+    .map(item => item.id);
+}
+```
+
+**Complexity:** O(n * c) where n = items, c = criteria checks
+
+**Use Cases:**
+- "All critical Active bugs"
+- "Items inactive for 7-30 days"
+- Complex filtering without WIQL
+
+### Selection Workflow Sequence Diagram
+
+```
+┌──────┐         ┌────────┐         ┌─────────────┐         ┌─────────┐
+│Client│         │ Handler│         │Query Handle │         │   ADO   │
+│      │         │        │         │   Service   │         │   API   │
+└───┬──┘         └───┬────┘         └──────┬──────┘         └────┬────┘
+    │                │                      │                     │
+    │ 1. WIQL Query  │                      │                     │
+    ├───────────────>│                      │                     │
+    │ + returnHandle │ 2. Execute Query     │                     │
+    │                ├─────────────────────────────────────────>  │
+    │                │                      │  3. Work Items      │
+    │                │<─────────────────────────────────────────  │
+    │                │ 4. Store Handle      │                     │
+    │                ├─────────────────────>│                     │
+    │                │ + Item Context       │                     │
+    │  queryHandle   │                      │                     │
+    │<───────────────┤                      │                     │
+    │                │                      │                     │
+    │ 5. Inspect     │                      │                     │
+    ├───────────────>│ 6. Get Context       │                     │
+    │                ├─────────────────────>│                     │
+    │  Item List     │<─────────────────────┤                     │
+    │<───────────────┤                      │                     │
+    │                │                      │                     │
+    │ 7. Select Items│                      │                     │
+    ├───────────────>│ 8. Apply Selector    │                     │
+    │ + itemSelector ├─────────────────────>│                     │
+    │                │ 9. Filtered IDs      │                     │
+    │  Preview       │<─────────────────────┤                     │
+    │<───────────────┤                      │                     │
+    │                │                      │                     │
+    │ 10. Bulk Op    │                      │                     │
+    ├───────────────>│ 11. Apply Selector   │                     │
+    │ + itemSelector ├─────────────────────>│                     │
+    │                │ 12. Selected IDs     │                     │
+    │                │<─────────────────────┤                     │
+    │                │ 13. Execute Updates  │                     │
+    │                ├─────────────────────────────────────────>  │
+    │  Result        │                      │                     │
+    │<───────────────┤                      │                     │
+    │                │                      │                     │
+```
+
+### Benefits of Handle-Based Architecture
+
+1. **Anti-Hallucination**: IDs never exposed to LLM, eliminating fabricated ID risks
+2. **Validation**: All operations work only on queried items
+3. **Context Preservation**: Rich metadata available throughout workflow
+4. **Safe Defaults**: Explicit itemSelector required prevents accidental operations
+5. **Auditability**: Full chain of query → selection → operation tracked
+
+### Performance Considerations
+
+**Selection Performance:**
+- Select All: O(1) - direct return of stored IDs
+- Index-Based: O(k) where k = number of indices
+- Criteria-Based: O(n) where n = items in handle
+
+**Memory Usage:**
+- ~1KB per work item in context
+- 5-minute expiration prevents unbounded growth
+- Typical usage: 10-100 items per handle = 10-100KB
+
+**Optimization Strategies:**
+1. Use "all" selector when possible (fastest)
+2. Prefer index-based for small selections
+3. Use criteria-based for complex filtering
+4. Clean up expired handles automatically
+
+### Error Handling
+
+**Invalid Selector:**
+```typescript
+{
+  success: false,
+  errors: ["Invalid itemSelector: must be 'all', array of indices, or criteria object"]
+}
+```
+
+**Expired Handle:**
+```typescript
+{
+  success: false,
+  errors: ["Query handle 'qh_abc123' not found or expired"]
+}
+```
+
+**No Matching Items:**
+```typescript
+{
+  success: true,
+  warnings: ["No items matched selection criteria"],
+  data: { selected_items_count: 0 }
+}
+```
+
 ## Extensibility
 
 ### Adding a New Tool
@@ -424,5 +703,5 @@ test/
 
 ---
 
-**Last Updated:** 2025-10-01  
-**Version:** 1.0
+**Last Updated:** 2025-10-07  
+**Version:** 1.5.0

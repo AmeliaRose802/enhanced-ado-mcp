@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger } from '../utils/logger.js';
 
 /**
  * Query Handle Service
@@ -32,21 +33,13 @@ interface QueryHandleData {
     lastSubstantiveChangeDate?: string;
     daysInactive?: number;
     createdDate?: string;
+    changedDate?: string;
     assignedTo?: string;
     areaPath?: string;
     [key: string]: any; // For additional fields
   }>;
   // NEW: Rich item context for selection
-  itemContext: Array<{
-    index: number;           // Zero-based index
-    id: number;
-    title: string;
-    state: string;
-    type: string;
-    daysInactive?: number;
-    lastChange?: string;
-    tags?: string[];
-  }>;
+  itemContext: ItemContext[];
   // NEW: Selection metadata
   selectionMetadata: {
     totalItems: number;
@@ -62,17 +55,32 @@ interface QueryHandleData {
   };
 }
 
+// Selection criteria interface
+interface SelectionCriteria {
+  states?: string[];
+  titleContains?: string[];
+  tags?: string[];
+  daysInactiveMin?: number;
+  daysInactiveMax?: number;
+}
+
+// Item context interface
+interface ItemContext {
+  index: number;
+  id: number;
+  title: string;
+  state: string;
+  type: string;
+  daysInactive?: number;
+  lastChange?: string;
+  tags?: string[];
+}
+
 // Item selection types
 type ItemSelector = 
   | 'all'
   | number[]  // Array of indices
-  | {
-      states?: string[];
-      titleContains?: string[];
-      tags?: string[];
-      daysInactiveMin?: number;
-      daysInactiveMax?: number;
-    };
+  | SelectionCriteria;
 
 class QueryHandleService {
   private handles: Map<string, QueryHandleData> = new Map();
@@ -124,7 +132,7 @@ class QueryHandleService {
         state: context?.state || 'Unknown',
         type: context?.type || 'Unknown',
         daysInactive: context?.daysInactive,
-        lastChange: context?.lastSubstantiveChangeDate,
+        lastChange: context?.lastSubstantiveChangeDate || context?.changedDate,
         tags: context?.tags 
           ? (Array.isArray(context.tags) 
               ? context.tags 
@@ -226,11 +234,30 @@ class QueryHandleService {
   }
 
   /**
-   * Get work item IDs by indices from a query handle
+   * Selects work items from a query handle using zero-based indices.
    * 
-   * @param handle Query handle string
-   * @param indices Array of zero-based indices to select
-   * @returns Array of work item IDs for the specified indices, or null if handle not found
+   * This method allows efficient selection of specific work items by their position
+   * in the query results. Only valid indices (within range) are processed; invalid
+   * indices are silently filtered out.
+   * 
+   * @param handle - The query handle ID (format: 'qh_' followed by hex string)
+   * @param indices - Array of zero-based indices to select from the query results.
+   *                  Indices must be >= 0 and < total items in handle.
+   * @returns Array of work item IDs for the specified indices, or null if handle not found/expired
+   * @throws {Error} Never throws - invalid indices are silently filtered out
+   * @example
+   * ```typescript
+   * // Select first, third, and sixth items from query results
+   * const items = queryHandleService.getItemsByIndices('qh_abc123', [0, 2, 5]);
+   * // Returns: [12345, 12347, 12350] (actual work item IDs)
+   * ```
+   * @example
+   * ```typescript
+   * // Invalid indices are filtered out automatically
+   * const items = queryHandleService.getItemsByIndices('qh_abc123', [0, 999]);
+   * // Returns only valid IDs: [12345]
+   * ```
+   * @since 1.4.0
    */
   getItemsByIndices(handle: string, indices: number[]): number[] | null {
     const data = this.getQueryData(handle);
@@ -244,19 +271,57 @@ class QueryHandleService {
   }
 
   /**
-   * Get work item IDs by criteria from a query handle
+   * Selects work items from a query handle using criteria-based filtering.
    * 
-   * @param handle Query handle string
-   * @param criteria Selection criteria object
-   * @returns Array of work item IDs matching the criteria, or null if handle not found
+   * Filters work items based on state, title keywords, tags, or inactivity period.
+   * All criteria are combined using AND logic - items must match ALL provided criteria.
+   * String matching is case-insensitive. If a work item lacks a field (e.g., daysInactive),
+   * it will not match criteria requiring that field.
+   * 
+   * @param handle - The query handle ID (format: 'qh_' followed by hex string)
+   * @param criteria - Selection criteria object with the following optional properties:
+   *   - states: Array of state names to match (e.g., ['Active', 'New'])
+   *   - titleContains: Array of keywords - item title must contain at least one (OR logic)
+   *   - tags: Array of tag patterns - item must have at least one matching tag (OR logic)
+   *   - daysInactiveMin: Minimum days of inactivity (inclusive) - requires staleness analysis
+   *   - daysInactiveMax: Maximum days of inactivity (inclusive) - requires staleness analysis
+   * @returns Array of work item IDs matching all criteria, or null if handle not found/expired.
+   *          Returns empty array if no items match criteria.
+   * @throws {Error} Never throws - invalid criteria are safely handled
+   * @example
+   * ```typescript
+   * // Select all Active items
+   * const items = queryHandleService.getItemsByCriteria('qh_abc123', {
+   *   states: ['Active']
+   * });
+   * ```
+   * @example
+   * ```typescript
+   * // Select items with 'bug' or 'fix' in title AND tagged critical/security
+   * const items = queryHandleService.getItemsByCriteria('qh_abc123', {
+   *   titleContains: ['bug', 'fix'],
+   *   tags: ['critical', 'security']
+   * });
+   * ```
+   * @example
+   * ```typescript
+   * // Select stale Active items (inactive 7+ days)
+   * const items = queryHandleService.getItemsByCriteria('qh_abc123', {
+   *   states: ['Active'],
+   *   daysInactiveMin: 7
+   * });
+   * ```
+   * @example
+   * ```typescript
+   * // Select items inactive between 3-14 days
+   * const items = queryHandleService.getItemsByCriteria('qh_abc123', {
+   *   daysInactiveMin: 3,
+   *   daysInactiveMax: 14
+   * });
+   * ```
+   * @since 1.4.0
    */
-  getItemsByCriteria(handle: string, criteria: {
-    states?: string[];
-    titleContains?: string[];
-    tags?: string[];
-    daysInactiveMin?: number;
-    daysInactiveMax?: number;
-  }): number[] | null {
+  getItemsByCriteria(handle: string, criteria: SelectionCriteria): number[] | null {
     const data = this.getQueryData(handle);
     if (!data) return null;
 
@@ -311,11 +376,105 @@ class QueryHandleService {
   }
 
   /**
-   * Resolve ItemSelector to work item IDs
+   * Retrieves detailed context for a work item at a specific index position.
    * 
-   * @param handle Query handle string
-   * @param selector Item selector (all, indices array, or criteria object)
-   * @returns Array of work item IDs, or null if handle not found
+   * Returns an ItemContext object containing essential metadata about the work item,
+   * including its position in the query results, ID, title, state, type, and optional
+   * staleness information. This is useful for understanding item details without
+   * fetching the full work item from Azure DevOps.
+   * 
+   * @param handle - The query handle ID (format: 'qh_' followed by hex string)
+   * @param index - Zero-based index of the item in the query results (must be >= 0 and < total items)
+   * @returns ItemContext object with the following properties:
+   *   - index: number - Zero-based position in query results
+   *   - id: number - Azure DevOps work item ID
+   *   - title: string - Work item title
+   *   - state: string - Current state (e.g., 'Active', 'Closed')
+   *   - type: string - Work item type (e.g., 'Bug', 'Task', 'User Story')
+   *   - daysInactive?: number - Days since last substantive change (if staleness analysis performed)
+   *   - lastChange?: string - ISO date of last change
+   *   - tags?: string[] - Array of tags associated with the work item
+   * 
+   *   Returns null if:
+   *   - Handle not found or expired
+   *   - Index is out of range (< 0 or >= total items)
+   * @throws {Error} Never throws - invalid indices return null
+   * @example
+   * ```typescript
+   * // Get context for the first item in query results
+   * const context = queryHandleService.getItemContext('qh_abc123', 0);
+   * // Returns: { index: 0, id: 12345, title: 'Fix login bug', state: 'Active', 
+   * //            type: 'Bug', daysInactive: 5, tags: ['critical', 'security'] }
+   * ```
+   * @example
+   * ```typescript
+   * // Check if item is stale before taking action
+   * const context = queryHandleService.getItemContext('qh_abc123', 2);
+   * if (context && context.daysInactive && context.daysInactive > 30) {
+   *   console.log(`Item ${context.id} has been inactive for ${context.daysInactive} days`);
+   * }
+   * ```
+   * @since 1.4.0
+   */
+  getItemContext(handle: string, index: number): ItemContext | null {
+    const data = this.getQueryData(handle);
+    if (!data) return null;
+
+    // Validate index is in range
+    if (index < 0 || index >= data.itemContext.length) {
+      return null;
+    }
+
+    return data.itemContext[index];
+  }
+
+  /**
+   * Resolves an ItemSelector to work item IDs, supporting multiple selection patterns.
+   * 
+   * This is the primary method for selecting work items from a query handle. It accepts
+   * three selector types and delegates to the appropriate specialized method:
+   * - String 'all': Returns all work items in the handle
+   * - Array of numbers: Treats as indices and calls getItemsByIndices()
+   * - Object: Treats as criteria and calls getItemsByCriteria()
+   * 
+   * @param handle - The query handle ID (format: 'qh_' followed by hex string)
+   * @param selector - One of three selection patterns:
+   *   1. 'all': Select all work items in the query handle
+   *   2. number[]: Array of zero-based indices (e.g., [0, 2, 5])
+   *   3. SelectionCriteria: Object with states, titleContains, tags, or daysInactive filters
+   * @returns Array of work item IDs matching the selector, or null if:
+   *   - Handle not found or expired
+   *   - Selector type is invalid (not string, array, or object)
+   *   - Selector is null or undefined
+   * @throws {Error} Never throws - all error conditions return null
+   * @example
+   * ```typescript
+   * // Select all items
+   * const allItems = queryHandleService.resolveItemSelector('qh_abc123', 'all');
+   * // Returns: [12345, 12346, 12347, ...]
+   * ```
+   * @example
+   * ```typescript
+   * // Select by index position
+   * const selectedItems = queryHandleService.resolveItemSelector('qh_abc123', [0, 2, 5]);
+   * // Returns: [12345, 12347, 12350]
+   * ```
+   * @example
+   * ```typescript
+   * // Select by criteria
+   * const filteredItems = queryHandleService.resolveItemSelector('qh_abc123', {
+   *   states: ['Active', 'In Progress'],
+   *   daysInactiveMin: 7
+   * });
+   * // Returns: [12346, 12349] (IDs of stale active items)
+   * ```
+   * @example
+   * ```typescript
+   * // Invalid selector returns null
+   * const invalid = queryHandleService.resolveItemSelector('qh_abc123', 123);
+   * // Returns: null
+   * ```
+   * @since 1.4.0
    */
   resolveItemSelector(handle: string, selector: ItemSelector): number[] | null {
     const data = this.getQueryData(handle);
@@ -329,8 +488,13 @@ class QueryHandleService {
       return this.getItemsByIndices(handle, selector);
     }
 
-    // Criteria-based selection
-    return this.getItemsByCriteria(handle, selector);
+    // Validate selector is an object before treating as criteria
+    if (selector && typeof selector === 'object') {
+      return this.getItemsByCriteria(handle, selector);
+    }
+
+    // Invalid selector type
+    return null;
   }
 
   /**
@@ -395,7 +559,7 @@ class QueryHandleService {
       this.cleanupInterval = setInterval(() => {
         const deleted = this.cleanup();
         if (deleted > 0) {
-          console.log(`[QueryHandleService] Cleaned up ${deleted} expired handles`);
+          logger.debug(`Cleaned up ${deleted} expired query handles`);
         }
       }, 5 * 60 * 1000); // Run every 5 minutes
     }
@@ -421,4 +585,4 @@ class QueryHandleService {
 
 // Export singleton instance
 export const queryHandleService = new QueryHandleService();
-export { QueryHandleData };
+export { QueryHandleData, SelectionCriteria, ItemContext };

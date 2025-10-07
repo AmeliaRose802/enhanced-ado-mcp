@@ -47,19 +47,28 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
 
+    logger.info(`Selected ${selectedCount} of ${totalItems} items for removal`);
+    if (itemSelector !== 'all') {
+      logger.info(`Selection criteria: ${JSON.stringify(itemSelector)}`);
+    }
     logger.info(`Bulk remove operation: ${selectedCount} of ${totalItems} work items selected (dry_run: ${dryRun})`);
 
     if (dryRun) {
       // Show preview of selected items for destructive operation
-      const previewItems = selectedWorkItemIds.slice(0, 5).map((id: number) => {
-        const context = queryData.itemContext.find(item => item.id === id);
-        return {
-          work_item_id: id,
-          index: context?.index,
-          title: context?.title || "No title available",
-          state: context?.state || "Unknown"
-        };
-      });
+      const dryRunInfo = {
+        totalInHandle: totalItems,
+        selectedForRemoval: selectedCount,
+        selectionCriteria: itemSelector === 'all' ? 'All items' : JSON.stringify(itemSelector),
+        itemsToRemove: selectedWorkItemIds.slice(0, 5).map((id: number) => {
+          const context = queryData.itemContext.find(item => item.id === id);
+          return {
+            id: id,
+            title: context?.title || "No title available",
+            state: context?.state || "Unknown",
+            type: context?.type || "Unknown"
+          };
+        })
+      };
 
       return {
         success: true,
@@ -71,8 +80,8 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           item_selector: itemSelector,
           work_item_ids: selectedWorkItemIds,
           remove_reason: removeReason,
-          preview_items: previewItems,
-          summary: `DRY RUN: Would move ${selectedCount} of ${totalItems} work item(s) to "Removed" state${removeReason ? ' with reason comment' : ''}`
+          preview_items: dryRunInfo.itemsToRemove,
+          summary: `DRY RUN - Would remove ${selectedCount} items:\n${JSON.stringify(dryRunInfo, null, 2)}`
         },
         metadata: { 
           source: "bulk-remove-by-query-handle",
@@ -134,6 +143,10 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
     const commentsAdded = results.filter(r => r.commentAdded).length;
+
+    const summary = itemSelector === 'all'
+      ? `Removed all ${selectedCount} work items`
+      : `Removed ${selectedCount} selected items (from ${totalItems} total)`;
 
     return {
       success: failureCount === 0,

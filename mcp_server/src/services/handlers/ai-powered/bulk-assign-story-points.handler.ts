@@ -5,6 +5,8 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { MCPServer } from "../../../types/mcp.js";
+import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -27,7 +29,86 @@ interface EstimationResult {
   skipped?: string;
 }
 
-export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unknown, server: any): Promise<ToolExecutionResult> {
+/**
+ * Handler for wit-bulk-assign-story-points-by-query-handle tool
+ * 
+ * Uses AI to estimate story points for multiple work items based on complexity and scope.
+ * The AI analyzes work item details including title, description, and acceptance criteria
+ * to provide data-driven estimates using standard estimation scales.
+ * 
+ * Supports multiple estimation scales:
+ * - fibonacci: 1, 2, 3, 5, 8, 13, 21
+ * - powers-of-2: 1, 2, 4, 8, 16, 32
+ * - linear: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+ * - t-shirt: XS, S, M, L, XL, XXL
+ * 
+ * @param config - Tool configuration containing the Zod schema for validation
+ * @param args - Arguments object expected to contain:
+ *   - queryHandle: string - The query handle ID from a previous WIQL query
+ *   - itemSelector: ItemSelector - How to select items: 'all', indices array, or criteria object
+ *   - sampleSize?: number - Max items to process (default: 10, max: 100)
+ *   - pointScale?: string - Estimation scale to use: 'fibonacci' | 'powers-of-2' | 'linear' | 't-shirt' (default: 'fibonacci')
+ *   - onlyUnestimated?: boolean - Only process items without existing estimates (default: true)
+ *   - includeCompleted?: boolean - Include completed items for historical analysis (default: false)
+ *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
+ *   - organization?: string - Azure DevOps organization (defaults to config value)
+ *   - project?: string - Azure DevOps project (defaults to config value)
+ * @param server - MCP server instance for AI sampling capabilities
+ * @returns Promise<ToolExecutionResult> with the following structure:
+ *   - success: boolean - True if all items processed without errors
+ *   - data: Object containing:
+ *       * query_handle: string - The input query handle
+ *       * total_items_in_handle: number - Total items in query handle
+ *       * selected_items: number - Items matching itemSelector
+ *       * items_processed: number - Items actually processed (limited by sampleSize)
+ *       * item_selector: ItemSelector - The selection pattern used
+ *       * point_scale: string - Estimation scale used
+ *       * only_unestimated: boolean - Whether already-estimated items were skipped
+ *       * dry_run: boolean - Whether changes were applied
+ *       * successful: number - Count of successfully estimated items
+ *       * skipped: number - Count of skipped items (completed/already estimated)
+ *       * failed: number - Count of failed items
+ *       * needs_decomposition: number - Count of items too large to estimate
+ *       * results: Array of per-item estimation results with:
+ *           - work_item_id: number
+ *           - story_points: number | string
+ *           - confidence: number (0-1)
+ *           - complexity: string
+ *           - reasoning: string - Explanation of the estimate
+ *           - suggest_decomposition: boolean - True if item is too large
+ *       * summary: string - Human-readable summary
+ *   - metadata: Processing statistics and context
+ *   - errors: Array of error messages for failed items
+ *   - warnings: Array of warnings (skipped items, decomposition suggestions)
+ * @throws {Error} Returns error result (does not throw) if:
+ *   - Azure CLI is not available or not logged in
+ *   - AI sampling is not supported by the server
+ *   - Query handle is invalid, not found, or expired
+ *   - Work item fetching or updating fails
+ * @example
+ * ```typescript
+ * // Estimate story points using Fibonacci scale (dry run)
+ * const result = await handleBulkAssignStoryPoints(config, {
+ *   queryHandle: 'qh_abc123',
+ *   itemSelector: 'all',
+ *   pointScale: 'fibonacci',
+ *   onlyUnestimated: true,
+ *   dryRun: true
+ * }, server);
+ * ```
+ * @example
+ * ```typescript
+ * // Apply t-shirt sizing to user stories
+ * const result = await handleBulkAssignStoryPoints(config, {
+ *   queryHandle: 'qh_abc123',
+ *   itemSelector: { states: ['New', 'Approved'] },
+ *   pointScale: 't-shirt',
+ *   dryRun: false
+ * }, server);
+ * ```
+ * @since 1.4.0
+ */
+export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unknown, server: MCPServer): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -91,7 +172,7 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
       try {
         // Fetch work item
         const response = await httpClient.get(`wit/workitems/${workItemId}?api-version=7.1`);
-        const workItem = response.data as any;
+        const workItem = response.data as ADOWorkItem;
 
         const title = workItem.fields['System.Title'] as string;
         const description = (workItem.fields['System.Description'] as string) || '';
