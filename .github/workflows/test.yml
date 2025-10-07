@@ -1,0 +1,23 @@
+name: Test
+
+on:
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      
+      - name: Install dependencies
+        working-directory: ./mcp_server
+        run: npm install
+      
+      - name: Run tests
+        working-directory: ./mcp_server
+        run: npm test
