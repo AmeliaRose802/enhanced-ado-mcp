@@ -34,9 +34,37 @@ export function buildSamplingUnavailableResponse(): ToolExecutionResult {
 
 /**
  * Build validation error response for tool handlers
+ * Formats Zod validation errors with actionable guidance for AI agents
  */
 export function buildValidationErrorResponse(validationError: any, source: string = 'validation'): ToolExecutionResult {
-  return buildErrorResponse(`Validation error: ${validationError.message}`, { source });
+  // Format Zod errors with detailed field-level information
+  let errorMessage = 'Validation error:\n';
+  
+  if (validationError.issues && Array.isArray(validationError.issues)) {
+    // Zod error with multiple issues
+    const formattedIssues = validationError.issues.map((issue: any) => {
+      const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
+      const message = issue.message;
+      
+      // Add context about what was received vs what was expected
+      let details = '';
+      if (issue.received !== undefined) {
+        details = ` (received: ${JSON.stringify(issue.received)})`;
+      }
+      
+      return `  • ${path}: ${message}${details}`;
+    });
+    
+    errorMessage += formattedIssues.join('\n');
+    
+    // Add helpful hint at the end
+    errorMessage += '\n\n💡 Tip: Check parameter types and constraints. See tool description for valid values.';
+  } else {
+    // Fallback for non-Zod errors
+    errorMessage = `Validation error: ${validationError.message || String(validationError)}`;
+  }
+  
+  return buildErrorResponse(errorMessage, { source, validationErrorCount: validationError.issues?.length });
 }
 
 /**
