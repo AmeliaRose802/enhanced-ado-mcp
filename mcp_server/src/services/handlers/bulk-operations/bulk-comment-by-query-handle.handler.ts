@@ -7,7 +7,15 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { 
+  buildValidationErrorResponse, 
+  buildAzureCliErrorResponse,
+  buildSuccessResponse,
+  buildSuccessResponseWithWarnings,
+  buildPartialSuccessResponse,
+  buildErrorResponse,
+  buildCatchErrorResponse
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -32,13 +40,10 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     const queryData = queryHandleService.getQueryData(queryHandle);
     
     if (!selectedWorkItemIds || !queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "bulk-comment-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildErrorResponse(
+        `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        { source: "bulk-comment-by-query-handle" }
+      );
     }
 
     // Show selection information
@@ -123,9 +128,8 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         ? `Showing ${previewLimit} of ${selectedCount} items...` 
         : undefined;
 
-      return {
-        success: true,
-        data: {
+      return buildSuccessResponseWithWarnings(
+        {
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -138,16 +142,15 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
           preview_message: previewMessage,
           summary: `DRY RUN: Would add ${hasTemplateVariables ? 'templated' : 'static'} comment to ${selectedCount} of ${totalItems} work item(s)`
         },
-        metadata: { 
+        warnings,
+        { 
           source: "bulk-comment-by-query-handle",
           dryRun: true,
           itemSelector,
           hasTemplateVariables,
           contextDataAvailable: !!queryData.workItemContext
-        },
-        errors: [],
-        warnings
-      };
+        }
+      );
     }
 
     // Execute bulk comment operation
@@ -183,35 +186,30 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
 
-    return {
-      success: failureCount === 0,
-      data: {
-        query_handle: queryHandle,
-        total_items_in_handle: totalItems,
-        selected_items: selectedCount,
-        item_selector: itemSelector,
-        successful: successCount,
-        failed: failureCount,
-        results,
-        summary: `Successfully added comment to ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
-      },
-      metadata: {
-        source: "bulk-comment-by-query-handle",
-        itemSelector
-      },
-      errors: failureCount > 0 
-        ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
-      warnings: []
+    const data = {
+      query_handle: queryHandle,
+      total_items_in_handle: totalItems,
+      selected_items: selectedCount,
+      item_selector: itemSelector,
+      successful: successCount,
+      failed: failureCount,
+      results,
+      summary: `Successfully added comment to ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
     };
+
+    const metadata = {
+      source: "bulk-comment-by-query-handle",
+      itemSelector
+    };
+
+    if (failureCount > 0) {
+      const errors = results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`);
+      return buildPartialSuccessResponse(data, errors, [], metadata);
+    }
+
+    return buildSuccessResponse(data, metadata);
   } catch (error) {
     logger.error('Bulk comment by query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "bulk-comment-by-query-handle" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildCatchErrorResponse(error, 'bulk-comment-by-query-handle');
   }
 }

@@ -7,7 +7,14 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { 
+  buildValidationErrorResponse, 
+  buildAzureCliErrorResponse,
+  buildSuccessResponse,
+  buildPartialSuccessResponse,
+  buildErrorResponse,
+  buildCatchErrorResponse
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -32,13 +39,10 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
     const queryData = queryHandleService.getQueryData(queryHandle);
     
     if (!selectedWorkItemIds || !queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "bulk-assign-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildErrorResponse(
+        `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        { source: "bulk-assign-by-query-handle" }
+      );
     }
 
     // Show selection information
@@ -68,9 +72,8 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
         ? `Showing ${previewLimit} of ${selectedCount} items...` 
         : undefined;
 
-      return {
-        success: true,
-        data: {
+      return buildSuccessResponse(
+        {
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -82,14 +85,12 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
           preview_message: previewMessage,
           summary: `DRY RUN: Would assign ${selectedCount} of ${totalItems} work item(s) to '${assignTo}'`
         },
-        metadata: { 
+        { 
           source: "bulk-assign-by-query-handle",
           dryRun: true,
           itemSelector
-        },
-        errors: [],
-        warnings: []
-      };
+        }
+      );
     }
 
     // Execute bulk assign operation
@@ -164,37 +165,32 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       logger.warn(failureContext);
     }
 
-    return {
-      success: failureCount === 0,
-      data: {
-        query_handle: queryHandle,
-        assign_to: assignTo,
-        total_items_in_handle: totalItems,
-        selected_items: selectedCount,
-        item_selector: itemSelector,
-        successful: successCount,
-        failed: failureCount,
-        results,
-        assigned_items: assignedItems,
-        summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : '')
-      },
-      metadata: {
-        source: "bulk-assign-by-query-handle",
-        itemSelector
-      },
-      errors: failureCount > 0 
-        ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
-      warnings: []
+    const data = {
+      query_handle: queryHandle,
+      assign_to: assignTo,
+      total_items_in_handle: totalItems,
+      selected_items: selectedCount,
+      item_selector: itemSelector,
+      successful: successCount,
+      failed: failureCount,
+      results,
+      assigned_items: assignedItems,
+      summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : '')
     };
+
+    const metadata = {
+      source: "bulk-assign-by-query-handle",
+      itemSelector
+    };
+
+    if (failureCount > 0) {
+      const errors = results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`);
+      return buildPartialSuccessResponse(data, errors, [], metadata);
+    }
+
+    return buildSuccessResponse(data, metadata);
   } catch (error) {
     logger.error('Bulk assign by query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "bulk-assign-by-query-handle" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildCatchErrorResponse(error, 'bulk-assign-by-query-handle');
   }
 }
