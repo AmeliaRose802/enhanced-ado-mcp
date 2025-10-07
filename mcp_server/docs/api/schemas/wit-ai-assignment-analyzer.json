@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "workItemId": {
+      "type": "number",
+      "description": "Azure DevOps work item ID to analyze for AI assignment suitability"
+    },
+    "outputFormat": {
+      "type": "string",
+      "enum": [
+        "detailed",
+        "json"
+      ],
+      "description": "Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)"
+    }
+  },
+  "required": [
+    "workItemId"
+  ],
+  "$id": "#/components/schemas/wit-ai-assignment-analyzer",
+  "title": "wit-ai-assignment-analyzer",
+  "description": "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. Automatically retrieves work item details from Azure DevOps. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
+  "category": "Copilot Integration",
+  "aiPowered": false
+}

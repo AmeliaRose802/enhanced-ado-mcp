@@ -25,3 +25,12 @@ jobs:
       - name: Run tests
         working-directory: ./mcp_server
         run: npm test
+      
+      - name: Verify OpenAPI generation
+        working-directory: ./mcp_server
+        run: |
+          npm run generate-openapi
+          # Check that files were generated
+          test -f docs/api/openapi.json
+          test -f docs/api/schemas/index.json
+          echo "✅ OpenAPI documentation generated successfully"

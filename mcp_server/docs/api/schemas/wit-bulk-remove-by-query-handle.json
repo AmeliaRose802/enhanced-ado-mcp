@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"
+    },
+    "removeReason": {
+      "type": "string",
+      "description": "Optional reason for removing work items (added as comment before state change)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Preview operation without making changes (default false)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle"
+  ],
+  "$id": "#/components/schemas/wit-bulk-remove-by-query-handle",
+  "title": "wit-bulk-remove-by-query-handle",
+  "description": "Move multiple work items to 'Removed' state (does NOT permanently delete). Sets work item state to 'Removed' for items identified by a query handle. Optionally add a comment with removal reason. Supports dry-run mode.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

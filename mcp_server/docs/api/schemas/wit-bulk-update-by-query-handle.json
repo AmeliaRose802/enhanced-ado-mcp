@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"
+    },
+    "updates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "add",
+              "replace",
+              "remove"
+            ],
+            "description": "JSON Patch operation"
+          },
+          "path": {
+            "type": "string",
+            "description": "Field path (e.g., '/fields/System.State', '/fields/System.AssignedTo')"
+          },
+          "value": {
+            "description": "Value to set (not needed for 'remove' operation)"
+          }
+        },
+        "required": [
+          "op",
+          "path"
+        ]
+      },
+      "description": "Array of JSON Patch operations to apply"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Preview operation without making changes (default false)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle",
+    "updates"
+  ],
+  "$id": "#/components/schemas/wit-bulk-update-by-query-handle",
+  "title": "wit-bulk-update-by-query-handle",
+  "description": "Update multiple work items identified by a query handle. Uses JSON Patch operations to update fields. Supports dry-run mode.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

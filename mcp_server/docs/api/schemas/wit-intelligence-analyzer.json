@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Work item title to analyze"
+    },
+    "description": {
+      "type": "string",
+      "description": "Work item description/content to analyze"
+    },
+    "workItemType": {
+      "type": "string",
+      "description": "Type of work item (Task, Bug, PBI, etc.)"
+    },
+    "acceptanceCriteria": {
+      "type": "string",
+      "description": "Current acceptance criteria if any"
+    },
+    "analysisType": {
+      "type": "string",
+      "enum": [
+        "completeness",
+        "ai-readiness",
+        "enhancement",
+        "categorization",
+        "full"
+      ],
+      "description": "Type of analysis to perform"
+    },
+    "contextInfo": {
+      "type": "string",
+      "description": "Additional context about the project, team, or requirements"
+    },
+    "enhanceDescription": {
+      "type": "boolean",
+      "description": "Generate an enhanced, AI-ready description"
+    },
+    "createInADO": {
+      "type": "boolean",
+      "description": "Automatically create the enhanced item in Azure DevOps"
+    },
+    "parentWorkItemId": {
+      "type": "number",
+      "description": "Parent work item ID if creating in ADO"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "$id": "#/components/schemas/wit-intelligence-analyzer",
+  "title": "wit-intelligence-analyzer",
+  "description": "AI-powered work item analysis for completeness, AI-readiness, enhancement suggestions, and smart categorization using VS Code sampling",
+  "category": "Work Item Operations",
+  "aiPowered": false
+}

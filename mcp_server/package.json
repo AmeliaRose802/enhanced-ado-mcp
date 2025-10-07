@@ -70,6 +70,8 @@
     "benchmark:query": "tsx benchmarks/query-performance.bench.ts",
     "benchmark:bulk": "tsx benchmarks/bulk-operations.bench.ts",
     "benchmark:ai": "tsx benchmarks/ai-tools.bench.ts",
+    "generate-openapi": "tsx scripts/generate-openapi.ts",
+    "generate-docs": "npm run generate-openapi",
     "prepublishOnly": "npm run build"
   },
   "preferGlobal": false,
@@ -79,6 +81,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@asteasolutions/zod-to-openapi": "^7.3.4",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.19.19",
     "@types/yargs": "^17.0.33",
@@ -89,7 +92,8 @@
     "tinybench": "^5.0.1",
     "ts-jest": "^29.1.1",
     "tsx": "^4.19.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "zod-to-json-schema": "^3.24.6"
   },
   "publishConfig": {
     "access": "public",
