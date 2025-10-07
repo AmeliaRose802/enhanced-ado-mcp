@@ -338,7 +338,7 @@ export interface SprintPlanningResult {
     totalCapacityHours: number;
     totalCandidateItems: number;
     healthScore: number;
-    confidenceLevel: "High" | "Medium" | "Low" | "Unknown";
+    confidenceLevel?: "High" | "Medium" | "Low";
   };
   velocityAnalysis: {
     historicalVelocity: {
@@ -366,12 +366,12 @@ export interface SprintPlanningResult {
     reason: string;
     recommendation: string;
   }>;
-  sprintRisks: {
+  sprintRisks?: {
     critical: Array<{ title: string; description: string; mitigation: string }>;
     warnings: Array<{ title: string; description: string }>;
     recommendations: string[];
   };
-  balanceMetrics: {
+  balanceMetrics?: {
     workloadBalance: { score: number; assessment: string };
     skillCoverage: { score: number; assessment: string };
     dependencyRisk: { score: number; assessment: string };
@@ -382,6 +382,11 @@ export interface SprintPlanningResult {
     description: string;
     keyDifferences: string[];
     tradeoffs: string[];
+  }>;
+  dependencies?: Array<{
+    workItemId: number;
+    dependsOn: number[];
+    blockedBy: number[];
   }>;
   actionableSteps: string[];
   fullAnalysisText: string;
