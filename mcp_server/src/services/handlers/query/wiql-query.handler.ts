@@ -148,12 +148,15 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
             "Always use dryRun: true first to preview changes before applying them"
           ],
           expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          pagination: {
-            skip: result.skip,
-            top: result.top,
-            totalCount: result.totalCount,
-            hasMore: result.hasMore
-          },
+          ...((result.totalCount > result.top || parsed.data.includePaginationDetails) && {
+            pagination: {
+              skip: result.skip,
+              top: result.top,
+              totalCount: result.totalCount,
+              hasMore: result.hasMore,
+              ...(result.hasMore && { nextSkip: result.skip + result.top })
+            }
+          }),
           ...(parsed.data.includeSubstantiveChange && { 
             substantiveChangeIncluded: true 
           }),
@@ -197,16 +200,18 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         summary: fullPackages
           ? `Found ${result.count} work item(s) with full context packages matching the query (showing ${result.skip + 1}-${result.skip + result.count} of ${result.totalCount} total)`
           : `Found ${result.count} work item(s) matching the query (showing ${result.skip + 1}-${result.skip + result.count} of ${result.totalCount} total)`,
-        pagination: {
-          skip: result.skip,
-          top: result.top,
-          totalCount: result.totalCount,
-          hasMore: result.hasMore,
-          ...(result.hasMore && {
-            nextSkip: result.skip + result.top,
-            message: `Use skip=${result.skip + result.top} to get the next page of results`
-          })
-        },
+        ...((result.totalCount > result.top || parsed.data.includePaginationDetails) && {
+          pagination: {
+            skip: result.skip,
+            top: result.top,
+            totalCount: result.totalCount,
+            hasMore: result.hasMore,
+            ...(result.hasMore && {
+              nextSkip: result.skip + result.top,
+              message: `Use skip=${result.skip + result.top} to get the next page of results`
+            })
+          }
+        }),
         ...(parsed.data.includeSubstantiveChange && { 
           substantiveChangeIncluded: true 
         }),
