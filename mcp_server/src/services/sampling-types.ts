@@ -306,6 +306,8 @@ export interface SprintPlanningAnalyzerArgs {
   considerDependencies?: boolean;
   considerSkills?: boolean;
   additionalConstraints?: string;
+  includeFullAnalysis?: boolean;
+  rawAnalysisOnError?: boolean;
   organization?: string;
   project?: string;
   areaPath?: string;
@@ -384,5 +386,5 @@ export interface SprintPlanningResult {
     tradeoffs: string[];
   }>;
   actionableSteps: string[];
-  fullAnalysisText: string;
+  fullAnalysisText?: string;
 }
