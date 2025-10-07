@@ -43,10 +43,25 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     return segments.join('\\\\');
   };
   
+  // Extract simple area substring for OData contains() filtering without backslashes
+  // Needed for specific OData queries that require unescaped area path segments
+  const extractAreaSimpleSubstring = (areaPath: string): string => {
+    if (!areaPath) return '';
+    // Get the last meaningful segment without backslashes
+    // e.g., "One\\Azure Compute\\OneFleet Node\\Azure Host" -> "Azure Host"
+    const segments = areaPath.split('\\').filter(s => s.length > 0);
+    if (segments.length >= 1) {
+      // Return the last segment without any escaping
+      return segments[segments.length - 1];
+    }
+    return '';
+  };
+  
   return {
     // Core config variables (escape area paths for use in WIQL/OData queries)
     area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
     area_substring: extractAreaSubstring(config.azureDevOps.areaPath || ''),
+    area_path_simple_substring: extractAreaSimpleSubstring(config.azureDevOps.areaPath || ''),
     project: config.azureDevOps.project || '',
     project_name: config.azureDevOps.project || '',
     org_url: `https://dev.azure.com/${config.azureDevOps.organization}`,

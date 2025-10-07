@@ -1,0 +1,1 @@
+- Backlog cleanup is hardcoding everything to 180 days for staleness. Should allow age to be passed in as parameter and fill it in the prompt

@@ -79,7 +79,8 @@ Create detailed execution plan with specific human and AI assignments.
 
 When you see template variables in queries, these are **ACTUAL PRE-FILLED VALUES**:
 - `{{area_path}}` → The configured project area path
-- `{{area_substring}}` → Pre-extracted substring for OData filtering
+- `{{area_substring}}` → Pre-extracted substring for OData filtering (with escaped backslashes)
+- `{{area_path_simple_substring}}` → Simple substring for OData filtering (without backslashes)
 - `{{project}}` → The Azure DevOps project name
 - `{{planning_horizon_weeks}}` → User-provided or default planning window
 - Date variables → Pre-calculated
@@ -429,7 +430,8 @@ Buffered Timeline = Base Timeline × 1.20
 These variables are automatically populated:
 
 - `{{area_path}}` - Full configured area path
-- `{{area_substring}}` - Pre-extracted substring for OData
+- `{{area_substring}}` - Pre-extracted substring for OData (with escaped backslashes)
+- `{{area_path_simple_substring}}` - Simple substring for OData (without backslashes)
 - `{{project}}` - Azure DevOps project name
 - `{{today}}` - Today's date (YYYY-MM-DD)
 - `{{planning_horizon_weeks}}` - Planning window (default: 26)
