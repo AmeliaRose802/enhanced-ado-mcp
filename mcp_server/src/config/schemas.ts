@@ -285,6 +285,8 @@ export const workItemContextPackageSchema = z.object({
   includeLinkedPRsAndCommits: z.boolean().optional().default(true).describe("Include linked Git PRs and commits if present in relations"),
   includeExtendedFields: z.boolean().optional().default(false).describe("Include extended field set beyond defaults (all system fields + common custom)"),
   includeHtml: z.boolean().optional().default(false).describe("Return original HTML field values alongside Markdown/plain text"),
+  includeHtmlFields: z.boolean().optional().default(false).describe("Whether to include original HTML-formatted fields (System.Description, Microsoft.VSTS.TCM.ReproSteps, Microsoft.VSTS.Common.AcceptanceCriteria). When false, HTML is stripped. Saves ~10-30% context window usage."),
+  stripHtmlFormatting: z.boolean().optional().default(true).describe("Whether to convert HTML fields to plain text by removing tags and decoding entities. When true, converts HTML to readable plain text preserving line breaks."),
   maxChildDepth: z.number().int().optional().default(1).describe("Depth of child hierarchy to traverse (1 = immediate children)"),
   maxRelatedItems: z.number().int().optional().default(50).describe("Maximum number of related items to expand"),
   includeAttachments: z.boolean().optional().default(false).describe("Include attachment metadata (names, urls, sizes)"),
