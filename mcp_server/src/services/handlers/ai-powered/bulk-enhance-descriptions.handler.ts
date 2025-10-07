@@ -49,6 +49,7 @@ interface EnhancementResult {
  *   - enhancementStyle?: string - Style for descriptions: 'concise' | 'detailed' | 'technical' | 'business' (default: 'detailed')
  *   - preserveExisting?: boolean - Append to existing description vs replace (default: true)
  *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
+ *   - returnFormat?: string - Response format: 'summary' | 'preview' | 'full' (default: 'summary' for dry-run, 'preview' for execute)
  *   - organization?: string - Azure DevOps organization (defaults to config value)
  *   - project?: string - Azure DevOps project (defaults to config value)
  * @param server - MCP server instance for AI sampling capabilities
@@ -63,14 +64,14 @@ interface EnhancementResult {
  *       * enhancement_style: string - Style used for descriptions
  *       * preserve_existing: boolean - Whether existing content was preserved
  *       * dry_run: boolean - Whether changes were applied
+ *       * return_format: string - Response format used ('summary' | 'preview' | 'full')
  *       * successful: number - Count of successfully enhanced items
  *       * skipped: number - Count of skipped items (completed/closed)
  *       * failed: number - Count of failed items
- *       * results: Array of per-item enhancement results with:
- *           - work_item_id: number
- *           - enhanced_description: string (if dry_run)
- *           - improvement_reason: string - Why enhancement was needed
- *           - confidence: number (0-1) - AI confidence in enhancement
+ *       * results: Array of per-item results (format depends on returnFormat):
+ *           - 'summary': undefined (only counts provided)
+ *           - 'preview': work_item_id, status, preview (200 chars), error, skip_reason
+ *           - 'full': work_item_id, title, status, enhanced_description, improvement_reason, confidence, error, skip_reason
  *       * summary: string - Human-readable summary
  *   - metadata: Processing statistics and context
  *   - errors: Array of error messages for failed items
@@ -123,9 +124,13 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
       enhancementStyle, 
       preserveExisting, 
       dryRun, 
+      returnFormat: userReturnFormat,
       organization, 
       project 
     } = parsed.data;
+
+    // Apply default format based on dryRun mode if not specified
+    const returnFormat = userReturnFormat || (dryRun ? 'summary' : 'preview');
 
     // Check sampling support
     const samplingClient = new SamplingClient(server);
@@ -261,6 +266,35 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
     const skippedCount = results.filter(r => r.skipped).length;
     const failureCount = results.filter(r => !r.success && !r.skipped).length;
 
+    // Format results based on returnFormat
+    let formattedResults;
+    if (returnFormat === 'summary') {
+      // Summary: Only counts, no item details
+      formattedResults = undefined;
+    } else if (returnFormat === 'preview') {
+      // Preview: Include 200 char preview of enhanced description
+      formattedResults = results.map(r => ({
+        work_item_id: r.workItemId,
+        status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
+        preview: r.enhancedDescription ? r.enhancedDescription.substring(0, 200) + (r.enhancedDescription.length > 200 ? '...' : '') : undefined,
+        error: r.error,
+        skip_reason: r.skipped
+      }));
+    } else {
+      // Full: Complete details
+      formattedResults = results.map(r => ({
+        work_item_id: r.workItemId,
+        title: r.title,
+        status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
+        original: dryRun && r.success ? undefined : undefined, // Original not stored in current implementation
+        enhanced_description: dryRun ? r.enhancedDescription : undefined,
+        improvement_reason: r.improvementReason,
+        confidence: r.confidence,
+        error: r.error,
+        skip_reason: r.skipped
+      }));
+    }
+
     return {
       success: failureCount === 0,
       data: {
@@ -272,19 +306,11 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         enhancement_style: enhancementStyle,
         preserve_existing: preserveExisting,
         dry_run: dryRun,
+        return_format: returnFormat,
         successful: successCount,
         skipped: skippedCount,
         failed: failureCount,
-        results: results.map(r => ({
-          work_item_id: r.workItemId,
-          title: r.title,
-          status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
-          enhanced_description: dryRun ? r.enhancedDescription : undefined,
-          improvement_reason: r.improvementReason,
-          confidence: r.confidence,
-          error: r.error,
-          skip_reason: r.skipped
-        })),
+        results: formattedResults,
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} enhanced descriptions (${skippedCount} skipped, ${failureCount} failed)`
           : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`
