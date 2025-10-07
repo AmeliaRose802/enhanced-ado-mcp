@@ -18,7 +18,8 @@ import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.
 // Query handle handlers
 import { handleValidateQueryHandle } from './handlers/query-handles/validate-query-handle.handler.js';
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
-import { handleInspectQueryHandle, handleSelectItemsFromQueryHandle } from './handlers/query-handles/inspect-query-handle.handler.js';
+import { handleInspectQueryHandle } from './handlers/query-handles/inspect-query-handle.handler.js';
+import { handleSelectItemsFromQueryHandle } from './handlers/query-handles/select-items-from-query-handle.handler.js';
 
 // Bulk operation handlers
 import { handleBulkCommentByQueryHandle } from './handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
