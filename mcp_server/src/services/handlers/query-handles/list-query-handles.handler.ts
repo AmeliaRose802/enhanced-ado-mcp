@@ -30,8 +30,8 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
     // Get stats from the service
     const stats = queryHandleService.getStats();
     
-    // We don't have direct access to all handles from the service, so we'll provide stats
-    // In a real implementation, we'd need to extend the query handle service to expose handles
+    // Get all handles with their details
+    const handles = queryHandleService.getAllHandles(includeExpired);
     
     const now = new Date();
     const result = {
@@ -39,7 +39,7 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
       active_handles: stats.activeHandles,
       expired_handles: stats.expiredHandles,
       timestamp: now.toISOString(),
-      handles: [] as any[], // Would need service extension to populate this
+      handles: handles,
       guidance: {
         handle_lifetime: "1 hour (default)",
         cleanup_frequency: "Every 5 minutes",

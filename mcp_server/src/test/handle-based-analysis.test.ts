@@ -222,6 +222,41 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.expired_handles).toBe(0);
       expect(result.data.guidance).toBeDefined();
       expect(result.data.guidance.handle_lifetime).toBe('1 hour (default)');
+      
+      // Verify handles array is populated
+      expect(result.data.handles).toBeDefined();
+      expect(Array.isArray(result.data.handles)).toBe(true);
+      expect(result.data.handles.length).toBe(2);
+      
+      // Verify each handle has the required fields
+      for (const handle of result.data.handles) {
+        expect(handle).toHaveProperty('id');
+        expect(handle).toHaveProperty('created_at');
+        expect(handle).toHaveProperty('expires_at');
+        expect(handle).toHaveProperty('item_count');
+        expect(handle).toHaveProperty('has_context');
+        
+        expect(handle.id).toMatch(/^qh_/);
+        expect(typeof handle.created_at).toBe('string');
+        expect(typeof handle.expires_at).toBe('string');
+        expect(typeof handle.item_count).toBe('number');
+        expect(typeof handle.has_context).toBe('boolean');
+        expect(handle.item_count).toBeGreaterThan(0);
+      }
+    });
+
+    it('should populate handles with correct item count', async () => {
+      // Create handles with different item counts
+      queryHandleService.storeQuery([1, 2, 3, 4, 5], 'SELECT [System.Id] FROM WorkItems');
+      queryHandleService.storeQuery([10], 'SELECT [System.Id] FROM WorkItems');
+
+      const result = await handleListQueryHandles(mockConfig, {});
+
+      expect(result.success).toBe(true);
+      expect(result.data.handles.length).toBe(2);
+      
+      const itemCounts = result.data.handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
+      expect(itemCounts).toEqual([1, 5]);
     });
 
     it('should provide warnings when no handles exist', async () => {
@@ -258,6 +293,38 @@ describe('Handle-Based Analysis Tools', () => {
       // The exact counts depend on cleanup timing, but we should get stats
       expect(result.data).toBeDefined();
       expect(result.data.guidance).toBeDefined();
+    });
+
+    it('should exclude expired handles from handles array by default', async () => {
+      // Create one active and one expired handle
+      queryHandleService.storeQuery([1, 2, 3], 'SELECT [System.Id] FROM WorkItems');
+      queryHandleService.storeQuery([4, 5], 'SELECT [System.Id] FROM WorkItems', undefined, 1); // 1ms TTL
+      
+      // Wait for expiration
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const result = await handleListQueryHandles(mockConfig, { includeExpired: false });
+
+      expect(result.success).toBe(true);
+      expect(result.data.handles.length).toBe(1);
+      expect(result.data.handles[0].item_count).toBe(3);
+    });
+
+    it('should include expired handles when requested', async () => {
+      // Create one active and one expired handle
+      queryHandleService.storeQuery([1, 2, 3], 'SELECT [System.Id] FROM WorkItems');
+      queryHandleService.storeQuery([4, 5], 'SELECT [System.Id] FROM WorkItems', undefined, 1); // 1ms TTL
+      
+      // Wait for expiration
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      const result = await handleListQueryHandles(mockConfig, { includeExpired: true });
+
+      expect(result.success).toBe(true);
+      expect(result.data.handles.length).toBe(2);
+      
+      const itemCounts = result.data.handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
+      expect(itemCounts).toEqual([2, 3]);
     });
   });
 });
