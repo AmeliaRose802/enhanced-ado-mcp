@@ -202,6 +202,149 @@ Pass the `query_handle` string to any bulk operation tool:
 }
 ```
 
+## Item Selection
+
+Query handles now support selecting subsets of items for bulk operations. This prevents ID hallucination and provides safe, validated selection mechanisms.
+
+### Selection Types
+
+#### 1. Select All Items
+Use when you want to affect every item in the query result.
+
+**Example:**
+```typescript
+itemSelector: "all"  // Selects all items from query handle
+```
+
+**Use Cases:**
+- Commenting on all items in a sprint
+- Updating all items in a specific state
+- When the WIQL query already filtered to exactly what you want
+
+#### 2. Index-Based Selection
+Use when you know specific item positions from inspect-query-handle output.
+
+**Example:**
+```typescript
+itemSelector: [0, 1, 5]  // Selects items at indices 0, 1, and 5
+```
+
+**Use Cases:**
+- User specifies "update the first 3 items"
+- After inspecting items, select specific ones by index
+- Selecting a sample of items for testing
+
+**Important:** Indices are 0-based. First item is index 0.
+
+#### 3. Criteria-Based Selection
+Use when you want items matching specific attributes.
+
+**Examples:**
+```typescript
+// Select by state
+itemSelector: { states: ["Active", "In Progress"] }
+
+// Select by tags
+itemSelector: { tags: ["critical", "security"] }
+
+// Select by title keywords
+itemSelector: { titleContains: "authentication" }
+
+// Select stale items
+itemSelector: { daysInactiveMin: 7 }  // Items inactive >= 7 days
+
+// Combine criteria (AND logic)
+itemSelector: {
+  states: ["Active"],
+  tags: ["critical"],
+  daysInactiveMin: 3
+}
+```
+
+**Use Cases:**
+- Assign all critical bugs to security team
+- Comment on all stale Active items
+- Update all items with specific tags
+- Bulk operations on filtered subsets
+
+### Safe Selection Workflow
+
+**ALWAYS use this workflow for bulk operations:**
+
+1. **Query** - Get work items with WIQL:
+   ```
+   wit-query-wiql with returnQueryHandle: true
+   Result: queryHandle "qh_abc123"
+   ```
+
+2. **Inspect** - Preview available items:
+   ```
+   wit-inspect-query-handle with queryHandle: "qh_abc123"
+   Shows: 10 items with indices, states, tags
+   ```
+
+3. **Preview Selection** - Verify what will be selected:
+   ```
+   wit-select-items-from-query-handle 
+     queryHandle: "qh_abc123"
+     itemSelector: { states: ["Active"] }
+   Result: "Would select 5 of 10 items"
+   ```
+
+4. **Execute** - Perform bulk operation:
+   ```
+   wit-bulk-comment-by-query-handle
+     queryHandle: "qh_abc123"
+     itemSelector: { states: ["Active"] }
+     comment: "Needs review"
+   ```
+
+### Anti-Patterns (DO NOT DO THIS)
+
+❌ **DO NOT extract IDs manually:**
+```
+// WRONG - causes hallucination
+queryResult = wit-query-wiql(...)
+manualIds = [123, 456, 789]  // AI might hallucinate these
+wit-bulk-comment(workItemIds: manualIds, ...)
+```
+
+✅ **DO use query handles:**
+```
+// CORRECT - validated selection
+queryHandle = wit-query-wiql(returnQueryHandle: true)
+wit-bulk-comment-by-query-handle(queryHandle, itemSelector: "all")
+```
+
+❌ **DO NOT skip preview for destructive operations:**
+```
+// WRONG - no preview before removal
+wit-bulk-remove-by-query-handle(queryHandle, itemSelector: {states: ["Done"]})
+```
+
+✅ **DO preview before destructive ops:**
+```
+// CORRECT - verify first
+wit-select-items-from-query-handle(queryHandle, itemSelector: {states: ["Done"]})
+// User confirms: "Yes, remove those 5 items"
+wit-bulk-remove-by-query-handle(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
+```
+
+### Selection Performance
+
+- **Index selection:** O(n) where n = number of indices
+- **Criteria selection:** O(m) where m = total items in handle
+- **All selection:** O(1) - no filtering needed
+
+Choose index selection when possible for best performance with large query results.
+
+### Selection Expiration
+
+Query handles expire after 1 hour by default. After expiration:
+- Selection operations will fail
+- Run the WIQL query again to get a fresh handle
+- itemSelector patterns work the same with new handles
+
 ## 🛠️ Available Bulk Tools
 
 All tools support `dryRun: true` for safe preview:
