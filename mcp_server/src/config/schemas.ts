@@ -461,6 +461,8 @@ export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
   preserveExisting: z.boolean().optional().default(true).describe("Append to existing description rather than replace (default true)"),
   dryRun: z.boolean().optional().default(true).describe("Preview AI-generated descriptions without updating work items (default true for safety)"),
   returnFormat: z.enum(['summary', 'preview', 'full']).optional().describe("Response format: 'summary' (counts only, ~70% reduction), 'preview' (200 char previews, ~40% reduction), 'full' (complete text). Defaults to 'summary' for dry-run, 'preview' for execute."),
+  includeTitles: z.boolean().optional().default(false).describe("Include work item titles in 'full' format response (default false, saves ~10-50 tokens per item)"),
+  includeConfidence: z.boolean().optional().default(false).describe("Include AI confidence scores in 'full' format response (default false, only shows scores < 0.85 when true)"),
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });

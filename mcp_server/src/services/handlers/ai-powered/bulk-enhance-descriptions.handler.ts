@@ -50,6 +50,8 @@ interface EnhancementResult {
  *   - preserveExisting?: boolean - Append to existing description vs replace (default: true)
  *   - dryRun?: boolean - Preview mode without updating Azure DevOps (default: true)
  *   - returnFormat?: string - Response format: 'summary' | 'preview' | 'full' (default: 'summary' for dry-run, 'preview' for execute)
+ *   - includeTitles?: boolean - Include work item titles in response (default: false, saves ~10-50 tokens per item)
+ *   - includeConfidence?: boolean - Include AI confidence scores (default: false, only shows scores < 0.85 when true)
  *   - organization?: string - Azure DevOps organization (defaults to config value)
  *   - project?: string - Azure DevOps project (defaults to config value)
  * @param server - MCP server instance for AI sampling capabilities
@@ -64,14 +66,14 @@ interface EnhancementResult {
  *       * enhancement_style: string - Style used for descriptions
  *       * preserve_existing: boolean - Whether existing content was preserved
  *       * dry_run: boolean - Whether changes were applied
- *       * return_format: string - Response format used ('summary' | 'preview' | 'full')
  *       * successful: number - Count of successfully enhanced items
  *       * skipped: number - Count of skipped items (completed/closed)
  *       * failed: number - Count of failed items
- *       * results: Array of per-item results (format depends on returnFormat):
- *           - 'summary': undefined (only counts provided)
- *           - 'preview': work_item_id, status, preview (200 chars), error, skip_reason
- *           - 'full': work_item_id, title, status, enhanced_description, improvement_reason, confidence, error, skip_reason
+ *       * results: Array of per-item enhancement results with:
+ *           - work_item_id: number
+ *           - enhanced_description: string (if dry_run)
+ *           - improvement_reason: string - Why enhancement was needed
+ *           - confidence: number (0-1) - AI confidence in enhancement
  *       * summary: string - Human-readable summary
  *   - metadata: Processing statistics and context
  *   - errors: Array of error messages for failed items
@@ -125,6 +127,8 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
       preserveExisting, 
       dryRun, 
       returnFormat: userReturnFormat,
+      includeTitles,
+      includeConfidence,
       organization, 
       project 
     } = parsed.data;
@@ -269,7 +273,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
     // Format results based on returnFormat
     let formattedResults;
     if (returnFormat === 'summary') {
-      // Summary: Only counts, no item details
+      // Summary: Only counts, no item details (most efficient)
       formattedResults = undefined;
     } else if (returnFormat === 'preview') {
       // Preview: Include 200 char preview of enhanced description
@@ -281,18 +285,43 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         skip_reason: r.skipped
       }));
     } else {
-      // Full: Complete details
-      formattedResults = results.map(r => ({
-        work_item_id: r.workItemId,
-        title: r.title,
-        status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
-        original: dryRun && r.success ? undefined : undefined, // Original not stored in current implementation
-        enhanced_description: dryRun ? r.enhancedDescription : undefined,
-        improvement_reason: r.improvementReason,
-        confidence: r.confidence,
-        error: r.error,
-        skip_reason: r.skipped
-      }));
+      // Full: Complete details (respects includeTitles and includeConfidence params)
+      formattedResults = results.map(r => {
+        const result: any = {
+          work_item_id: r.workItemId,
+          status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed'
+        };
+        
+        // Only include title if requested (default: false to save tokens)
+        if (includeTitles) {
+          result.title = r.title;
+        }
+        
+        // Include enhanced description
+        if (r.enhancedDescription) {
+          result.enhanced_description = r.enhancedDescription;
+        }
+        
+        // Include improvement reason
+        if (r.improvementReason) {
+          result.improvement_reason = r.improvementReason;
+        }
+        
+        // Only include confidence when requested AND score < 0.85 (uncertainty threshold)
+        if (includeConfidence && r.confidence !== undefined && r.confidence < 0.85) {
+          result.confidence = r.confidence;
+        }
+        
+        // Include error/skip messages
+        if (r.error) {
+          result.error = r.error;
+        }
+        if (r.skipped) {
+          result.skip_reason = r.skipped;
+        }
+        
+        return result;
+      });
     }
 
     return {
