@@ -1,5 +1,10 @@
 # WIQL Hierarchical Query Support
 
+> **See Also:**
+> - **Query tools:** [Query Tools](./QUERY_TOOLS.md) - Full WIQL and OData documentation
+> - **Best practices:** [WIQL Best Practices](../guides/WIQL_BEST_PRACTICES.md) - Common patterns and pitfalls
+> - **Query generation:** [Query Tools](./QUERY_TOOLS.md) - AI-powered WIQL generation
+
 ## Overview
 
 The WIQL query generator now has comprehensive support for hierarchical queries using `FROM WorkItemLinks`.

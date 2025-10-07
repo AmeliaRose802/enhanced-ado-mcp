@@ -1,5 +1,9 @@
 # OData Query Optimization Report
 
+> **See Also:**
+> - **OData tool usage:** [Query Tools](./QUERY_TOOLS.md) - Comprehensive OData and WIQL documentation
+> - **Query examples:** Check the Query Tools spec for current patterns
+
 ## Summary
 
 Reviewed all prompt files for OData Analytics queries and optimized them to use built-in query types where possible instead of custom queries. This improves maintainability, reduces errors, and provides better performance.

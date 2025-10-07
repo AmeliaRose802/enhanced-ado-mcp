@@ -37,14 +37,43 @@ docs/
 
 Detailed specifications for all major features. See [feature_specs/toc.yml](./feature_specs/toc.yml) for complete list.
 
+#### Core Operations
 | Feature | Description | Status |
 |---------|-------------|--------|
-| [**AI-Powered Features**](./feature_specs/AI_POWERED_FEATURES.md) | Work item intelligence, AI analysis, enhancement suggestions | ✅ Implemented |
-| [**Query Handle Pattern**](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md) | Anti-hallucination architecture for safe bulk operations | ✅ Implemented |
-| [**Model Selection**](./feature_specs/MODEL_SELECTION.md) | LLM model selection and configuration | ✅ Implemented |
-| [**OData Optimization**](./feature_specs/ODATA_QUERY_OPTIMIZATION.md) | OData query patterns and performance optimization | ✅ Implemented |
-| [**Resources Feature**](./feature_specs/RESOURCES_FEATURE.md) | MCP resources for AI agent guidance | ✅ Implemented |
-| [**WIQL Hierarchical Queries**](./feature_specs/WIQL_HIERARCHICAL_QUERIES.md) | Patterns for hierarchy queries and parent-child relationships | ✅ Implemented |
+| [**Work Item Creation**](./feature_specs/WORK_ITEM_CREATION.md) | Create work items, assign to Copilot, parent-child relationships | ✅ Implemented |
+| [**Work Item Context**](./feature_specs/WORK_ITEM_CONTEXT.md) | Comprehensive context retrieval, batch operations with relationships | ✅ Implemented |
+
+#### Query & Search
+| Feature | Description | Status |
+|---------|-------------|--------|
+| [**Query Tools**](./feature_specs/QUERY_TOOLS.md) | WIQL, OData, AI-powered query generation from natural language | ✅ Implemented |
+| [**WIQL Hierarchical Queries**](./feature_specs/WIQL_HIERARCHICAL_QUERIES.md) | Hierarchy query patterns, parent-child relationships | ✅ Implemented |
+| [**OData Optimization**](./feature_specs/ODATA_QUERY_OPTIMIZATION.md) | Analytics query patterns, performance optimization | ✅ Implemented |
+
+#### Query Handle Pattern
+| Feature | Description | Status |
+|---------|-------------|--------|
+| [**Enhanced Query Handle Pattern**](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md) | Anti-hallucination architecture for safe bulk operations | ✅ Implemented |
+| [**Query Handle Operations**](./feature_specs/QUERY_HANDLE_OPERATIONS.md) | Validate, inspect, select items, handle lifecycle management | ✅ Implemented |
+
+#### Bulk Operations
+| Feature | Description | Status |
+|---------|-------------|--------|
+| [**Bulk Operations**](./feature_specs/BULK_OPERATIONS.md) | Bulk comment, update, assign, remove with query handles | ✅ Implemented |
+| [**Bulk AI Enhancement**](./feature_specs/BULK_AI_ENHANCEMENT.md) | AI-powered description enhancement, story points, acceptance criteria | ✅ Implemented |
+
+#### Analysis & Intelligence
+| Feature | Description | Status |
+|---------|-------------|--------|
+| [**Analysis Tools**](./feature_specs/ANALYSIS_TOOLS.md) | Pattern detection, hierarchy validation, staleness analysis | ✅ Implemented |
+| [**AI Intelligence Tools**](./feature_specs/AI_INTELLIGENCE_TOOLS.md) | Work item intelligence, AI assignment analysis, sprint planning | ✅ Implemented |
+| [**AI-Powered Features**](./feature_specs/AI_POWERED_FEATURES.md) | Overview of all AI-powered features and capabilities | ✅ Implemented |
+| [**Model Selection**](./feature_specs/MODEL_SELECTION.md) | LLM model selection, configuration, performance tuning | ✅ Implemented |
+
+#### Resources & Guidance
+| Feature | Description | Status |
+|---------|-------------|--------|
+| [**Resources Feature**](./feature_specs/RESOURCES_FEATURE.md) | MCP resources for AI agent guidance and quick reference | ✅ Implemented |
 
 ### User Guides
 
@@ -66,17 +95,35 @@ Practical guides for using the MCP server. See [guides/toc.yml](./guides/toc.yml
 
 ### Quick Reference by Task
 
+**Creating work items:**
+- [Work Item Creation](./feature_specs/WORK_ITEM_CREATION.md) - Create, assign to Copilot
+- [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - Intelligence analyzer for quality analysis
+
+**Retrieving information:**
+- [Work Item Context](./feature_specs/WORK_ITEM_CONTEXT.md) - Context packages, batch retrieval
+- [Analysis Tools](./feature_specs/ANALYSIS_TOOLS.md) - Configuration, staleness, security links
+
 **Building queries:**
-- [WIQL Best Practices](./guides/WIQL_BEST_PRACTICES.md)
-- [WIQL Hierarchical Queries](./feature_specs/WIQL_HIERARCHICAL_QUERIES.md)
-- [OData Query Optimization](./feature_specs/ODATA_QUERY_OPTIMIZATION.md)
+- [Query Tools](./feature_specs/QUERY_TOOLS.md) - WIQL, OData, AI generation
+- [WIQL Best Practices](./guides/WIQL_BEST_PRACTICES.md) - Query patterns
+- [WIQL Hierarchical Queries](./feature_specs/WIQL_HIERARCHICAL_QUERIES.md) - Hierarchy patterns
+- [OData Query Optimization](./feature_specs/ODATA_QUERY_OPTIMIZATION.md) - Analytics queries
 
 **Bulk operations:**
-- [Enhanced Query Handle Pattern](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md)
+- [Bulk Operations](./feature_specs/BULK_OPERATIONS.md) - Comment, update, assign, remove
+- [Bulk AI Enhancement](./feature_specs/BULK_AI_ENHANCEMENT.md) - AI-powered enhancements
+- [Enhanced Query Handle Pattern](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md) - Anti-hallucination architecture
+- [Query Handle Operations](./feature_specs/QUERY_HANDLE_OPERATIONS.md) - Handle management
+
+**Analysis and validation:**
+- [Analysis Tools](./feature_specs/ANALYSIS_TOOLS.md) - Pattern detection, hierarchy validation
+- [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - AI assignment analysis, workload analysis, sprint planning
 
 **AI-powered analysis:**
-- [AI-Powered Features](./feature_specs/AI_POWERED_FEATURES.md)
-- [Model Selection](./feature_specs/MODEL_SELECTION.md)
+- [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - Intelligence analyzer, AI assignment, sprint planning
+- [Bulk AI Enhancement](./feature_specs/BULK_AI_ENHANCEMENT.md) - Bulk enhancements
+- [AI-Powered Features](./feature_specs/AI_POWERED_FEATURES.md) - Overview
+- [Model Selection](./feature_specs/MODEL_SELECTION.md) - LLM configuration
 
 **Understanding the system:**
 - [Architecture](./ARCHITECTURE.md)

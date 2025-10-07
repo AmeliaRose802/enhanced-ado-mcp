@@ -1,5 +1,9 @@
 # MCP Resources Feature
 
+> **Note:** Resources provide quick-reference documentation accessible to AI agents without requiring LLM calls. For detailed tool documentation, see:
+> - **Tools overview:** [docs/README.md](../README.md)
+> - **Feature specifications:** [feature_specs/toc.yml](./toc.yml)
+
 ## Overview
 
 The Enhanced ADO MCP Server exposes documentation resources via the Model Context Protocol (MCP) `resources` capability. This feature provides AI agents with focused, query-ready documentation without requiring prompts or AI analysis.
