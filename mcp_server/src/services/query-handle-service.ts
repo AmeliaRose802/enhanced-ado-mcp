@@ -335,7 +335,7 @@ class QueryHandleService {
    * 
    * @param handle Query handle string
    * @param selector Item selector (all, indices array, or criteria object)
-   * @returns Array of work item IDs, or null if handle not found
+   * @returns Array of work item IDs, or null if handle not found or invalid selector
    */
   resolveItemSelector(handle: string, selector: ItemSelector): number[] | null {
     const data = this.getQueryData(handle);
@@ -349,8 +349,13 @@ class QueryHandleService {
       return this.getItemsByIndices(handle, selector);
     }
 
-    // Criteria-based selection
-    return this.getItemsByCriteria(handle, selector);
+    // Validate selector is an object before treating as criteria
+    if (selector && typeof selector === 'object') {
+      return this.getItemsByCriteria(handle, selector);
+    }
+
+    // Invalid selector type
+    return null;
   }
 
   /**

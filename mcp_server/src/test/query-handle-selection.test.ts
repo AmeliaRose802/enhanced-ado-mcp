@@ -68,6 +68,49 @@ describe('Query Handle Selection Integration Tests', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should filter out negative indices', () => {
+      const workItemIds = [101, 102, 103];
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000
+      );
+
+      const result = queryHandleService.getItemsByIndices(handle, [-1, 0, -5, 2]);
+
+      expect(result).toEqual([101, 103]); // Negative indices filtered out
+    });
+
+    it('should handle duplicate indices', () => {
+      const workItemIds = [101, 102, 103];
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000
+      );
+
+      const result = queryHandleService.getItemsByIndices(handle, [0, 1, 0, 2, 1]);
+
+      // Duplicates are allowed - maps directly to work item IDs
+      expect(result).toEqual([101, 102, 101, 103, 102]);
+    });
+
+    it('should handle selection from empty query result', () => {
+      const workItemIds: number[] = [];
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000
+      );
+
+      const result = queryHandleService.getItemsByIndices(handle, [0, 1]);
+
+      expect(result).toEqual([]); // All indices out of bounds
+    });
   });
 
   describe('Criteria-based Selection', () => {
@@ -225,6 +268,215 @@ describe('Query Handle Selection Integration Tests', () => {
 
       expect(result).toEqual([]);
     });
+
+    it('should filter by multiple states', () => {
+      const workItemIds = [101, 102, 103, 104];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task' }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task' }],
+        [103, { id: 103, title: 'Item 3', state: 'Closed', type: 'Bug' }],
+        [104, { id: 104, title: 'Item 4', state: 'Active', type: 'Task' }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        states: ['Active', 'Closed']
+      });
+
+      expect(result).toEqual([101, 103, 104]);
+    });
+
+    it('should filter by multiple tags', () => {
+      const workItemIds = [101, 102, 103, 104];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task', tags: ['Security', 'Critical'] }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task', tags: ['Documentation'] }],
+        [103, { id: 103, title: 'Item 3', state: 'Active', type: 'Bug', tags: ['Performance'] }],
+        [104, { id: 104, title: 'Item 4', state: 'Active', type: 'Task', tags: ['Critical', 'Bug'] }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        tags: ['Security', 'Performance']
+      });
+
+      expect(result).toEqual([101, 103]); // Items with Security OR Performance
+    });
+
+    it('should filter by daysInactiveMin only', () => {
+      const workItemIds = [101, 102, 103, 104];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task', daysInactive: 10 }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task', daysInactive: 45 }],
+        [103, { id: 103, title: 'Item 3', state: 'Active', type: 'Bug', daysInactive: 90 }],
+        [104, { id: 104, title: 'Item 4', state: 'Closed', type: 'Task', daysInactive: 120 }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        daysInactiveMin: 60
+      });
+
+      expect(result).toEqual([103, 104]); // Items with daysInactive >= 60
+    });
+
+    it('should filter by daysInactiveMax only', () => {
+      const workItemIds = [101, 102, 103, 104];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task', daysInactive: 10 }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task', daysInactive: 45 }],
+        [103, { id: 103, title: 'Item 3', state: 'Active', type: 'Bug', daysInactive: 90 }],
+        [104, { id: 104, title: 'Item 4', state: 'Closed', type: 'Task', daysInactive: 120 }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        daysInactiveMax: 50
+      });
+
+      expect(result).toEqual([101, 102]); // Items with daysInactive <= 50
+    });
+
+    it('should return all items when empty criteria is provided', () => {
+      const workItemIds = [101, 102, 103];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task' }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task' }],
+        [103, { id: 103, title: 'Item 3', state: 'Closed', type: 'Bug' }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {});
+
+      expect(result).toEqual([101, 102, 103]); // Empty criteria matches all
+    });
+
+    it('should handle special characters in title search', () => {
+      const workItemIds = [101, 102, 103];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Fix bug: [Auth] Login fails', state: 'Active', type: 'Bug' }],
+        [102, { id: 102, title: 'Update docs (v2.0)', state: 'New', type: 'Task' }],
+        [103, { id: 103, title: 'Bug in payment $$ system', state: 'Active', type: 'Bug' }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        titleContains: ['[Auth]']
+      });
+
+      expect(result).toEqual([101]);
+    });
+
+    it('should handle tags with spaces and special characters', () => {
+      const workItemIds = [101, 102, 103];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task', tags: ['High Priority', 'Security-Critical'] }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task', tags: ['Low Priority'] }],
+        [103, { id: 103, title: 'Item 3', state: 'Active', type: 'Bug', tags: ['Security-Critical', 'Bug Fix'] }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        tags: ['Security-Critical']
+      });
+
+      expect(result).toEqual([101, 103]);
+    });
+
+    it('should handle case-insensitive title search', () => {
+      const workItemIds = [101, 102, 103];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Fix BUG in login', state: 'Active', type: 'Bug' }],
+        [102, { id: 102, title: 'Update documentation', state: 'New', type: 'Task' }],
+        [103, { id: 103, title: 'Bug in payment system', state: 'Active', type: 'Bug' }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        titleContains: ['bug']
+      });
+
+      expect(result).toEqual([101, 103]); // Case-insensitive match
+    });
+
+    it('should handle case-insensitive tag search', () => {
+      const workItemIds = [101, 102, 103];
+      const itemContext = new Map([
+        [101, { id: 101, title: 'Item 1', state: 'Active', type: 'Task', tags: ['SECURITY', 'Critical'] }],
+        [102, { id: 102, title: 'Item 2', state: 'New', type: 'Task', tags: ['Documentation'] }],
+        [103, { id: 103, title: 'Item 3', state: 'Active', type: 'Bug', tags: ['security', 'Bug'] }]
+      ]);
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        tags: ['security']
+      });
+
+      expect(result).toEqual([101, 103]); // Case-insensitive match
+    });
   });
 
   describe('Unified Item Selector Resolution', () => {
@@ -285,6 +537,26 @@ describe('Query Handle Selection Integration Tests', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should handle invalid selector type gracefully', () => {
+      const workItemIds = [101, 102, 103];
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000
+      );
+
+      // Test with invalid selector types - TypeScript would catch this but test runtime behavior
+      const result1 = queryHandleService.resolveItemSelector(handle, null as any);
+      expect(result1).toBeNull(); // Should handle gracefully
+
+      const result2 = queryHandleService.resolveItemSelector(handle, 42 as any);
+      expect(result2).toBeNull(); // Should handle gracefully
+
+      const result3 = queryHandleService.resolveItemSelector(handle, 'invalid' as any);
+      expect(result3).toBeNull(); // Should handle gracefully
+    });
   });
 
   describe('Edge Cases and Expiration', () => {
@@ -319,6 +591,150 @@ describe('Query Handle Selection Integration Tests', () => {
       // "all" selector should still work
       const allResult = queryHandleService.resolveItemSelector(handle, 'all');
       expect(allResult).toEqual([101, 102, 103]);
+    });
+  });
+
+  describe('Performance Tests', () => {
+    it('should handle selection from large itemContext (1000+ items)', () => {
+      // Create 1000 work items
+      const workItemIds = Array.from({ length: 1000 }, (_, i) => 1000 + i);
+      const itemContext = new Map(
+        workItemIds.map(id => [
+          id,
+          {
+            id,
+            title: `Item ${id}`,
+            state: id % 2 === 0 ? 'Active' : 'New',
+            type: id % 3 === 0 ? 'Bug' : 'Task',
+            tags: id % 5 === 0 ? ['Critical'] : ['Normal'],
+            daysInactive: id % 100
+          }
+        ])
+      );
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const startTime = Date.now();
+
+      // Test index selection on large dataset
+      const indices = Array.from({ length: 100 }, (_, i) => i * 10);
+      const result = queryHandleService.getItemsByIndices(handle, indices);
+
+      const endTime = Date.now();
+
+      expect(result).toHaveLength(100);
+      expect(result![0]).toBe(1000);
+      expect(result![99]).toBe(1990);
+      expect(endTime - startTime).toBeLessThan(100); // Should be fast
+    });
+
+    it('should handle complex criteria with many conditions on large dataset', () => {
+      const workItemIds = Array.from({ length: 1000 }, (_, i) => 1000 + i);
+      const itemContext = new Map(
+        workItemIds.map(id => [
+          id,
+          {
+            id,
+            title: `Item ${id} ${id % 10 === 0 ? 'bug' : 'feature'}`,
+            state: id % 3 === 0 ? 'Active' : id % 3 === 1 ? 'New' : 'Closed',
+            type: id % 2 === 0 ? 'Bug' : 'Task',
+            tags: id % 5 === 0 ? ['Critical', 'Security'] : id % 7 === 0 ? ['Performance'] : ['Normal'],
+            daysInactive: id % 100
+          }
+        ])
+      );
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const startTime = Date.now();
+
+      // Complex criteria with multiple conditions
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        states: ['Active', 'New'],
+        titleContains: ['bug'],
+        tags: ['Critical', 'Security'],
+        daysInactiveMin: 20,
+        daysInactiveMax: 80
+      });
+
+      const endTime = Date.now();
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(endTime - startTime).toBeLessThan(100); // Should be fast even with complex criteria
+    });
+
+    it('should handle index array with many indices', () => {
+      const workItemIds = Array.from({ length: 500 }, (_, i) => 2000 + i);
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000
+      );
+
+      const startTime = Date.now();
+
+      // Select 250 indices
+      const indices = Array.from({ length: 250 }, (_, i) => i * 2);
+      const result = queryHandleService.getItemsByIndices(handle, indices);
+
+      const endTime = Date.now();
+
+      expect(result).toHaveLength(250);
+      expect(result![0]).toBe(2000);
+      expect(result![249]).toBe(2498);
+      expect(endTime - startTime).toBeLessThan(50); // Should be very fast
+    });
+
+    it('should efficiently filter large datasets with criteria', () => {
+      const workItemIds = Array.from({ length: 2000 }, (_, i) => 3000 + i);
+      const itemContext = new Map(
+        workItemIds.map(id => [
+          id,
+          {
+            id,
+            title: `Item ${id}`,
+            state: 'Active',
+            type: 'Task',
+            daysInactive: id % 200
+          }
+        ])
+      );
+
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        itemContext
+      );
+
+      const startTime = Date.now();
+
+      const result = queryHandleService.getItemsByCriteria(handle, {
+        states: ['Active'],
+        daysInactiveMin: 50,
+        daysInactiveMax: 150
+      });
+
+      const endTime = Date.now();
+
+      expect(result).toBeDefined();
+      expect(result!.length).toBeGreaterThan(0);
+      expect(endTime - startTime).toBeLessThan(100); // Should handle 2000 items efficiently
     });
   });
 });
