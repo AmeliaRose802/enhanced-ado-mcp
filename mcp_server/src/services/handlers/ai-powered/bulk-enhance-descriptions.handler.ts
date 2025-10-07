@@ -123,9 +123,13 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
       enhancementStyle, 
       preserveExisting, 
       dryRun, 
+      returnFormat: userReturnFormat,
       organization, 
       project 
     } = parsed.data;
+
+    // Apply default format based on dryRun mode if not specified
+    const returnFormat = userReturnFormat || (dryRun ? 'summary' : 'preview');
 
     // Check sampling support
     const samplingClient = new SamplingClient(server);
@@ -261,6 +265,35 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
     const skippedCount = results.filter(r => r.skipped).length;
     const failureCount = results.filter(r => !r.success && !r.skipped).length;
 
+    // Format results based on returnFormat
+    let formattedResults;
+    if (returnFormat === 'summary') {
+      // Summary: Only counts, no item details
+      formattedResults = undefined;
+    } else if (returnFormat === 'preview') {
+      // Preview: Include 200 char preview of enhanced description
+      formattedResults = results.map(r => ({
+        work_item_id: r.workItemId,
+        status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
+        preview: r.enhancedDescription ? r.enhancedDescription.substring(0, 200) + (r.enhancedDescription.length > 200 ? '...' : '') : undefined,
+        error: r.error,
+        skip_reason: r.skipped
+      }));
+    } else {
+      // Full: Complete details
+      formattedResults = results.map(r => ({
+        work_item_id: r.workItemId,
+        title: r.title,
+        status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
+        original: dryRun && r.success ? undefined : undefined, // Original not stored in current implementation
+        enhanced_description: dryRun ? r.enhancedDescription : undefined,
+        improvement_reason: r.improvementReason,
+        confidence: r.confidence,
+        error: r.error,
+        skip_reason: r.skipped
+      }));
+    }
+
     return {
       success: failureCount === 0,
       data: {
@@ -272,19 +305,11 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         enhancement_style: enhancementStyle,
         preserve_existing: preserveExisting,
         dry_run: dryRun,
+        return_format: returnFormat,
         successful: successCount,
         skipped: skippedCount,
         failed: failureCount,
-        results: results.map(r => ({
-          work_item_id: r.workItemId,
-          title: r.title,
-          status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
-          enhanced_description: dryRun ? r.enhancedDescription : undefined,
-          improvement_reason: r.improvementReason,
-          confidence: r.confidence,
-          error: r.error,
-          skip_reason: r.skipped
-        })),
+        results: formattedResults,
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} enhanced descriptions (${skippedCount} skipped, ${failureCount} failed)`
           : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`
