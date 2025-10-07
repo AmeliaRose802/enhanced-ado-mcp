@@ -78,7 +78,7 @@ interface ContextPackageArgs {
   organization?: string;
   project?: string;
   includeHistory?: boolean;
-  historyCount?: number;
+  maxHistoryRevisions?: number;
   includeComments?: boolean;
   includeRelations?: boolean;
   includeChildren?: boolean;
@@ -141,8 +141,8 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     workItemId,
     organization = cfg.azureDevOps.organization,
     project = cfg.azureDevOps.project,
-    includeHistory = true,
-    historyCount = 10,
+    includeHistory = false,
+    maxHistoryRevisions = 5,
     includeComments = true,
     includeRelations = true,
     includeChildren = true,
@@ -285,17 +285,20 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     let history: Array<{rev: number; changedDate: string; changedBy?: string; fields: CleanedFields}> = [];
     if (includeHistory) {
       try {
-        const hResponse = await httpClient.get<ADORevisionsResponse>(`wit/workItems/${workItemId}/revisions?$top=${historyCount}`);
+        const hResponse = await httpClient.get<ADORevisionsResponse>(`wit/workItems/${workItemId}/revisions?$top=${maxHistoryRevisions}`);
         const hRes = hResponse.data;
-        history = (hRes.value || []).map((r) => {
-          const cleanedFields = cleanFields(r.fields || {});
-          return {
-            rev: r.rev || 0,
-            changedDate: typeof cleanedFields?.['System.ChangedDate'] === 'string' ? cleanedFields['System.ChangedDate'] : '',
-            changedBy: typeof cleanedFields?.['System.ChangedBy'] === 'string' ? cleanedFields['System.ChangedBy'] : undefined,
-            fields: cleanedFields
-          };
-        });
+        history = (hRes.value || [])
+          .sort((a, b) => (b.rev || 0) - (a.rev || 0)) // Sort by revision number descending (newest first)
+          .slice(0, maxHistoryRevisions) // Limit to maxHistoryRevisions
+          .map((r) => {
+            const cleanedFields = cleanFields(r.fields || {});
+            return {
+              rev: r.rev || 0,
+              changedDate: typeof cleanedFields?.['System.ChangedDate'] === 'string' ? cleanedFields['System.ChangedDate'] : '',
+              changedBy: typeof cleanedFields?.['System.ChangedBy'] === 'string' ? cleanedFields['System.ChangedBy'] : undefined,
+              fields: cleanedFields
+            };
+          });
       } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, e); }
     }
 
@@ -341,7 +344,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       commits: commitLinks,
       attachments: includeAttachments ? attachments : undefined,
       comments,
-      history,
+      ...(includeHistory ? { history } : {}),
       _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
     };
 
