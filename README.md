@@ -4,7 +4,32 @@
 
 [![npm version](https://badge.fury.io/js/enhanced-ado-mcp-server.svg)](https://badge.fury.io/js/enhanced-ado-mcp-server)
 
+---
 
+## 🤖 GitHub Copilot Integration
+
+**NEW:** This repository includes complete automation for assigning work to GitHub Copilot coding agents!
+
+### Quick Start: Delegate Work to Copilot
+```powershell
+# Assign a task to Copilot
+.\Assign-To-Copilot.ps1 -Title "feat: Add new feature" -ProblemStatement "Implement..."
+
+# Monitor progress
+.\Watch-Copilot-PRs.ps1 -PRNumbers 123
+
+# Merge when complete
+.\Merge-And-Push.ps1 -PRNumbers 123 -ValidateLocally -PushUpstream
+```
+
+📖 **Complete Guide:** See [`COPILOT-ASSIGNMENT-GUIDE.md`](COPILOT-ASSIGNMENT-GUIDE.md) for detailed instructions
+
+### Helper Scripts
+- **`Assign-To-Copilot.ps1`** - Create PRs and assign to GitHub Copilot agents
+- **`Watch-Copilot-PRs.ps1`** - Monitor PR progress with detailed status tracking
+- **`Merge-And-Push.ps1`** - Merge completed PRs with validation and sync
+
+---
 
 ## 🚀 Installation & Getting Started
 
