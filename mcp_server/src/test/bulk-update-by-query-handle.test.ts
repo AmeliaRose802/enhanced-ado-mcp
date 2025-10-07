@@ -320,4 +320,48 @@ describe('Bulk Update By Query Handle Handler', () => {
       expect(result.data?.preview_items[0]).toHaveProperty('type');
     });
   });
+
+  describe('Backward Compatibility', () => {
+    it('should work when itemSelector is not provided (defaults to "all")', async () => {
+      // Create test query handle
+      const workItemIds = [1, 2, 3];
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        undefined,
+        undefined,
+        new Map([
+          [1, { title: 'Item 1', state: 'New', type: 'Task' }],
+          [2, { title: 'Item 2', state: 'Active', type: 'Bug' }],
+          [3, { title: 'Item 3', state: 'Done', type: 'Task' }]
+        ])
+      );
+
+      // Old API call without itemSelector
+      const result = await handleBulkUpdateByQueryHandle(mockConfig, {
+        queryHandle: handle,
+        updates: [
+          { op: 'replace', path: '/fields/System.Priority', value: 1 }
+        ],
+        dryRun: true
+      });
+
+      // Should default to selecting all items
+      expect(result.success).toBe(true);
+      expect(result.data?.selected_items_count).toBe(3);
+    });
+
+    it('should maintain existing error handling', async () => {
+      const result = await handleBulkUpdateByQueryHandle(mockConfig, {
+        queryHandle: 'invalid',
+        updates: [
+          { op: 'replace', path: '/fields/System.State', value: 'Active' }
+        ],
+        dryRun: true
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toBeDefined();
+    });
+  });
 });

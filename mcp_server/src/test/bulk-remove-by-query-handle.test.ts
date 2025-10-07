@@ -273,4 +273,106 @@ describe('Bulk Remove By Query Handle Handler', () => {
       expect(result.data.work_item_ids).toEqual([101, 103, 105]);
     });
   });
+
+  describe('Validation and Edge Cases', () => {
+    it('should handle empty selection gracefully', async () => {
+      // Arrange
+      const workItemIds = [101, 102, 103];
+      const workItemContext = new Map([
+        [101, { id: 101, title: 'Task 1', state: 'Active', type: 'Task' }],
+        [102, { id: 102, title: 'Task 2', state: 'Active', type: 'Task' }],
+        [103, { id: 103, title: 'Task 3', state: 'Active', type: 'Task' }]
+      ]);
+      
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        workItemContext
+      );
+
+      // Act - Select items with non-existent state
+      const result = await handleBulkRemoveByQueryHandle(mockConfig, {
+        queryHandle: handle,
+        itemSelector: { states: ['NonExistent'] },
+        dryRun: true
+      });
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data.selected_items_count).toBe(0);
+    });
+
+    it('should handle invalid indices gracefully', async () => {
+      // Arrange
+      const workItemIds = [101, 102];
+      const workItemContext = new Map(
+        workItemIds.map(id => [
+          id,
+          { id, title: `Task ${id}`, state: 'Active', type: 'Task' }
+        ])
+      );
+      
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        workItemContext
+      );
+
+      // Act - Select indices that are out of bounds
+      const result = await handleBulkRemoveByQueryHandle(mockConfig, {
+        queryHandle: handle,
+        itemSelector: [5, 10],
+        dryRun: true
+      });
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(result.data.selected_items_count).toBe(0);
+    });
+  });
+
+  describe('Backward Compatibility', () => {
+    it('should work when itemSelector is not provided (defaults to "all")', async () => {
+      // Arrange
+      const workItemIds = [101, 102, 103];
+      const workItemContext = new Map(
+        workItemIds.map(id => [
+          id,
+          { id, title: `Task ${id}`, state: 'Active', type: 'Task' }
+        ])
+      );
+      
+      const handle = queryHandleService.storeQuery(
+        workItemIds,
+        'SELECT [System.Id] FROM WorkItems',
+        { project: 'TestProject', queryType: 'wiql' },
+        60000,
+        workItemContext
+      );
+
+      // Act - Old API call without itemSelector
+      const result = await handleBulkRemoveByQueryHandle(mockConfig, {
+        queryHandle: handle,
+        dryRun: true
+      });
+
+      // Assert - Should default to selecting all items
+      expect(result.success).toBe(true);
+      expect(result.data.selected_items_count).toBe(3);
+    });
+
+    it('should maintain existing error handling', async () => {
+      const result = await handleBulkRemoveByQueryHandle(mockConfig, {
+        queryHandle: 'invalid',
+        dryRun: true
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors).toHaveLength(1);
+    });
+  });
 });
