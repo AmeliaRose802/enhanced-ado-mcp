@@ -1,12 +1,12 @@
-- Ai Powered Features
+- AI Powered Features
   AI_POWERED_FEATURES.md
-- Query Handler Pattern
-  QUERY_HANDLER_PATTERN.md
+- Enhanced Query Handle Pattern
+  ENHANCED_QUERY_HANDLE_PATTERN.md
 - Model Selection
   MODEL_SELECTION.md
 - OData Query Optimization
   ODATA_QUERY_OPTIMIZATION.md
-- RESOURCES FEATURE
+- Resources Feature
   RESOURCES_FEATURE.md
-- WIQL HIERARCHICAL QUERIES
+- WIQL Hierarchical Queries
   WIQL_HIERARCHICAL_QUERIES.md
