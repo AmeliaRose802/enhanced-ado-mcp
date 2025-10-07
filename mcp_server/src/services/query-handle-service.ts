@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger } from '../utils/logger.js';
 
 /**
  * Query Handle Service
@@ -558,7 +559,7 @@ class QueryHandleService {
       this.cleanupInterval = setInterval(() => {
         const deleted = this.cleanup();
         if (deleted > 0) {
-          console.log(`[QueryHandleService] Cleaned up ${deleted} expired handles`);
+          logger.debug(`Cleaned up ${deleted} expired query handles`);
         }
       }, 5 * 60 * 1000); // Run every 5 minutes
     }

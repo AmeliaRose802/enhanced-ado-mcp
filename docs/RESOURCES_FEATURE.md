@@ -230,7 +230,7 @@ mcp_server/
 ```typescript
 const server = new Server({
   name: "enhanced-ado-mcp-server",
-  version: "1.4.1"
+  version: "1.5.0"
 }, {
   capabilities: {
     tools: {},
