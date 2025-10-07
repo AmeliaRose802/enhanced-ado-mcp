@@ -424,7 +424,8 @@ export const listQueryHandlesSchema = z.object({
 export const inspectQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
   includePreview: z.boolean().optional().default(true).describe("Include preview of first 10 work items with their context data"),
-  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata")
+  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata"),
+  includeExamples: z.boolean().optional().default(false).describe("Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)")
 });
 
 export const selectItemsFromQueryHandleSchema = z.object({
