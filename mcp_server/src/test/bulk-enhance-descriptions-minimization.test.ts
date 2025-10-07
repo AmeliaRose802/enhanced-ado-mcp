@@ -113,7 +113,8 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
       const result = await handleBulkEnhanceDescriptions(mockConfig, {
         queryHandle: handle,
         itemSelector: 'all',
-        dryRun: true
+        dryRun: true,
+        returnFormat: 'full'  // Need full format to get results array
       }, mockServer);
 
       // Assert
@@ -147,6 +148,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
         queryHandle: handle,
         itemSelector: 'all',
         dryRun: true,
+        returnFormat: 'full',
         includeTitles: true
       }, mockServer);
 
@@ -176,11 +178,12 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
         workItemContext
       );
 
-      // Act - Default behavior (includeConfidence not specified, defaults to false)
+      // Act - Default behavior (includeConfidence not specified)
       const result = await handleBulkEnhanceDescriptions(mockConfig, {
         queryHandle: handle,
         itemSelector: 'all',
-        dryRun: true
+        dryRun: true,
+        returnFormat: 'full'
       }, mockServer);
 
       // Assert
@@ -211,6 +214,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
         queryHandle: handle,
         itemSelector: 'all',
         dryRun: true,
+        returnFormat: 'full',
         includeConfidence: true
       }, mockServer);
 
@@ -260,6 +264,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
         queryHandle: handle,
         itemSelector: 'all',
         dryRun: true,
+        returnFormat: 'full',
         includeConfidence: true
       }, mockServer);
 
@@ -294,6 +299,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
         queryHandle: handle,
         itemSelector: 'all',
         dryRun: true,
+        returnFormat: 'full',
         includeTitles: false,
         includeConfidence: false
       }, mockServer);
