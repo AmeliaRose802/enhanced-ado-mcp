@@ -1054,32 +1054,54 @@ These prompts are used internally by AI-powered tools and are not directly expos
 
 ## Development
 
-Install deps:
+### Building from Source
 
 ```bash
+cd mcp_server
 npm install
-```
-
-Run in dev (ts-node/tsx):
-```bash
-npm run dev
-```
-
-Build:
-```bash
 npm run build
+npm test
 ```
 
-Start (after build):
+### Available Scripts
+
 ```bash
-npm start
+npm run build          # Build TypeScript to dist/
+npm run dev            # Run with tsx (development)
+npm start              # Run built version
+npm test               # Run all tests
+npm run test:unit      # Run unit tests only
+npm run test:coverage  # Run tests with coverage
+npm run lint           # Check code style
+npm run lint:fix       # Fix code style issues
+npm run generate-openapi  # Generate OpenAPI/JSON Schema documentation
+npm run generate-docs     # Alias for generate-openapi
 ```
 
-## Integration (Example Client Snippet)
+### OpenAPI/JSON Schema Documentation
 
-```ts
-// Use an MCP client (e.g., Claude Desktop custom server config) pointing to: node dist/index.js
+This project includes auto-generated API documentation from Zod schemas:
+
+**Generate documentation:**
+```bash
+cd mcp_server
+npm run generate-openapi
 ```
+
+**Output files:**
+- `docs/api/openapi.json` - OpenAPI 3.0 specification (31 endpoints)
+- `docs/api/schemas/*.json` - Individual JSON schemas for each tool
+- `docs/api/README.md` - Complete documentation guide
+
+**Use cases:**
+- Import into Swagger UI, Redoc, or Postman
+- Generate API clients in any language
+- Validate API requests/responses
+- Share API contracts with consumers
+
+See [`docs/api/README.md`](mcp_server/docs/api/README.md) for complete usage guide.
+
+---
 
 ## Environment
 
