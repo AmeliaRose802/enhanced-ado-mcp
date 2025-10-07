@@ -1,5 +1,10 @@
 # Enhanced Query Handle Pattern - Staleness-Aware Operations
 
+> **See Also:**
+> - **Query tool details:** [Query Tools](./QUERY_TOOLS.md)
+> - **Handle operations:** [Query Handle Operations](./QUERY_HANDLE_OPERATIONS.md)
+> - **Bulk operations:** [Bulk Operations](./BULK_OPERATIONS.md), [Bulk AI Enhancement](./BULK_AI_ENHANCEMENT.md)
+
 ## Overview
 
 The Enhanced ADO MCP Server now supports **staleness-aware query handles** that combine Azure DevOps work item data with computed staleness metrics (`lastSubstantiveChangeDate`, `daysInactive`) in a single, anti-hallucination workflow.
