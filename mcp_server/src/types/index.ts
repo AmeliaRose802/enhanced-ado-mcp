@@ -44,3 +44,4 @@ export interface ToolExecutionResult {
 export * from './ado.js';
 export * from './mcp.js';
 export * from './work-items.js';
+export * from './error-categories.js';

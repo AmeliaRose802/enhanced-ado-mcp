@@ -1,5 +1,5 @@
 import { logger } from '../../../utils/logger.js';
-import { buildSuccessResponse, buildErrorResponse } from '../../../utils/response-builder.js';
+import { buildSuccessResponse, buildNotFoundError, buildErrorResponse } from '../../../utils/response-builder.js';
 import { loadConfiguration } from '../../../config/config.js';
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
 import type { ADOWorkItem, ADOApiResponse } from '../../../types/ado.js';
@@ -182,7 +182,11 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     const wiResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}?$expand=all`);
     const wi = wiResponse.data;
     if (!wi || !wi.id) {
-      throw new Error(`Work item ${workItemId} not found in organization '${organization}', project '${project}'. Verify the work item ID exists and you have access to it.`);
+      return buildNotFoundError('work-item', workItemId, { 
+        organization, 
+        project,
+        hint: 'Verify the work item ID exists and you have access to it.'
+      });
     }
 
     // Parent and children detection
@@ -351,6 +355,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     return buildSuccessResponse({ contextPackage: result }, { tool: 'wit-get-work-item-context-package' });
   } catch (error) {
     logger.error('Failed to build context package', error);
+    // Auto-categorizes based on error message (network, auth, etc.)
     return buildErrorResponse(error as Error, { tool: 'wit-get-work-item-context-package' });
   }
 }

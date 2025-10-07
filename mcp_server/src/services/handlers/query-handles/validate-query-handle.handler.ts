@@ -8,7 +8,7 @@
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -32,13 +32,10 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
     const queryData = queryHandleService.getQueryData(queryHandle);
     
     if (!queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "validate-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildNotFoundError('query-handle', queryHandle, {
+        source: 'validate-query-handle',
+        hint: 'Query handles expire after 1 hour.'
+      });
     }
 
     logger.info(`Validating query handle: ${queryHandle} (${queryData.workItemIds.length} items)`);
@@ -108,12 +105,10 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
 
   } catch (error) {
     logger.error(`Error in handleValidateQueryHandle: ${error}`);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "validate-query-handle" },
-      errors: [`Unexpected error: ${error instanceof Error ? error.message : String(error)}`],
-      warnings: []
-    };
+    // Auto-categorizes error based on message
+    return buildErrorResponse(
+      error as Error,
+      { source: 'validate-query-handle' }
+    );
   }
 }
