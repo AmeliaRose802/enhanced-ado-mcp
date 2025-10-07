@@ -68,8 +68,8 @@ export const toolConfigs: ToolConfig[] = [
       type: "object",
       properties: {
         workItemId: { type: "number", description: "Primary work item ID to retrieve full context for" },
-        includeHistory: { type: "boolean", description: "Include recent change history (last 10 changes)" },
-        historyCount: { type: "number", description: "Number of recent history entries to include" },
+        includeHistory: { type: "boolean", description: "Include recent change history (disabled by default to save ~40KB per work item)" },
+        maxHistoryRevisions: { type: "number", description: "Maximum number of recent history revisions to include when history is enabled (sorted by revision number descending)" },
         includeComments: { type: "boolean", description: "Include work item comments/discussion" },
         includeRelations: { type: "boolean", description: "Include related links (parent, children, related, attachments, commits, PRs)" },
         includeChildren: { type: "boolean", description: "Include all child hierarchy (one level) if item is a Feature/Epic" },
