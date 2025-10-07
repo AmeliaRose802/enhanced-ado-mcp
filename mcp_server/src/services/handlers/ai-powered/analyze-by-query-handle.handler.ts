@@ -91,6 +91,65 @@ interface WorkItemAnalysis {
   results: WorkItemAnalysisResults;
 }
 
+/**
+ * Handler for wit-analyze-by-query-handle tool
+ * 
+ * Analyzes work items identified by a query handle without revealing IDs.
+ * Forces the use of query handles for analysis workflows to prevent ID hallucination.
+ * 
+ * This handler fetches work items from Azure DevOps based on a query handle and performs
+ * various types of analysis including effort estimation, velocity tracking, assignment
+ * distribution, risk identification, completion status, and priority distribution.
+ * 
+ * @param config - Tool configuration containing the Zod schema for validation
+ * @param args - Arguments object expected to contain:
+ *   - queryHandle: string - The query handle ID from a previous WIQL query
+ *   - analysisType: string[] - Array of analysis types to perform:
+ *       * 'effort': Analyzes story points and estimation coverage
+ *       * 'velocity': Tracks completion rates and trends over time
+ *       * 'assignments': Reviews work distribution across team members
+ *       * 'risks': Identifies blocked, stale, and high-risk items
+ *       * 'completion': Evaluates progress and state distribution
+ *       * 'priorities': Analyzes priority balance and distribution
+ *   - organization?: string - Azure DevOps organization (defaults to config value)
+ *   - project?: string - Azure DevOps project (defaults to config value)
+ * @returns Promise<ToolExecutionResult> with the following structure:
+ *   - success: boolean - True if analysis completed without errors
+ *   - data: WorkItemAnalysis object containing:
+ *       * query_handle: string - The input query handle
+ *       * item_count: number - Total work items analyzed
+ *       * original_query: string - The WIQL query that created the handle
+ *       * analysis_types: string[] - Requested analysis types
+ *       * results: Record of analysis results keyed by type
+ *   - metadata: Source identifier and context
+ *   - errors: Array of error messages if failures occurred
+ *   - warnings: Array of warnings (e.g., empty query results)
+ * @throws {Error} Returns error result (does not throw) if:
+ *   - Azure CLI is not available or not logged in
+ *   - Query handle is invalid, not found, or expired
+ *   - Work item fetching fails
+ *   - Analysis execution encounters errors
+ * @example
+ * ```typescript
+ * // Analyze effort and risks for a query handle
+ * const result = await handleAnalyzeByQueryHandle(config, {
+ *   queryHandle: 'qh_abc123',
+ *   analysisType: ['effort', 'risks']
+ * });
+ * // Returns analysis with story point coverage and identified risks
+ * ```
+ * @example
+ * ```typescript
+ * // Comprehensive analysis across all categories
+ * const result = await handleAnalyzeByQueryHandle(config, {
+ *   queryHandle: 'qh_abc123',
+ *   analysisType: ['effort', 'velocity', 'assignments', 'risks', 'completion', 'priorities'],
+ *   organization: 'myorg',
+ *   project: 'myproject'
+ * });
+ * ```
+ * @since 1.4.0
+ */
 export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
