@@ -37,16 +37,7 @@ interface QueryHandleData {
     [key: string]: any; // For additional fields
   }>;
   // NEW: Rich item context for selection
-  itemContext: Array<{
-    index: number;           // Zero-based index
-    id: number;
-    title: string;
-    state: string;
-    type: string;
-    daysInactive?: number;
-    lastChange?: string;
-    tags?: string[];
-  }>;
+  itemContext: ItemContext[];
   // NEW: Selection metadata
   selectionMetadata: {
     totalItems: number;
@@ -62,17 +53,32 @@ interface QueryHandleData {
   };
 }
 
+// Selection criteria interface
+interface SelectionCriteria {
+  states?: string[];
+  titleContains?: string[];
+  tags?: string[];
+  daysInactiveMin?: number;
+  daysInactiveMax?: number;
+}
+
+// Item context interface
+interface ItemContext {
+  index: number;
+  id: number;
+  title: string;
+  state: string;
+  type: string;
+  daysInactive?: number;
+  lastChange?: string;
+  tags?: string[];
+}
+
 // Item selection types
 type ItemSelector = 
   | 'all'
   | number[]  // Array of indices
-  | {
-      states?: string[];
-      titleContains?: string[];
-      tags?: string[];
-      daysInactiveMin?: number;
-      daysInactiveMax?: number;
-    };
+  | SelectionCriteria;
 
 class QueryHandleService {
   private handles: Map<string, QueryHandleData> = new Map();
@@ -250,13 +256,7 @@ class QueryHandleService {
    * @param criteria Selection criteria object
    * @returns Array of work item IDs matching the criteria, or null if handle not found
    */
-  getItemsByCriteria(handle: string, criteria: {
-    states?: string[];
-    titleContains?: string[];
-    tags?: string[];
-    daysInactiveMin?: number;
-    daysInactiveMax?: number;
-  }): number[] | null {
+  getItemsByCriteria(handle: string, criteria: SelectionCriteria): number[] | null {
     const data = this.getQueryData(handle);
     if (!data) return null;
 
@@ -308,6 +308,25 @@ class QueryHandleService {
   getSelectableIndices(handle: string): number[] | null {
     const data = this.getQueryData(handle);
     return data?.selectionMetadata.selectableIndices || null;
+  }
+
+  /**
+   * Get item context for a specific index from a query handle
+   * 
+   * @param handle Query handle string
+   * @param index Zero-based index of the item
+   * @returns Item context or null if not found
+   */
+  getItemContext(handle: string, index: number): ItemContext | null {
+    const data = this.getQueryData(handle);
+    if (!data) return null;
+
+    // Validate index is in range
+    if (index < 0 || index >= data.itemContext.length) {
+      return null;
+    }
+
+    return data.itemContext[index];
   }
 
   /**
@@ -421,4 +440,4 @@ class QueryHandleService {
 
 // Export singleton instance
 export const queryHandleService = new QueryHandleService();
-export { QueryHandleData };
+export { QueryHandleData, SelectionCriteria, ItemContext };

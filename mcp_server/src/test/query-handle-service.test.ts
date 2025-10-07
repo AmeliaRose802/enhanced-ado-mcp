@@ -325,6 +325,73 @@ describe('Query Handle Service', () => {
       });
     });
 
+    describe('getSelectableIndices', () => {
+      it('should return selectable indices', () => {
+        const handle = createTestHandle();
+        
+        const result = queryHandleService.getSelectableIndices(handle);
+        expect(result).toEqual([0, 1, 2, 3]);
+      });
+
+      it('should return null for invalid handle', () => {
+        const result = queryHandleService.getSelectableIndices('invalid');
+        expect(result).toBeNull();
+      });
+    });
+
+    describe('getItemContext', () => {
+      it('should return item context by index', () => {
+        const handle = createTestHandle();
+        
+        const result = queryHandleService.getItemContext(handle, 0);
+        expect(result).toEqual({
+          index: 0,
+          id: 123,
+          title: 'Fix login bug',
+          state: 'New',
+          type: 'Bug',
+          daysInactive: 45,
+          lastChange: '2025-01-01T10:00:00Z',
+          tags: ['frontend', 'urgent']
+        });
+      });
+
+      it('should return item context for different indices', () => {
+        const handle = createTestHandle();
+        
+        const result = queryHandleService.getItemContext(handle, 2);
+        expect(result).toEqual({
+          index: 2,
+          id: 789,
+          title: 'Performance optimization',
+          state: 'New',
+          type: 'Task',
+          daysInactive: 120,
+          lastChange: '2024-10-01T09:00:00Z',
+          tags: ['backend', 'performance']
+        });
+      });
+
+      it('should return null for out-of-bounds index', () => {
+        const handle = createTestHandle();
+        
+        const result = queryHandleService.getItemContext(handle, 10);
+        expect(result).toBeNull();
+      });
+
+      it('should return null for negative index', () => {
+        const handle = createTestHandle();
+        
+        const result = queryHandleService.getItemContext(handle, -1);
+        expect(result).toBeNull();
+      });
+
+      it('should return null for invalid handle', () => {
+        const result = queryHandleService.getItemContext('invalid', 0);
+        expect(result).toBeNull();
+      });
+    });
+
     describe('resolveItemSelector', () => {
       it('should resolve "all" selector', () => {
         const handle = createTestHandle();
