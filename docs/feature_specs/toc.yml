@@ -38,6 +38,10 @@
 - Error Categorization System
   ERROR_CATEGORIZATION.md
 
+## Infrastructure & Services
+- ADO Client Service (HTTP Abstraction)
+  ado-client-service.md
+
 ## AI-Powered Features
 - AI-Powered Features Overview
   AI_POWERED_FEATURES.md

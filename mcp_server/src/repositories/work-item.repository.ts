@@ -6,7 +6,7 @@
  */
 
 import { logger } from '../utils/logger.js';
-import { createADOHttpClient, ADOHttpClient } from '../utils/ado-http-client.js';
+import { ADOClientService, createADOClient } from '../services/ado-client.js';
 import type { 
   ADOWorkItem, 
   ADORepository, 
@@ -21,14 +21,20 @@ import type {
  * Handles all direct ADO API calls for work items
  */
 export class WorkItemRepository {
-  private httpClient: ADOHttpClient;
+  private httpClient: ADOClientService;
   private organization: string;
   private project: string;
 
   constructor(organization: string, project: string) {
     this.organization = organization;
     this.project = project;
-    this.httpClient = createADOHttpClient(organization, project);
+    this.httpClient = createADOClient({
+      organization,
+      project,
+      enableRetry: true,
+      enableRateLimit: true,
+      enableDebugLogging: process.env.DEBUG === 'true'
+    });
   }
 
   /**
