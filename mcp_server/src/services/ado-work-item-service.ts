@@ -8,7 +8,8 @@ import { logger } from '../utils/logger.js';
 import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
 
 import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult, ADOFieldOperation } from '../types/ado.js';
-import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
+import { ADOHttpError } from '../utils/ado-http-client.js';
+import { ADOClientService, createADOClient } from './ado-client.js';
 import { createWorkItemRepository } from '../repositories/work-item.repository.js';
 
 interface CreateWorkItemArgs {
@@ -578,7 +579,7 @@ async function calculateSubstantiveChange(
   Organization: string,
   Project: string,
   historyCount: number,
-  httpClient: ADOHttpClient
+  httpClient: ADOClientService
 ): Promise<{
   lastSubstantiveChangeDate: string;
   daysInactive: number;
@@ -684,7 +685,13 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
 
   // Get repository
   const repository = createWorkItemRepository(organization, project);
-  const httpClient = createADOHttpClient(organization, project); // Keep for calculateSubstantiveChange
+  const httpClient = createADOClient({
+    organization,
+    project,
+    enableRetry: true,
+    enableRateLimit: true,
+    enableDebugLogging: process.env.DEBUG === 'true'
+  });
   
   try {
     // Execute WIQL query
