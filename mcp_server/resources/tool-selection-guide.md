@@ -424,7 +424,7 @@ User: "Update the first 3 unassigned PBIs"
 ## Query Work Items
 
 ### Get Individual Work Items
-**Tool:** `wit-query-wiql`  
+**Tool:** `wit-get-work-items-by-query-wiql`  
 **When:** Need specific work items with full field data  
 **Example:** Get all active bugs in an area
 
@@ -436,10 +436,10 @@ User: "Update the first 3 unassigned PBIs"
 }
 ```
 
-**💡 Tip:** Use `wit-ai-generate-wiql` to construct complex queries from natural language descriptions.
+**💡 Tip:** Use `wit-generate-wiql-query` to construct complex queries from natural language descriptions.
 
 ### Get Metrics/Aggregations
-**Tool:** `wit-query-odata`  
+**Tool:** `wit-query-analytics-odata`  
 **When:** Need counts, grouping, velocity, cycle time  
 **Example:** Count active items by type
 
@@ -450,42 +450,42 @@ User: "Update the first 3 unassigned PBIs"
 }
 ```
 
-**💡 Tip:** Use `wit-ai-generate-odata` to construct complex analytics queries from natural language descriptions.
+**💡 Tip:** Use `wit-generate-odata-query` to construct complex analytics queries from natural language descriptions.
 
 ## Get Work Item Details
 
 ### Single Item with Full Context
-**Tool:** `wit-get-context`  
+**Tool:** `wit-get-work-item-context-package`  
 **When:** Need complete information about one item including relationships  
 **Example:** Full context for planning work
 
 ```json
 {
-  "workItemIds": [12345],
-  "includeParents": true,
+  "workItemId": 12345,
+  "includeParent": true,
   "includeChildren": true,
   "includeHistory": true
 }
 ```
 
 ### Multiple Items Efficiently
-**Tool:** `wit-get-context-batch`  
+**Tool:** `wit-get-work-items-context-batch`  
 **When:** Need details for multiple items with relationships  
 **Example:** Get context for a list of related items
 
 ```json
 {
   "workItemIds": [100, 101, 102],
-  "includeParents": true,
+  "includeParent": true,
   "includeChildren": true,
-  "maxDepth": 3
+  "includeExtendedFields": true
 }
 ```
 
 ## Create & Modify Work Items
 
 ### Create New Work Item
-**Tool:** `wit-create-item`  
+**Tool:** `wit-create-new-item`  
 **When:** Creating a standard work item  
 **Example:** Create a new bug
 
@@ -494,12 +494,12 @@ User: "Update the first 3 unassigned PBIs"
   "title": "Fix login issue",
   "workItemType": "Bug",
   "areaPath": "MyProject\\Backend",
-  "AssignedTo": "john@example.com"
+  "assignedTo": "john@example.com"
 }
 ```
 
 ### Create and Assign to Copilot
-**Tool:** `wit-create-copilot-item`  
+**Tool:** `wit-new-copilot-item`  
 **When:** Creating an item for Copilot to work on  
 **Example:** Create task and auto-assign with branch
 
@@ -507,45 +507,48 @@ User: "Update the first 3 unassigned PBIs"
 {
   "title": "Implement user authentication",
   "workItemType": "Task",
-  "repositoryId": "abc-123"
+  "repository": "abc-123",
+  "parentWorkItemId": 12345
 }
 ```
 
 ### Assign Existing Item to Copilot
-**Tool:** `wit-assign-copilot`  
+**Tool:** `wit-assign-to-copilot`  
 **When:** Assigning existing work to Copilot  
 **Example:** Delegate existing task
 
 ```json
 {
-  "WorkItemId": 12345,
-  "repositoryId": "abc-123"
+  "workItemId": 12345,
+  "repository": "abc-123"
 }
 ```
 
 ## AI-Powered Analysis
 
 ### Analyze for AI Assignment
-**Tool:** `wit-ai-assignment`  
+**Tool:** `wit-ai-assignment-analyzer`  
 **When:** Check if item is suitable for Copilot  
 **Example:** Evaluate if task is ready for AI
 
 ```json
 {
   "workItemId": 12345,
-  "analysisDepth": "comprehensive"
+  "outputFormat": "detailed"
 }
 ```
 
 ### Intelligent Work Item Analysis
-**Tool:** `wit-ai-intelligence`  
+**Tool:** `wit-intelligence-analyzer`  
 **When:** Get AI recommendations for improvement  
 **Example:** Enhance work item quality
 
 ```json
 {
-  "workItemId": 12345,
-  "analysisType": "comprehensive"
+  "title": "Feature title",
+  "description": "Feature description",
+  "workItemType": "Feature",
+  "analysisType": "full"
 }
 ```
 
@@ -594,7 +597,7 @@ User: "Update the first 3 unassigned PBIs"
 **Eliminates ID hallucination by using server-stored query results**
 
 #### Validate Query Handle
-**Tool:** `wit-query-handle-validate`  
+**Tool:** `wit-validate-query-handle`  
 **When:** Check if a query handle is still valid before using it  
 **Example:** Verify handle hasn't expired
 
@@ -608,7 +611,7 @@ User: "Update the first 3 unassigned PBIs"
 **Returns:** Item count, expiration time, sample items, original query
 
 #### Bulk Comment by Query Handle
-**Tool:** `wit-bulk-comment`  
+**Tool:** `wit-bulk-comment-by-query-handle`  
 **When:** Add same comment to multiple items safely  
 **Example:** Document bulk state change reason
 
@@ -621,7 +624,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 #### Bulk Update by Query Handle
-**Tool:** `wit-bulk-update`  
+**Tool:** `wit-bulk-update-by-query-handle`  
 **When:** Update fields on multiple items  
 **Example:** Change state on all matching items
 
@@ -640,7 +643,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 #### Bulk Assign by Query Handle
-**Tool:** `wit-bulk-assign`  
+**Tool:** `wit-bulk-assign-by-query-handle`  
 **When:** Assign multiple items to a user  
 **Example:** Reassign all unassigned items
 
@@ -653,7 +656,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 #### Bulk Remove by Query Handle
-**Tool:** `wit-bulk-remove`  
+**Tool:** `wit-bulk-remove-by-query-handle`  
 **When:** Remove multiple items safely  
 **Example:** Clean up stale items
 
@@ -670,7 +673,7 @@ User: "Update the first 3 unassigned PBIs"
 **⚠️ Prone to ID hallucination - use query handles instead**
 
 #### Add Comments to Multiple Items
-**Tool:** `wit-bulk-comment`  
+**Tool:** `wit-bulk-comment-by-query-handle`  
 **When:** Need to notify or update multiple items  
 **Example:** Add status update to all items in sprint
 
@@ -684,19 +687,19 @@ User: "Update the first 3 unassigned PBIs"
 ## Pattern Detection & Validation
 
 ### Detect Issues in Work Items
-**Tool:** `wit-analyze-patterns`  
+**Tool:** `wit-detect-patterns`  
 **When:** Find common problems across items  
 **Example:** Find duplicates, orphans, incomplete items
 
 ```json
 {
   "workItemIds": [100, 101, 102],
-  "patterns": ["duplicates", "orphaned", "missing_description"]
+  "patterns": ["duplicates", "orphaned_children", "no_description"]
 }
 ```
 
 ### Validate Hierarchy Rules
-**Tool:** `wit-analyze-hierarchy`  
+**Tool:** `wit-validate-hierarchy`  
 **When:** Check parent-child type and state rules  
 **Example:** Ensure hierarchy follows conventions
 
@@ -709,7 +712,7 @@ User: "Update the first 3 unassigned PBIs"
 ## Special Tools
 
 ### Extract Security Links
-**Tool:** `wit-analyze-security`  
+**Tool:** `wit-extract-security-links`  
 **When:** Need to find security-related documentation links  
 **Example:** Extract compliance references
 
@@ -720,7 +723,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 ### Get Configuration
-**Tool:** `wit-get-config`  
+**Tool:** `wit-get-configuration`  
 **When:** Need to see current MCP server settings  
 **Example:** View organization, project, area path
 
@@ -732,88 +735,88 @@ User: "Update the first 3 unassigned PBIs"
 
 ```
 Need to build a query?
-├─ Complex WIQL needed? → wit-ai-generate-wiql (natural language → WIQL)
-└─ Analytics/metrics query? → wit-ai-generate-odata (natural language → OData)
+├─ Complex WIQL needed? → wit-generate-wiql-query (natural language → WIQL)
+└─ Analytics/metrics query? → wit-generate-odata-query (natural language → OData)
 
 Need data?
-├─ Individual items? → wit-query-wiql
-├─ Metrics/counts? → wit-query-odata
-└─ Full context? → wit-get-context
+├─ Individual items? → wit-get-work-items-by-query-wiql
+├─ Metrics/counts? → wit-query-analytics-odata
+└─ Full context? → wit-get-work-item-context-package
 
 Creating items?
-├─ Standard creation? → wit-create-item
-├─ For Copilot? → wit-create-copilot-item
-└─ Assign existing? → wit-assign-copilot
+├─ Standard creation? → wit-create-new-item
+├─ For Copilot? → wit-new-copilot-item
+└─ Assign existing? → wit-assign-to-copilot
 
 Analysis needed?
-├─ AI suitability? → wit-ai-assignment
-├─ Quality check? → wit-ai-intelligence
-├─ Find issues? → wit-analyze-patterns
-└─ Validate hierarchy? → wit-analyze-hierarchy
+├─ AI suitability? → wit-ai-assignment-analyzer
+├─ Quality check? → wit-intelligence-analyzer
+├─ Find issues? → wit-detect-patterns
+└─ Validate hierarchy? → wit-validate-hierarchy
 
 Bulk operations?
-├─ Add comments? → wit-bulk-comment
+├─ Add comments? → wit-bulk-comment-by-query-handle
 └─ Process many? → Use batch tools
 
 Configuration?
-└─ View settings? → wit-get-config
+└─ View settings? → wit-get-configuration
 ```
 
 ## Performance Considerations
 
 ### Fast Operations
-- `wit-get-config` - Instant
-- `wit-analyze-hierarchy` - < 1s for 100 items
-- `wit-query-odata` - Server-side aggregation (fast)
+- `wit-get-configuration` - Instant
+- `wit-validate-hierarchy` - < 1s for 100 items
+- `wit-query-analytics-odata` - Server-side aggregation (fast)
 
 ### Moderate Operations
-- `wit-query-wiql` - Depends on result count
-- `wit-get-context-batch` - Depends on depth/count
-- `wit-analyze-patterns` - Depends on item count
+- `wit-get-work-items-by-query-wiql` - Depends on result count
+- `wit-get-work-items-context-batch` - Depends on count
+- `wit-detect-patterns` - Depends on item count
 
 ### Slower Operations (Use AI)
-- `wit-ai-assignment` - AI analysis (~5-10s)
-- `wit-ai-intelligence` - AI analysis (~5-10s)
+- `wit-ai-assignment-analyzer` - AI analysis (~5-10s)
+- `wit-intelligence-analyzer` - AI analysis (~5-10s)
 
 ## Common Combinations
 
 ### Advanced Query Construction
-1. `wit-ai-generate-wiql` - Convert natural language to WIQL
-2. `wit-query-wiql` - Execute generated query
+1. `wit-generate-wiql-query` - Convert natural language to WIQL
+2. `wit-get-work-items-by-query-wiql` - Execute generated query
 3. Review results and refine if needed
 
 ### Metrics Analysis
-1. `wit-ai-generate-odata` - Convert description to OData query
-2. `wit-query-odata` - Execute analytics query
+1. `wit-generate-odata-query` - Convert description to OData query
+2. `wit-query-analytics-odata` - Execute analytics query
 3. Review metrics and trends
 
 ### Feature Decomposition
-1. `wit-ai-intelligence` - Analyze feature
-2. `wit-create-item` - Create child items
-3. `wit-analyze-hierarchy` - Verify structure
+1. `wit-intelligence-analyzer` - Analyze feature
+2. `wit-create-new-item` - Create child items
+3. `wit-validate-hierarchy` - Verify structure
 
 ### Backlog Cleanup
-1. `wit-ai-generate-wiql` - Build query for stale items
-2. `wit-query-wiql` - Get items with query handle
-3. `wit-analyze-patterns` - Find issues
-4. `wit-bulk-comment` - Notify owners
+1. `wit-generate-wiql-query` - Build query for stale items
+2. `wit-get-work-items-by-query-wiql` - Get items with query handle
+3. `wit-detect-patterns` - Find issues
+4. `wit-bulk-comment-by-query-handle` - Notify owners
 
 ### Sprint Planning
-1. `wit-ai-generate-odata` - Build velocity query
-2. `wit-query-odata` - Get velocity metrics
-3. `wit-ai-generate-wiql` - Build backlog query
-4. `wit-query-wiql` - Get candidates
-5. `wit-ai-assignment` - Check Copilot suitability
-6. `wit-assign-copilot` - Delegate to AI
+1. `wit-generate-odata-query` - Build velocity query
+2. `wit-query-analytics-odata` - Get velocity metrics
+3. `wit-generate-wiql-query` - Build backlog query
+4. `wit-get-work-items-by-query-wiql` - Get candidates
+5. `wit-ai-assignment-analyzer` - Check Copilot suitability
+6. `wit-assign-to-copilot` - Delegate to AI
 
 ### Project Completion Planning
 1. `project_completion_planner` prompt - Comprehensive project analysis
 2. Review timeline, capacity, and risks
-3. `wit-assign-copilot` - Assign AI-suitable items
+3. `wit-assign-to-copilot` - Assign AI-suitable items
 4. Track progress weekly against forecast
 
 ### Quality Check
-1. `wit-query-wiql` - Get recent items
-2. `wit-ai-intelligence` - Analyze quality
-3. `wit-analyze-hierarchy` - Check relationships
-4. `wit-bulk-comment` - Request updates
+1. `wit-get-work-items-by-query-wiql` - Get recent items
+2. `wit-intelligence-analyzer` - Analyze quality
+3. `wit-validate-hierarchy` - Check relationships
+4. `wit-bulk-comment-by-query-handle` - Request updates
