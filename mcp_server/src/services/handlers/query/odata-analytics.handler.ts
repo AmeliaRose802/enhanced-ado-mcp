@@ -16,14 +16,14 @@ import { escapeAreaPath } from "../../../utils/work-item-parser.js";
  * @param results - Array of result items from OData response
  * @param stripMetadata - Whether to strip @odata.* fields (default true)
  */
-function cleanODataResults(results: any[], stripMetadata: boolean = true): any[] {
+function cleanODataResults(results: Record<string, unknown>[], stripMetadata: boolean = true): Record<string, unknown>[] {
   if (!stripMetadata) {
     // Return results as-is when metadata should be included
     return results;
   }
   
   return results.map(item => {
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(item)) {
       // Skip OData metadata fields and null values
       if (!key.startsWith('@odata') && value !== null) {
@@ -273,7 +273,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     const hasNextLink = !!data["@odata.nextLink"];
     
     // Build concise response - only include what's needed
-    const responseData: any = {
+    const responseData: Record<string, unknown> = {
       summary: summary,
       count: resultCount,
       results: cleanedResults
@@ -345,7 +345,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
 /**
  * Generate a human-readable summary based on query type and results
  */
-function generateSummary(queryType: string, count: number, results: any[]): string {
+function generateSummary(queryType: string, count: number, results: Record<string, unknown>[]): string {
   switch (queryType) {
     case "workItemCount":
       return `Total work items: ${results[0]?.Count || 0}`;

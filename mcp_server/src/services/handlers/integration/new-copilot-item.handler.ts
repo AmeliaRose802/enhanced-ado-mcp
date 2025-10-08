@@ -7,6 +7,10 @@ import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { createWorkItemAndAssignToCopilot } from "../../ado-work-item-service.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { logger } from "../../../utils/logger.js";
+import { newCopilotItemSchema } from "../../../config/schemas.js";
+import { z } from "zod";
+
+type NewCopilotItemInput = z.infer<typeof newCopilotItemSchema>;
 
 export async function handleNewCopilotItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -22,7 +26,7 @@ export async function handleNewCopilotItem(config: ToolConfig, args: unknown): P
       };
     }
 
-    const input = parsed.data as any;
+    const input = parsed.data as NewCopilotItemInput;
     
     // Get configuration with auto-fill
     const requiredConfig = getRequiredConfig();

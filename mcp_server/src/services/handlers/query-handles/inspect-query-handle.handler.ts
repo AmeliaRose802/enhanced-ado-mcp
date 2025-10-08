@@ -3,10 +3,22 @@
  * Allows inspection of query handle contents including staleness data
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
 import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
+
+interface PreviewItem {
+  index: number;
+  id: number;
+  title: string;
+  state: string;
+  type: string;
+  days_inactive?: number;
+  last_substantive_change?: string;
+  assigned_to?: string;
+  tags?: string[];
+}
 
 export async function handleInspectQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -28,7 +40,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       };
     }
 
-    const response: any = {
+    const response: Record<string, JSONValue> = {
       query_handle: queryHandle,
       work_item_count: queryData.workItemIds.length,
       created_at: queryData.createdAt.toISOString(),
@@ -60,10 +72,10 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
 
     // Include preview of work items with indices and selection hints
     if (includePreview) {
-      const previewItems = queryData.itemContext.slice(0, 10).map(item => {
+      const previewItems: PreviewItem[] = queryData.itemContext.slice(0, 10).map(item => {
         const context = queryData.workItemContext?.get(item.id);
         
-        const previewItem: any = {
+        const previewItem: PreviewItem = {
           index: item.index,              // Zero-based index for selection
           id: item.id,
           title: item.title,

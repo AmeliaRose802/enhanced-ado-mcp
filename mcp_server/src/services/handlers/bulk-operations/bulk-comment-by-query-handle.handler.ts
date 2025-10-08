@@ -5,7 +5,8 @@
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
+import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -46,7 +47,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     const selectedCount = selectedWorkItemIds.length;
 
     // Function to substitute template variables in comments
-    const substituteTemplate = (template: string, workItemId: number, context?: any): string => {
+    const substituteTemplate = (template: string, workItemId: number, context?: WorkItemContext): string => {
       if (!context || !queryData.workItemContext) {
         return template;
       }

@@ -5,7 +5,7 @@
  * Useful for checking if a handle is still valid before using it in bulk operations.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildErrorResponse } from "../../../utils/response-builder.js";
@@ -13,6 +13,27 @@ import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
+
+interface WorkItemSample {
+  id: number;
+  title: string;
+  type: string;
+  state: string;
+}
+
+interface ValidateQueryHandleResult {
+  valid: boolean;
+  query_handle: string;
+  item_count: number;
+  created_at: string;
+  expires_at: string;
+  time_remaining_minutes: number;
+  original_query: string;
+  metadata?: JSONValue;
+  sample_items?: WorkItemSample[];
+  sample_note?: string;
+  sample_items_error?: string;
+}
 
 export async function handleValidateQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -40,7 +61,7 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
 
     logger.info(`Validating query handle: ${queryHandle} (${queryData.workItemIds.length} items)`);
 
-    const result: any = {
+    const result: ValidateQueryHandleResult = {
       valid: true,
       query_handle: queryHandle,
       item_count: queryData.workItemIds.length,
@@ -64,7 +85,7 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
 
       try {
         const httpClient = new ADOHttpClient(org);
-        const sampleItems: any[] = [];
+        const sampleItems: WorkItemSample[] = [];
 
         for (const id of sampleIds) {
           try {
