@@ -12,7 +12,7 @@ import type {
   WorkItemHierarchyInfo
 } from '../sampling-types.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/ado.js';
+import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/index.js';
 import { logger } from '../../utils/logger.js';
 import { getRequiredConfig } from '../../config/config.js';
 import { escapeAreaPath } from '../../utils/work-item-parser.js';

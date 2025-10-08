@@ -8,6 +8,8 @@
  * Previously located in services/sampling-types.ts - moved to types/ for better organization.
  */
 
+import type { JSONValue } from './index.js';
+
 /**
  * =============================================================================
  * WORK ITEM INTELLIGENCE ANALYSIS
@@ -47,10 +49,22 @@ export interface AnalysisResult {
  * Raw AI Analysis Data
  * Represents unstructured JSON response from AI analysis
  * This is intentionally flexible as AI responses can vary in structure
+ * Use this for storing complete AI responses that may contain custom fields
+ * 
+ * Note: Also exported as 'RawAnalysisData' for backward compatibility
  */
 export interface RawAIAnalysisData {
-  [key: string]: unknown;
+  /** 
+   * Allow any JSON-serializable fields from AI analysis
+   * Note: AI responses are standard JSON (primitives, objects, arrays)
+   */
+  [key: string]: string | number | boolean | null | undefined | JSONValue[] | { [key: string]: JSONValue };
 }
+
+/**
+ * @deprecated Use RawAIAnalysisData instead. Kept for backward compatibility.
+ */
+export type RawAnalysisData = RawAIAnalysisData;
 
 /**
  * =============================================================================

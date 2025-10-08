@@ -1,6 +1,6 @@
 import { SamplingService } from '../services/sampling-service.js';
 import { AIAssignmentAnalyzerArgs } from '../services/sampling-service.js';
-import type { AIAssignmentResult } from '../types/analysis.js';
+import type { AIAssignmentResult } from '../types/index.js';
 
 /**
  * Test the new AI Assignment Analyzer tool

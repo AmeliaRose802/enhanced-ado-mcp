@@ -13,7 +13,7 @@ import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
-import type { ADOWorkItem } from "../../../types/ado.js";
+import type { ADOWorkItem } from '../../../types/index.js';
 
 export async function handleBulkMoveToIteration(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {

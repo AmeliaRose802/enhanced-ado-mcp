@@ -3,6 +3,8 @@ name: Test
 on:
   pull_request:
     branches: [ master, main ]
+  # Allow workflow to be manually approved for Copilot PRs
+  workflow_dispatch:
 
 jobs:
   test:

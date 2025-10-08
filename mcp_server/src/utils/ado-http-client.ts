@@ -6,7 +6,7 @@
 
 import { getAzureDevOpsToken, clearTokenCache } from './ado-token.js';
 import { logger } from './logger.js';
-import type { ADOErrorResponse } from '../types/ado.js';
+import type { ADOErrorResponse } from '../types/index.js';
 
 /**
  * HTTP request options

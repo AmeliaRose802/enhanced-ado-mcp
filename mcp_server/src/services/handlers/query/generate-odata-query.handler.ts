@@ -4,7 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import type { WorkItemContext } from "../../../types/work-items.js";
+import type { WorkItemContext } from '../../../types/index.js';
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";

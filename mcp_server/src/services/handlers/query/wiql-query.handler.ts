@@ -3,7 +3,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import type { WorkItemContext, WorkItemContextPackage } from "../../../types/work-items.js";
+import type { WorkItemContext, WorkItemContextPackage } from '../../../types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";

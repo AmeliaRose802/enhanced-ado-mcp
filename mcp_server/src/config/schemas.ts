@@ -1,3 +1,11 @@
+/**
+ * Zod Schema Definitions for MCP Tool Parameters
+ * 
+ * This file contains all Zod schemas for validating tool inputs.
+ * Each schema corresponds to a tool defined in tool-configs.ts and provides
+ * runtime validation with TypeScript type inference.
+ */
+
 import { z } from "zod";
 import { loadConfiguration } from './config.js';
 
@@ -7,6 +15,10 @@ import { loadConfiguration } from './config.js';
  */
 
 const cfg = () => loadConfiguration();
+
+// ============================================================================
+// Shared Schema Components
+// ============================================================================
 
 /**
  * Schema for creating a new Azure DevOps work item
@@ -40,6 +52,10 @@ export const createNewItemSchema = z.object({
   tags: z.string().optional().describe("Semicolon or comma separated tags"),
   inheritParentPaths: z.boolean().optional().describe("Inherit Area/Iteration from parent if not supplied").default(() => cfg().azureDevOps.inheritParentPaths)
 });
+
+// ============================================================================
+// GitHub Copilot Integration Schemas
+// ============================================================================
 
 /**
  * Schema for assigning an existing work item to GitHub Copilot
@@ -103,6 +119,10 @@ export const newCopilotItemSchema = z.object({
   tags: z.string().optional(),
   inheritParentPaths: z.boolean().optional().default(() => cfg().azureDevOps.inheritParentPaths)
 });
+
+// ============================================================================
+// Analysis & Intelligence Schemas
+// ============================================================================
 
 /**
  * Schema for extracting security instruction links from Azure DevOps work items
@@ -191,11 +211,19 @@ export const aiAssignmentAnalyzerSchema = z.object({
   }).optional().default("detailed").describe("Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)")
 });
 
+// ============================================================================
+// Configuration & Discovery Schemas
+// ============================================================================
+
 // Configuration and discovery tool schemas
 export const getConfigurationSchema = z.object({
   includeSensitive: z.boolean().optional().default(false).describe("Include potentially sensitive configuration values"),
   section: z.enum(["all", "azureDevOps", "gitRepository", "gitHubCopilot"]).optional().default("all").describe("Specific configuration section to retrieve")
 });
+
+// ============================================================================
+// Query & Search Schemas
+// ============================================================================
 
 /**
  * Schema for querying Azure DevOps work items using WIQL (Work Item Query Language)
@@ -284,6 +312,10 @@ export const odataAnalyticsQuerySchema = z.object({
   includeOdataMetadata: z.boolean().optional().default(false).describe("Include OData metadata fields (@odata.context, @odata.count, @odata.nextLink) in response (default: false)")
 });
 
+// ============================================================================
+// Context Retrieval Schemas
+// ============================================================================
+
 // Full context package retrieval (single work item)
 export const workItemContextPackageSchema = z.object({
   workItemId: z.number().int("Work item ID must be an integer. Example: 12345").positive("Work item ID must be positive. Example: 12345").describe("Primary work item ID to retrieve full context for"),
@@ -346,6 +378,10 @@ export const detectPatternsSchema = z.object({
   format: z.enum(['summary', 'categorized', 'flat']).optional().default('categorized').describe("Response format: 'summary' (counts only, ~50-70% context reduction), 'categorized' (grouped by severity, default), 'flat' (single array with pattern field)")
 });
 
+// ============================================================================
+// Query Handle Operations Schemas
+// ============================================================================
+
 export const validateHierarchyFastSchema = z.object({
   workItemIds: z.array(z.number().int()).optional().describe("Specific work item IDs to validate (if not provided, uses areaPath)"),
   areaPath: z.string().optional().describe("Area path to validate all work items within (if workItemIds not provided)"),
@@ -380,6 +416,10 @@ const itemSelectorSchema = z.union([
     daysInactiveMax: z.number().optional()
   })
 ]).default("all").describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering");
+
+// ============================================================================
+// Work Item Creation & Modification Schemas
+// ============================================================================
 
 export const bulkCommentByQueryHandleSchema = z.object({
   queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
@@ -425,78 +465,9 @@ export const bulkRemoveByQueryHandleSchema = z.object({
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
 
-export const validateQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle to validate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
-  includeSampleItems: z.boolean().optional().default(false).describe("Fetch and include sample items (first 5) with titles and states"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
-
-export const analyzeByQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql (forces safe analysis without ID hallucination)"),
-  analysisType: z.array(z.enum(['effort', 'velocity', 'assignments', 'risks', 'completion', 'priorities'])).min(1).describe("Types of analysis to perform: effort (Story Points), velocity (completion trends), assignments (team distribution), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown)"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
-
-export const listQueryHandlesSchema = z.object({
-  includeExpired: z.boolean().optional().default(false).describe("Include expired handles in the list (default false)"),
-  top: z.number().int().min(1).max(200).optional().default(50).describe("Maximum number of handles to return (default 50, max 200)"),
-  skip: z.number().int().min(0).optional().default(0).describe("Number of handles to skip for pagination (default 0)")
-});
-
-export const inspectQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
-  includePreview: z.boolean().optional().default(true).describe("Include preview of first 10 work items with their context data"),
-  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata"),
-  includeExamples: z.boolean().optional().default(false).describe("Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)")
-});
-
-export const selectItemsFromQueryHandleSchema = z.object({
-  queryHandle: z.string().describe("Query handle to preview item selection for"),
-  itemSelector: z.union([
-    z.literal("all"),                    // Operate on all items
-    z.array(z.number()).max(100),        // Operate on specific indices [0, 5, 12]
-    z.object({                           // Operate by server-side criteria
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).describe("Item selection: 'all' for all items, array of indices [0,1,2] for specific items by position, or criteria object for server-side filtering"),
-  previewCount: z.number().int().optional().default(10).describe("Number of selected items to preview (default 10, max 50)")
-});
-
-/**
- * Unified query handle info schema - combines validate, inspect, and select functionality
- * Default behavior matches inspect (basic query handle information)
- * When detailed=true, includes validation and selection analysis capabilities
- */
-export const queryHandleInfoSchema = z.object({
-  queryHandle: z.string().describe("Query handle to get information about (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
-  detailed: z.boolean().optional().default(false).describe("Include detailed validation data and selection analysis (default false for concise output)"),
-  includePreview: z.boolean().optional().default(true).describe("Include preview of first 10 work items with their context data"),
-  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata"),
-  includeExamples: z.boolean().optional().default(false).describe("Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)"),
-  // Optional parameters for item selection analysis (only used when detailed=true and itemSelector provided)
-  itemSelector: z.union([
-    z.literal("all"),
-    z.array(z.number()).max(100),
-    z.object({
-      states: z.array(z.string()).optional(),
-      titleContains: z.array(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      daysInactiveMin: z.number().optional(),
-      daysInactiveMax: z.number().optional()
-    })
-  ]).optional().describe("Optional: When provided with detailed=true, also shows selection analysis for these items"),
-  previewCount: z.number().int().optional().default(10).describe("Number of items to preview in selection analysis (when itemSelector provided)"),
-  // Optional parameters for detailed validation (only used when detailed=true)
-  includeSampleItems: z.boolean().optional().default(false).describe("Fetch and include sample work items from ADO API when detailed=true (first 5 with titles and states)"),
-  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
-  project: z.string().optional().default(() => cfg().azureDevOps.project)
-});
+// ============================================================================
+// AI-Powered Bulk Operations Schemas
+// ============================================================================
 
 /**
  * Schema for bulk intelligent description enhancement
@@ -940,5 +911,4 @@ export const backlogCleanupAnalyzerSchema = z.object({
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
-
 

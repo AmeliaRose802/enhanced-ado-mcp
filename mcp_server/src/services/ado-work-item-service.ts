@@ -7,7 +7,7 @@
 import { logger } from '../utils/logger.js';
 import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
 
-import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult, ADOFieldOperation } from '../types/ado.js';
+import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult, ADOFieldOperation } from '../types/index.js';
 import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
 import { createWorkItemRepository } from '../repositories/work-item.repository.js';
 

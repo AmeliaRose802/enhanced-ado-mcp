@@ -53,6 +53,9 @@ $ErrorActionPreference = "Stop"
 $script:lastStatus = @{}
 $script:monitorStartTime = Get-Date
 $script:completedPRs = @()
+$script:quotaErrorPRs = @{}  # Track quota errors: PR# => detection time
+$script:workflowApprovalAttempts = @{}  # Track approval attempts
+$script:testFailureNotified = @{}  # Track if we've notified about test failures
 
 Write-Host "=== GITHUB COPILOT PR MONITOR ===" -ForegroundColor Cyan
 Write-Host "Repository: $Owner/$Repo" -ForegroundColor White
@@ -256,6 +259,173 @@ function Invoke-CompletionSound {
     }
 }
 
+<#
+.SYNOPSIS
+    Checks if PR timeline indicates a quota/rate limit error.
+#>
+function Test-QuotaError {
+    param(
+        [int]$PRNumber,
+        [array]$Timeline
+    )
+    
+    if ($Timeline.Count -eq 0) { return $false }
+    
+    # Look for recent comments from Copilot indicating quota issues
+    $recentEvents = $Timeline | Select-Object -Last 10
+    foreach ($event in $recentEvents) {
+        if ($event.event -eq 'commented' -and $event.user.login -eq 'github-copilot[bot]') {
+            $body = $event.body
+            if ($body -match 'quota|rate limit|429|too many requests|capacity|limit exceeded') {
+                return $true
+            }
+        }
+    }
+    
+    return $false
+}
+
+<#
+.SYNOPSIS
+    Posts a comment to a PR asking Copilot to retry after quota reset.
+#>
+function Add-RetryComment {
+    param(
+        [int]$PRNumber,
+        [datetime]$QuotaDetectedTime
+    )
+    
+    $waitedMinutes = [math]::Round(((Get-Date) - $QuotaDetectedTime).TotalMinutes, 1)
+    
+    $comment = @"
+@github-copilot The previous attempt encountered a quota/rate limit error. 
+
+It has been $waitedMinutes minutes since the error was detected. Please retry implementing this task.
+
+If you continue to encounter quota errors, consider:
+1. Breaking the task into smaller pieces
+2. Retrying after a longer wait period
+3. Checking GitHub Copilot quota limits
+"@
+
+    try {
+        gh pr comment $PRNumber --repo "$Owner/$Repo" --body $comment 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "     ✅ Posted retry comment to PR #$PRNumber" -ForegroundColor Green
+            return $true
+        }
+    } catch {
+        Write-Verbose "Failed to post retry comment: $_"
+    }
+    return $false
+}
+
+<#
+.SYNOPSIS
+    Checks if workflow runs need approval and approves them.
+#>
+function Approve-WorkflowRuns {
+    param([int]$PRNumber)
+    
+    try {
+        # Get workflow runs for this PR
+        $runsJson = gh api "/repos/$Owner/$Repo/pulls/$PRNumber/commits" 2>$null
+        if ($LASTEXITCODE -ne 0) { return $false }
+        
+        $commits = $runsJson | ConvertFrom-Json
+        $headSha = $commits[0].sha
+        
+        if (-not $headSha) { return $false }
+        
+        # Get workflow runs for the head commit
+        $workflowRunsJson = gh api "/repos/$Owner/$Repo/actions/runs?head_sha=$headSha" 2>$null
+        if ($LASTEXITCODE -ne 0) { return $false }
+        
+        $workflowRuns = ($workflowRunsJson | ConvertFrom-Json).workflow_runs
+        
+        $approvedAny = $false
+        foreach ($run in $workflowRuns) {
+            # Check if workflow requires approval (status: action_required)
+            if ($run.status -eq 'action_required' -or $run.status -eq 'waiting') {
+                Write-Host "     🔓 Workflow run #$($run.id) needs approval" -ForegroundColor Yellow
+                
+                # Approve the workflow run
+                $approveResult = gh api --method POST "/repos/$Owner/$Repo/actions/runs/$($run.id)/approve" 2>&1
+                
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Host "     ✅ Approved workflow run #$($run.id)" -ForegroundColor Green
+                    $approvedAny = $true
+                } else {
+                    Write-Host "     ⚠️  Failed to approve workflow run: $approveResult" -ForegroundColor Yellow
+                }
+            }
+        }
+        
+        return $approvedAny
+    } catch {
+        Write-Verbose "Failed to check/approve workflows: $_"
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+    Checks for test failures and posts comment to fix them.
+#>
+function Test-AndReportFailures {
+    param(
+        [int]$PRNumber,
+        [object]$StatusCheckRollup
+    )
+    
+    if (-not $StatusCheckRollup) { return $false }
+    
+    $failedChecks = $StatusCheckRollup | Where-Object { $_.conclusion -eq 'failure' }
+    
+    if ($failedChecks.Count -eq 0) { return $false }
+    
+    # Check if we've already notified about failures
+    if ($script:testFailureNotified[$PRNumber]) { return $true }
+    
+    Write-Host "     ⚠️  Detected $($failedChecks.Count) failed check(s)" -ForegroundColor Yellow
+    
+    # Get check details
+    $failureDetails = @()
+    foreach ($check in $failedChecks) {
+        $failureDetails += "- **$($check.name)**: $($check.conclusion)"
+    }
+    
+    $comment = @"
+@github-copilot Test failures detected:
+
+$($failureDetails -join "`n")
+
+Please fix the failing tests. **Do not bypass or skip failing tests.**
+
+Steps to resolve:
+1. Review the test failure logs above
+2. Identify the root cause of the failures
+3. Fix the code to make the tests pass
+4. Ensure all tests pass locally: ``npm test``
+5. Push the fixes to this PR
+
+If you need help understanding the test failures, ask for clarification.
+"@
+
+    try {
+        gh pr comment $PRNumber --repo "$Owner/$Repo" --body $comment 2>&1 | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "     ✅ Posted test failure fix request to PR #$PRNumber" -ForegroundColor Green
+            $script:testFailureNotified[$PRNumber] = $true
+            return $true
+        }
+    } catch {
+        Write-Verbose "Failed to post test failure comment: $_"
+    }
+    
+    return $true  # Still return true so we know there are failures
+}
+
 #endregion
 
 #region Main Monitoring Loop
@@ -291,6 +461,42 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
             
             # Get timeline for Copilot completion detection
             $timeline = Get-PRTimeline -PRNumber $prNum
+            
+            # Check for quota errors
+            $hasQuotaError = Test-QuotaError -PRNumber $prNum -Timeline $timeline
+            if ($hasQuotaError) {
+                if (-not $script:quotaErrorPRs.ContainsKey($prNum)) {
+                    $script:quotaErrorPRs[$prNum] = Get-Date
+                    Write-Host "     ⚠️  Quota/rate limit error detected" -ForegroundColor Yellow
+                } else {
+                    $waitTime = (Get-Date) - $script:quotaErrorPRs[$prNum]
+                    # Wait at least 15 minutes before posting retry comment
+                    if ($waitTime.TotalMinutes -ge 15) {
+                        Write-Host "     🔄 Quota wait time elapsed (15+ min), posting retry comment" -ForegroundColor Cyan
+                        if (Add-RetryComment -PRNumber $prNum -QuotaDetectedTime $script:quotaErrorPRs[$prNum]) {
+                            # Remove from quota tracking after posting retry
+                            $script:quotaErrorPRs.Remove($prNum)
+                        }
+                    } else {
+                        Write-Host "     ⏳ Waiting for quota reset... ($([math]::Round($waitTime.TotalMinutes, 1))/15 min)" -ForegroundColor Yellow
+                        $allFinished = $false
+                        continue
+                    }
+                }
+            }
+            
+            # Check for workflow runs needing approval
+            if (-not $script:workflowApprovalAttempts.ContainsKey($prNum)) {
+                $script:workflowApprovalAttempts[$prNum] = 0
+            }
+            
+            # Try to approve workflows (max 3 attempts per PR)
+            if ($script:workflowApprovalAttempts[$prNum] -lt 3) {
+                if (Approve-WorkflowRuns -PRNumber $prNum) {
+                    $script:workflowApprovalAttempts[$prNum]++
+                }
+            }
+            
             $copilotFinished = Test-CopilotFinished -PRInfo $prInfo -Timeline $timeline
             
             # Display Copilot status
@@ -314,7 +520,11 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
             if ($checks.Status -eq "Failed") {
                 $anyFailed = $true
                 $allChecksPassed = $false
-                Write-Host "     ⚠️  CI checks failed - needs investigation" -ForegroundColor Red
+                Write-Host "     ⚠️  CI checks failed - requesting fix from Copilot" -ForegroundColor Red
+                
+                # Post comment asking Copilot to fix tests (not bypass)
+                Test-AndReportFailures -PRNumber $prNum -StatusCheckRollup $prInfo.statusCheckRollup | Out-Null
+                
             } elseif ($checks.Status -ne "Passed" -and $checks.Total -gt 0) {
                 $allChecksPassed = $false
             }
