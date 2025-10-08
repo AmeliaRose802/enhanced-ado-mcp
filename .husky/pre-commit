@@ -3,14 +3,25 @@
 
 echo "🔍 Running pre-commit checks..."
 
-# Run format check
-echo "📝 Checking code formatting..."
-cd mcp_server && npm run format:check
+# Get list of staged TypeScript files (relative to repo root)
+STAGED_TS_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' | grep '^mcp_server/' || true)
+
+if [ -z "$STAGED_TS_FILES" ]; then
+  echo "ℹ️  No TypeScript files in mcp_server staged, skipping checks"
+  exit 0
+fi
+
+# Convert paths to be relative to mcp_server directory
+MCP_RELATIVE_FILES=$(echo "$STAGED_TS_FILES" | sed 's|^mcp_server/||')
+
+cd mcp_server || exit 1
+
+echo "📝 Checking code formatting for staged files..."
+echo "$MCP_RELATIVE_FILES" | tr '\n' '\0' | xargs -0 npx prettier --check
 FORMAT_EXIT=$?
 
-# Run lint
-echo "🔎 Running linter..."
-cd mcp_server && npm run lint
+echo "🔎 Running linter on staged files..."
+echo "$MCP_RELATIVE_FILES" | tr '\n' '\0' | xargs -0 npx eslint
 LINT_EXIT=$?
 
 # Exit with error if either check failed
@@ -19,10 +30,14 @@ if [ $FORMAT_EXIT -ne 0 ] || [ $LINT_EXIT -ne 0 ]; then
   echo "❌ Pre-commit checks failed!"
   echo ""
   if [ $FORMAT_EXIT -ne 0 ]; then
-    echo "   Formatting issues detected. Run 'npm run format' in mcp_server/ to fix."
+    echo "   💡 Formatting issues detected. Fix with:"
+    echo "      cd mcp_server && npx prettier --write <file>"
+    echo "   Or run 'npm run format' to fix all files."
   fi
   if [ $LINT_EXIT -ne 0 ]; then
-    echo "   Linting issues detected. Run 'npm run lint:fix' in mcp_server/ to fix."
+    echo "   💡 Linting issues detected. Fix with:"
+    echo "      cd mcp_server && npx eslint --fix <file>"
+    echo "   Or run 'npm run lint:fix' to fix all files."
   fi
   echo ""
   exit 1
