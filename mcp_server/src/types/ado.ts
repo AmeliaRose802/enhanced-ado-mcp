@@ -3,8 +3,11 @@
  * Provides type safety for ADO REST API responses and structures
  */
 
+import type { JSONValue } from './index.js';
+
 /**
  * ADO Identity Reference (user/group)
+ * Represents a user or group identity in Azure DevOps
  */
 export interface ADOIdentity {
   displayName: string;
@@ -25,6 +28,7 @@ export interface ADORelation {
 /**
  * ADO Work Item Fields
  * Common system fields - can be extended with custom fields
+ * Custom fields use the pattern: 'Custom.FieldName' or 'Namespace.FieldName'
  */
 export interface ADOWorkItemFields {
   'System.Id': number;
@@ -44,7 +48,11 @@ export interface ADOWorkItemFields {
   'Microsoft.VSTS.Common.Priority'?: number;
   'Microsoft.VSTS.Scheduling.StoryPoints'?: number;
   'Microsoft.VSTS.Scheduling.RemainingWork'?: number;
-  [key: string]: unknown; // Allow additional custom fields
+  /** 
+   * Allow additional custom fields
+   * Note: Custom fields can be complex objects (like ADOIdentity) or primitive JSON values
+   */
+  [key: string]: string | number | boolean | ADOIdentity | null | undefined;
 }
 
 /**
@@ -61,11 +69,16 @@ export interface ADOWorkItem {
 
 /**
  * ADO Work Item Update Field Operation
+ * JSON Patch operation for updating work item fields
  */
 export interface ADOFieldOperation {
+  /** Operation type */
   op: 'add' | 'replace' | 'remove' | 'test';
+  /** Field path (e.g., '/fields/System.Title') */
   path: string;
-  value?: unknown;
+  /** New value for add/replace operations - must be JSON-serializable */
+  value?: JSONValue;
+  /** Source path for copy/move operations */
   from?: string;
 }
 
@@ -150,14 +163,22 @@ export interface ADORevisionsResponse {
 
 /**
  * ADO Error Response
+ * Standard error structure from Azure DevOps REST API
  */
 export interface ADOErrorResponse {
+  /** Error identifier */
   $id?: string;
-  innerException?: unknown;
+  /** Nested inner exception details */
+  innerException?: JSONValue;
+  /** Error message */
   message: string;
+  /** Exception type name */
   typeName?: string;
+  /** Exception type key */
   typeKey?: string;
+  /** Numeric error code */
   errorCode?: number;
+  /** Event identifier */
   eventId?: number;
 }
 
