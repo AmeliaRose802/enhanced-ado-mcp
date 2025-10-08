@@ -1,5 +1,5 @@
 /**
- * Handler for wit-generate-wiql-query tool
+ * Handler for wit-ai-generate-wiql tool
  * Generates WIQL queries from natural language using AI sampling with iterative validation
  */
 
@@ -212,10 +212,10 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
               summary: `Query handle created for ${workItemIds.length} work item(s). Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`,
               next_steps: [
                 "Review the work_items array to see what will be affected",
-                "Use wit-bulk-comment-by-query-handle to add comments to all items",
-                "Use wit-bulk-update-by-query-handle to update fields on all items",
-                "Use wit-bulk-assign-by-query-handle to assign all items to a user",
-                "Use wit-bulk-remove-by-query-handle to remove all items",
+                "Use wit-bulk-comment to add comments to all items",
+                "Use wit-bulk-update to update fields on all items",
+                "Use wit-bulk-assign to assign all items to a user",
+                "Use wit-bulk-remove to remove all items",
                 "Always use dryRun: true first to preview changes before applying them"
               ],
               expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),

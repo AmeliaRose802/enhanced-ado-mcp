@@ -9,8 +9,8 @@
 
 The Enhanced ADO MCP Server provides two complementary tools for retrieving comprehensive work item context:
 
-1. **wit-get-work-item-context-package** - Deep context for a single work item
-2. **wit-get-work-items-context-batch** - Batch retrieval with relationship analysis
+1. **wit-get-context** - Deep context for a single work item
+2. **wit-get-context-batch** - Batch retrieval with relationship analysis
 
 These tools enable AI agents to gather all necessary information about work items in one or two API calls, avoiding the N+1 query problem.
 
@@ -25,7 +25,7 @@ Efficiently retrieve work item information with:
 
 ## Tools
 
-### 1. wit-get-work-item-context-package
+### 1. wit-get-context
 
 Retrieve a comprehensive context package for a single work item in one call.
 
@@ -159,7 +159,7 @@ Returns comprehensive context including history, comments, parent, and children.
 ```
 Returns work item with PR/commit links and attachments for development analysis.
 
-### 2. wit-get-work-items-context-batch
+### 2. wit-get-context-batch
 
 Retrieve multiple work items (10-50) with relationship graph and aggregate metrics.
 
@@ -309,14 +309,14 @@ No special configuration required. Uses organization and project from `.ado-mcp-
 
 ### API Call Optimization
 
-**wit-get-work-item-context-package:**
+**wit-get-context:**
 - Base call: 1 API request
 - With history: +1 API request
 - With comments: +1 API request
 - With relations: +1 API request per related item
 - **Total:** 1-10 API calls depending on options
 
-**wit-get-work-items-context-batch:**
+**wit-get-context-batch:**
 - Batch retrieval: 1 API request for all items
 - With relations: +1 API request for edges
 - **Total:** 1-2 API calls regardless of item count (up to 50)
@@ -370,7 +370,7 @@ No special configuration required. Uses organization and project from `.ado-mcp-
 ```bash
 # Test single item context
 {
-  "tool": "wit-get-work-item-context-package",
+  "tool": "wit-get-context",
   "arguments": {
     "workItemId": 12345,
     "includeChildren": true,
@@ -380,7 +380,7 @@ No special configuration required. Uses organization and project from `.ado-mcp-
 
 # Test batch context
 {
-  "tool": "wit-get-work-items-context-batch",
+  "tool": "wit-get-context-batch",
   "arguments": {
     "workItemIds": [12345, 12346, 12347],
     "includeRelations": true,

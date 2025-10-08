@@ -9,9 +9,9 @@
 
 The Enhanced ADO MCP Server provides three specialized tools for creating work items in Azure DevOps, each optimized for different workflows:
 
-1. **wit-create-new-item** - General-purpose work item creation
-2. **wit-assign-to-copilot** - Assign existing items to GitHub Copilot
-3. **wit-new-copilot-item** - Create and immediately assign to GitHub Copilot
+1. **wit-create-item** - General-purpose work item creation
+2. **wit-assign-copilot** - Assign existing items to GitHub Copilot
+3. **wit-create-copilot-item** - Create and immediately assign to GitHub Copilot
 
 These tools leverage configuration defaults to minimize required parameters and streamline the creation process.
 
@@ -25,7 +25,7 @@ Simplify work item creation by:
 
 ## Tools
 
-### 1. wit-create-new-item
+### 1. wit-create-item
 
 Create a new Azure DevOps work item with optional parent relationship.
 
@@ -111,7 +111,7 @@ Creates child work item linked to parent 12345.
 ```
 Overrides default work item type and priority.
 
-### 2. wit-assign-to-copilot
+### 2. wit-assign-copilot
 
 Assign an existing Azure DevOps work item to GitHub Copilot and add branch link.
 
@@ -157,7 +157,7 @@ Assign an existing Azure DevOps work item to GitHub Copilot and add branch link.
 ```
 Assigns work item 12345 to GitHub Copilot with branch link to frontend-app repository.
 
-### 3. wit-new-copilot-item
+### 3. wit-create-copilot-item
 
 Create a new work item under a parent and immediately assign to GitHub Copilot.
 
@@ -241,7 +241,7 @@ These tools auto-fill parameters from `.ado-mcp-config.json`:
 | Error Message | Cause | Resolution |
 |--------------|-------|------------|
 | "Parent work item not found" | Invalid parentWorkItemId | Verify parent exists and is not removed |
-| "Invalid area path" | Area path doesn't exist | Use `wit-get-configuration` to see valid paths |
+| "Invalid area path" | Area path doesn't exist | Use `wit-get-config` to see valid paths |
 | "Invalid work item type" | Type not valid for project | Check project settings for allowed types |
 | "Unauthorized" | Azure CLI not authenticated | Run `az login` |
 | "Repository not found" | Invalid repository name | Verify repository exists in project |
@@ -271,8 +271,8 @@ These tools auto-fill parameters from `.ado-mcp-config.json`:
 ### API Calls
 
 Each tool makes 1-2 API calls:
-1. POST to create work item (wit-create-new-item, wit-new-copilot-item)
-2. PATCH to update assignment/links (wit-assign-to-copilot, wit-new-copilot-item)
+1. POST to create work item (wit-create-item, wit-create-copilot-item)
+2. PATCH to update assignment/links (wit-assign-copilot, wit-create-copilot-item)
 
 ## Testing
 
@@ -301,7 +301,7 @@ cd mcp_server && npm run build
 # Test create-new-item
 # Use MCP inspector or VS Code to call:
 {
-  "tool": "wit-create-new-item",
+  "tool": "wit-create-item",
   "arguments": {
     "title": "Test work item"
   }

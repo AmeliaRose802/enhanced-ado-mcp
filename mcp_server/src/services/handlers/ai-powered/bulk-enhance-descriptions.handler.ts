@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-enhance-descriptions-by-query-handle tool
+ * Handler for wit-ai-bulk-enhance-descriptions tool
  * 
  * Uses AI to generate improved descriptions for multiple work items.
  * Processes items in batches using intelligent sampling.
@@ -29,7 +29,7 @@ interface EnhancementResult {
 }
 
 /**
- * Handler for wit-bulk-enhance-descriptions-by-query-handle tool
+ * Handler for wit-ai-bulk-enhance-descriptions tool
  * 
  * Uses AI to generate improved descriptions for multiple work items.
  * The AI analyzes existing content (title, tags, current description) and generates

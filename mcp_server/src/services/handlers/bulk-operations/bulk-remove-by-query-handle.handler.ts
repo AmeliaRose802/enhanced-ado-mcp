@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-remove-by-query-handle tool
+ * Handler for wit-bulk-remove tool
  * 
  * Moves multiple work items to "Removed" state (does NOT permanently delete).
  * Sets work item state to "Removed" for items identified by a query handle.

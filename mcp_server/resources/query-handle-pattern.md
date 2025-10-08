@@ -51,7 +51,7 @@ The Query Handle Pattern eliminates ID hallucination in bulk operations by ensur
 
 ### Step 1: Get Query Handle
 
-Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`:
+Use `wit-query-wiql` with `returnQueryHandle: true`:
 
 ```json
 {
@@ -273,19 +273,19 @@ itemSelector: {
 
 1. **Query** - Get work items with WIQL:
    ```
-   wit-get-work-items-by-query-wiql with returnQueryHandle: true
+   wit-query-wiql with returnQueryHandle: true
    Result: queryHandle "qh_abc123"
    ```
 
 2. **Inspect** - Preview available items:
    ```
-   wit-inspect-query-handle with queryHandle: "qh_abc123"
+   wit-query-handle-inspect with queryHandle: "qh_abc123"
    Shows: 10 items with indices, states, tags
    ```
 
 3. **Preview Selection** - Verify what will be selected:
    ```
-   wit-select-items-from-query-handle 
+   wit-query-handle-select 
      queryHandle: "qh_abc123"
      itemSelector: { states: ["Active"] }
    Result: "Would select 5 of 10 items"
@@ -293,7 +293,7 @@ itemSelector: {
 
 4. **Execute** - Perform bulk operation:
    ```
-   wit-bulk-comment-by-query-handle
+   wit-bulk-comment
      queryHandle: "qh_abc123"
      itemSelector: { states: ["Active"] }
      comment: "Needs review"
@@ -304,7 +304,7 @@ itemSelector: {
 ❌ **DO NOT extract IDs manually:**
 ```
 // WRONG - causes hallucination
-queryResult = wit-get-work-items-by-query-wiql(...)
+queryResult = wit-query-wiql(...)
 manualIds = [123, 456, 789]  // AI might hallucinate these
 wit-bulk-comment(workItemIds: manualIds, ...)
 ```
@@ -312,22 +312,22 @@ wit-bulk-comment(workItemIds: manualIds, ...)
 ✅ **DO use query handles:**
 ```
 // CORRECT - validated selection
-queryHandle = wit-get-work-items-by-query-wiql(returnQueryHandle: true)
-wit-bulk-comment-by-query-handle(queryHandle, itemSelector: "all")
+queryHandle = wit-query-wiql(returnQueryHandle: true)
+wit-bulk-comment(queryHandle, itemSelector: "all")
 ```
 
 ❌ **DO NOT skip preview for destructive operations:**
 ```
 // WRONG - no preview before removal
-wit-bulk-remove-by-query-handle(queryHandle, itemSelector: {states: ["Done"]})
+wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]})
 ```
 
 ✅ **DO preview before destructive ops:**
 ```
 // CORRECT - verify first
-wit-select-items-from-query-handle(queryHandle, itemSelector: {states: ["Done"]})
+wit-query-handle-select(queryHandle, itemSelector: {states: ["Done"]})
 // User confirms: "Yes, remove those 5 items"
-wit-bulk-remove-by-query-handle(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
+wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
 ```
 
 ### Selection Performance
@@ -351,11 +351,11 @@ All tools support `dryRun: true` for safe preview:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-select-items-from-query-handle` | **NEW**: Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
-| `wit-bulk-comment-by-query-handle` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
-| `wit-bulk-update-by-query-handle` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
-| `wit-bulk-assign-by-query-handle` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
-| `wit-bulk-remove-by-query-handle` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
+| `wit-query-handle-select` | **NEW**: Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
+| `wit-bulk-comment` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
+| `wit-bulk-update` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
+| `wit-bulk-assign` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
+| `wit-bulk-remove` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
 
 ## 📋 Best Practices
 
@@ -397,10 +397,10 @@ All tools support `dryRun: true` for safe preview:
 4. **Add audit comments before state changes**
    ```json
    // Step 1: Add comment explaining why
-   wit-bulk-comment-by-query-handle
+   wit-bulk-comment
    
    // Step 2: Make the state change
-   wit-bulk-update-by-query-handle
+   wit-bulk-update
    ```
 
 4. **Check expiration before reuse**

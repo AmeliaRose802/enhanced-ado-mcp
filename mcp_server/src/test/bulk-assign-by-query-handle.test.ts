@@ -33,7 +33,7 @@ jest.mock('../config/config.js', () => ({
 
 describe('Bulk Assign By Query Handle Handler', () => {
   const mockConfig: ToolConfig = {
-    name: 'wit-bulk-assign-by-query-handle',
+    name: 'wit-bulk-assign',
     description: 'Test tool',
     script: '',
     schema: bulkAssignByQueryHandleSchema,

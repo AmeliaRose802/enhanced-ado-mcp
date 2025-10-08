@@ -88,7 +88,7 @@ Repeat Step 2 for each child until no more children found.
   "includeHistory": false
 }
 ```
-Tool: `wit-get-work-item-context-package`
+Tool: `wit-get-context`
 
 ### Batch Hierarchy
 ```json
@@ -99,7 +99,7 @@ Tool: `wit-get-work-item-context-package`
   "maxDepth": 3
 }
 ```
-Tool: `wit-get-work-items-context-batch`
+Tool: `wit-get-context-batch`
 
 ## Fast Validation
 
@@ -109,7 +109,7 @@ Tool: `wit-get-work-items-context-batch`
   "workItemIds": [100, 101, 102, 103]
 }
 ```
-Tool: `wit-validate-hierarchy-fast`
+Tool: `wit-analyze-hierarchy`
 
 **Returns:**
 - Type compatibility (parent-child type rules)
@@ -136,7 +136,7 @@ ORDER BY [System.WorkItemType], [System.CreatedDate] DESC
 SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject'
 
 -- Then validate each item's parent exists
--- (Use wit-validate-hierarchy-fast for automatic checking)
+-- (Use wit-analyze-hierarchy for automatic checking)
 ```
 
 ### Find Childless Parents
@@ -237,7 +237,7 @@ Common parent-child type rules:
 - Task can have: (typically no children)
 - Bug can have: Task
 
-**Use `wit-validate-hierarchy-fast` to check these automatically.**
+**Use `wit-analyze-hierarchy` to check these automatically.**
 
 ## Performance Tips
 

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-assign-story-points-by-query-handle tool
+ * Handler for wit-ai-bulk-story-points tool
  * 
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  */
@@ -30,7 +30,7 @@ interface EstimationResult {
 }
 
 /**
- * Handler for wit-bulk-assign-story-points-by-query-handle tool
+ * Handler for wit-ai-bulk-story-points tool
  * 
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  * The AI analyzes work item details including title, description, and acceptance criteria

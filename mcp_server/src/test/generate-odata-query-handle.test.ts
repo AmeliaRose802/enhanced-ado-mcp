@@ -54,7 +54,7 @@ jest.mock('../utils/sampling-client.js', () => ({
 
 describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
   const mockConfig = {
-    name: 'wit-generate-odata-query',
+    name: 'wit-ai-generate-odata',
     description: 'Test',
     script: '',
     schema: generateODataQuerySchema,

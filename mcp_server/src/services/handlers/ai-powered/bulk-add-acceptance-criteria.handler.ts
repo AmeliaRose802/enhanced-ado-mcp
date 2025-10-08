@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-add-acceptance-criteria-by-query-handle tool
+ * Handler for wit-ai-bulk-acceptance-criteria tool
  * 
  * Uses AI to generate acceptance criteria for multiple work items.
  */
@@ -29,7 +29,7 @@ interface CriteriaResult {
 }
 
 /**
- * Handler for wit-bulk-add-acceptance-criteria-by-query-handle tool
+ * Handler for wit-ai-bulk-acceptance-criteria tool
  * 
  * Uses AI to generate acceptance criteria for multiple work items identified by a query handle.
  * The AI generates testable, specific criteria in the requested format (Gherkin, checklist, or user story).

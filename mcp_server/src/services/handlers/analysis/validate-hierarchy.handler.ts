@@ -1,5 +1,5 @@
 /**
- * Handler for wit-validate-hierarchy tool
+ * Handler for wit-analyze-hierarchy tool
  * Fast validation of work item hierarchy relationships and state consistency
  * Non-intelligent: applies strict rules for parent-child types and state progression
  */

@@ -40,30 +40,30 @@ If `{{additional_intent}}` is provided, also analyze the person's work through t
 ### Step 1: Data Collection (Automatic)
 
 **Use Query Generators for Complex Queries:**
-- `wit-generate-wiql-query` - Natural language to WIQL converter with validation
-- `wit-generate-odata-query` - Natural language to OData converter with validation
+- `wit-ai-generate-wiql` - Natural language to WIQL converter with validation
+- `wit-ai-generate-odata` - Natural language to OData converter with validation
 
 **Fetch Completed Work (Historical Performance):**
-- Use OData for velocity metrics: `wit-query-analytics-odata`
+- Use OData for velocity metrics: `wit-query-odata`
   - Query: Work items completed by person in date range
   - Custom query with: `$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail eq '{{assigned_to_email}}')/groupby((WorkItemType), aggregate($count as Count))`
   - Aggregate by work type for diversity analysis
 
 **Fetch Active Work (Current Load):**
-- Use WIQL: `wit-get-work-items-by-query-wiql`
+- Use WIQL: `wit-query-wiql`
   - Query: `[System.AssignedTo] = '{{assigned_to_email}}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review') AND [System.AreaPath] UNDER '{{area_path}}'`
   - Include: `returnQueryHandle: true`, `includeSubstantiveChange: true`
   - Fields: StoryPoints, Priority, CreatedDate, ChangedDate, State, WorkItemType
 
 **Story Points Analysis:**
-1. Check estimation coverage with `wit-analyze-by-query-handle` + `analysisType: ["effort"]`
-2. For unestimated items, use `wit-bulk-assign-story-points-by-query-handle`:
+1. Check estimation coverage with `wit-analyze-items` + `analysisType: ["effort"]`
+2. For unestimated items, use `wit-ai-bulk-story-points`:
    - `scale: "fibonacci"`
    - `onlyUnestimated: true` (preserve manual estimates)
    - `dryRun: false` (apply automatically)
 
 **Fetch Detailed Context (Selective):**
-- Use `wit-get-work-items-context-batch` for up to 20 recent/active items
+- Use `wit-get-context-batch` for up to 20 recent/active items
 - Include: relations, comments, history for pattern detection
 - Check for: after-hours timestamps, emergency work patterns, complexity indicators
 
@@ -320,14 +320,14 @@ If `{{additional_intent}}` is provided, also analyze the person's work through t
 
 **OData for Completed Work:**
 ```
-wit-query-analytics-odata with:
+wit-query-odata with:
 queryType: "customQuery"
 customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail eq '{{assigned_to_email}}')/groupby((WorkItemType), aggregate($count as Count))"
 ```
 
 **WIQL for Active Work:**
 ```
-wit-get-work-items-by-query-wiql with:
+wit-query-wiql with:
 wiqlQuery: "[System.AssignedTo] = '{{assigned_to_email}}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review') AND [System.AreaPath] UNDER '{{area_path}}'"
 returnQueryHandle: true
 includeSubstantiveChange: true
@@ -335,12 +335,12 @@ includeSubstantiveChange: true
 
 **Story Points Estimation:**
 ```
-wit-analyze-by-query-handle with:
+wit-analyze-items with:
 queryHandle: [from WIQL query]
 analysisType: ["effort"]
 
 If coverage < 100%:
-wit-bulk-assign-story-points-by-query-handle with:
+wit-ai-bulk-story-points with:
 queryHandle: [same handle]
 scale: "fibonacci"
 onlyUnestimated: true
@@ -408,25 +408,25 @@ samplingService.createMessage({
 
 ## Tool Selection Best Practices
 
-**Use OData (`wit-query-analytics-odata`) for:**
+**Use OData (`wit-query-odata`) for:**
 - Historical completion counts and velocity
 - Work distribution by type/state
 - Trend analysis over time
 - **NOT for:** Story Points, unassigned work, real-time state
 
-**Use WIQL (`wit-get-work-items-by-query-wiql`) for:**
+**Use WIQL (`wit-query-wiql`) for:**
 - Current active work with real-time state
 - Person-specific queries by email
 - Story Points data (fetch items, aggregate client-side or use analyze-by-query-handle)
 - Stale item detection with `includeSubstantiveChange: true`
 
 **Use Effort Analysis Tools:**
-- `wit-analyze-by-query-handle` - Check estimation coverage %
-- `wit-bulk-assign-story-points-by-query-handle` - Auto-estimate gaps with `onlyUnestimated: true`
+- `wit-analyze-items` - Check estimation coverage %
+- `wit-ai-bulk-story-points` - Auto-estimate gaps with `onlyUnestimated: true`
 
 **Use Context Tools:**
-- `wit-get-work-items-context-batch` - Detailed analysis of top 10-20 items
-- `wit-get-work-item-context-package` - Deep dive on specific concerning items
+- `wit-get-context-batch` - Detailed analysis of top 10-20 items
+- `wit-get-context` - Deep dive on specific concerning items
 
 **Use AI/Sampling:**
 - Pattern interpretation beyond quantitative metrics

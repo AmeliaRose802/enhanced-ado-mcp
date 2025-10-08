@@ -1,5 +1,5 @@
 /**
- * Handler for wit-new-copilot-item tool
+ * Handler for wit-create-copilot-item tool
  * Creates a new work item and immediately assigns it to GitHub Copilot
  */
 
@@ -65,7 +65,7 @@ export async function handleNewCopilotItem(config: ToolConfig, args: unknown): P
       warnings: [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-new-copilot-item'
+        tool: 'wit-create-copilot-item'
       }
     };
   } catch (error) {

@@ -49,7 +49,7 @@ async function addComment(
 export async function handleBulkAddComments(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     // ⚠️ DEPRECATION WARNING: Manual ID input increases hallucination risk
-    logger.warn('⚠️ DEPRECATION: wit-bulk-add-comments accepts manual IDs which increases hallucination risk. Consider using wit-bulk-comment-by-query-handle with a query handle from wit-get-work-items-by-query-wiql instead.');
+    logger.warn('⚠️ DEPRECATION: wit-bulk-add-comments accepts manual IDs which increases hallucination risk. Consider using wit-bulk-comment with a query handle from wit-query-wiql instead.');
     
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {

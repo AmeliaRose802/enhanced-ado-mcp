@@ -1,5 +1,5 @@
 /**
- * Handler for wit-get-work-items-by-query-wiql tool
+ * Handler for wit-query-wiql tool
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
@@ -144,10 +144,10 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
           next_steps: [
             "Review the work_items array to see what will be affected",
             ...(fullPackages ? ["Review the full_packages array for detailed context including descriptions, comments, relations, and history"] : []),
-            "Use wit-bulk-comment-by-query-handle to add comments to all items",
-            "Use wit-bulk-update-by-query-handle to update fields on all items",
-            "Use wit-bulk-assign-by-query-handle to assign all items to a user",
-            "Use wit-bulk-remove-by-query-handle to remove all items",
+            "Use wit-bulk-comment to add comments to all items",
+            "Use wit-bulk-update to update fields on all items",
+            "Use wit-bulk-assign to assign all items to a user",
+            "Use wit-bulk-remove to remove all items",
             "Always use dryRun: true first to preview changes before applying them"
           ],
           expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),

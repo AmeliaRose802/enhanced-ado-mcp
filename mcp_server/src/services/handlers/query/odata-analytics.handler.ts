@@ -1,5 +1,5 @@
 /**
- * Handler for wit-query-analytics-odata tool
+ * Handler for wit-query-odata tool
  * Queries Azure DevOps Analytics using OData for efficient aggregations and metrics
  */
 

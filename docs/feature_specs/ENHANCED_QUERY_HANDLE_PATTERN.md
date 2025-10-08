@@ -14,8 +14,8 @@ The Enhanced ADO MCP Server now supports **staleness-aware query handles** that 
 ### Before Enhancement
 Beta testers reported that they couldn't effectively use the query handle feature for staleness analysis:
 
-1. ✅ `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange=true` → Got work items with staleness data
-2. ✅ `wit-get-work-items-by-query-wiql` with `returnQueryHandle=true` → Got query handle for bulk operations  
+1. ✅ `wit-query-wiql` with `includeSubstantiveChange=true` → Got work items with staleness data
+2. ✅ `wit-query-wiql` with `returnQueryHandle=true` → Got query handle for bulk operations  
 3. ❌ **Could not combine both flags** → Handle lacked staleness context for bulk operations
 
 ### After Enhancement  
@@ -85,7 +85,7 @@ Bulk operations now support template variables:
 
 ### 3. Query Handle Inspector
 
-New tool: `wit-inspect-query-handle`
+New tool: `wit-query-handle-inspect`
 
 ```json
 {
@@ -299,7 +299,7 @@ await wit_bulk_comment_by_query_handle({
 **New Pattern:**
 ```markdown
 1. Query work items with BOTH includeSubstantiveChange=true AND returnQueryHandle=true
-2. Use wit-inspect-query-handle to verify staleness data
+2. Use wit-query-handle-inspect to verify staleness data
 3. Use templated bulk comments with {daysInactive} and {lastSubstantiveChangeDate}
 ```
 
@@ -307,12 +307,12 @@ await wit_bulk_comment_by_query_handle({
 
 Replace:
 ```
-Use wit-get-work-items-by-query-wiql with includeSubstantiveChange: true to get staleness data
+Use wit-query-wiql with includeSubstantiveChange: true to get staleness data
 ```
 
 With:
 ```
-Use wit-get-work-items-by-query-wiql with BOTH includeSubstantiveChange: true AND returnQueryHandle: true to get staleness data with a safe handle for bulk operations. Then use wit-bulk-comment-by-query-handle with template variables like {daysInactive} and {lastSubstantiveChangeDate} for personalized comments.
+Use wit-query-wiql with BOTH includeSubstantiveChange: true AND returnQueryHandle: true to get staleness data with a safe handle for bulk operations. Then use wit-bulk-comment with template variables like {daysInactive} and {lastSubstantiveChangeDate} for personalized comments.
 ```
 
 ## Error Prevention
@@ -325,7 +325,7 @@ Use wit-get-work-items-by-query-wiql with BOTH includeSubstantiveChange: true AN
 
 2. **"Template variables not substituted"**  
    - **Cause:** Query handle created without context data
-   - **Fix:** Use `wit-inspect-query-handle` to verify context availability
+   - **Fix:** Use `wit-query-handle-inspect` to verify context availability
 
 3. **"ID hallucination in staleness analysis"**
    - **Cause:** Manually correlating separate query responses

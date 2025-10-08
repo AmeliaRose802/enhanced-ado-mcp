@@ -9,11 +9,11 @@
 
 The Enhanced ADO MCP Server provides comprehensive analysis and validation tools for work items:
 
-1. **wit-detect-patterns** - Identify common work item issues
-2. **wit-validate-hierarchy-fast** - Fast rule-based hierarchy validation
-3. **wit-get-last-substantive-change** - Determine meaningful change dates
-4. **wit-extract-security-links** - Extract security scan instruction links
-5. **wit-get-configuration** - View current MCP server configuration
+1. **wit-analyze-patterns** - Identify common work item issues
+2. **wit-analyze-hierarchy** - Fast rule-based hierarchy validation
+3. **wit-get-last-change** - Determine meaningful change dates
+4. **wit-analyze-security** - Extract security scan instruction links
+5. **wit-get-config** - View current MCP server configuration
 
 These tools enable proactive issue detection and work item quality improvement.
 
@@ -28,7 +28,7 @@ Enable work item quality analysis with:
 
 ## Tools
 
-### 1. wit-detect-patterns
+### 1. wit-analyze-patterns
 
 Identify common work item issues by severity.
 
@@ -135,7 +135,7 @@ Identify common work item issues by severity.
 }
 ```
 
-### 2. wit-validate-hierarchy-fast
+### 2. wit-analyze-hierarchy
 
 Fast, rule-based validation of work item hierarchy.
 
@@ -204,7 +204,7 @@ Fast, rule-based validation of work item hierarchy.
 }
 ```
 
-### 3. wit-get-last-substantive-change
+### 3. wit-get-last-change
 
 Efficiently determine last meaningful change by filtering automated changes.
 
@@ -253,7 +253,7 @@ Efficiently determine last meaningful change by filtering automated changes.
 }
 ```
 
-### 4. wit-extract-security-links
+### 4. wit-analyze-security
 
 Extract instruction links from security scan work items.
 
@@ -320,7 +320,7 @@ Extract instruction links from security scan work items.
 }
 ```
 
-### 5. wit-get-configuration
+### 5. wit-get-config
 
 Get current MCP server configuration for agents.
 
@@ -448,7 +448,7 @@ Uses defaults from `.ado-mcp-config.json`.
 ```bash
 # Test pattern detection
 {
-  "tool": "wit-detect-patterns",
+  "tool": "wit-analyze-patterns",
   "arguments": {
     "areaPath": "Project\\Team",
     "patterns": ["duplicates", "placeholder_titles"]
@@ -457,7 +457,7 @@ Uses defaults from `.ado-mcp-config.json`.
 
 # Test hierarchy validation
 {
-  "tool": "wit-validate-hierarchy-fast",
+  "tool": "wit-analyze-hierarchy",
   "arguments": {
     "areaPath": "Project\\Team"
   }

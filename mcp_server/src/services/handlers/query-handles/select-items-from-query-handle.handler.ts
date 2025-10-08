@@ -1,5 +1,5 @@
 /**
- * Handler for wit-select-items-from-query-handle tool
+ * Handler for wit-query-handle-select tool
  * Helps users understand what items they can select from a query handle
  */
 
@@ -9,7 +9,7 @@ import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 /**
- * Handler for wit-select-items-from-query-handle tool
+ * Handler for wit-query-handle-select tool
  * Helps users understand what items they can select from a query handle
  */
 export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {

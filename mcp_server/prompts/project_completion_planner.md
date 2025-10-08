@@ -49,33 +49,33 @@ Create detailed execution plan with specific human and AI assignments.
 ## Available MCP Tools
 
 **Query Generation (AI-Powered):**
-- `wit-generate-wiql-query` - Generate WIQL queries from natural language descriptions with validation
-- `wit-generate-odata-query` - Generate OData Analytics queries from natural language with validation
+- `wit-ai-generate-wiql` - Generate WIQL queries from natural language descriptions with validation
+- `wit-ai-generate-odata` - Generate OData Analytics queries from natural language with validation
 
 **Hierarchy & Structure:**
-- `wit-validate-hierarchy` - Analyze project hierarchy structure, identify orphans, depth issues
-- `wit-get-work-item-context-package` - Deep dive single Epic/Feature with full context
-- `wit-get-work-items-context-batch` - Batch context for up to 50 work items
+- `wit-analyze-hierarchy` - Analyze project hierarchy structure, identify orphans, depth issues
+- `wit-get-context` - Deep dive single Epic/Feature with full context
+- `wit-get-context-batch` - Batch context for up to 50 work items
 
 **Analytics (OData):**
-- `wit-query-analytics-odata` - Historical velocity, completion trends, effort aggregations
+- `wit-query-odata` - Historical velocity, completion trends, effort aggregations
   - ⚠️ **Does NOT support StoryPoints aggregation** - use WIQL instead
 
 **Real-Time Queries (WIQL):**
-- `wit-get-work-items-by-query-wiql` - Current state queries, Story Points, precise filtering
+- `wit-query-wiql` - Current state queries, Story Points, precise filtering
   - ⚠️ **Pagination Strategy:** Use OData counts first, then paginate WIQL: `skip: 0, top: 200` → `skip: 200, top: 200`
   - 🚨 **Context Window Management:** NEVER request more than 300 items at once. NEVER include `System.Description` or `System.Tags` in bulk queries
   - 📊 **Efficiency Rule:** Get aggregated data from OData first, then targeted WIQL for specific analysis
-- `wit-get-last-substantive-change` - Detect stale work items
+- `wit-get-last-change` - Detect stale work items
 
 **Team Analysis:**
 - Use team velocity analyzer approach: Query completed work by assignee, calculate throughput
 
 **AI Assignment:**
-- `wit-ai-assignment-analyzer` - Evaluate individual work items for AI suitability
+- `wit-ai-assignment` - Evaluate individual work items for AI suitability
 
 **Pattern Analysis:**
-- `wit-detect-patterns` - Identify blockers, recurring issues, anti-patterns
+- `wit-analyze-patterns` - Identify blockers, recurring issues, anti-patterns
 
 ---
 
@@ -99,7 +99,7 @@ When you see template variables in queries, these are **ACTUAL PRE-FILLED VALUES
 
 If `project_epic_id` provided:
 ```
-Tool: wit-get-work-item-context-package
+Tool: wit-get-context
 Arguments: {
   workItemId: {{project_epic_id}},
   includeChildren: true,
@@ -110,7 +110,7 @@ Arguments: {
 
 If analyzing entire area path:
 ```
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Epic', 'Feature') AND [System.State] <> 'Removed' ORDER BY [System.WorkItemType] DESC, [Microsoft.VSTS.Common.Priority] ASC",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "System.Parent", "System.Tags"],
@@ -120,7 +120,7 @@ Arguments: {
 
 ### 2. Validate Project Hierarchy
 ```
-Tool: wit-validate-hierarchy
+Tool: wit-analyze-hierarchy
 Arguments: {
   rootWorkItemIds: [list of Epic/Feature IDs],
   maxDepth: 10,
@@ -132,7 +132,7 @@ Arguments: {
 ### 3. Get All Work Items in Project (Efficient Summary)
 ```
 # CRITICAL: Use OData for aggregation first, then targeted WIQL
-Tool: wit-query-analytics-odata
+Tool: wit-query-odata
 Arguments: {
   queryType: "groupByType",
   areaPath: "{{area_path}}"
@@ -140,7 +140,7 @@ Arguments: {
 }
 
 # Then get ONLY essential fields for Story Points calculation
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] <> 'Removed' ORDER BY [System.WorkItemType]",
   includeFields: ["System.WorkItemType", "System.State", "Microsoft.VSTS.Scheduling.StoryPoints"],
@@ -152,7 +152,7 @@ Arguments: {
 ### 4. Completed Work (Historical Velocity)
 ```
 # Use OData for velocity trends first (more efficient)
-Tool: wit-query-analytics-odata
+Tool: wit-query-odata
 Arguments: {
   queryType: "velocityMetrics",
   dateRangeField: "CompletedDate",
@@ -162,7 +162,7 @@ Arguments: {
 }
 
 # Only get SP data if OData shows significant completion volume
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Done' AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - 90 ORDER BY [Microsoft.VSTS.Common.ClosedDate] DESC",
   includeFields: ["System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints"],
@@ -173,7 +173,7 @@ Arguments: {
 
 ### 5. Active Work (Current Team Load)
 ```
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Active', 'In Progress', 'Committed') AND [System.AssignedTo] <> '' ORDER BY [System.AssignedTo]",
   includeFields: ["System.Title", "System.AssignedTo", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.CreatedDate"],
@@ -184,7 +184,7 @@ Arguments: {
 ### 6. Backlog Work (Remaining Effort)
 ```
 # CRITICAL: Never request System.Description in bulk queries - context killer
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('New', 'Proposed', 'To Do', 'Approved') ORDER BY [Microsoft.VSTS.Common.Priority] ASC",
   includeFields: ["System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority"],
@@ -195,7 +195,7 @@ Arguments: {
 
 ### 7. Blocked/Impediment Items
 ```
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'Blocked' OR [System.Tags] CONTAINS 'Impediment' OR [System.State] = 'Blocked') AND [System.State] <> 'Done'",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.AssignedTo", "System.Tags", "System.Reason"],
@@ -205,7 +205,7 @@ Arguments: {
 
 ### 8. AI Assignment Candidates (Batch Analysis)
 ```
-Tool: wit-ai-assignment-analyzer
+Tool: wit-ai-assignment
 Arguments: {
   workItemIds: [list of unassigned or low-priority item IDs],
   analysisDepth: "comprehensive"

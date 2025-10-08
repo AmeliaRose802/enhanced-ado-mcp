@@ -83,9 +83,9 @@ describe('Handle-Based Analysis Tools', () => {
     queryHandleService.stopCleanup();
   });
 
-  describe('wit-analyze-by-query-handle', () => {
+  describe('wit-analyze-items', () => {
     const mockConfig = {
-      name: 'wit-analyze-by-query-handle',
+      name: 'wit-analyze-items',
       description: 'Test',
       script: '',
       schema: analyzeByQueryHandleSchema,
@@ -199,9 +199,9 @@ describe('Handle-Based Analysis Tools', () => {
     });
   });
 
-  describe('wit-list-query-handles', () => {
+  describe('wit-query-handle-list', () => {
     const mockConfig = {
-      name: 'wit-list-query-handles',
+      name: 'wit-query-handle-list',
       description: 'Test',
       script: '',
       schema: listQueryHandlesSchema,
@@ -264,7 +264,7 @@ describe('Handle-Based Analysis Tools', () => {
 
       expect(result.success).toBe(true);
       expect(result.data.total_handles).toBe(0);
-      expect(result.warnings).toContain('No query handles found. Use wit-get-work-items-by-query-wiql with returnQueryHandle=true to create handles.');
+      expect(result.warnings).toContain('No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles.');
     });
 
     it('should warn about high number of handles', async () => {

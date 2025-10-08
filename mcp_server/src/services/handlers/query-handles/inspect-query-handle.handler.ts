@@ -1,5 +1,5 @@
 /**
- * Handler for wit-inspect-query-handle tool
+ * Handler for wit-query-handle-inspect tool
  * Allows inspection of query handle contents including staleness data
  */
 

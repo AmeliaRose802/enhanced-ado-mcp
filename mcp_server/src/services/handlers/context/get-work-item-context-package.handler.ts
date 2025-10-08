@@ -332,10 +332,10 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
     };
 
-    return buildSuccessResponse({ contextPackage: result }, { tool: 'wit-get-work-item-context-package' });
+    return buildSuccessResponse({ contextPackage: result }, { tool: 'wit-get-context' });
   } catch (error) {
     logger.error('Failed to build context package', error);
     // Auto-categorizes based on error message (network, auth, etc.)
-    return buildErrorResponse(error as Error, { tool: 'wit-get-work-item-context-package' });
+    return buildErrorResponse(error as Error, { tool: 'wit-get-context' });
   }
 }

@@ -9,7 +9,7 @@ async function testCreateWorkItemBasic() {
   console.log("\n🧪 Testing basic work item creation with REST API...");
   
   try {
-    const result = await executeTool('wit-create-new-item', {
+    const result = await executeTool('wit-create-item', {
       Title: 'Test Work Item - REST API Implementation',
       WorkItemType: 'Task',
       Description: 'This is a test work item created using the new REST API implementation instead of PowerShell.',
@@ -43,7 +43,7 @@ async function testCreateWorkItemWithParent() {
   
   try {
     // First create a parent work item
-    const parentResult = await executeTool('wit-create-new-item', {
+    const parentResult = await executeTool('wit-create-item', {
       Title: 'Parent Work Item - REST API Test',
       WorkItemType: 'Product Backlog Item',
       Description: 'Parent work item for testing REST API parent linking',
@@ -59,7 +59,7 @@ async function testCreateWorkItemWithParent() {
     console.log(`   Created parent work item: ${parentId}`);
     
     // Now create a child work item
-    const childResult = await executeTool('wit-create-new-item', {
+    const childResult = await executeTool('wit-create-item', {
       Title: 'Child Work Item - REST API Test',
       WorkItemType: 'Task',
       Description: 'Child work item linked to parent',
@@ -90,7 +90,7 @@ async function testCreateWorkItemWithAssignment() {
   console.log("\n🧪 Testing work item creation with @me assignment...");
   
   try {
-    const result = await executeTool('wit-create-new-item', {
+    const result = await executeTool('wit-create-item', {
       Title: 'Test Work Item - @me Assignment',
       WorkItemType: 'Task',
       Description: 'Testing @me assignment resolution in REST API implementation',
@@ -120,7 +120,7 @@ async function testMetadataSourceValidation() {
   console.log("\n🧪 Testing metadata source is 'rest-api'...");
   
   try {
-    const result = await executeTool('wit-create-new-item', {
+    const result = await executeTool('wit-create-item', {
       Title: 'Test Work Item - Metadata Validation',
       WorkItemType: 'Task',
       Description: 'Validating that the new REST API implementation is being used',

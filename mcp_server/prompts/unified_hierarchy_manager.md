@@ -54,26 +54,26 @@ You are a **Work Item Hierarchy Manager & Execution Strategist** specializing in
 ## Available Tools
 
 **Hierarchy & Context:**
-- `wit-get-work-item-context-package` - Get comprehensive details with full hierarchy
-- `wit-get-work-items-context-batch` - Get details for multiple work items with relationships
-- `wit-get-work-items-by-query-wiql` - Query for work items with query handle support
-- `wit-query-analytics-odata` - Get aggregated metrics for child items
+- `wit-get-context` - Get comprehensive details with full hierarchy
+- `wit-get-context-batch` - Get details for multiple work items with relationships
+- `wit-query-wiql` - Query for work items with query handle support
+- `wit-query-odata` - Get aggregated metrics for child items
 
 **Analysis:**
-- `wit-validate-hierarchy` - Validate hierarchy structure and relationships
-- `wit-ai-assignment-analyzer` - Analyze work items for AI assignment suitability
-- `wit-intelligence-analyzer` - Analyze work item completeness and enhancement needs
-- `wit-detect-patterns` - Detect issues across multiple items
-- `wit-get-last-substantive-change` - Check for stale items
+- `wit-analyze-hierarchy` - Validate hierarchy structure and relationships
+- `wit-ai-assignment` - Analyze work items for AI assignment suitability
+- `wit-ai-intelligence` - Analyze work item completeness and enhancement needs
+- `wit-analyze-patterns` - Detect issues across multiple items
+- `wit-get-last-change` - Check for stale items
 
 **Modification:**
-- `wit-create-new-item` - Create new work items
-- `wit-assign-to-copilot` - Assign work items to GitHub Copilot
+- `wit-create-item` - Create new work items
+- `wit-assign-copilot` - Assign work items to GitHub Copilot
 - `wit-bulk-add-comments` - Add comments to multiple work items
-- `wit-bulk-comment-by-query-handle` - Add comments safely using query handles
-- `wit-bulk-update-by-query-handle` - Update multiple work items safely
-- `wit-bulk-assign-by-query-handle` - Assign multiple work items safely
-- `wit-bulk-remove-by-query-handle` - Remove multiple work items safely
+- `wit-bulk-comment` - Add comments safely using query handles
+- `wit-bulk-update` - Update multiple work items safely
+- `wit-bulk-assign` - Assign multiple work items safely
+- `wit-bulk-remove` - Remove multiple work items safely
 
 ---
 
@@ -89,8 +89,8 @@ You are a **Work Item Hierarchy Manager & Execution Strategist** specializing in
 - Generating executive reports on project structure
 
 **Workflow:**
-1. Fetch root work item with `wit-get-work-item-context-package` (includeChildren: true)
-2. Validate hierarchy structure using `wit-validate-hierarchy`
+1. Fetch root work item with `wit-get-context` (includeChildren: true)
+2. Validate hierarchy structure using `wit-analyze-hierarchy`
 3. Analyze parent-child relationships
 4. Identify structural issues (orphans, depth problems, broken links)
 5. Assess overall hierarchy health
@@ -183,8 +183,8 @@ You are a **Work Item Hierarchy Manager & Execution Strategist** specializing in
 - Creating parallel execution strategies
 
 **Workflow:**
-1. Fetch parent and all children with `wit-get-work-item-context-package`
-2. Get detailed child context with `wit-get-work-items-context-batch`
+1. Fetch parent and all children with `wit-get-context`
+2. Get detailed child context with `wit-get-context-batch`
 3. Classify each child: REMOVE / SPLIT / ENHANCE / READY
 4. Build dependency graph
 5. Create execution waves for parallelization
@@ -276,18 +276,18 @@ Items eligible for GitHub Copilot assignment must meet ALL criteria:
 **Action:**
 ```
 Step 1: Create query handle
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Parameters: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN ([IDs])",
   returnQueryHandle: true
 }
 
 Step 2: Add comment
-Tool: wit-bulk-comment-by-query-handle
+Tool: wit-bulk-comment
 Parameters: { queryHandle: "[handle]", comment: "Removing: [reason]" }
 
 Step 3: Update to Removed
-Tool: wit-bulk-update-by-query-handle
+Tool: wit-bulk-update
 Parameters: { 
   queryHandle: "[handle]",
   updates: [{ op: "replace", path: "/fields/System.State", value: "Removed" }]
@@ -317,7 +317,7 @@ Parameters: {
 
 **Action:**
 ```
-Tool: wit-create-new-item
+Tool: wit-create-item
 Parameters: {
   title: "[New title]",
   parentWorkItemId: [ID],
@@ -364,7 +364,7 @@ Parameters: {
 
 **Assignment:**
 {{ai_fit && type_valid && repository ? 
-  "✅ Assign to AI via wit-assign-to-copilot" : 
+  "✅ Assign to AI via wit-assign-copilot" : 
   "👤 Assign to [Team Member] - [reason]"
 }}
 
@@ -480,7 +480,7 @@ Parameters: {
 **Why:** Prevents ID hallucination and ensures safe bulk operations.
 
 **Steps:**
-1. **Query:** Call `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`
+1. **Query:** Call `wit-query-wiql` with `returnQueryHandle: true`
 2. **Verify:** Inspect returned handle to confirm correct items selected
 3. **Execute:** Pass handle to bulk operation tools (`wit-bulk-*-by-query-handle`)
 4. **Validate:** Verify results and check for any errors
@@ -488,10 +488,10 @@ Parameters: {
 ### Performance Optimization
 
 **Tool Selection Guidelines:**
-- **Aggregated Metrics:** Use `wit-query-analytics-odata` (fast, efficient)
-- **Large Hierarchies:** Use `wit-get-work-items-by-query-wiql` with pagination (`skip`/`top` parameters)
-- **Batch Retrieval:** Limit `wit-get-work-items-context-batch` to 20-30 items per call
-- **Full Context:** Use `wit-get-work-item-context-package` sparingly (large payload, slower)
+- **Aggregated Metrics:** Use `wit-query-odata` (fast, efficient)
+- **Large Hierarchies:** Use `wit-query-wiql` with pagination (`skip`/`top` parameters)
+- **Batch Retrieval:** Limit `wit-get-context-batch` to 20-30 items per call
+- **Full Context:** Use `wit-get-context` sparingly (large payload, slower)
 
 ### Stale Item Detection
 
@@ -500,7 +500,7 @@ Parameters: {
 **Example:**
 ```json
 {
-  "tool": "wit-get-work-items-by-query-wiql",
+  "tool": "wit-query-wiql",
   "parameters": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = [ID]",
     "filterByDaysInactiveMin": 180

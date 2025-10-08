@@ -1,5 +1,5 @@
 /**
- * Tests for wit-list-query-handles pagination functionality
+ * Tests for wit-query-handle-list pagination functionality
  */
 
 import { queryHandleService } from '../services/query-handle-service.js';
@@ -129,7 +129,7 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
@@ -154,7 +154,7 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
@@ -177,7 +177,7 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
@@ -199,7 +199,7 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
@@ -219,7 +219,7 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',

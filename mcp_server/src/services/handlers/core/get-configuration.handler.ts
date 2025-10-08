@@ -1,5 +1,5 @@
 /**
- * Handler for wit-get-configuration tool
+ * Handler for wit-get-config tool
  */
 
 import { ToolExecutionResult, asToolData } from "../../../types/index.js";

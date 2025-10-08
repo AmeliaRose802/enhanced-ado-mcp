@@ -69,7 +69,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -107,7 +107,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-remove-by-query-handle',
+        name: 'wit-bulk-remove',
         description: 'Test tool',
         script: '',
         schema: bulkRemoveByQueryHandleSchema,
@@ -145,7 +145,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-update-by-query-handle',
+        name: 'wit-bulk-update',
         description: 'Test tool',
         script: '',
         schema: bulkUpdateByQueryHandleSchema,
@@ -183,7 +183,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-comment-by-query-handle',
+        name: 'wit-bulk-comment',
         description: 'Test tool',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
@@ -223,7 +223,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -262,7 +262,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -301,7 +301,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -342,7 +342,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -380,7 +380,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -418,7 +418,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -458,7 +458,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
@@ -503,7 +503,7 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,

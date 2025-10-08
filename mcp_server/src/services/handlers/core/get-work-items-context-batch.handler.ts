@@ -302,9 +302,9 @@ export async function handleGetWorkItemsContextBatch(args: BatchContextArgs) {
 
     const data = returnFormat === 'graph' ? graph : { items: nodes, edges: dedupedEdges, aggregates };
 
-    return buildSuccessResponse({ batchContext: data }, { tool: 'wit-get-work-items-context-batch' });
+    return buildSuccessResponse({ batchContext: data }, { tool: 'wit-get-context-batch' });
   } catch (error) {
     logger.error('Batch context retrieval failed', error);
-    return buildErrorResponse(error as Error, { tool: 'wit-get-work-items-context-batch' });
+    return buildErrorResponse(error as Error, { tool: 'wit-get-context-batch' });
   }
 }
