@@ -8,6 +8,7 @@ import { assignWorkItemToCopilot } from "../../ado-work-item-service.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { logger } from "../../../utils/logger.js";
 import { assignToCopilotSchema } from "../../../config/schemas.js";
+import { buildValidationErrorResponse, buildErrorResponse, buildSuccessResponse, buildBusinessLogicError } from "../../../utils/response-builder.js";
 import { z } from "zod";
 
 type AssignToCopilotInput = z.infer<typeof assignToCopilotSchema>;
@@ -17,13 +18,7 @@ export async function handleAssignToCopilot(config: ToolConfig, args: unknown): 
     // Parse and validate input
     const parsed = config.schema.safeParse(args || {});
     if (!parsed.success) {
-      return {
-        success: false,
-        data: null,
-        errors: [parsed.error.message],
-        warnings: [],
-        metadata: { timestamp: new Date().toISOString() }
-      };
+      return buildValidationErrorResponse(parsed.error, 'assign-to-copilot');
     }
 
     const input = parsed.data as AssignToCopilotInput;
@@ -41,37 +36,27 @@ export async function handleAssignToCopilot(config: ToolConfig, args: unknown): 
     };
 
     if (!assignArgs.gitHubCopilotGuid) {
-      return {
-        success: false,
-        data: null,
-        errors: ['GitHub Copilot GUID not configured and not provided in arguments'],
-        warnings: [],
-        metadata: { timestamp: new Date().toISOString() }
-      };
+      return buildBusinessLogicError(
+        'GitHub Copilot GUID not configured and not provided in arguments',
+        { source: 'assign-to-copilot' }
+      );
     }
 
     logger.debug(`Assigning work item ${assignArgs.workItemId} to GitHub Copilot`);
     
     const result = await assignWorkItemToCopilot(assignArgs);
     
-    return {
-      success: true,
-      data: result,
-      errors: [],
-      warnings: result.warnings || [],
-      metadata: {
-        timestamp: new Date().toISOString(),
-        tool: 'wit-assign-copilot'
-      }
-    };
+    const response = buildSuccessResponse(
+      result,
+      { tool: 'wit-assign-copilot' }
+    );
+    response.warnings = result.warnings || [];
+    return response;
   } catch (error) {
     logger.error('Failed to assign work item to Copilot', error);
-    return {
-      success: false,
-      data: null,
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: [],
-      metadata: { timestamp: new Date().toISOString() }
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: 'assign-to-copilot' }
+    );
   }
 }

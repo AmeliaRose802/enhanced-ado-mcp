@@ -7,7 +7,7 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -67,25 +67,19 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
       warnings.push(`Showing ${result.pagination.returned} of ${result.pagination.total} handles. Use skip=${result.pagination.nextSkip} to get the next page.`);
     }
 
-    return {
-      success: true,
-      data: responseData,
-      metadata: { 
-        source: "list-query-handles",
-        pagination: result.pagination
-      },
-      errors: [],
-      warnings
-    };
+    // Build response with warnings if any
+    const response = buildSuccessResponse(
+      responseData,
+      { source: "list-query-handles" }
+    );
+    response.warnings = warnings;
+    return response;
 
   } catch (error) {
     logger.error(`Error in handleListQueryHandles: ${error}`);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "list-query-handles" },
-      errors: [`Unexpected error: ${error instanceof Error ? error.message : String(error)}`],
-      warnings: []
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: "list-query-handles" }
+    );
   }
 }

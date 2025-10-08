@@ -4,7 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
-import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -31,13 +31,14 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "query-handle-service" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildNotFoundError(
+        'query-handle',
+        queryHandle,
+        {
+          source: 'query-handle-service',
+          hint: 'Query handles expire after 1 hour.'
+        }
+      );
     }
 
     const response: Record<string, JSONValue> = {
@@ -241,25 +242,18 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       warnings.push(`${queryData.analysisMetadata.failureCount} work items failed staleness analysis - they lack lastSubstantiveChangeDate/daysInactive fields`);
     }
 
-    return {
-      success: true,
-      data: response as unknown as ToolExecutionData,
-      metadata: { 
+    return buildSuccessResponse(
+      response,
+      { 
         source: "query-handle-service",
-        handle: queryHandle,
-        inspected_at: new Date().toISOString()
-      },
-      errors: [],
-      warnings
-    };
+        handle: queryHandle
+      }
+    );
   } catch (error) {
     logger.error('Inspect query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "query-handle-service" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: "query-handle-service" }
+    );
   }
 }

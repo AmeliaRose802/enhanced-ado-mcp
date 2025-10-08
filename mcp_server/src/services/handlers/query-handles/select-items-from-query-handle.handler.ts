@@ -4,7 +4,7 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
-import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -32,25 +32,23 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "select-items-from-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildNotFoundError(
+        'query-handle',
+        queryHandle,
+        {
+          source: 'select-items-from-query-handle',
+          hint: 'Query handles expire after 1 hour.'
+        }
+      );
     }
 
     // Resolve the item selector to get selected IDs
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
     if (!selectedWorkItemIds) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "select-items-from-query-handle" },
-        errors: [`Failed to resolve item selector for query handle '${queryHandle}'`],
-        warnings: []
-      };
+      return buildErrorResponse(
+        `Failed to resolve item selector for query handle '${queryHandle}'`,
+        { source: "select-items-from-query-handle" }
+      );
     }
 
     const totalItems = queryData.workItemIds.length;
@@ -91,34 +89,28 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
       selectionAnalysis.criteria_used = criteriaUsed;
     }
 
-    return {
-      success: true,
-      data: asToolData({
+    const result = buildSuccessResponse(
+      {
         query_handle: queryHandle,
         item_selector: itemSelector,
         selection_analysis: selectionAnalysis,
         preview_items: previewItems,
         selection_summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`
-      }),
-      metadata: {
-        source: "select-items-from-query-handle",
-        queryHandle,
-        selectedCount,
-        totalItems,
-        selectionType: selectionAnalysis.selection_type
       },
-      errors: [],
-      warnings: selectedCount === 0 ? ['No items matched the selection criteria'] : []
-    };
+      { source: "select-items-from-query-handle" }
+    );
+
+    if (selectedCount === 0) {
+      result.warnings = ['No items matched the selection criteria'];
+    }
+    
+    return result;
 
   } catch (error) {
     logger.error('Select items from query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "select-items-from-query-handle" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: "select-items-from-query-handle" }
+    );
   }
 }
