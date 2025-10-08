@@ -27,6 +27,11 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
         defaultGuid: cfg.gitHubCopilot.defaultGuid || null
       };
     }
+    if (section === "all" || section === "authentication") {
+      configData.authentication = {
+        autoLaunchBrowser: cfg.autoLaunchBrowser
+      };
+    }
     
     return {
       success: true,
@@ -41,7 +46,10 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
             : "No default iteration path configured.",
           gitHubCopilot: cfg.gitHubCopilot.defaultGuid 
             ? "GitHub Copilot GUID is configured for automatic assignment." 
-            : "No GitHub Copilot GUID configured. Provide --copilot-guid parameter."
+            : "No GitHub Copilot GUID configured. Provide --copilot-guid parameter.",
+          autoLaunchBrowser: cfg.autoLaunchBrowser
+            ? "Browser auto-launch is ENABLED for authentication."
+            : "Browser auto-launch is DISABLED for authentication. Use --auto-launch-browser to enable."
         }
       }),
       metadata: { source: "internal", section },
