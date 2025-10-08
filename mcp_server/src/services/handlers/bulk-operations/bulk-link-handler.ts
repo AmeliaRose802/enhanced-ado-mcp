@@ -7,6 +7,7 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import type { ADOWorkItem, ADOFieldOperation } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -110,7 +111,7 @@ async function checkExistingLink(
   linkTypeRef: string
 ): Promise<boolean> {
   try {
-    const response = await httpClient.get<any>(`wit/workitems/${sourceId}?$expand=relations`);
+    const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${sourceId}?$expand=relations`);
     const workItem = response.data;
 
     if (!workItem.relations) {
@@ -118,7 +119,7 @@ async function checkExistingLink(
     }
 
     // Check if link already exists
-    return workItem.relations.some((rel: any) => {
+    return workItem.relations.some((rel) => {
       if (rel.rel !== linkTypeRef) {
         return false;
       }
@@ -241,7 +242,7 @@ async function createLink(
     throw new Error(`Unknown link type: ${operation.linkType}`);
   }
 
-  const linkFields: any[] = [
+  const linkFields: ADOFieldOperation[] = [
     {
       op: "add",
       path: "/relations/-",
