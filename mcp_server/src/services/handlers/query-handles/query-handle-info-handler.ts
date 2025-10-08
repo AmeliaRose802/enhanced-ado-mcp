@@ -7,7 +7,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
-import type { ADOWorkItem } from "../../../types/ado.js";
+import type { ADOWorkItem } from '../../../types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";

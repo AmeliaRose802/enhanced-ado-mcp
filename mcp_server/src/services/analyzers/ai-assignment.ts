@@ -7,7 +7,7 @@ import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableRespo
 import { extractJSON } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
-import type { ADOWorkItem } from '../../types/ado.js';
+import type { ADOWorkItem } from '../../types/index.js';
 
 /**
  * Get work item details from Azure DevOps

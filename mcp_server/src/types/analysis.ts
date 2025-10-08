@@ -47,10 +47,17 @@ export interface AnalysisResult {
  * Raw AI Analysis Data
  * Represents unstructured JSON response from AI analysis
  * This is intentionally flexible as AI responses can vary in structure
+ * 
+ * Note: Also exported as 'RawAnalysisData' for backward compatibility
  */
 export interface RawAIAnalysisData {
   [key: string]: unknown;
 }
+
+/**
+ * @deprecated Use RawAIAnalysisData instead. Kept for backward compatibility.
+ */
+export type RawAnalysisData = RawAIAnalysisData;
 
 /**
  * =============================================================================

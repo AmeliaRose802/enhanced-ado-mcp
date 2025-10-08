@@ -131,10 +131,22 @@ export interface ToolExecutionResult {
   };
 }
 
-// Export all types from submodules
-export * from './ado.js';
+// Export all types from submodules - organized by domain
+
+// Core MCP Protocol Types
 export * from './mcp.js';
+
+// Azure DevOps API Types
+export * from './ado.js';
+
+// Work Item Types and Operations
 export * from './work-items.js';
-export * from './error-categories.js';
+
+// AI-Powered Analysis Types
 export * from './analysis.js';
+
+// Query and Analytics Types
 export * from './queries.js';
+
+// Error Handling Types
+export * from './error-categories.js';

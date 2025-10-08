@@ -14,7 +14,7 @@ import type {
   ADOApiResponse, 
   ADOWiqlResult,
   ADOFieldOperation 
-} from '../types/ado.js';
+} from '../types/index.js';
 
 /**
  * Work Item Repository
