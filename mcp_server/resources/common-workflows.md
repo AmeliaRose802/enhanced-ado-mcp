@@ -169,9 +169,9 @@ End-to-end workflows combining multiple tools.
 
 ### Step 4: Bulk Notify Owners
 ```json
-// Tool: wit-bulk-add-comments
+// Tool: wit-bulk-comment-by-query-handle
 {
-  "workItemIds": [100, 101, 102], // items with issues
+  "queryHandle": "qh_items_with_issues",
   "comment": "Please review and update this work item. Missing required information."
 }
 ```
@@ -350,9 +350,9 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Notify Team
 ```json
-// Tool: wit-bulk-add-comments
+// Tool: wit-bulk-comment-by-query-handle
 {
-  "workItemIds": [12345, 12346],
+  "queryHandle": "qh_analyzed_items",
   "comment": "AI analysis suggests improvements. Please review attached recommendations."
 }
 ```

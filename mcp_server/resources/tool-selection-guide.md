@@ -299,8 +299,8 @@ wit-inspect-query-handle(queryHandle)
 User: "Assign all critical Active bugs to the security team"
 
 1. Query:
-   wit-query-wiql(
-     wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.Tags] CONTAINS 'critical'",
+   wit-get-work-items-by-query-wiql(
+     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.Tags] CONTAINS 'critical'",
      returnQueryHandle: true
    )
    Result: queryHandle "qh_xyz789"
@@ -325,8 +325,8 @@ User: "Assign all critical Active bugs to the security team"
 User: "Add 'needs update' comment to all stale Active items"
 
 1. Query (get Active items):
-   wit-query-wiql(
-     wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+   wit-get-work-items-by-query-wiql(
+     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
      returnQueryHandle: true,
      includeSubstantiveChange: true  // Get activity data
    )
@@ -352,8 +352,8 @@ User: "Add 'needs update' comment to all stale Active items"
 User: "Update the first 3 unassigned PBIs"
 
 1. Query:
-   wit-query-wiql(
-     wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Product Backlog Item' AND [System.AssignedTo] = ''",
+   wit-get-work-items-by-query-wiql(
+     wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Product Backlog Item' AND [System.AssignedTo] = ''",
      returnQueryHandle: true
    )
    Result: queryHandle "qh_def456"
@@ -670,13 +670,13 @@ User: "Update the first 3 unassigned PBIs"
 **⚠️ Prone to ID hallucination - use query handles instead**
 
 #### Add Comments to Multiple Items
-**Tool:** `wit-bulk-add-comments`  
+**Tool:** `wit-bulk-comment-by-query-handle`  
 **When:** Need to notify or update multiple items  
 **Example:** Add status update to all items in sprint
 
 ```json
 {
-  "workItemIds": [100, 101, 102],
+  "queryHandle": "qh_sprint_items",
   "comment": "Updated to use new API version"
 }
 ```
@@ -752,7 +752,7 @@ Analysis needed?
 └─ Validate hierarchy? → wit-validate-hierarchy-fast
 
 Bulk operations?
-├─ Add comments? → wit-bulk-add-comments
+├─ Add comments? → wit-bulk-comment-by-query-handle
 └─ Process many? → Use batch tools
 
 Configuration?
@@ -796,7 +796,7 @@ Configuration?
 1. `wit-generate-wiql-query` - Build query for stale items
 2. `wit-get-work-items-by-query-wiql` - Get items with query handle
 3. `wit-detect-patterns` - Find issues
-4. `wit-bulk-add-comments` - Notify owners
+4. `wit-bulk-comment-by-query-handle` - Notify owners
 
 ### Sprint Planning
 1. `wit-generate-odata-query` - Build velocity query
@@ -816,4 +816,4 @@ Configuration?
 1. `wit-get-work-items-by-query-wiql` - Get recent items
 2. `wit-intelligence-analyzer` - Analyze quality
 3. `wit-validate-hierarchy-fast` - Check relationships
-4. `wit-bulk-add-comments` - Request updates
+4. `wit-bulk-comment-by-query-handle` - Request updates
