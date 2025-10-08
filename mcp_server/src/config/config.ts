@@ -1,22 +1,22 @@
 /**
  * Configuration System
- * 
+ *
  * All configuration types, schemas, constants, and loading logic in one place.
- * 
+ *
  * Config sources:
  * 1. CLI arguments (organization, project, area-path, copilot-guid, verbose)
  * 2. Zod schema defaults for optional fields
  */
 
-import { z } from 'zod';
-import { logger } from '../utils/logger.js';
+import { z } from "zod";
+import { logger } from "../utils/logger.js";
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 /** Azure DevOps OAuth resource ID (Microsoft well-known constant) */
-export const AZURE_DEVOPS_RESOURCE_ID = '499b84ac-1321-427f-aa17-267ca6975798';
+export const AZURE_DEVOPS_RESOURCE_ID = "499b84ac-1321-427f-aa17-267ca6975798";
 
 // ============================================================================
 // TypeScript Interfaces
@@ -25,8 +25,8 @@ export const AZURE_DEVOPS_RESOURCE_ID = '499b84ac-1321-427f-aa17-267ca6975798';
 /**
  * CLI arguments structure from yargs
  * Represents the parsed command-line arguments passed to the server
- * 
- * Note: yargs includes additional properties (_: for positional args, $0: for script name, 
+ *
+ * Note: yargs includes additional properties (_: for positional args, $0: for script name,
  * and both kebab-case and camelCase versions of options). These are allowed via index signature.
  */
 export interface CLIArguments {
@@ -47,7 +47,7 @@ export interface CLIArguments {
 export interface AzureDevOpsConfig {
   organization: string;
   project: string;
-  defaultWorkItemType: 'Task' | 'Product Backlog Item' | 'Bug' | 'Feature' | 'Epic' | 'User Story';
+  defaultWorkItemType: "Task" | "Product Backlog Item" | "Bug" | "Feature" | "Epic" | "User Story";
   defaultPriority: number;
   defaultAssignedTo: string;
   areaPath?: string;
@@ -75,29 +75,31 @@ export interface MCPServerConfig {
 // ============================================================================
 
 export const azureDevOpsConfigSchema = z.object({
-  organization: z.string().min(1, 'organization required'),
-  project: z.string().min(1, 'project required'),
-  defaultWorkItemType: z.enum(['Task','Product Backlog Item','Bug','Feature','Epic','User Story']).default('Product Backlog Item'),
+  organization: z.string().min(1, "organization required"),
+  project: z.string().min(1, "project required"),
+  defaultWorkItemType: z
+    .enum(["Task", "Product Backlog Item", "Bug", "Feature", "Epic", "User Story"])
+    .default("Product Backlog Item"),
   defaultPriority: z.number().int().min(1).max(10).default(2),
-  defaultAssignedTo: z.string().min(1).default('@me'),
+  defaultAssignedTo: z.string().min(1).default("@me"),
   areaPath: z.string().optional(),
   iterationPath: z.string().optional(),
-  inheritParentPaths: z.boolean().default(true)
+  inheritParentPaths: z.boolean().default(true),
 });
 
 export const gitRepositoryConfigSchema = z.object({
-  defaultBranch: z.string().min(1).default('main')
+  defaultBranch: z.string().min(1).default("main"),
 });
 
 export const gitHubCopilotConfigSchema = z.object({
-  defaultGuid: z.string().default('')
+  defaultGuid: z.string().default(""),
 });
 
 export const mcpServerConfigSchema = z.object({
   azureDevOps: azureDevOpsConfigSchema,
   gitRepository: gitRepositoryConfigSchema,
   gitHubCopilot: gitHubCopilotConfigSchema,
-  verboseLogging: z.boolean().default(false)
+  verboseLogging: z.boolean().default(false),
 });
 
 export type MCPServerConfigSchema = z.infer<typeof mcpServerConfigSchema>;
@@ -116,12 +118,13 @@ function formatConfigError(stage: string, details: string): Error {
 export function loadConfiguration(forceReload = false): MCPServerConfig {
   if (cachedConfig && !forceReload) return cachedConfig;
 
-  const verbose = process.env.MCP_DEBUG === '1';
+  const verbose = process.env.MCP_DEBUG === "1";
 
   if (!cliArgs) {
-    throw formatConfigError('validate',
-      'Configuration not initialized. CLI args must be set first.\\n' +
-      'Usage: enhanced-ado-msp <organization> <project> [options]'
+    throw formatConfigError(
+      "validate",
+      "Configuration not initialized. CLI args must be set first.\\n" +
+        "Usage: enhanced-ado-msp <organization> <project> [options]"
     );
   }
 
@@ -130,32 +133,34 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     azureDevOps: {
       organization: cliArgs.organization,
       project: cliArgs.project,
-      ...(cliArgs.areaPath && { areaPath: cliArgs.areaPath })
+      ...(cliArgs.areaPath && { areaPath: cliArgs.areaPath }),
     },
     gitRepository: {},
     gitHubCopilot: {
-      ...(cliArgs.copilotGuid && { defaultGuid: cliArgs.copilotGuid })
+      ...(cliArgs.copilotGuid && { defaultGuid: cliArgs.copilotGuid }),
     },
-    verboseLogging: cliArgs.verbose || false
+    verboseLogging: cliArgs.verbose || false,
   };
 
   // Validate and apply schema defaults
   const parsed = mcpServerConfigSchema.safeParse(configData);
   if (!parsed.success) {
-    throw formatConfigError('validate', parsed.error.message);
+    throw formatConfigError("validate", parsed.error.message);
   }
 
   const cfg = parsed.data;
-  
+
   // Apply verbose logging flag
   if (cfg.verboseLogging) {
-    process.env.MCP_DEBUG = process.env.MCP_DEBUG || '1';
+    process.env.MCP_DEBUG = process.env.MCP_DEBUG || "1";
   }
-  
+
   if (verbose) {
-    logger.info(`Config loaded: org=${cfg.azureDevOps.organization}, project=${cfg.azureDevOps.project}`);
+    logger.info(
+      `Config loaded: org=${cfg.azureDevOps.organization}, project=${cfg.azureDevOps.project}`
+    );
   }
-  
+
   cachedConfig = cfg;
   return cfg;
 }
@@ -178,10 +183,10 @@ export function getRequiredConfig() {
     defaultAreaPath: config.azureDevOps.areaPath,
     defaultIterationPath: config.azureDevOps.iterationPath,
     gitRepository: {
-      defaultBranch: config.gitRepository.defaultBranch
+      defaultBranch: config.gitRepository.defaultBranch,
     },
     gitHubCopilot: {
-      guid: config.gitHubCopilot.defaultGuid
-    }
+      guid: config.gitHubCopilot.defaultGuid,
+    },
   };
 }
