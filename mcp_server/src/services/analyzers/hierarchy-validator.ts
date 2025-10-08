@@ -11,6 +11,7 @@ import type {
   HierarchyValidationResult,
   WorkItemHierarchyInfo
 } from '../sampling-types.js';
+import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/ado.js';
 import { logger } from '../../utils/logger.js';
 import { getRequiredConfig } from '../../config/config.js';
@@ -23,7 +24,7 @@ import { createADOHttpClient } from '../../utils/ado-http-client.js';
 export class HierarchyValidatorAnalyzer {
   private samplingClient: SamplingClient;
 
-  constructor(server: any) {
+  constructor(server: MCPServer | MCPServerLike) {
     this.samplingClient = new SamplingClient(server);
   }
 

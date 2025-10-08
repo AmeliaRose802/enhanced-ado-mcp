@@ -1,5 +1,5 @@
 import type { ToolExecutionResult } from "../types/index.js";
-import type { MCPServer } from "../types/mcp.js";
+import type { MCPServer, MCPServerLike } from "../types/mcp.js";
 import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
 import { logger } from "../utils/logger.js";
 import { checkSamplingSupport } from "../utils/sampling-client.js";
@@ -46,13 +46,13 @@ import { handleNewCopilotItem } from './handlers/integration/new-copilot-item.ha
 import { handleGetWorkItemContextPackage } from './handlers/context/get-work-item-context-package.handler.js';
 
 // Global server instance for sampling service
-let serverInstance: MCPServer | null = null;
+let serverInstance: MCPServer | MCPServerLike | null = null;
 
 /**
  * Set the server instance for sampling capabilities
- * Accepts MCPServer or any mock for testing (use 'any' for test mocks to avoid complex type gymnastics)
+ * Accepts MCPServer or MCPServerLike mock for testing
  */
-export function setServerInstance(server: MCPServer | null | any): void {
+export function setServerInstance(server: MCPServer | MCPServerLike | null): void {
   serverInstance = server;
 }
 

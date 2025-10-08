@@ -85,7 +85,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       const workItemContext = new Map<number, WorkItemContext>();
       for (const wi of result.workItems) {
         // Get tags from System.Tags field (stored as semicolon-separated string)
-        const tagsString = wi.additionalFields?.['System.Tags'] || '';
+        const tagsValue = wi.additionalFields?.['System.Tags'];
+        const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
         
         workItemContext.set(wi.id, {
           title: wi.title,

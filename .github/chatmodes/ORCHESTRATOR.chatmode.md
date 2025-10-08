@@ -41,13 +41,14 @@ When user says "Start parallel execution":
 ONLY STOP: After ALL tasks complete OR critical error
 ```
 
-**KEY BEHAVIORAL RULES:**
+**CRITICAL BEHAVIORAL RULES:**
 - ❌ NEVER say "Ready to continue?" between tasks
 - ❌ NEVER wait for user approval after merging
 - ❌ NEVER stop after creating PRs
 - ❌ NEVER exit while script is running
+- ❌ NEVER use `isBackground: true` for monitoring scripts (allows premature exit)
 - ✅ ALWAYS immediately start next available task
-- ✅ ALWAYS use blocking Watch-With-Tasks.ps1
+- ✅ ALWAYS use blocking Watch-With-Tasks.ps1 with `isBackground: false`
 - ✅ ALWAYS track PR-to-task mappings
 - ✅ ONLY stop after ALL tasks complete OR critical error
 
@@ -92,11 +93,12 @@ ONLY STOP: After ALL tasks complete OR critical error
    - Note the PR number (e.g., 126)
    ```
 
-3. **Block yourself with task tracking:**
+3. **Block yourself with task tracking (MUST RUN IN FOREGROUND - NOT BACKGROUND):**
    ```powershell
    .\Watch-With-Tasks.ps1 -PRTaskPairs @("123:T2_precommit_hooks", "124:T8_consolidate_ado_types", "125:T12_repository_pattern", "126:T48_audit_resources")
    ```
-   **[YOU ARE NOW BLOCKED FOR 15min-2 HOURS]**
+   **CRITICAL:** Use `isBackground: false` in run_in_terminal - this BLOCKS your execution thread
+   **[YOU ARE NOW BLOCKED FOR 15min-2 HOURS - CANNOT EXIT OR STOP]**
    
 4. **Script exits when ANY PR completes:**
    - Script automatically shows next available tasks
@@ -121,9 +123,10 @@ ONLY STOP: After ALL tasks complete OR critical error
 7. **Update blocking script with new PR list:**
    ```powershell
    # Remove completed PR, add ALL new PRs
+   # CRITICAL: isBackground: false to force blocking behavior
    .\Watch-With-Tasks.ps1 -PRTaskPairs @("124:T8_consolidate_ado_types", "125:T12_repository_pattern", "126:T48_audit_resources", "127:T3_new_task", "128:T5_another_task", "129:T9_yet_another")
    ```
-   **[BLOCKED AGAIN]**
+   **[BLOCKED AGAIN - USE isBackground: false]**
 
 8. **Repeat steps 4-7 until all tasks complete:**
    - Each time a PR finishes, merge it

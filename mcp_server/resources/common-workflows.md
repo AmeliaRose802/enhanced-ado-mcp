@@ -90,11 +90,11 @@ End-to-end workflows combining multiple tools.
 ```json
 // Tool: wit-create-new-item (repeat for each child)
 {
-  "Title": "Implement authentication API",
-  "WorkItemType": "Task",
-  "Parent": 12345,
-  "AreaPath": "MyProject\\Backend",
-  "Description": "Create JWT-based authentication endpoint"
+  "title": "Implement authentication API",
+  "workItemType": "Task",
+  "parentWorkItemId": 12345,
+  "areaPath": "MyProject\\Backend",
+  "description": "Create JWT-based authentication endpoint"
 }
 ```
 
@@ -116,7 +116,7 @@ End-to-end workflows combining multiple tools.
 // Tool: wit-assign-to-copilot
 {
   "WorkItemId": 12346,
-  "RepositoryId": "repo-abc-123"
+  "repositoryId": "repo-abc-123"
 }
 ```
 
@@ -139,9 +139,9 @@ End-to-end workflows combining multiple tools.
 // Option B: Use direct WIQL query
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",
-  "IncludeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
-  "MaxResults": 500
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",
+  "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
+  "maxResults": 500
 }
 ```
 
@@ -169,9 +169,9 @@ End-to-end workflows combining multiple tools.
 
 ### Step 4: Bulk Notify Owners
 ```json
-// Tool: wit-bulk-add-comments
+// Tool: wit-bulk-comment-by-query-handle
 {
-  "workItemIds": [100, 101, 102], // items with issues
+  "queryHandle": "qh_items_with_issues",
   "comment": "Please review and update this work item. Missing required information."
 }
 ```
@@ -198,9 +198,9 @@ End-to-end workflows combining multiple tools.
 ```json
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
-  "IncludeFields": ["System.Title", "System.Priority", "System.StoryPoints"],
-  "MaxResults": 200
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
+  "includeFields": ["System.Title", "System.Priority", "System.StoryPoints"],
+  "maxResults": 200
 }
 ```
 
@@ -222,11 +222,11 @@ End-to-end workflows combining multiple tools.
 ```json
 // Tool: wit-new-copilot-item (for AI-suitable items)
 {
-  "Title": "Implement user service",
-  "WorkItemType": "Task",
-  "RepositoryId": "repo-abc-123",
-  "AreaPath": "MyProject\\MyTeam",
-  "Parent": 12300
+  "title": "Implement user service",
+  "workItemType": "Task",
+  "repositoryId": "repo-abc-123",
+  "areaPath": "MyProject\\MyTeam",
+  "parentWorkItemId": 12300
 }
 ```
 
@@ -240,9 +240,9 @@ End-to-end workflows combining multiple tools.
 ```json
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'Security' OR [System.WorkItemType] = 'Security'",
-  "IncludeFields": ["System.Title", "System.State", "System.Description"],
-  "MaxResults": 200
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'Security' OR [System.WorkItemType] = 'Security'",
+  "includeFields": ["System.Title", "System.State", "System.Description"],
+  "maxResults": 200
 }
 ```
 
@@ -281,9 +281,9 @@ End-to-end workflows combining multiple tools.
 ```json
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
-  "IncludeFields": ["System.Title", "System.WorkItemType"],
-  "MaxResults": 100
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
+  "includeFields": ["System.Title", "System.WorkItemType"],
+  "maxResults": 100
 }
 ```
 
@@ -291,9 +291,9 @@ End-to-end workflows combining multiple tools.
 ```json
 // Tool: wit-get-work-items-by-query-wiql (repeat per root)
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
-  "IncludeFields": ["System.Title", "System.WorkItemType", "System.Parent"],
-  "MaxResults": 200
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
+  "includeFields": ["System.Title", "System.WorkItemType", "System.Parent"],
+  "maxResults": 200
 }
 ```
 
@@ -318,9 +318,9 @@ Repeat Step 2 for each child until complete tree is built.
 ```json
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.ChangedDate] >= @Today - 14 AND [System.State] = 'Active'",
-  "IncludeFields": ["System.Title", "System.Description"],
-  "MaxResults": 100
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.ChangedDate] >= @Today - 14 AND [System.State] = 'Active'",
+  "includeFields": ["System.Title", "System.Description"],
+  "maxResults": 100
 }
 ```
 
@@ -350,9 +350,9 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Notify Team
 ```json
-// Tool: wit-bulk-add-comments
+// Tool: wit-bulk-comment-by-query-handle
 {
-  "workItemIds": [12345, 12346],
+  "queryHandle": "qh_analyzed_items",
   "comment": "AI analysis suggests improvements. Please review attached recommendations."
 }
 ```
@@ -423,9 +423,9 @@ Repeat Step 2 for each child until complete tree is built.
 ```json
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
-  "IncludeFields": ["System.Title", "System.Description"],
-  "MaxResults": 100
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
+  "includeFields": ["System.Title", "System.Description"],
+  "maxResults": 100
 }
 ```
 
@@ -442,11 +442,11 @@ Repeat Step 2 for each child until complete tree is built.
 ```json
 // Tool: wit-new-copilot-item
 {
-  "Title": "Well-defined task from analysis",
-  "WorkItemType": "Task",
-  "Description": "Clear requirements based on AI analysis",
-  "RepositoryId": "repo-abc-123",
-  "Parent": 12300
+  "title": "Well-defined task from analysis",
+  "workItemType": "Task",
+  "description": "Clear requirements based on AI analysis",
+  "repositoryId": "repo-abc-123",
+  "parentWorkItemId": 12300
 }
 ```
 
@@ -454,7 +454,7 @@ Repeat Step 2 for each child until complete tree is built.
 ```json
 // Tool: wit-get-work-items-by-query-wiql
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = 'GitHub Copilot' AND [System.State] = 'Active'"
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = 'GitHub Copilot' AND [System.State] = 'Active'"
 }
 ```
 
