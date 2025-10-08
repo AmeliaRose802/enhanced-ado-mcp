@@ -3,7 +3,7 @@
 **Feature Category:** Querying & Search  
 **Status:** ✅ Implemented  
 **Version:** 1.5.0  
-**Last Updated:** 2025-10-07
+**Last Updated:** 2025-10-08
 
 ## Overview
 
@@ -280,6 +280,8 @@ Generates and tests WIQL query: `SELECT [System.Id] FROM WorkItems WHERE [System
 
 🤖 **AI-POWERED:** Generate valid OData Analytics queries from natural language with iterative validation.
 
+🔐 **DEFAULT BEHAVIOR:** Returns a query handle by default for safe bulk operations (as of v1.5.0).
+
 #### Input Parameters
 
 **Required:**
@@ -291,25 +293,67 @@ Generates and tests WIQL query: `SELECT [System.Id] FROM WorkItems WHERE [System
 - `testQuery` (boolean) - Test query by executing it (default true)
 - `areaPath` (string) - Override default area path
 - `iterationPath` (string) - Override default iteration path
+- `returnQueryHandle` (boolean) - Return a query handle for safe bulk operations (default true, set to false to get only query text)
+- `maxResults` (number) - Max work items to fetch when returnQueryHandle is true (default 200, max 1000)
+- `includeFields` (array of strings) - Additional fields to include when returnQueryHandle is true
 
 #### Output Format
 
-**Success Response:**
+**Success Response (with query handle - default):**
 ```json
 {
   "success": true,
   "data": {
-    "queryType": "groupByState",
-    "filters": { "WorkItemType": "Bug" },
-    "description": "count active bugs by state",
-    "iterations": 1,
+    "query_handle": "qh_abc123...",
+    "query": "$filter=State eq 'Active'",
+    "work_item_count": 45,
+    "work_items": [
+      {
+        "WorkItemId": 123,
+        "Title": "Bug in login",
+        "State": "Active",
+        "WorkItemType": "Bug"
+      }
+    ],
+    "isValidated": true,
+    "summary": "Query handle created for 45 work item(s)...",
+    "next_steps": [
+      "Review the work_items array to see what will be affected",
+      "Use wit-bulk-comment-by-query-handle to add comments to all items",
+      "Use wit-bulk-update-by-query-handle to update fields on all items"
+    ],
+    "expires_at": "2025-10-08T01:45:00Z"
+  },
+  "metadata": {
+    "source": "ai-sampling-odata-generator",
     "validated": true,
-    "testResults": {
-      "results": [
-        { "State": "Active", "Count": 45 },
-        { "State": "Resolved", "Count": 12 }
-      ]
-    }
+    "iterationCount": 1,
+    "queryHandleMode": true,
+    "handle": "qh_abc123...",
+    "count": 45
+  },
+  "errors": [],
+  "warnings": []
+}
+```
+
+**Success Response (query text only - when returnQueryHandle: false):**
+```json
+{
+  "success": true,
+  "data": {
+    "query": "$filter=State eq 'Active'",
+    "isValidated": true,
+    "resultCount": 45,
+    "sampleResults": [
+      { "WorkItemId": 123, "Title": "Bug in login" }
+    ],
+    "summary": "Successfully generated OData query (found 45 results)"
+  },
+  "metadata": {
+    "source": "ai-sampling-odata-generator",
+    "validated": true,
+    "iterationCount": 1
   },
   "errors": [],
   "warnings": []
