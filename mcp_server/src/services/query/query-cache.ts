@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import { randomBytes } from 'crypto';
 import { logger } from '../../utils/logger.js';
 
 /**
@@ -84,7 +84,7 @@ export class QueryCache {
    * Generate a unique query handle
    */
   generateHandle(): string {
-    return `qh_${crypto.randomBytes(16).toString('hex')}`;
+    return `qh_${randomBytes(16).toString('hex')}`;
   }
 
   /**
@@ -125,7 +125,7 @@ export class QueryCache {
     const selectionMetadata = {
       totalItems: workItemIds.length,
       selectableIndices: workItemIds.map((_, index) => index),
-      criteriaTags: [...new Set(itemContext.flatMap(item => item.tags || []))]
+      criteriaTags: Array.from(new Set(itemContext.flatMap(item => item.tags || [])))
     };
 
     this.handles.set(handle, {
@@ -206,7 +206,7 @@ export class QueryCache {
     let activeCount = 0;
     let expiredCount = 0;
 
-    for (const data of this.handles.values()) {
+    for (const data of Array.from(this.handles.values())) {
       if (now > data.expiresAt) {
         expiredCount++;
       } else {
@@ -250,7 +250,7 @@ export class QueryCache {
       has_context: boolean;
     }> = [];
 
-    for (const [handle, data] of this.handles.entries()) {
+    for (const [handle, data] of Array.from(this.handles.entries())) {
       const isExpired = now > data.expiresAt;
       
       if (!includeExpired && isExpired) {
@@ -292,7 +292,7 @@ export class QueryCache {
     const now = new Date();
     let deletedCount = 0;
 
-    for (const [handle, data] of this.handles.entries()) {
+    for (const [handle, data] of Array.from(this.handles.entries())) {
       if (now > data.expiresAt) {
         this.handles.delete(handle);
         deletedCount++;
