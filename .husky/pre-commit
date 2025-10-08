@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit checks..."
+
+# Run format check
+echo "📝 Checking code formatting..."
+cd mcp_server && npm run format:check
+FORMAT_EXIT=$?
+
+# Run lint
+echo "🔎 Running linter..."
+cd mcp_server && npm run lint
+LINT_EXIT=$?
+
+# Exit with error if either check failed
+if [ $FORMAT_EXIT -ne 0 ] || [ $LINT_EXIT -ne 0 ]; then
+  echo ""
+  echo "❌ Pre-commit checks failed!"
+  echo ""
+  if [ $FORMAT_EXIT -ne 0 ]; then
+    echo "   Formatting issues detected. Run 'npm run format' in mcp_server/ to fix."
+  fi
+  if [ $LINT_EXIT -ne 0 ]; then
+    echo "   Linting issues detected. Run 'npm run lint:fix' in mcp_server/ to fix."
+  fi
+  echo ""
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"

@@ -1,0 +1,17 @@
+{
+  "name": "enhanced-ado-mcp-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Workspace root for Enhanced ADO MCP Server",
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "cd mcp_server && npm run lint",
+    "format": "cd mcp_server && npm run format",
+    "format:check": "cd mcp_server && npm run format:check",
+    "build": "cd mcp_server && npm run build",
+    "test": "cd mcp_server && npm run test"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3"
+  }
+}
