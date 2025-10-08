@@ -6,7 +6,7 @@
  * Commonly used for sprint rescheduling and backlog grooming.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -108,7 +108,7 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
 
       return {
         success: true,
-        data: {
+        data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -121,7 +121,7 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
           preview_items: previewItems,
           preview_message: previewMessage,
           summary: `DRY RUN: Would move ${selectedCount} of ${totalItems} work item(s) to iteration '${targetIterationPath}'`
-        },
+        }),
         metadata: { 
           source: "bulk-move-to-iteration",
           dryRun: true,
@@ -253,7 +253,7 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         target_iteration_path: targetIterationPath,
         total_items_in_handle: totalItems,
@@ -272,7 +272,7 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
         })),
         moved_items: movedItems,
         summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : '')
-      },
+      }),
       metadata: {
         source: "bulk-move-to-iteration",
         itemSelector,

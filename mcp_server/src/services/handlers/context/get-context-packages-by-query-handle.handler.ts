@@ -3,11 +3,16 @@
  * Retrieves full context packages for multiple work items using query handle pattern
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
 import { buildValidationErrorResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "./get-work-item-context-package.handler.js";
+
+interface SelectionSummary {
+  selection_type: 'index-based' | 'all' | 'criteria-based';
+  criteria?: JSONValue;
+}
 import { loadConfiguration } from "../../../config/config.js";
 
 /**
@@ -169,7 +174,7 @@ export async function handleGetContextPackagesByQueryHandle(
     const contextPackages = successfulPackages.map(r => r.package);
 
     // Build selection summary
-    const selectionSummary: any = {
+    const selectionSummary: SelectionSummary = {
       selection_type: Array.isArray(itemSelector) ? 'index-based' : 
                      typeof itemSelector === 'string' ? 'all' : 'criteria-based'
     };

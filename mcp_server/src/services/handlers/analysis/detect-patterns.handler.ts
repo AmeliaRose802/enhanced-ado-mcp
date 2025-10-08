@@ -3,7 +3,7 @@
  * Identifies common issues: duplicates, placeholders, orphans, etc.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
@@ -229,7 +229,7 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
     };
 
     // Build response based on format
-    let responseData: any;
+    let responseData: Record<string, JSONValue>;
 
     if (format === 'summary') {
       // Summary format: Only counts, no work item arrays

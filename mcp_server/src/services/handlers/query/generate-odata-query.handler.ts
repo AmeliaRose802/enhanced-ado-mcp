@@ -67,12 +67,12 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       logger.debug(`Using iteration path for query context: ${iterationPath}`);
     }
 
-    const iterations: any[] = [];
+    const iterations: Array<Record<string, unknown>> = [];
     let currentQuery: string | null = null;
     let lastError: string | null = null;
     let isValid = false;
-    let testResults: any = null;
-    let cumulativeUsage: any = null;
+    let testResults: Record<string, unknown> | null = null;
+    let cumulativeUsage: Record<string, unknown> | null = null;
 
     // Iterative generation and validation
     for (let attempt = 1; attempt <= maxIterations; attempt++) {
@@ -103,9 +103,13 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
           cumulativeUsage = { ...usage };
         } else {
           // Sum up token counts if present
-          if (usage.inputTokens) cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
-          if (usage.outputTokens) cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
-          if (usage.totalTokens) cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
+          const inputTokens = usage.inputTokens as number | undefined;
+          const outputTokens = usage.outputTokens as number | undefined;
+          const totalTokens = usage.totalTokens as number | undefined;
+          
+          if (inputTokens) cumulativeUsage.inputTokens = ((cumulativeUsage.inputTokens as number) || 0) + inputTokens;
+          if (outputTokens) cumulativeUsage.outputTokens = ((cumulativeUsage.outputTokens as number) || 0) + outputTokens;
+          if (totalTokens) cumulativeUsage.totalTokens = ((cumulativeUsage.totalTokens as number) || 0) + totalTokens;
         }
       }
 
@@ -203,18 +207,22 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         }
         
         // Extract work item IDs from OData results
-        const workItemIds = workItems.map((wi: any) => wi.WorkItemId || wi.workItemId || wi.id);
+        const workItemIds = workItems.map((wi) => {
+          const wiRecord = wi as Record<string, unknown>;
+          return (wiRecord.WorkItemId || wiRecord.workItemId || wiRecord.id) as number;
+        });
         
         // Build work item context map for query handle
         const workItemContext = new Map<number, WorkItemContext>();
         for (const wi of workItems) {
-          const id = wi.WorkItemId || wi.workItemId || wi.id;
-          const tags = wi.Tags || wi.tags || '';
+          const wiRecord = wi as Record<string, unknown>;
+          const id = (wiRecord.WorkItemId || wiRecord.workItemId || wiRecord.id) as number;
+          const tags = (wiRecord.Tags || wiRecord.tags || '') as string;
           
           workItemContext.set(id, {
-            title: wi.Title || wi.title || '',
-            state: wi.State || wi.state || '',
-            type: wi.WorkItemType || wi.workItemType || wi.type || '',
+            title: (wiRecord.Title || wiRecord.title || '') as string,
+            state: (wiRecord.State || wiRecord.state || '') as string,
+            type: (wiRecord.WorkItemType || wiRecord.workItemType || wiRecord.type || '') as string,
             createdDate: wi.CreatedDate || wi.createdDate,
             assignedTo: wi.AssignedTo ? (wi.AssignedTo.UserName || wi.AssignedTo) : undefined,
             areaPath: wi.AreaPath || wi.areaPath,
@@ -357,7 +365,7 @@ async function generateQueryWithAI(
   iterationPath: string | undefined,
   includeExamples: boolean,
   feedback?: { previousQuery: string | null; error: string | null }
-): Promise<{ query: string; usage?: any }> {
+): Promise<{ query: string; usage?: Record<string, unknown> }> {
   
   // Build variables for the system prompt
   const variables: Record<string, string> = {
@@ -389,7 +397,7 @@ async function generateQueryWithAI(
   }
 
   // Extract usage information from aiResult if present
-  const usage = (aiResult as any).usage;
+  const usage = (aiResult as Record<string, unknown>).usage as Record<string, unknown> | undefined;
 
   return {
     query: cleanODataQuery(query),
@@ -439,7 +447,7 @@ async function testODataQuery(
   query: string,
   organization: string,
   project: string
-): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: any[] }> {
+): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: Array<Record<string, unknown>> }> {
   try {
     const token = await getAzureDevOpsToken();
     const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;

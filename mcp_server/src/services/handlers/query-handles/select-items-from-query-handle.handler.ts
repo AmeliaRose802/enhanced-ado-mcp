@@ -3,10 +3,19 @@
  * Helps users understand what items they can select from a query handle
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
 import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
+
+interface SelectionAnalysis {
+  selection_type: 'index-based' | 'all' | 'criteria-based';
+  total_items_in_handle: number;
+  selected_items_count: number;
+  selection_percentage: string;
+  showing_preview: string;
+  criteria_used?: string[];
+}
 
 /**
  * Handler for wit-query-handle-select tool
@@ -65,7 +74,7 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
     });
 
     // Analyze selection
-    const selectionAnalysis: any = {
+    const selectionAnalysis: SelectionAnalysis = {
       selection_type: Array.isArray(itemSelector) ? 'index-based' : 
                      typeof itemSelector === 'string' ? 'all' : 'criteria-based',
       total_items_in_handle: totalItems,

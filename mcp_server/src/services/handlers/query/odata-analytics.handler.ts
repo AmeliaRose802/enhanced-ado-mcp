@@ -16,14 +16,14 @@ import { escapeAreaPath } from "../../../utils/work-item-parser.js";
  * @param results - Array of result items from OData response
  * @param stripMetadata - Whether to strip @odata.* fields (default true)
  */
-function cleanODataResults(results: any[], stripMetadata: boolean = true): any[] {
+function cleanODataResults(results: Record<string, unknown>[], stripMetadata: boolean = true): Record<string, unknown>[] {
   if (!stripMetadata) {
     // Return results as-is when metadata should be included
     return results;
   }
   
   return results.map(item => {
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(item)) {
       // Skip OData metadata fields and null values
       if (!key.startsWith('@odata') && value !== null) {
@@ -273,7 +273,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     const hasNextLink = !!data["@odata.nextLink"];
     
     // Build concise response - only include what's needed
-    const responseData: any = {
+    const responseData: Record<string, unknown> = {
       summary: summary,
       count: resultCount,
       results: cleanedResults
@@ -282,7 +282,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     // Add pagination metadata when applicable
     const isPaginationSupported = !odataQuery.includes("$apply") || queryArgs.queryType === "velocityMetrics";
     if (isPaginationSupported && (returned >= top || hasNextLink || skip > 0)) {
-      responseData.pagination = {
+      const pagination: Record<string, unknown> = {
         skip,
         top,
         returned,
@@ -291,8 +291,10 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       
       // Add nextSkip only if there are more results
       if (hasNextLink || returned >= top) {
-        responseData.pagination.nextSkip = skip + returned;
+        pagination.nextSkip = skip + returned;
       }
+      
+      responseData.pagination = pagination;
     }
     
     // Include top-level OData metadata if requested
@@ -316,13 +318,14 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
 
     // Add warnings if pagination available
     const warnings: string[] = [];
-    if (responseData.pagination?.hasMore) {
-      warnings.push(`More results available. Use skip=${responseData.pagination.nextSkip} to get the next page.`);
+    const pagination = responseData.pagination as Record<string, unknown> | undefined;
+    if (pagination?.hasMore) {
+      warnings.push(`More results available. Use skip=${pagination.nextSkip} to get the next page.`);
     }
 
     return {
       success: true,
-      data: responseData,
+      data: responseData as unknown as ToolExecutionData,
       metadata: { 
         source: "odata-analytics",
         ...(responseData.pagination && { pagination: responseData.pagination })
@@ -345,7 +348,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
 /**
  * Generate a human-readable summary based on query type and results
  */
-function generateSummary(queryType: string, count: number, results: any[]): string {
+function generateSummary(queryType: string, count: number, results: Record<string, unknown>[]): string {
   switch (queryType) {
     case "workItemCount":
       return `Total work items: ${results[0]?.Count || 0}`;
@@ -359,14 +362,21 @@ function generateSummary(queryType: string, count: number, results: any[]): stri
       return `Work items by type (top ${Math.min(5, count)}): ${typesSummary}`;
     
     case "groupByAssignee":
-      const assigneeSummary = results.slice(0, 5).map(r => `${r.AssignedTo?.UserName || 'Unassigned'}: ${r.Count}`).join(", ");
+      const assigneeSummary = results.slice(0, 5).map(r => {
+        const assignedTo = r.AssignedTo as Record<string, unknown> | undefined;
+        const userName = assignedTo?.UserName as string | undefined;
+        return `${userName || 'Unassigned'}: ${r.Count}`;
+      }).join(", ");
       return `Work items by assignee (top ${Math.min(5, count)}): ${assigneeSummary}`;
     
     case "velocityMetrics":
       return `Found ${count} dates with completed work items`;
     
     case "cycleTimeMetrics":
-      const avgCycleTime = results.length > 0 ? (results.reduce((sum, r) => sum + (r.AvgCycleTime || 0), 0) / results.length).toFixed(1) : 0;
+      const avgCycleTime = results.length > 0 ? (results.reduce((sum, r) => {
+        const cycleTime = r.AvgCycleTime as number | undefined;
+        return sum + (cycleTime || 0);
+      }, 0) / results.length).toFixed(1) : 0;
       return `Cycle time metrics for ${count} assignees (avg: ${avgCycleTime} days)`;
     
     case "customQuery":
