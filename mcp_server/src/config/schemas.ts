@@ -585,6 +585,33 @@ export const generateODataQuerySchema = z.object({
 });
 
 /**
+ * Schema for unified query generator that intelligently chooses between WIQL and OData
+ * Uses AI to analyze query description and select optimal format
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   description: "Find all active bugs in my area path",
+ *   testQuery: true,
+ *   maxIterations: 3
+ * }
+ * ```
+ */
+export const unifiedQueryGeneratorSchema = z.object({
+  description: z.string().min(1, "Description cannot be empty. Example: 'Find all active bugs' or 'Count work items by state'").describe("Natural language description of the desired query"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project),
+  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Default area path to use in queries (optional context)"),
+  iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Default iteration path to use in queries (optional context)"),
+  maxIterations: z.number().int("maxIterations must be an integer").min(1, "maxIterations must be at least 1").max(5, "maxIterations cannot exceed 5 attempts").optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
+  includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
+  testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)"),
+  returnQueryHandle: z.boolean().optional().default(true).describe("Execute the query and return a query handle for safe bulk operations (prevents ID hallucination)"),
+  maxResults: z.number().int().min(1).max(1000).optional().default(200).describe("Maximum number of work items to fetch when returnQueryHandle is true (default 200)"),
+  includeFields: z.array(z.string()).optional().describe("Additional fields to include when returnQueryHandle is true (defaults to basic fields)")
+});
+
+/**
  * Schema for AI-powered tool discovery
  * Matches natural language intent to appropriate MCP server tools
  * 

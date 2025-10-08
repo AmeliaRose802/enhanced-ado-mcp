@@ -28,6 +28,7 @@ import {
   bulkAddAcceptanceCriteriaByQueryHandleSchema,
   generateWiqlQuerySchema,
   generateODataQuerySchema,
+  unifiedQueryGeneratorSchema,
   toolDiscoverySchema,
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
@@ -44,7 +45,7 @@ import {
  */
 export const toolConfigs: ToolConfig[] = [
   {
-    name: "wit-create-item",
+    name: "wit-create-new-item",
     description: "Create a new Azure DevOps work item with optional parent relationship. organization, project, workItemType, priority, assignedTo, areaPath, iterationPath, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: createNewItemSchema,
@@ -66,7 +67,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-get-context",
+    name: "wit-get-work-item-context-package",
     description: "Retrieve a comprehensive context package for a single work item including core fields, description, acceptance criteria, parent, children, related links, comments, recent history, and optionally PRs/commits and attachments in one call.",
     script: "", // Handled internally
     schema: workItemContextPackageSchema,
@@ -92,7 +93,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-get-context-batch",
+    name: "wit-get-work-items-context-batch",
     description: "Retrieve multiple work items (10-50) with relationship graph, aggregate metrics, and optional heuristic scoring in one call.",
     script: "", // Handled internally
     schema: workItemsBatchContextSchema,
@@ -117,7 +118,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-assign-copilot",
+    name: "wit-assign-to-copilot",
     description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: assignToCopilotSchema,
@@ -134,7 +135,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-create-copilot-item",
+    name: "wit-new-copilot-item",
     description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. organization, project, workItemType, branch, gitHubCopilotGuid, areaPath, iterationPath, priority, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: newCopilotItemSchema,
@@ -158,7 +159,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-clone-item",
+    name: "wit-clone-work-item",
     description: "Clone/duplicate an existing work item with optional modifications. Creates a copy with customizable title, area, iteration, assignments, and can optionally include children. Useful for template-based creation and environment cloning. Supports linking back to source.",
     script: "",
     schema: cloneWorkItemSchema,
@@ -183,7 +184,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-link-items",
+    name: "wit-link-work-items-by-query-handles",
     description: "🔐 HANDLE-BASED LINKING: Create relationships between work items identified by two query handles. Supports multiple link types (Related, Parent, Child, Predecessor, Successor) and strategies (one-to-one, one-to-many, many-to-one, many-to-many). Essential for bulk relationship creation without ID hallucination risk.",
     script: "",
     schema: linkWorkItemsByQueryHandlesSchema,
@@ -245,7 +246,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-analyze-security",
+    name: "wit-extract-security-links",
     description: "Extract instruction links from security scan work items. organization and project are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
     schema: extractSecurityLinksSchema,
@@ -262,7 +263,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-intelligence",
+    name: "wit-intelligence-analyzer",
     description: "AI-powered work item analysis for completeness, AI-readiness, enhancement suggestions, and smart categorization using VS Code sampling",
     script: "", // Handled internally with sampling
     schema: workItemIntelligenceSchema,
@@ -285,8 +286,8 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-assignment",
-    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. Automatically retrieves work item details from Azure DevOps. This tool provides analysis only - use wit-assign-copilot separately to perform the assignment.",
+    name: "wit-ai-assignment-analyzer",
+    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. Automatically retrieves work item details from Azure DevOps. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
     script: "", // Handled internally with sampling
     schema: aiAssignmentAnalyzerSchema,
     inputSchema: {
@@ -299,7 +300,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-workload",
+    name: "wit-personal-workload-analyzer",
     description: "AI-powered personal workload analysis to assess burnout risk, overspecialization, work-life balance issues, and professional health indicators for an individual over a time period. Automatically fetches completed and active work, calculates metrics, and provides actionable insights. Supports optional custom analysis intent (e.g., 'assess readiness for promotion', 'check for career growth opportunities'). Requires VS Code sampling support.",
     script: "", // Handled internally with sampling
     schema: personalWorkloadAnalyzerSchema,
@@ -317,7 +318,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-analyze-backlog",
+    name: "wit-backlog-cleanup-analyzer",
     description: "🤖 AI-POWERED BACKLOG ANALYSIS: Analyze backlog for stale, incomplete, or problematic work items with configurable staleness threshold. Identifies items missing descriptions, acceptance criteria, story points, assignments, and provides prioritized recommendations for cleanup. Returns query handle for bulk remediation workflows.",
     script: "",
     schema: backlogCleanupAnalyzerSchema,
@@ -337,7 +338,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   // Configuration and Discovery Tools
   {
-    name: "wit-get-config",
+    name: "wit-get-configuration",
     description: "Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults that agents can use for work item creation",
     script: "", // Handled internally
     schema: getConfigurationSchema,
@@ -351,7 +352,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-wiql",
+    name: "wit-get-work-items-by-query-wiql",
     description: "🔐 ANTI-HALLUCINATION TOOL: Execute WIQL query and get both work item details AND a query handle for safe operations. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Limit: 200 items (use pagination for more). Can filter results by last substantive change date to find stale or recently active items.",
     script: "", // Handled internally
     schema: wiqlQuerySchema,
@@ -380,7 +381,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-odata",
+    name: "wit-query-analytics-odata",
     description: "Query Azure DevOps Analytics using OData for efficient aggregations, metrics, and trend analysis. Supports work item counts, grouping by state/type/assignee, velocity metrics, and cycle time analysis. Use this for analytics and reporting instead of WIQL when you need aggregated data. Supports pagination for large result sets.",
     script: "", // Handled internally
     schema: odataAnalyticsQuerySchema,
@@ -410,7 +411,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-get-last-change",
+    name: "wit-get-last-substantive-change",
     description: "Efficiently determine the last substantive (meaningful) change to a work item by analyzing revision history server-side and filtering out automated changes like iteration path bulk updates. Returns minimal data to avoid context window bloat.",
     script: "", // Handled internally
     schema: getLastSubstantiveChangeSchema,
@@ -428,7 +429,7 @@ export const toolConfigs: ToolConfig[] = [
   },
 
   {
-    name: "wit-analyze-patterns",
+    name: "wit-detect-patterns",
     description: "Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned committed items, and stale automation. Returns categorized matches by severity.",
     script: "", // Handled internally
     schema: detectPatternsSchema,
@@ -454,7 +455,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-analyze-hierarchy",
+    name: "wit-validate-hierarchy",
     description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis.",
     script: "", // Handled internally
     schema: validateHierarchyFastSchema,
@@ -474,8 +475,8 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-comment",
-    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-query-wiql to eliminate ID hallucination risk. Supports template variables and dry-run mode. TEMPLATE VARIABLES: Use {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id} in comment text for per-item substitution when query handle includes staleness data.",
+    name: "wit-bulk-comment-by-query-handle",
+    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-get-work-items-by-query-wiql to eliminate ID hallucination risk. Supports template variables and dry-run mode. TEMPLATE VARIABLES: Use {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id} in comment text for per-item substitution when query handle includes staleness data.",
     script: "", // Handled internally
     schema: bulkCommentByQueryHandleSchema,
     inputSchema: {
@@ -491,7 +492,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-update",
+    name: "wit-bulk-update-by-query-handle",
     description: "Update multiple work items identified by a query handle. Uses JSON Patch operations to update fields. Supports dry-run mode.",
     script: "", // Handled internally
     schema: bulkUpdateByQueryHandleSchema,
@@ -520,7 +521,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-assign",
+    name: "wit-bulk-assign-by-query-handle",
     description: "Assign multiple work items to a user, identified by query handle. Supports dry-run mode.",
     script: "", // Handled internally
     schema: bulkAssignByQueryHandleSchema,
@@ -537,7 +538,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-remove",
+    name: "wit-bulk-remove-by-query-handle",
     description: "Move multiple work items to 'Removed' state (does NOT permanently delete). Sets work item state to 'Removed' for items identified by a query handle. Optionally add a comment with removal reason. Supports dry-run mode.",
     script: "", // Handled internally
     schema: bulkRemoveByQueryHandleSchema,
@@ -554,7 +555,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-transition-state",
+    name: "wit-bulk-transition-state-by-query-handle",
     description: "Safely transition multiple work items to a new state using query handle. Common operations: close bugs, move tasks to done, resolve items. Validates state transitions before applying and supports dry-run mode for safety.",
     script: "",
     schema: bulkTransitionStateByQueryHandleSchema,
@@ -590,7 +591,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-move-iteration",
+    name: "wit-bulk-move-to-iteration-by-query-handle",
     description: "Safely move multiple work items to a different iteration/sprint using query handle. Simpler than using bulk-update with JSON Patch for iteration changes. Common for sprint rescheduling and backlog grooming. Supports dry-run mode for safety.",
     script: "",
     schema: bulkMoveToIterationByQueryHandleSchema,
@@ -625,14 +626,14 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-handle-validate",
+    name: "wit-validate-query-handle",
     description: "Validate a query handle and get metadata about stored query results. Returns item count, expiration time, original query, and optionally fetches sample items. Use this to check if a handle is still valid before bulk operations.",
     script: "", // Handled internally
     schema: validateQueryHandleSchema,
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle to validate (from wit-query-wiql with returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle to validate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
         includeSampleItems: { type: "boolean", description: "Fetch and include sample items (first 5) with titles and states (default false)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
@@ -641,7 +642,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-analyze-items",
+    name: "wit-analyze-by-query-handle",
     description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, and priority analysis. Forces safe analysis patterns.",
     script: "", // Handled internally
     schema: analyzeByQueryHandleSchema,
@@ -664,7 +665,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-handle-list",
+    name: "wit-list-query-handles",
     description: "📋 HANDLE REGISTRY: List all active query handles to track and manage them. Shows handle statistics, cleanup status, and provides guidance on handle management. Makes handles feel like persistent resources rather than ephemeral strings. Supports pagination for large numbers of handles.",
     script: "", // Handled internally
     schema: listQueryHandlesSchema,
@@ -679,14 +680,14 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-handle-inspect",
+    name: "wit-inspect-query-handle",
     description: "🔍 HANDLE INSPECTOR: Detailed inspection of a query handle including staleness data, work item context, and analysis metadata. Shows what data is available for template substitution in bulk operations. Essential for verifying handle contains expected staleness analysis before using with bulk tools.",
     script: "", // Handled internally
     schema: inspectQueryHandleSchema,
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle to inspect (from wit-query-wiql with returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
         includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
         includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" },
         includeExamples: { type: "boolean", description: "Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)" }
@@ -695,7 +696,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-handle-select",
+    name: "wit-select-items-from-query-handle",
     description: "🎯 ITEM SELECTOR: Preview and analyze item selection from a query handle before bulk operations. Shows exactly which items will be selected using index-based ([0,1,2]) or criteria-based selection (states, tags, staleness). Essential for validating selections before destructive operations. Eliminates 'wrong item' errors in bulk workflows.",
     script: "", // Handled internally
     schema: selectItemsFromQueryHandleSchema,
@@ -727,7 +728,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-handle-contexts",
+    name: "wit-get-context-packages-by-query-handle",
     description: "🔐 HANDLE-BASED CONTEXT: Retrieve full context packages for multiple work items identified by a query handle. Returns comprehensive work item data including descriptions, comments, history, relations, children, and parent for each item. Essential for deep analysis workflows that need complete context without ID hallucination risk.",
     script: "",
     schema: getContextPackagesByQueryHandleSchema,
@@ -770,7 +771,7 @@ export const toolConfigs: ToolConfig[] = [
   // ============================================================
   
   {
-    name: "wit-ai-bulk-enhance-descriptions",
+    name: "wit-bulk-enhance-descriptions-by-query-handle",
     description: "Use AI to generate improved descriptions for multiple work items identified by query handle. Processes items in batches, generates enhanced descriptions based on context, and updates work items. Supports multiple enhancement styles (detailed, concise, technical, business). Returns AI-generated descriptions with confidence scores. Set dryRun=false to apply changes.",
     script: "",
     schema: bulkEnhanceDescriptionsByQueryHandleSchema,
@@ -814,7 +815,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   
   {
-    name: "wit-ai-bulk-story-points",
+    name: "wit-bulk-assign-story-points-by-query-handle",
     description: "Use AI to estimate story points for multiple work items identified by query handle. Analyzes complexity, scope, and risk to assign appropriate story points using fibonacci (1,2,3,5,8,13), linear (1-10), or t-shirt (XS,S,M,L,XL) scales. Returns estimates with confidence scores and reasoning. Set dryRun=false to apply changes.",
     script: "",
     schema: bulkAssignStoryPointsByQueryHandleSchema,
@@ -854,7 +855,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   
   {
-    name: "wit-ai-bulk-acceptance-criteria",
+    name: "wit-bulk-add-acceptance-criteria-by-query-handle",
     description: "Use AI to generate acceptance criteria for multiple work items identified by query handle. Generates 3-7 testable criteria in gherkin (Given/When/Then), checklist (bullet points), or user-story (As a/I want/So that) format. Returns generated criteria with confidence scores. Set dryRun=false to apply changes.",
     script: "",
     schema: bulkAddAcceptanceCriteriaByQueryHandleSchema,
@@ -894,7 +895,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-generate-wiql",
+    name: "wit-generate-wiql-query",
     description: "🤖 AI-POWERED: Generate valid WIQL queries from natural language descriptions with iterative validation. Automatically tests and refines queries until they work correctly. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: generateWiqlQuerySchema,
@@ -912,7 +913,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-generate-odata",
+    name: "wit-generate-odata-query",
     description: "🤖 AI-POWERED: Generate valid OData Analytics queries from natural language descriptions with iterative validation. Automatically tests and refines queries for metrics, aggregations, and analytics. Can optionally return a query handle for safe bulk operations. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: generateODataQuerySchema,
@@ -933,7 +934,28 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-discover-tools",
+    name: "wit-generate-query",
+    description: "🤖 AI-POWERED UNIFIED QUERY GENERATOR: Intelligently generates either WIQL or OData queries based on your request. Analyzes query characteristics and automatically selects the optimal format (WIQL for hierarchies and lists, OData for analytics and aggregations). Includes iterative validation and can return query handles for safe bulk operations. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
+    script: "",
+    schema: unifiedQueryGeneratorSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        description: { type: "string", description: "Natural language description of query (e.g., 'Find all active bugs' or 'Count work items by state')" },
+        maxIterations: { type: "number", description: "Maximum attempts to generate valid query (1-5, default 3)" },
+        includeExamples: { type: "boolean", description: "Include example patterns in prompt (default true)" },
+        testQuery: { type: "boolean", description: "Test query by executing it (default true)" },
+        returnQueryHandle: { type: "boolean", description: "Execute query and return handle for bulk operations (prevents ID hallucination, default true)" },
+        maxResults: { type: "number", description: "Maximum work items to fetch when returnQueryHandle=true (1-1000, default 200)" },
+        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include when returnQueryHandle=true" },
+        areaPath: { type: "string", description: "Override default area path from config (automatically scopes queries to configured area)" },
+        iterationPath: { type: "string", description: "Override default iteration path from config" }
+      },
+      required: ["description"]
+    }
+  },
+  {
+    name: "wit-discover-tools",
     description: "🤖 AI-POWERED TOOL DISCOVERY: Find the right tools for your task using natural language. Analyzes your intent and recommends the most appropriate tools from the MCP server with confidence scores, usage examples, and workflow guidance. Perfect when you're not sure which tool to use.",
     script: "",
     schema: toolDiscoverySchema,
@@ -954,7 +976,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-sprint-planning",
+    name: "wit-sprint-planning-analyzer",
     description: "🤖 AI-POWERED SPRINT PLANNING: Analyze team capacity, historical velocity, and propose optimal work assignments for a sprint. Considers team member skills, workload balance, dependencies, and historical performance to create a balanced sprint plan with confidence scoring and risk assessment.",
     script: "",
     schema: sprintPlanningAnalyzerSchema,
@@ -996,17 +1018,18 @@ export const toolConfigs: ToolConfig[] = [
  * AI-powered tools that require VS Code sampling support
  */
 export const AI_POWERED_TOOLS = [
-  'wit-ai-intelligence',
-  'wit-ai-assignment',
-  'wit-ai-workload',
-  'wit-ai-sprint-planning',
-  'wit-analyze-backlog',
-  'wit-ai-bulk-enhance-descriptions',
-  'wit-ai-bulk-story-points',
-  'wit-ai-bulk-acceptance-criteria',
-  'wit-ai-generate-wiql',
-  'wit-ai-generate-odata',
-  'wit-ai-discover-tools'
+  'wit-intelligence-analyzer',
+  'wit-ai-assignment-analyzer',
+  'wit-personal-workload-analyzer',
+  'wit-sprint-planning-analyzer',
+  'wit-backlog-cleanup-analyzer',
+  'wit-bulk-enhance-descriptions-by-query-handle',
+  'wit-bulk-assign-story-points-by-query-handle',
+  'wit-bulk-add-acceptance-criteria-by-query-handle',
+  'wit-generate-wiql-query',
+  'wit-generate-odata-query',
+  'wit-generate-query',
+  'wit-discover-tools'
 ];
 
 /**
@@ -1036,5 +1059,5 @@ export function getAvailableToolConfigs(hasSampling: boolean): ToolConfig[] {
 export const tools: Tool[] = toolConfigs.map(tc => ({
   name: tc.name,
   description: tc.description,
-  inputSchema: tc.inputSchema as Tool['inputSchema']
+  inputSchema: tc.inputSchema
 }));
