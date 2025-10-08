@@ -1,26 +1,11 @@
-# TASKLIST
-- Update each doc in the docs directory so that it accuratly reflects the current state of the project. Add a speclit for each feature that exists.
-- Add ESLint configuration: No .eslintrc.json found - add linting rules for consistency. Put as pipelines so it is required before merging
-- Add discriminated unions for tool results: Different tool categories return different shapes - use TypeScript discriminated unions for type safety
 - Add Prettier configuration: No .prettierrc found - add code formatting rules. Put as pipelines so it is required before merging
 - Add pre-commit hooks with Husky: Enforce linting and formatting on commit
-- Standardize file naming: Mix of kebab-case (query-handle-service.ts) and camelCase - pick one
-- Standardize function naming: Some use handle*, others use action verbs - be consistent
-- Standardize variable naming: Config uses mix of camelCase and PascalCase
+- Standardize Naming:
+    - Standardize file naming: Mix of kebab-case (query-handle-service.ts) and camelCase - pick one
+    - Standardize function naming: Some use handle*, others use action verbs - be consistent
+    - Standardize variable naming: Config uses mix of camelCase and PascalCase
 - Add import sorting rules: Organize imports by: external deps → internal modules → types → relative imports
-- Use barrel exports consistently: Create index.ts files for each major module
-- Add JSDoc to all schemas: Zod schemas need comprehensive JSDoc for AI agents to understand parameters better
-- Add examples to all schema descriptions: Current schemas have descriptions but few concrete examples
-- Create schema validation error messages that guide AI: When validation fails, provide actionable guidance
-- Add OpenAPI/JSON Schema generation: Auto-generate API documentation from Zod schemas
-- Create tool usage examples in code comments: Add @example JSDoc tags to all major functions
-- Add pagination to all list operations: Ensure no tool returns unbounded data
-- Move all tests to /test folder: Tests are currently in /src/test - should be outside src
-- Separate unit, integration, and e2e tests: Create clear test categories
 - Create test fixtures/factories: Avoid hardcoded test data - use factories for work items, queries, etc.
-- Add test coverage requirements: Set minimum coverage thresholds (80%+)
-- Remove one-off test files: Files like verify-sprint-planner.ts, analyze-by-query-handle-fix.test.ts should be integrated into proper test suites
-- Add performance benchmarks: Test that tools complete within expected timeframes
 - Create consistent folder naming in handlers: You have ai-powered/, bulk-operations/, context/, etc. but analysis/ contains both analyzers and handlers. Separate these more clearly
 - Extract handler logic into service layer: Many handlers likely contain business logic that should be in services for better testability and reusability
 - Consolidate all ADO types into barrel exports: You have types spread across ado.ts, work-items.ts, and service files. Create a clear type hierarchy
@@ -28,13 +13,8 @@
 - Extract query logic from query-handle-service: The 628-line service likely has multiple responsibilities - consider splitting into QueryExecutor, QueryCache, QueryValidator services
 - Create a proper ADO client abstraction: Abstract the HTTP client into a clean service boundary with proper error handling, retry logic, and rate limiting. This is esepecally important since we may want to allow some of our tools to support multiple work item management systems eventually
 - Implement repository pattern for work items: Separate data access logic from business logic
-- Replace all console.log calls with proper logger throughout codebase
-- Add structured logging: Logger currently just wraps console.error - implement proper log levels and structured output. Use a well known libary for this instead of making your own.
-- Remove duplicate test files: You have analyze-by-query-handle-fix.test.ts, verify-sprint-planner.ts, and other one-off test files that may be obsolete
 - Standardize error response format: Ensure all handlers return consistent error structures using response-builder
-- Add error categorization: Categorize errors (validation, auth, network, business logic) for better debugging and monitoring
-- Implement error recovery strategies: Add retry logic for transient failures
-- Backlog cleanup is hardcoding everything to 180 days for staleness. Should allow age to be passed in as parameter and fill it in the prompt
+- Backlog_cleanup.md is hardcoding everything to 180 days for staleness. Should allow age to be passed in as parameter and fill it in the prompt
 - Create a handler factory pattern: Centralize handler registration and routing instead of the massive switch/if-else in tool-service.ts
 - Add new tool wit-get-context-packages-by-query-handle to get full context based on a query handle
 - Add unified query generator tool (supports both OData and WIQL based on intelligent sampling and natural language input)
@@ -56,11 +36,9 @@
 - Standardize tool naming patterns (currently inconsistent verb-object, noun, action-method)
 - Add category prefixes to all tools (`wit-query-*`, `wit-bulk-*`, `wit-analyze-*`, `wit-ai-*`)
 - Rename `wit-validate-hierarchy-fast` to `wit-validate-hierarchy`
-- Clarify differences between similar tools in names/descriptions (validate vs inspect vs select)
 - Review all prompts under the /prompts directory to follow best practices. Use the prompt improver chatmode to make fixes. Remove mentions of "new" or "improved" since they don't add value.
 - Ensure all prompts output links in valid format
 - Ensure prompts don't look at Done/Removed items (except velocity analyzer)
-- Backup prompt still not correctly getting each catagory of regressed item and cleaning it up
 - Make sure prompts only list tools that are actually needed for that prompt
 - Review auto filling for prompts to make sure that everything is filled in as expected
 - Fix `wit-sprint-planning-analyzer` output format (change from 2000+ word essay to JSON with assignments, capacity, risk flags)
@@ -71,12 +49,11 @@
 - Fix context info auto-fill in AI assignment prompt (should look up work item ID automatically)
 - Add performance expectations to resources (how long each tool takes)
 - Add end-to-end workflow examples to resources (tool combinations)
-- Add limitations documentation to resources(what tools can't do)
 - Document when to use AI vs rule-based tools clearly in resources offered
 - Comprehensively audit all resources for accuracy after changes
-- Reorganize handler files into sensible folder structure (too many in single directory)
 - Add documentation explaining where different types of files belong
-- Perform in-depth cleanup to reduce verbosity (use janitor chatmode approach with small file groups)
 - Limit the json returned by tool calls to what is useful. Don't include duplicated info, empty fields, long verbose data not requested etc. We need to optimize the callers context window
-- After all other tasks perform a general cleanup again to remove files which are no longer needed
-- Check for redundent backup code. Since we are pre-production we don't want to support legacy anything, reudency etc. Move fast and break things.
+- Cleanup:
+    - After all other tasks perform a general cleanup again to remove files which are no longer needed
+    - Remove redundent and overly verbose code
+    - Check for redundent backup code. Since we are pre-production we don't want to support legacy anything, reudency etc. Move fast and break things.

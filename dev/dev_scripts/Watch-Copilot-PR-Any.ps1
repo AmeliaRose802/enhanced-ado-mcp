@@ -2,12 +2,13 @@
 
 <#
 .SYNOPSIS
-    Monitors GitHub Copilot agent PRs with detailed status tracking.
+    Monitors GitHub Copilot agent PRs and exits when ANY PR finishes.
 
 .DESCRIPTION
-    Continuously polls GitHub Copilot-created PRs to track their progress,
-    displaying detailed status including CI checks, review status, and completion.
-    Provides visual and audio feedback when all PRs are ready for merge.
+    Continuously polls GitHub Copilot-created PRs and exits immediately when
+    the first PR completes (Copilot finished + checks passed + mergeable).
+    Automatically generates next available tasks using Get-NextTasks.ps1.
+    Useful for parallel workflows where you need to react to the first completion.
 
 .PARAMETER PRNumbers
     Array of PR numbers to monitor.
@@ -24,13 +25,25 @@
 .PARAMETER MaxPolls
     Maximum number of status checks before timeout. Defaults to 480 (~4 hours).
 
-.EXAMPLE
-    .\Watch-Copilot-PRs.ps1 -PRNumbers 1,2,3,4
-    Monitor PRs 1-4 with default settings.
+.PARAMETER TaskMappings
+    Hashtable mapping PR numbers to task IDs. Example: @{123="T2_precommit_hooks"; 124="T8_consolidate_types"}
+
+.PARAMETER GenerateNextTasks
+    If set, automatically generates next available tasks when a PR finishes. Defaults to $true.
 
 .EXAMPLE
-    .\Watch-Copilot-PRs.ps1 -PRNumbers 1,2,3 -PollIntervalSeconds 60
-    Monitor PRs with 60-second polling interval.
+    .\Watch-Copilot-PR-Any.ps1 -PRNumbers 1,2,3,4 -TaskMappings @{1="T2_precommit_hooks"}
+    Monitor PRs 1-4 and show next tasks when PR 1 finishes.
+
+.EXAMPLE
+    .\Watch-Copilot-PR-Any.ps1 -PRNumbers 1,2,3 -PollIntervalSeconds 60 -GenerateNextTasks:$false
+    Monitor PRs with 60-second polling interval without generating next tasks.
+
+.NOTES
+    Exit codes:
+    0 = One or more PRs finished successfully
+    1 = Error occurred during monitoring
+    2 = Timeout reached without any PR finishing
 #>
 
 [CmdletBinding()]
@@ -44,7 +57,11 @@ param(
     
     [int]$PollIntervalSeconds = 30,
     
-    [int]$MaxPolls = 480
+    [int]$MaxPolls = 480,
+    
+    [hashtable]$TaskMappings = @{},
+    
+    [bool]$GenerateNextTasks = $true
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,13 +69,24 @@ $ErrorActionPreference = "Stop"
 # Track state between polls
 $script:lastStatus = @{}
 $script:monitorStartTime = Get-Date
-$script:completedPRs = @()
 
-Write-Host "=== GITHUB COPILOT PR MONITOR ===" -ForegroundColor Cyan
+Write-Host "=== GITHUB COPILOT PR MONITOR (EXIT ON FIRST COMPLETION) ===" -ForegroundColor Cyan
 Write-Host "Repository: $Owner/$Repo" -ForegroundColor White
 Write-Host "Monitoring PRs: $($PRNumbers -join ', ')" -ForegroundColor White
+if ($TaskMappings.Count -gt 0) {
+    Write-Host "Task Mappings:" -ForegroundColor White
+    foreach ($pr in $PRNumbers) {
+        if ($TaskMappings.ContainsKey($pr)) {
+            Write-Host "  PR #$pr -> $($TaskMappings[$pr])" -ForegroundColor Gray
+        }
+    }
+}
 Write-Host "Poll Interval: $PollIntervalSeconds seconds" -ForegroundColor White
 Write-Host "Max Duration: ~$([math]::Round($MaxPolls * $PollIntervalSeconds / 3600, 1)) hours" -ForegroundColor White
+Write-Host "Behavior: Exit when ANY PR finishes" -ForegroundColor Yellow
+if ($GenerateNextTasks) {
+    Write-Host "Auto-generate next tasks: Enabled" -ForegroundColor Green
+}
 Write-Host ""
 
 #region Helper Functions
@@ -268,17 +296,9 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
     Write-Host "[$($currentTime.ToString('HH:mm:ss'))] Poll #$i (Monitor Running: $(Format-Duration $monitorElapsed))" -ForegroundColor Cyan
     Write-Host ("=" * 80) -ForegroundColor Gray
 
-    $allFinished = $true
-    $allChecksPassed = $true
-    $anyFailed = $false
+    $completedPRs = @()
 
     foreach ($prNum in $PRNumbers) {
-        # Skip if already marked as complete
-        if ($script:completedPRs -contains $prNum) {
-            Write-Host "  ✅ PR #$prNum - Previously completed and validated" -ForegroundColor Green
-            continue
-        }
-
         Write-Host ""
         Write-Host "  📋 PR #$prNum" -ForegroundColor White -NoNewline
         
@@ -298,7 +318,6 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
                 Write-Host "     🤖 Copilot: Finished ✅" -ForegroundColor Green
             } else {
                 Write-Host "     🤖 Copilot: Working... ⏳" -ForegroundColor Yellow
-                $allFinished = $false
             }
             
             # Display draft status
@@ -312,17 +331,12 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
             Write-Host "     ✓ Checks: $($checks.Status) ($($checks.Passed)/$($checks.Total) passed)" -ForegroundColor $checksColor
             
             if ($checks.Status -eq "Failed") {
-                $anyFailed = $true
-                $allChecksPassed = $false
                 Write-Host "     ⚠️  CI checks failed - needs investigation" -ForegroundColor Red
-            } elseif ($checks.Status -ne "Passed" -and $checks.Total -gt 0) {
-                $allChecksPassed = $false
             }
             
             # Display mergeable status
             if ($prInfo.mergeable -eq 'CONFLICTING') {
                 Write-Host "     ⚠️  Merge conflicts detected!" -ForegroundColor Red
-                $anyFailed = $true
             } elseif ($prInfo.mergeable -eq 'MERGEABLE') {
                 Write-Host "     ✅ Mergeable" -ForegroundColor Green
             }
@@ -350,50 +364,112 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
             $checksOK = ($checks.Status -eq "Passed") -or ($checks.Status -eq "No checks")
             if ($copilotFinished -and $checksOK -and $prInfo.mergeable -eq 'MERGEABLE') {
                 Write-Host "     🎉 READY FOR MERGE!" -ForegroundColor Green -BackgroundColor DarkGreen
-                $script:completedPRs += $prNum
+                $completedPRs += $prNum
             }
             
         } else {
             Write-Host " - Unable to fetch PR info (may be closed/merged)" -ForegroundColor Yellow
-            # Don't mark as not finished if we can't fetch - it might be completed
-            # The PR will be considered incomplete for this iteration
         }
     }
 
-    # Check if all PRs are complete
-    if ($script:completedPRs.Count -eq $PRNumbers.Count) {
+    # Check if ANY PR completed in this iteration - EXIT IMMEDIATELY
+    if ($completedPRs.Count -gt 0) {
         Write-Host ""
         Write-Host ("=" * 80) -ForegroundColor Green
-        Write-Host "🎉 ALL PRS READY FOR MERGE! 🎉" -ForegroundColor Green -BackgroundColor DarkGreen
+        Write-Host "🎉 PR(S) FINISHED - EXITING! 🎉" -ForegroundColor Green -BackgroundColor DarkGreen
         Write-Host ("=" * 80) -ForegroundColor Green
         Write-Host ""
         Write-Host "Monitor Duration: $(Format-Duration $monitorElapsed)" -ForegroundColor Cyan
-        Write-Host "Completed PRs: $($script:completedPRs -join ', ')" -ForegroundColor Green
+        Write-Host "Completed PRs: $($completedPRs -join ', ')" -ForegroundColor Green
+        
+        # Map completed PRs to task IDs
+        $completedTaskIds = @()
+        foreach ($pr in $completedPRs) {
+            if ($TaskMappings.ContainsKey($pr)) {
+                $completedTaskIds += $TaskMappings[$pr]
+                Write-Host "  PR #$pr -> Task: $($TaskMappings[$pr])" -ForegroundColor Cyan
+            }
+        }
+        
+        Write-Host "Still Working PRs: $(($PRNumbers | Where-Object { $_ -notin $completedPRs }) -join ', ')" -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "✅ All Copilot agents have finished their work" -ForegroundColor Green
-        Write-Host "✅ All CI checks have passed" -ForegroundColor Green
-        Write-Host "✅ All PRs are mergeable" -ForegroundColor Green
+        Write-Host "✅ Copilot agent(s) have finished work on PR(s): $($completedPRs -join ', ')" -ForegroundColor Green
+        Write-Host "✅ CI checks passed and PR(s) are mergeable" -ForegroundColor Green
         Write-Host ""
-        Write-Host "🔍 Next Steps:" -ForegroundColor Yellow
-        Write-Host "1. Review each PR for quality and correctness" -ForegroundColor White
-        Write-Host "2. Run integration tests: npm test; npm run build" -ForegroundColor White
-        Write-Host "3. Merge PRs in dependency order" -ForegroundColor White
-        Write-Host "4. Proceed to next block" -ForegroundColor White
+        
+        # Generate next tasks if requested and we have task mappings
+        if ($GenerateNextTasks -and $completedTaskIds.Count -gt 0) {
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            Write-Host "📋 GENERATING NEXT AVAILABLE TASKS..." -ForegroundColor Cyan
+            Write-Host ("=" * 80) -ForegroundColor Cyan
+            Write-Host ""
+            
+            $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+            $getNextTasksScript = Join-Path $scriptDir "Get-NextTasks.ps1"
+            
+            if (Test-Path $getNextTasksScript) {
+                try {
+                    # Call Get-NextTasks.ps1 with completed task IDs
+                    & $getNextTasksScript -CompletedTasks $completedTaskIds -Format List
+                    
+                    Write-Host ""
+                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                    Write-Host "� MACHINE-READABLE OUTPUT (JSON)" -ForegroundColor Cyan
+                    Write-Host ("=" * 80) -ForegroundColor Cyan
+                    
+                    # Also get JSON output for automation
+                    $jsonOutput = & $getNextTasksScript -CompletedTasks $completedTaskIds -Format Json | ConvertFrom-Json
+                    
+                    Write-Host ""
+                    Write-Host "Next Available Tasks (for automation):" -ForegroundColor Yellow
+                    if ($jsonOutput.available_tasks -and $jsonOutput.available_tasks.Count -gt 0) {
+                        foreach ($task in $jsonOutput.available_tasks) {
+                            Write-Host "  • $($task.TaskId) - $($task.Summary)" -ForegroundColor White
+                        }
+                        
+                        Write-Host ""
+                        Write-Host "Tasks that can run in parallel:" -ForegroundColor Yellow
+                        Write-Host "  $($jsonOutput.can_run_in_parallel -join ', ')" -ForegroundColor Green
+                        
+                        # Save to file for easy access
+                        $outputFile = Join-Path $scriptDir "next-tasks.json"
+                        $jsonOutput | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+                        Write-Host ""
+                        Write-Host "💾 Full task data saved to: $outputFile" -ForegroundColor Gray
+                    } else {
+                        Write-Host "  No tasks available (all remaining tasks are blocked)" -ForegroundColor Yellow
+                    }
+                    
+                } catch {
+                    Write-Warning "Failed to generate next tasks: $_"
+                }
+            } else {
+                Write-Warning "Get-NextTasks.ps1 not found at: $getNextTasksScript"
+            }
+            
+            Write-Host ""
+        }
+        
+        Write-Host "�🔍 Next Steps:" -ForegroundColor Yellow
+        Write-Host "1. Review completed PR(s): $($completedPRs -join ', ')" -ForegroundColor White
+        Write-Host "2. Run tests and merge if ready" -ForegroundColor White
+        if ($GenerateNextTasks -and $completedTaskIds.Count -gt 0) {
+            Write-Host "3. Assign next available tasks shown above" -ForegroundColor White
+        } else {
+            Write-Host "3. Continue monitoring remaining PRs if needed" -ForegroundColor White
+        }
         Write-Host ""
         
         Invoke-CompletionSound -Success $true
         
-        # Exit the monitoring loop - all PRs are ready
-        break
+        # Exit immediately with success - at least one PR finished
+        exit 0
     }
 
     # Summary status
     Write-Host ""
     Write-Host ("=" * 80) -ForegroundColor Gray
-    Write-Host "  📊 Summary: $($script:completedPRs.Count)/$($PRNumbers.Count) PRs ready" -ForegroundColor Cyan
-    if ($anyFailed) {
-        Write-Host "  ⚠️  Some PRs have issues - may need manual intervention" -ForegroundColor Yellow
-    }
+    Write-Host "  📊 Summary: No PRs ready yet - continuing to monitor" -ForegroundColor Cyan
     Write-Host ""
 
     # Only sleep if we're not on the last iteration
@@ -402,19 +478,13 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
     }
 }
 
-# If we reach here, check if we exited due to completion or timeout
-if ($script:completedPRs.Count -eq $PRNumbers.Count) {
-    # All PRs completed successfully
-    exit 0
-} else {
-    # Maximum polls reached without all PRs completing
-    Write-Host ""
-    Write-Host "⏰ Maximum monitoring time reached ($MaxPolls polls)" -ForegroundColor Yellow
-    Write-Host "Monitor Duration: $(Format-Duration $monitorElapsed)" -ForegroundColor Cyan
-    Write-Host "Completed PRs: $($script:completedPRs.Count)/$($PRNumbers.Count)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "PRs may still be in progress. Check GitHub for current status." -ForegroundColor White
-    exit 2
-}
+# If we reach here, timeout was reached without any PR finishing
+Write-Host ""
+Write-Host "⏰ Maximum monitoring time reached ($MaxPolls polls)" -ForegroundColor Yellow
+Write-Host "Monitor Duration: $(Format-Duration (Get-Date - $script:monitorStartTime))" -ForegroundColor Cyan
+Write-Host "No PRs finished during monitoring period" -ForegroundColor White
+Write-Host ""
+Write-Host "PRs may still be in progress. Check GitHub for current status." -ForegroundColor White
+exit 2
 
 #endregion
