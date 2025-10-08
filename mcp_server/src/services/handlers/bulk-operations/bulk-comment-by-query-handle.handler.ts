@@ -5,7 +5,7 @@
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -125,7 +125,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
 
       return {
         success: true,
-        data: {
+        data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -137,7 +137,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
           preview_items: previewItems,
           preview_message: previewMessage,
           summary: `DRY RUN: Would add ${hasTemplateVariables ? 'templated' : 'static'} comment to ${selectedCount} of ${totalItems} work item(s)`
-        },
+        }),
         metadata: { 
           source: "bulk-comment-by-query-handle",
           dryRun: true,
@@ -185,7 +185,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
@@ -194,7 +194,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         failed: failureCount,
         results,
         summary: `Successfully added comment to ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
-      },
+      }),
       metadata: {
         source: "bulk-comment-by-query-handle",
         itemSelector

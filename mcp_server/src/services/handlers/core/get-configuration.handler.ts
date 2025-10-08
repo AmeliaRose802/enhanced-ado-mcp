@@ -2,7 +2,7 @@
  * Handler for wit-get-configuration tool
  */
 
-import type { ToolExecutionResult } from "../../../types/index.js";
+import { ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { loadConfiguration } from "../../../config/config.js";
 
 export async function handleGetConfiguration(args: unknown): Promise<ToolExecutionResult> {
@@ -30,7 +30,7 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
     
     return {
       success: true,
-      data: {
+      data: asToolData({
         configuration: configData,
         helpText: {
           areaPath: cfg.azureDevOps.areaPath
@@ -43,7 +43,7 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
             ? "GitHub Copilot GUID is configured for automatic assignment." 
             : "No GitHub Copilot GUID configured. Provide --copilot-guid parameter."
         }
-      },
+      }),
       metadata: { source: "internal", section },
       errors: [],
       warnings: []

@@ -2,7 +2,7 @@
  * Handler for wit-create-new-item tool
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { createWorkItem } from "../../ado-work-item-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
@@ -26,9 +26,9 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
     
     return {
       success: true,
-      data: {
+      data: asToolData({
         work_item: result
-      },
+      }),
       metadata: { 
         source: "rest-api",
         workItemId: result.id,

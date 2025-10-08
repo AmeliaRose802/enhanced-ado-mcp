@@ -7,7 +7,7 @@
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -77,7 +77,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
 
       return {
         success: true,
-        data: {
+        data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -88,7 +88,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
           preview_items: dryRunInfo.itemsToRemove,
           preview_message: previewMessage,
           summary: `DRY RUN - Would remove ${selectedCount} items:\n${JSON.stringify(dryRunInfo, null, 2)}`
-        },
+        }),
         metadata: { 
           source: "bulk-remove-by-query-handle",
           dryRun: true,
@@ -154,7 +154,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
@@ -164,7 +164,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
         comments_added: removeReason ? commentsAdded : undefined,
         results,
         summary: `Successfully moved ${successCount} of ${selectedCount} selected work items to "Removed" state${failureCount > 0 ? ` (${failureCount} failed)` : ''}${removeReason && commentsAdded > 0 ? ` with reason comments on ${commentsAdded} items` : ''}`
-      },
+      }),
       metadata: {
         source: "bulk-remove-by-query-handle",
         itemSelector

@@ -5,7 +5,7 @@
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { ADOWorkItem, ADOApiResponse } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
@@ -265,7 +265,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
 
       return {
         success: true,
-        data: analysis,
+        data: asToolData(analysis),
         metadata: { source: "analyze-by-query-handle" },
         errors: [],
         warnings: workItemIds.length === 0 ? ["No work items found in query handle"] : []

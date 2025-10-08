@@ -5,7 +5,7 @@
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -70,7 +70,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
 
       return {
         success: true,
-        data: {
+        data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -81,7 +81,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
           preview_items: previewItems,
           preview_message: previewMessage,
           summary: `DRY RUN: Would assign ${selectedCount} of ${totalItems} work item(s) to '${assignTo}'`
-        },
+        }),
         metadata: { 
           source: "bulk-assign-by-query-handle",
           dryRun: true,
@@ -166,7 +166,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         assign_to: assignTo,
         total_items_in_handle: totalItems,
@@ -177,7 +177,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
         results,
         assigned_items: assignedItems,
         summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : '')
-      },
+      }),
       metadata: {
         source: "bulk-assign-by-query-handle",
         itemSelector

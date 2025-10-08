@@ -4,7 +4,7 @@
  * Non-intelligent: applies strict rules for parent-child types and state progression
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
@@ -291,7 +291,7 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     return {
       success: true,
-      data: {
+      data: asToolData({
         summary: {
           totalItemsAnalyzed: workItems.length,
           totalViolations: violations.length,
@@ -312,7 +312,7 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
           validChildTypes: VALID_CHILD_TYPES,
           stateHierarchy: STATE_HIERARCHY
         }
-      },
+      }),
       metadata: {
         source: "validate-hierarchy",
         itemsAnalyzed: workItems.length,
