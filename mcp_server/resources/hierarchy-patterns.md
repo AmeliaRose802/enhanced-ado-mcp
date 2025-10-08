@@ -88,18 +88,18 @@ Repeat Step 2 for each child until no more children found.
   "includeHistory": false
 }
 ```
-Tool: `wit-get-context`
+Tool: `wit-get-work-item-context-package`
 
 ### Batch Hierarchy
 ```json
 {
   "workItemIds": [100, 101, 102],
-  "includeParents": true,
+  "includeParent": true,
   "includeChildren": true,
-  "maxDepth": 3
+  "includeExtendedFields": true
 }
 ```
-Tool: `wit-get-context-batch`
+Tool: `wit-get-work-items-context-batch`
 
 ## Fast Validation
 
@@ -109,7 +109,7 @@ Tool: `wit-get-context-batch`
   "workItemIds": [100, 101, 102, 103]
 }
 ```
-Tool: `wit-analyze-hierarchy`
+Tool: `wit-validate-hierarchy`
 
 **Returns:**
 - Type compatibility (parent-child type rules)
@@ -237,7 +237,7 @@ Common parent-child type rules:
 - Task can have: (typically no children)
 - Bug can have: Task
 
-**Use `wit-analyze-hierarchy` to check these automatically.**
+**Use `wit-validate-hierarchy` to check these automatically.**
 
 ## Performance Tips
 

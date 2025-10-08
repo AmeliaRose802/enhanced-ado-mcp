@@ -99,7 +99,7 @@ This guide documents important limitations, constraints, and restrictions across
   "includeFields": ["Microsoft.VSTS.Scheduling.StoryPoints"],
   "returnQueryHandle": true
 }
-// Then calculate sum in your code or use wit-analyze-items
+// Then calculate sum in your code or use wit-analyze-by-query-handle
 ```
 
 ### Query Handle Pattern
@@ -407,10 +407,10 @@ az login
   "returnQueryHandle": true
 }
 
-// Step 2: Use wit-analyze-items to analyze
+// Step 2: Use wit-analyze-by-query-handle to analyze
 {
   "queryHandle": "qh_abc123...",
-  "analysisType": "storyPointsSummary"
+  "analysisType": ["storyPointsSummary"]
 }
 ```
 
@@ -520,24 +520,24 @@ az login
 ## 🎯 Decision Matrix: Which Tool to Use
 
 ### "I need to find work items..."
-- **By state/type/area** → WIQL query (`wit-query-wiql`)
-- **Historical trends** → OData query (`wit-query-odata`)
-- **Natural language** → AI query generation (`wit-ai-generate-wiql` or `wit-ai-generate-odata`)
+- **By state/type/area** → WIQL query (`wit-get-work-items-by-query-wiql`)
+- **Historical trends** → OData query (`wit-query-analytics-odata`)
+- **Natural language** → AI query generation (`wit-generate-wiql-query` or `wit-generate-odata-query`)
 
 ### "I need to update multiple work items..."
-- **Same change to all** → Query handle + bulk update (`wit-bulk-update`)
-- **Different changes per item** → Query handle + AI enhancement (`wit-ai-bulk-enhance-descriptions`)
+- **Same change to all** → Query handle + bulk update (`wit-bulk-update-by-query-handle`)
+- **Different changes per item** → Query handle + AI enhancement (`wit-bulk-enhance-descriptions-by-query-handle`)
 - **Conditional updates** → Use item selector with query handle
 
 ### "I need metrics/analytics..."
 - **Real-time counts** → WIQL query + count items in code
-- **Historical velocity** → OData query (`wit-query-odata`)
-- **StoryPoints sum** → WIQL + manual calculation or wit-analyze-items
+- **Historical velocity** → OData query (`wit-query-analytics-odata`)
+- **StoryPoints sum** → WIQL + manual calculation or wit-analyze-by-query-handle
 
 ### "I need to analyze work items..."
-- **AI suitability** → `wit-ai-assignment`
-- **Completeness check** → `wit-ai-intelligence` with `analysisType: "completeness"`
-- **Bulk analysis** → Query handle + `wit-analyze-items`
+- **AI suitability** → `wit-ai-assignment-analyzer`
+- **Completeness check** → `wit-intelligence-analyzer` with `analysisType: "full"`
+- **Bulk analysis** → Query handle + `wit-analyze-by-query-handle`
 
 ## 🚨 Critical Limitations Summary
 

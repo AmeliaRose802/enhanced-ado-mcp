@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `wit-ai-discover-tools` tool uses AI to help you find the right MCP server tools for your task. Instead of searching through documentation, just describe what you want to accomplish in natural language.
+The `wit-discover-tools` tool uses AI to help you find the right MCP server tools for your task. Instead of searching through documentation, just describe what you want to accomplish in natural language.
 
 ## When to Use
 
@@ -48,7 +48,7 @@ Use tool discovery when:
 }
 ```
 
-**Result**: Recommends `wit-query-wiql` or `wit-ai-generate-wiql`
+**Result**: Recommends `wit-get-work-items-by-query-wiql` or `wit-generate-wiql-query`
 
 ### Example 2: Bulk Operations
 ```json
@@ -59,9 +59,9 @@ Use tool discovery when:
 ```
 
 **Result**: Recommends workflow:
-1. `wit-query-wiql` (with returnQueryHandle=true)
-2. `wit-query-handle-inspect` (preview)
-3. `wit-bulk-update` (dryRun first)
+1. `wit-get-work-items-by-query-wiql` (with returnQueryHandle=true)
+2. `wit-inspect-query-handle` (preview)
+3. `wit-bulk-update-by-query-handle` (dryRun first)
 
 ### Example 3: Analysis Focus
 ```json
@@ -71,7 +71,7 @@ Use tool discovery when:
 }
 ```
 
-**Result**: Recommends `wit-ai-assignment`
+**Result**: Recommends `wit-ai-assignment-analyzer`
 
 ### Example 4: Complex Workflow
 ```json
@@ -98,19 +98,19 @@ Use tool discovery when:
 {
   "recommendations": [
     {
-      "toolName": "wit-create-item",
+      "toolName": "wit-create-new-item",
       "confidence": 95,
       "reasoning": "Direct match for creating single work item...",
-      "exampleUsage": "wit-create-item with { title: '...', description: '...' }",
+      "exampleUsage": "wit-create-new-item with { title: '...', description: '...' }",
       "requiredParameters": ["title"],
       "optionalParameters": ["description", "parentWorkItemId", "tags"]
     }
   ],
   "alternativeApproaches": [
-    "If you need to assign immediately, use wit-create-copilot-item"
+    "If you need to assign immediately, use wit-new-copilot-item"
   ],
   "warnings": [
-    "Consider using wit-get-config first to see defaults"
+    "Consider using wit-get-configuration first to see defaults"
   ]
 }
 ```
@@ -126,20 +126,20 @@ Use tool discovery when:
 ## Common Patterns
 
 ### Creating Items
-- Single: `wit-create-item`
-- With assignment: `wit-create-copilot-item`
+- Single: `wit-create-new-item`
+- With assignment: `wit-new-copilot-item`
 
 ### Querying
-- Known query: `wit-query-wiql`
-- Natural language: `wit-ai-generate-wiql` → execute
+- Known query: `wit-get-work-items-by-query-wiql`
+- Natural language: `wit-generate-wiql-query` → execute
 
 ### Bulk Operations
 Always: Query → Inspect → Bulk (dryRun) → Bulk (apply)
 
 ### Analysis
-- Single item: `wit-get-context`
-- AI suitability: `wit-ai-assignment`
-- Multiple items: `wit-analyze-items`
+- Single item: `wit-get-work-item-context-package`
+- AI suitability: `wit-ai-assignment-analyzer`
+- Multiple items: `wit-analyze-by-query-handle`
 
 ## Fallback Behavior
 
@@ -155,5 +155,5 @@ If AI sampling is unavailable, tool discovery uses keyword matching:
 
 ## Related Tools
 
-- `wit-get-config`: View server setup
+- `wit-get-configuration`: View server setup
 - Resource: `tool-selection-guide.md` for manual reference
