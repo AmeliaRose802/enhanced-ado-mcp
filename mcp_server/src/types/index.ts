@@ -76,22 +76,47 @@ export interface ToolConfig {
 }
 
 /**
- * Tool execution result data
- * Uses unknown for maximum flexibility - consumers should validate structure
- * This preserves existing behavior where tools return various data shapes
+ * JSON-serializable primitive values
  */
-export type ToolExecutionData = unknown;
+export type JSONPrimitive = string | number | boolean | null;
+
+/**
+ * JSON-serializable value types
+ * Represents any valid JSON structure
+ */
+export type JSONValue = 
+  | JSONPrimitive
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+/**
+ * Tool execution result data
+ * Can be any JSON-serializable value or undefined
+ * This replaces 'any' while maintaining flexibility for various data structures
+ */
+export type ToolExecutionData = JSONValue | undefined;
+
+/**
+ * Helper to safely cast values to JSONValue for tool execution data
+ * Use this when you have complex types that should be JSON-serializable
+ */
+export function asToolData(value: unknown): ToolExecutionData {
+  return value as ToolExecutionData;
+}
 
 /**
  * Metadata for tool execution results
+ * Can contain any JSON-serializable values
  */
-export interface ToolExecutionMetadata extends Record<string, unknown> {
+export type ToolExecutionMetadata = {
+  [key: string]: JSONValue | undefined;
+} & {
   timestamp?: string;
   duration?: number;
   tool?: string;
   organization?: string;
   project?: string;
-}
+};
 
 export interface ToolExecutionResult {
   success: boolean;

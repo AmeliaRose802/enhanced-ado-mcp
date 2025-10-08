@@ -2,6 +2,7 @@
  * Integration test for wit-ai-assignment-analyzer tool
  */
 import { executeTool, setServerInstance } from '../services/tool-service.js';
+import type { AIAssignmentResult } from '../types/analysis.js';
 
 // Mock server for testing
 const mockServer = {
@@ -62,9 +63,10 @@ async function testToolIntegration() {
     console.log('📝 Data keys:', Object.keys(result.data || {}));
     
     if (result.success && result.data) {
-      console.log(`   Decision: ${result.data.decision}`);
-      console.log(`   Confidence: ${result.data.confidence}`);
-      console.log(`   Risk Score: ${result.data.riskScore}`);
+      const data = result.data as AIAssignmentResult;
+      console.log(`   Decision: ${data.decision}`);
+      console.log(`   Confidence: ${data.confidence}`);
+      console.log(`   Risk Score: ${data.riskScore}`);
     }
     
     return result;

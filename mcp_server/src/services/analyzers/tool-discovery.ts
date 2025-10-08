@@ -5,7 +5,7 @@
  * Uses AI sampling to understand user intent and recommend the best tools.
  */
 
-import type { ToolExecutionResult } from '../../types/index.js';
+import { ToolExecutionResult, asToolData } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
@@ -53,11 +53,11 @@ export class ToolDiscoveryAnalyzer {
           success: false,
           errors: ['AI sampling not available - tool discovery requires VS Code language model access'],
           warnings: ['Falling back to keyword-based matching'],
-          data: {
+          data: asToolData({
             originalIntent: args.intent,
             recommendations: this.fallbackRecommendations(args.intent),
             warnings: ['AI sampling not available - using basic keyword matching']
-          },
+          }),
           metadata: { intent: args.intent, fallbackMode: true }
         };
       }
@@ -103,7 +103,7 @@ export class ToolDiscoveryAnalyzer {
 
       return {
         success: true,
-        data: result,
+        data: asToolData(result),
         metadata: {
           intent: args.intent,
           toolsAnalyzed: availableTools.length,

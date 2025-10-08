@@ -5,6 +5,19 @@
 import { executeTool } from "../services/tool-service.js";
 import { logger } from "../utils/logger.js";
 
+// Type guard for result data
+type WiqlResultData = {
+  count?: number;
+  query?: string;
+  work_items?: Array<{ id: number; title: string; [key: string]: unknown }>;
+  pagination?: { total?: number; [key: string]: unknown };
+  [key: string]: unknown;
+};
+
+function asWiqlData(data: unknown): WiqlResultData {
+  return data as WiqlResultData;
+}
+
 async function testBasicWiqlQuery() {
   console.log("\n🧪 Testing basic WIQL query...");
   
@@ -15,12 +28,13 @@ async function testBasicWiqlQuery() {
     
     if (result.success) {
       console.log("✅ Basic WIQL query succeeded");
-      console.log(`   Work Items Found: ${result.data?.count}`);
-      console.log(`   Query: ${result.data?.query}`);
+      const data = asWiqlData(result.data);
+      console.log(`   Work Items Found: ${data.count}`);
+      console.log(`   Query: ${data.query}`);
       console.log(`   Source: ${result.metadata?.source}`);
       
-      if (result.data?.work_items && result.data.work_items.length > 0) {
-        console.log(`   First Item: #${result.data.work_items[0].id} - ${result.data.work_items[0].title}`);
+      if (data.work_items && data.work_items.length > 0) {
+        console.log(`   First Item: #${data.work_items[0].id} - ${data.work_items[0].title}`);
       }
     } else {
       console.log("❌ Basic WIQL query failed");
