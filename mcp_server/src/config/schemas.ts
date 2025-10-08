@@ -108,6 +108,7 @@ export const newCopilotItemSchema = z.object({
   areaPath: z.string().optional(),
   iterationPath: z.string().optional(),
   priority: z.number().optional(),
+  inheritParentPaths: z.boolean().optional(),
   organization: z.string().optional(),
   project: z.string().optional()
 });
@@ -255,7 +256,17 @@ export const getConfigurationSchema = z.object({
 export const toolDiscoverySchema = z.object({
   intent: z.string().min(1, "Intent is required"),
   includeExamples: z.boolean().optional().default(false).describe("Include example usage in response (saves tokens when false, default false)"),
-  maxRecommendations: z.number().int().min(1).max(10).optional().default(5),
+  maxRecommendations: z.number().int().min(1).max(10).optional().default(3),
+  filterCategory: z.enum([
+    "all",
+    "work-items",
+    "bulk-operations",
+    "queries",
+    "analysis",
+    "ai-powered",
+    "configuration"
+  ]).optional().default("all"),
+  context: z.string().optional(),
   contextInfo: z.string().optional()
 });
 
