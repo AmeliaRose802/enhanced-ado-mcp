@@ -30,7 +30,13 @@ import {
   generateODataQuerySchema,
   toolDiscoverySchema,
   personalWorkloadAnalyzerSchema,
-  sprintPlanningAnalyzerSchema
+  sprintPlanningAnalyzerSchema,
+  getContextPackagesByQueryHandleSchema,
+  bulkTransitionStateByQueryHandleSchema,
+  bulkMoveToIterationByQueryHandleSchema,
+  cloneWorkItemSchema,
+  linkWorkItemsByQueryHandlesSchema,
+  backlogCleanupAnalyzerSchema
 } from "./schemas.js";
 
 /**
@@ -152,6 +158,93 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
+    name: "wit-clone-work-item",
+    description: "Clone/duplicate an existing work item with optional modifications. Creates a copy with customizable title, area, iteration, assignments, and can optionally include children. Useful for template-based creation and environment cloning. Supports linking back to source.",
+    script: "",
+    schema: cloneWorkItemSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceWorkItemId: { type: "number", description: "Work item ID to clone/duplicate" },
+        title: { type: "string", description: "Override title for cloned work item (default: '[Clone] {original title}')" },
+        targetAreaPath: { type: "string", description: "Area path for cloned work item (defaults to source area)" },
+        targetIterationPath: { type: "string", description: "Iteration path for cloned work item (defaults to source iteration)" },
+        targetProject: { type: "string", description: "Target project for cross-project cloning (defaults to source project)" },
+        assignTo: { type: "string", description: "Assign cloned work item to specific user (defaults to unassigned)" },
+        includeDescription: { type: "boolean", description: "Include description from source (default true)" },
+        includeAcceptanceCriteria: { type: "boolean", description: "Include acceptance criteria (default true)" },
+        includeTags: { type: "boolean", description: "Include tags from source (default true)" },
+        includeAttachments: { type: "boolean", description: "Clone attachments (default false, can be slow)" },
+        includeChildren: { type: "boolean", description: "Also clone child work items (default false)" },
+        linkToSource: { type: "boolean", description: "Create 'Related' link back to source (default true)" },
+        comment: { type: "string", description: "Add comment explaining the cloning" }
+      },
+      required: ["sourceWorkItemId"]
+    }
+  },
+  {
+    name: "wit-link-work-items-by-query-handles",
+    description: "🔐 HANDLE-BASED LINKING: Create relationships between work items identified by two query handles. Supports multiple link types (Related, Parent, Child, Predecessor, Successor) and strategies (one-to-one, one-to-many, many-to-one, many-to-many). Essential for bulk relationship creation without ID hallucination risk.",
+    script: "",
+    schema: linkWorkItemsByQueryHandlesSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        sourceQueryHandle: { type: "string", description: "Source query handle from wit-get-work-items-by-query-wiql" },
+        targetQueryHandle: { type: "string", description: "Target query handle from wit-get-work-items-by-query-wiql" },
+        linkType: { 
+          type: "string", 
+          enum: ["Related", "Parent", "Child", "Predecessor", "Successor", "Affects", "Affected By"],
+          description: "Type of relationship to create" 
+        },
+        sourceItemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"] },
+            { type: "array", items: { type: "number" } },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Select specific source items (default: all)"
+        },
+        targetItemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"] },
+            { type: "array", items: { type: "number" } },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Select specific target items (default: all)"
+        },
+        linkStrategy: {
+          type: "string",
+          enum: ["one-to-one", "one-to-many", "many-to-one", "many-to-many"],
+          description: "Link strategy (default: one-to-one)"
+        },
+        comment: { type: "string", description: "Optional comment to add to all linked work items" },
+        skipExistingLinks: { type: "boolean", description: "Skip links that already exist (default true)" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default true)" },
+        maxPreviewItems: { type: "number", description: "Maximum link operations to preview (default 10)" }
+      },
+      required: ["sourceQueryHandle", "targetQueryHandle", "linkType"]
+    }
+  },
+  {
     name: "wit-extract-security-links",
     description: "Extract instruction links from security scan work items. organization and project are automatically filled from configuration - only provide them to override defaults.",
     script: "", // Handled internally with REST API
@@ -221,6 +314,25 @@ export const toolConfigs: ToolConfig[] = [
         areaPath: { type: "string", description: "Area path to filter work items (uses configured default if not provided)" }
       },
       required: ["assignedToEmail"]
+    }
+  },
+  {
+    name: "wit-backlog-cleanup-analyzer",
+    description: "🤖 AI-POWERED BACKLOG ANALYSIS: Analyze backlog for stale, incomplete, or problematic work items with configurable staleness threshold. Identifies items missing descriptions, acceptance criteria, story points, assignments, and provides prioritized recommendations for cleanup. Returns query handle for bulk remediation workflows.",
+    script: "",
+    schema: backlogCleanupAnalyzerSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        areaPath: { type: "string", description: "Area path to analyze (uses configured default if not provided)" },
+        stalenessThresholdDays: { type: "number", description: "Days without substantive change to consider stale (default 180)" },
+        includeSubAreas: { type: "boolean", description: "Include child area paths (default true)" },
+        includeQualityChecks: { type: "boolean", description: "Check for missing descriptions, acceptance criteria, story points (default true)" },
+        includeMetadataChecks: { type: "boolean", description: "Check for unassigned items, missing iterations, priorities (default true)" },
+        maxResults: { type: "number", description: "Maximum work items to analyze (default 500, max 2000)" },
+        returnQueryHandle: { type: "boolean", description: "Return query handle for bulk remediation (default true)" }
+      },
+      required: []
     }
   },
   // Configuration and Discovery Tools
@@ -342,7 +454,7 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
-    name: "wit-validate-hierarchy-fast",
+    name: "wit-validate-hierarchy",
     description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis.",
     script: "", // Handled internally
     schema: validateHierarchyFastSchema,
@@ -439,6 +551,77 @@ export const toolConfigs: ToolConfig[] = [
         project: { type: "string", description: "Azure DevOps project name" }
       },
       required: ["queryHandle"]
+    }
+  },
+  {
+    name: "wit-bulk-transition-state-by-query-handle",
+    description: "Safely transition multiple work items to a new state using query handle. Common operations: close bugs, move tasks to done, resolve items. Validates state transitions before applying and supports dry-run mode for safety.",
+    script: "",
+    schema: bulkTransitionStateByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        targetState: { type: "string", description: "Target state to transition to (e.g., 'Resolved', 'Closed', 'Done')" },
+        reason: { type: "string", description: "Reason for state transition (e.g., 'Fixed', 'Completed'). Required for some transitions." },
+        comment: { type: "string", description: "Optional comment to add when transitioning state" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria (default: all)"
+        },
+        validateTransitions: { type: "boolean", description: "Validate state transitions are allowed (default true)" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default true)" },
+        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 5)" }
+      },
+      required: ["queryHandle", "targetState"]
+    }
+  },
+  {
+    name: "wit-bulk-move-to-iteration-by-query-handle",
+    description: "Safely move multiple work items to a different iteration/sprint using query handle. Simpler than using bulk-update with JSON Patch for iteration changes. Common for sprint rescheduling and backlog grooming. Supports dry-run mode for safety.",
+    script: "",
+    schema: bulkMoveToIterationByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        targetIterationPath: { type: "string", description: "Target iteration/sprint path (e.g., 'Project\\\\Sprint 11')" },
+        comment: { type: "string", description: "Optional comment to add when moving to new iteration" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria (default: all)"
+        },
+        updateChildItems: { type: "boolean", description: "Also update child work items to same iteration (default false)" },
+        dryRun: { type: "boolean", description: "Preview operation without making changes (default true)" },
+        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 5)" }
+      },
+      required: ["queryHandle", "targetIterationPath"]
     }
   },
   {
@@ -541,6 +724,44 @@ export const toolConfigs: ToolConfig[] = [
         previewCount: { type: "number", description: "Number of selected items to preview (default 10, max 50)" }
       },
       required: ["queryHandle", "itemSelector"]
+    }
+  },
+  {
+    name: "wit-get-context-packages-by-query-handle",
+    description: "🔐 HANDLE-BASED CONTEXT: Retrieve full context packages for multiple work items identified by a query handle. Returns comprehensive work item data including descriptions, comments, history, relations, children, and parent for each item. Essential for deep analysis workflows that need complete context without ID hallucination risk.",
+    script: "",
+    schema: getContextPackagesByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria"
+        },
+        includeHistory: { type: "boolean", description: "Include recent change history (disabled by default to save context)" },
+        maxHistoryRevisions: { type: "number", description: "Maximum revisions when history enabled (default 5)" },
+        includeComments: { type: "boolean", description: "Include work item comments (default true)" },
+        includeRelations: { type: "boolean", description: "Include related links (default true)" },
+        includeChildren: { type: "boolean", description: "Include child hierarchy (default true)" },
+        includeParent: { type: "boolean", description: "Include parent details (default true)" },
+        includeExtendedFields: { type: "boolean", description: "Include extended field set (default false)" },
+        maxPreviewItems: { type: "number", description: "Maximum items to include in response (default 10, max 50)" }
+      },
+      required: ["queryHandle"]
     }
   },
   
@@ -779,6 +1000,7 @@ export const AI_POWERED_TOOLS = [
   'wit-ai-assignment-analyzer',
   'wit-personal-workload-analyzer',
   'wit-sprint-planning-analyzer',
+  'wit-backlog-cleanup-analyzer',
   'wit-bulk-enhance-descriptions-by-query-handle',
   'wit-bulk-assign-story-points-by-query-handle',
   'wit-bulk-add-acceptance-criteria-by-query-handle',
