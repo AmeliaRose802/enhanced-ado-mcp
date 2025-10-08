@@ -114,28 +114,62 @@ ORDER BY [System.WorkItemType], [System.Priority]
 | `includeExamples` | boolean | true | Include example patterns in AI prompt |
 | `areaPath` | string | - | Optional area path context |
 | `iterationPath` | string | - | Optional iteration path context |
+| `returnQueryHandle` | boolean | false | Execute query and return query handle for bulk operations |
+| `maxResults` | number | 200 | Max work items when returnQueryHandle=true (1-1000) |
+| `includeFields` | string[] | - | Additional fields when returnQueryHandle=true |
 
 ## Response Structure
 
+**Without Query Handle (default):**
 ```json
 {
   "success": true,
   "data": {
     "query": "SELECT [System.Id] FROM WorkItems WHERE...",
     "isValidated": true,
-    "iterationCount": 1,
-    "iterations": [
-      {
-        "attempt": 1,
-        "query": "SELECT..."
-      }
+    "resultCount": 42,
+    "sampleResults": [
+      { "id": 123, "title": "Example Bug", "type": "Bug", "state": "Active" }
     ],
-    "testResults": {
-      "resultCount": 42,
-      "sampleResults": [
-        { "id": 123, "title": "Example Bug", "type": "Bug", "state": "Active" }
-      ]
-    }
+    "summary": "Successfully generated WIQL query (found 42 matching work items)"
+  },
+  "metadata": {
+    "source": "ai-sampling-wiql-generator",
+    "validated": true,
+    "iterationCount": 1,
+    "usage": { "inputTokens": 150, "outputTokens": 50, "totalTokens": 200 }
+  }
+}
+```
+
+**With Query Handle:**
+```json
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_abc123...",
+    "query": "SELECT [System.Id] FROM WorkItems WHERE...",
+    "work_item_count": 42,
+    "work_items": [
+      { "id": 123, "title": "Test Item", "type": "Task", "state": "Active", "url": "..." }
+    ],
+    "isValidated": true,
+    "summary": "Query handle created for 42 work item(s). Use the handle with bulk operation tools...",
+    "next_steps": [
+      "Review the work_items array to see what will be affected",
+      "Use wit-bulk-comment-by-query-handle to add comments to all items",
+      "Use wit-bulk-update-by-query-handle to update fields on all items",
+      "Always use dryRun: true first to preview changes"
+    ],
+    "expires_at": "2025-01-20T11:00:00Z"
+  },
+  "metadata": {
+    "source": "ai-sampling-wiql-generator",
+    "validated": true,
+    "iterationCount": 1,
+    "queryHandleMode": true,
+    "handle": "qh_abc123...",
+    "count": 42
   }
 }
 ```
@@ -214,7 +248,7 @@ The tool automatically detects and fixes common WIQL errors:
 
 ## Workflow Integration
 
-### Step 1: Generate Query
+### Step 1: Generate Query Only
 ```typescript
 {
   "description": "All features in active state under Engineering area",
@@ -222,21 +256,38 @@ The tool automatically detects and fixes common WIQL errors:
 }
 ```
 
-### Step 2: Use Generated Query
+Returns just the query text with validation results.
+
+### Step 2a: Use Generated Query Directly
 Copy the validated query from response and use it with:
 - `wit-get-work-items-by-query-wiql` - Execute the query
 - Save to documentation for reuse
 - Modify and refine as needed
 
-### Step 3 (Optional): Create Query Handle
+### Step 2b: Generate Query + Handle (One Step)
 ```typescript
 {
-  "wiqlQuery": "<generated query>",
-  "returnQueryHandle": true
+  "description": "All features in active state under Engineering area",
+  "returnQueryHandle": true,
+  "maxResults": 100
 }
 ```
 
-Then use query handle with bulk operations.
+Returns query handle immediately for bulk operations - **this is the recommended approach** as it combines generation and handle creation in one step.
+
+### Step 3: Use Query Handle with Bulk Operations
+```typescript
+{
+  "queryHandle": "qh_abc123...",
+  "dryRun": true  // Always preview first!
+}
+```
+
+Then use query handle with:
+- `wit-bulk-comment-by-query-handle` - Add comments
+- `wit-bulk-update-by-query-handle` - Update fields
+- `wit-bulk-assign-by-query-handle` - Reassign items
+- `wit-bulk-remove-by-query-handle` - Delete items
 
 ## Tips for Better Results
 
