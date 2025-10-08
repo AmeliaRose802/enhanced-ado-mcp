@@ -41,7 +41,10 @@ export interface ToolExecutionResult {
   warnings: string[];
 }
 
+// Export all types from submodules
 export * from './ado.js';
 export * from './mcp.js';
 export * from './work-items.js';
 export * from './error-categories.js';
+export * from './analysis.js';
+export * from './queries.js';

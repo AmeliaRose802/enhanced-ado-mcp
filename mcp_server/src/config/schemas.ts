@@ -579,7 +579,7 @@ export const generateODataQuerySchema = z.object({
   maxIterations: z.number().int("maxIterations must be an integer").min(1, "maxIterations must be at least 1").max(5, "maxIterations cannot exceed 5 attempts").optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
   includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
   testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)"),
-  returnQueryHandle: z.boolean().optional().default(false).describe("Execute the query and return a query handle for safe bulk operations (prevents ID hallucination)"),
+  returnQueryHandle: z.boolean().optional().default(true).describe("Execute the query and return a query handle for safe bulk operations (prevents ID hallucination)"),
   maxResults: z.number().int().min(1).max(1000).optional().default(200).describe("Maximum number of work items to fetch when returnQueryHandle is true (default 200)"),
   includeFields: z.array(z.string()).optional().describe("Additional fields to include when returnQueryHandle is true (defaults to basic fields)")
 });

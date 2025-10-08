@@ -3,40 +3,12 @@
  * Queries Azure DevOps Analytics using OData for efficient aggregations and metrics
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, ODataAnalyticsArgs, ODataResponse } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
-
-interface ODataAnalyticsArgs {
-  queryType: "workItemCount" | "groupByState" | "groupByType" | "groupByAssignee" | "velocityMetrics" | "cycleTimeMetrics" | "customQuery";
-  organization: string;
-  project: string;
-  filters?: Record<string, string | number | boolean>;
-  groupBy?: string[];
-  select?: string[];
-  orderBy?: string;
-  customODataQuery?: string;
-  dateRangeField?: "CreatedDate" | "ChangedDate" | "CompletedDate" | "ClosedDate";
-  dateRangeStart?: string;
-  dateRangeEnd?: string;
-  areaPath?: string;
-  iterationPath?: string;
-  top?: number;
-  skip?: number;
-  computeCycleTime?: boolean;
-  includeMetadata?: boolean;
-  includeOdataMetadata?: boolean;
-}
-
-interface ODataResponse {
-  "@odata.context"?: string;
-  "@odata.count"?: number;
-  "@odata.nextLink"?: string;
-  value: any[];
-}
 
 /**
  * Clean OData metadata from results to reduce response size

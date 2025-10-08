@@ -1,0 +1,288 @@
+{
+  "progress_percent": 12.0,
+  "completed_count": 3,
+  "can_run_in_parallel": [
+    "T2_precommit_hooks",
+    "T48_audit_resources"
+  ],
+  "conflict_blocked_tasks": [],
+  "available_tasks": [
+    {
+      "TaskId": "T2_precommit_hooks",
+      "Summary": "Add pre-commit hooks with Husky",
+      "RuntimeMin": 20,
+      "Wave": 1,
+      "ConflictsWith": [],
+      "Files": [
+        {
+          "pattern": "package.json",
+          "type": "exact"
+        },
+        {
+          "pattern": ".husky/.*",
+          "type": "regex"
+        },
+        {
+          "pattern": "mcp_server/package.json",
+          "type": "exact"
+        }
+      ],
+      "Description": "Install and configure Husky to enforce linting and formatting checks on git commit. Prevent commits that violate code quality standards."
+    },
+    {
+      "TaskId": "T48_audit_resources",
+      "Summary": "Comprehensively audit all resources for accuracy",
+      "RuntimeMin": 20,
+      "Wave": 1,
+      "ConflictsWith": [],
+      "Files": [
+        {
+          "pattern": "mcp_server/resources/.*\\.md$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Review all resource documentation after changes to ensure accuracy and consistency. Update outdated information."
+    },
+    {
+      "TaskId": "T12_repository_pattern",
+      "Summary": "Implement repository pattern for work items",
+      "RuntimeMin": 20,
+      "Wave": 1,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T50_handler_improvements",
+        "T51_final_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/repositories/.*\\.ts$",
+          "type": "regex"
+        },
+        {
+          "pattern": "mcp_server/src/services/ado-work-item-service\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Separate data access logic from business logic using repository pattern. Create WorkItemRepository to encapsulate ADO API calls."
+    },
+    {
+      "TaskId": "T_CONFIG_schemas",
+      "Summary": "Consolidate all schema additions",
+      "RuntimeMin": 30,
+      "Wave": 1,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T9c_remove_any_types_config",
+        "T51_final_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/config/schemas\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Add all new parameter schemas to schemas.ts in a single commit. Includes schemas for: context packages, unified query generator, bulk operations (transition, move iteration), clone work item, link by handles, tool discovery, deterministic query tools, and parameter fixes (backlog staleness, prompt staleness)."
+    },
+    {
+      "TaskId": "T9a_remove_any_types_services",
+      "Summary": "Remove 'any' types from service layer",
+      "RuntimeMin": 25,
+      "Wave": 1,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T9b_remove_any_types_handlers",
+        "T16_context_packages_by_handle",
+        "T50_handler_improvements",
+        "T51_final_cleanup",
+        "T31_tool_config_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/services/[^/]+\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Replace all 'any' type usage with proper interfaces in mcp_server/src/services/*.ts files (excluding handlers subdirectory). Focus on service classes and core service logic. Pay special attention to setServerInstance(server: MCPServer | null | any)."
+    },
+    {
+      "TaskId": "T9d_remove_any_types_types",
+      "Summary": "Remove 'any' types from type definitions",
+      "RuntimeMin": 15,
+      "Wave": 2,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T8_consolidate_ado_types",
+        "T51_final_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/types/.*\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Replace all 'any' type usage with proper interfaces in mcp_server/src/types/*.ts files. Focus on type definitions, interfaces, and type utilities."
+    },
+    {
+      "TaskId": "T23c_fix_wiql_remaining_results",
+      "Summary": "Fix WIQL query generator to return handle for remaining results",
+      "RuntimeMin": 20,
+      "Wave": 2,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T9b_remove_any_types_handlers",
+        "T23a_fix_wiql_generator_handle",
+        "T50_handler_improvements",
+        "T51_final_cleanup",
+        "T31_tool_config_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/services/handlers/query/wiql-generator-handler\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Ensure WIQL generator returns query handle for paginated results, allowing continuation of large result sets."
+    },
+    {
+      "TaskId": "T9c_remove_any_types_config",
+      "Summary": "Remove 'any' types from config files",
+      "RuntimeMin": 15,
+      "Wave": 4,
+      "ConflictsWith": [
+        "T_CONFIG_schemas",
+        "T_CONFIG_tool_configs",
+        "T3_standardize_naming",
+        "T29_merge_query_handle_tools",
+        "T32_add_category_prefixes",
+        "T51_final_cleanup",
+        "T31_tool_config_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/config/.*\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Replace all 'any' type usage with proper interfaces in mcp_server/src/config/*.ts files. Focus on configuration schemas, tool configs, and config-related types."
+    },
+    {
+      "TaskId": "T9b_remove_any_types_handlers",
+      "Summary": "Remove 'any' types from handlers",
+      "RuntimeMin": 25,
+      "Wave": 4,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T9a_remove_any_types_services",
+        "T16_context_packages_by_handle",
+        "T17_unified_query_generator",
+        "T18_bulk_transition_state",
+        "T19_bulk_move_iteration",
+        "T21_link_by_handles",
+        "T23a_fix_wiql_generator_handle",
+        "T23b_fix_odata_generator_handle",
+        "T23c_fix_wiql_remaining_results",
+        "T29_merge_query_handle_tools",
+        "T50_handler_improvements",
+        "T51_final_cleanup",
+        "T31_tool_config_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/services/handlers/.*\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Replace all 'any' type usage with proper interfaces in mcp_server/src/services/handlers/*.ts files. Focus on handler function signatures, request/response types, and handler-specific logic."
+    },
+    {
+      "TaskId": "T50_handler_improvements",
+      "Summary": "Comprehensive handler refactoring and improvements",
+      "RuntimeMin": 90,
+      "Wave": 6,
+      "ConflictsWith": [
+        "T3_standardize_naming",
+        "T9a_remove_any_types_services",
+        "T9b_remove_any_types_handlers",
+        "T12_repository_pattern",
+        "T16_context_packages_by_handle",
+        "T17_unified_query_generator",
+        "T18_bulk_transition_state",
+        "T19_bulk_move_iteration",
+        "T21_link_by_handles",
+        "T23a_fix_wiql_generator_handle",
+        "T23b_fix_odata_generator_handle",
+        "T23c_fix_wiql_remaining_results",
+        "T29_merge_query_handle_tools",
+        "T51_final_cleanup",
+        "T31_tool_config_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/services/handlers/.*\\.ts$",
+          "type": "regex"
+        },
+        {
+          "pattern": "mcp_server/src/services/.*service.*\\.ts$",
+          "type": "regex"
+        },
+        {
+          "pattern": "mcp_server/src/utils/response-builder\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Combined handler improvements including: 1) Extract business logic from handlers to dedicated service layer methods for improved testability and reusability. 2) Standardize error response format across all handlers using response-builder, ensure consistent error structures and messages. 3) Optimize JSON output by reducing payload sizes, removing unnecessary metadata, and improving response structure. This comprehensive handler refactoring pass addresses all handler quality issues in a coordinated manner."
+    },
+    {
+      "TaskId": "T3_standardize_naming",
+      "Summary": "Standardize naming conventions across codebase",
+      "RuntimeMin": 90,
+      "Wave": 8,
+      "ConflictsWith": [
+        "T_CONFIG_schemas",
+        "T_CONFIG_tool_configs",
+        "T8_consolidate_ado_types",
+        "T9a_remove_any_types_services",
+        "T9b_remove_any_types_handlers",
+        "T9c_remove_any_types_config",
+        "T9d_remove_any_types_types",
+        "T12_repository_pattern",
+        "T16_context_packages_by_handle",
+        "T17_unified_query_generator",
+        "T18_bulk_transition_state",
+        "T19_bulk_move_iteration",
+        "T21_link_by_handles",
+        "T23a_fix_wiql_generator_handle",
+        "T23b_fix_odata_generator_handle",
+        "T23c_fix_wiql_remaining_results",
+        "T29_merge_query_handle_tools",
+        "T32_add_category_prefixes",
+        "T50_handler_improvements",
+        "T51_final_cleanup",
+        "T31_tool_config_cleanup"
+      ],
+      "Files": [
+        {
+          "pattern": "mcp_server/src/services/.*\\.ts$",
+          "type": "regex"
+        },
+        {
+          "pattern": "mcp_server/src/config/.*\\.ts$",
+          "type": "regex"
+        },
+        {
+          "pattern": "mcp_server/src/types/.*\\.ts$",
+          "type": "regex"
+        }
+      ],
+      "Description": "Comprehensive naming standardization including: 1) File names - resolve mix of kebab-case and camelCase, prefer kebab-case consistently. 2) Function names - standardize handler function patterns, consistent use of handle* prefix and action verbs. 3) Variable names - fix inconsistent variable naming (camelCase vs PascalCase), apply consistent camelCase for variables and PascalCase for types/classes. This is a single comprehensive pass to avoid repeated refactoring overhead."
+    }
+  ],
+  "total_tasks": 25,
+  "timestamp": "2025-10-07T18:10:53.660867-07:00",
+  "completed_tasks": [
+    "T8_consolidate_ado_types",
+    "T23b_fix_odata_generator_handle",
+    "T23a_fix_wiql_generator_handle"
+  ],
+  "in_progress_tasks": []
+}
