@@ -359,11 +359,15 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
             }
             $script:lastStatus[$prNum] = $currentStatus
             
-            # Check if this PR is ready for merge
+            # Check if this PR is ready for merge OR needs manual intervention
             # Ready = Copilot finished + (checks passed OR no checks) + mergeable
+            # Done (needs intervention) = Copilot finished + has conflicts
             $checksOK = ($checks.Status -eq "Passed") -or ($checks.Status -eq "No checks")
             if ($copilotFinished -and $checksOK -and $prInfo.mergeable -eq 'MERGEABLE') {
                 Write-Host "     🎉 READY FOR MERGE!" -ForegroundColor Green -BackgroundColor DarkGreen
+                $completedPRs += $prNum
+            } elseif ($copilotFinished -and $prInfo.mergeable -eq 'CONFLICTING') {
+                Write-Host "     ⛔ HAS CONFLICTS - NEEDS MERGE!" -ForegroundColor Red -BackgroundColor DarkRed
                 $completedPRs += $prNum
             }
             
@@ -382,6 +386,19 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
         Write-Host "Monitor Duration: $(Format-Duration $monitorElapsed)" -ForegroundColor Cyan
         Write-Host "Completed PRs: $($completedPRs -join ', ')" -ForegroundColor Green
         
+        # Categorize completed PRs by state
+        # Note: All PRs in $completedPRs have Copilot finished, so we just check merge status
+        $readyPRs = @()
+        $conflictPRs = @()
+        foreach ($pr in $completedPRs) {
+            $prInfo = Get-PRInfo -PRNumber $pr
+            if ($prInfo -and $prInfo.mergeable -eq 'CONFLICTING') {
+                $conflictPRs += $pr
+            } elseif ($prInfo -and $prInfo.mergeable -eq 'MERGEABLE') {
+                $readyPRs += $pr
+            }
+        }
+        
         # Map completed PRs to task IDs
         $completedTaskIds = @()
         foreach ($pr in $completedPRs) {
@@ -394,7 +411,12 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
         Write-Host "Still Working PRs: $(($PRNumbers | Where-Object { $_ -notin $completedPRs }) -join ', ')" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "✅ Copilot agent(s) have finished work on PR(s): $($completedPRs -join ', ')" -ForegroundColor Green
-        Write-Host "✅ CI checks passed and PR(s) are mergeable" -ForegroundColor Green
+        if ($readyPRs.Count -gt 0) {
+            Write-Host "✅ Ready to merge: $($readyPRs -join ', ')" -ForegroundColor Green
+        }
+        if ($conflictPRs.Count -gt 0) {
+            Write-Host "⚠️  Has merge conflicts (needs manual merge): $($conflictPRs -join ', ')" -ForegroundColor Yellow
+        }
         Write-Host ""
         
         # Generate next tasks if requested and we have task mappings
@@ -450,13 +472,20 @@ for ($i = 1; $i -le $MaxPolls; $i++) {
             Write-Host ""
         }
         
-        Write-Host "�🔍 Next Steps:" -ForegroundColor Yellow
-        Write-Host "1. Review completed PR(s): $($completedPRs -join ', ')" -ForegroundColor White
-        Write-Host "2. Run tests and merge if ready" -ForegroundColor White
+        Write-Host "🔍 Next Steps:" -ForegroundColor Yellow
+        if ($conflictPRs.Count -gt 0) {
+            Write-Host "1. ⚠️  Resolve merge conflicts in PR(s): $($conflictPRs -join ', ')" -ForegroundColor Red
+            Write-Host "   - Review the conflicts and merge manually" -ForegroundColor White
+            Write-Host "   - Use: gh pr view <PR> --web or git merge commands" -ForegroundColor Gray
+        }
+        if ($readyPRs.Count -gt 0) {
+            Write-Host "$(if ($conflictPRs.Count -gt 0) { '2' } else { '1' }). Review completed PR(s): $($readyPRs -join ', ')" -ForegroundColor White
+            Write-Host "$(if ($conflictPRs.Count -gt 0) { '3' } else { '2' }). Run tests and merge if ready" -ForegroundColor White
+        }
         if ($GenerateNextTasks -and $completedTaskIds.Count -gt 0) {
-            Write-Host "3. Assign next available tasks shown above" -ForegroundColor White
+            Write-Host "$(if ($conflictPRs.Count -gt 0 -and $readyPRs.Count -gt 0) { '4' } elseif ($conflictPRs.Count -gt 0 -or $readyPRs.Count -gt 0) { '3' } else { '1' }). Assign next available tasks shown above" -ForegroundColor White
         } else {
-            Write-Host "3. Continue monitoring remaining PRs if needed" -ForegroundColor White
+            Write-Host "$(if ($conflictPRs.Count -gt 0 -and $readyPRs.Count -gt 0) { '4' } elseif ($conflictPRs.Count -gt 0 -or $readyPRs.Count -gt 0) { '3' } else { '1' }). Continue monitoring remaining PRs if needed" -ForegroundColor White
         }
         Write-Host ""
         
