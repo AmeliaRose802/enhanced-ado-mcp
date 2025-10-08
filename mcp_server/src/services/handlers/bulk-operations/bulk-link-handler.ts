@@ -6,7 +6,7 @@
  * This eliminates ID hallucination risk by using stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -515,7 +515,7 @@ export async function handleBulkLinkByQueryHandles(
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         source_query_handle: sourceQueryHandle,
         target_query_handle: targetQueryHandle,
         link_type: linkType,
@@ -535,7 +535,7 @@ export async function handleBulkLinkByQueryHandles(
             ? ` (${invalidOperations.length} invalid operations skipped)`
             : ""
         }`
-      },
+      }),
       metadata: {
         source: "bulk-link-by-query-handles",
         linkStrategy

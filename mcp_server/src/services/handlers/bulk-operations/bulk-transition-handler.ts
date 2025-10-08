@@ -7,7 +7,7 @@
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
@@ -211,7 +211,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
         
         return {
           success: false,
-          data: {
+          data: asToolData({
             query_handle: queryHandle,
             target_state: targetState,
             total_items_in_handle: totalItems,
@@ -225,7 +225,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
               type: r.type,
               reason: r.validation.reason
             }))
-          },
+          }),
           metadata: { 
             source: "bulk-transition-state-by-query-handle",
             validationFailed: true
@@ -268,7 +268,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
 
       return {
         success: true,
-        data: {
+        data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -282,7 +282,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
           preview_items: previewItems,
           preview_message: previewMessage,
           summary: `DRY RUN: Would transition ${selectedCount} of ${totalItems} work item(s) to state '${targetState}'${reason ? ` with reason '${reason}'` : ''}${comment ? ' (with comment)' : ''}`
-        },
+        }),
         metadata: { 
           source: "bulk-transition-state-by-query-handle",
           dryRun: true,
@@ -412,7 +412,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         target_state: targetState,
         reason: reason,
@@ -434,7 +434,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
           error: r.error
         })),
         summary: `${summary}${failureCount > 0 ? ` (${failureCount} failed)` : ''}${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}${comment && commentsAdded > 0 ? `, comments added to ${commentsAdded} items` : ''}`
-      },
+      }),
       metadata: {
         source: "bulk-transition-state-by-query-handle",
         itemSelector,
