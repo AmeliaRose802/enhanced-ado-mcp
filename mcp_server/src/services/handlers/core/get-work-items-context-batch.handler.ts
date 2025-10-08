@@ -2,8 +2,8 @@ import { buildSuccessResponse, buildErrorResponse } from '../../../utils/respons
 import { loadConfiguration } from '../../../config/config.js';
 import { logger } from '../../../utils/logger.js';
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
-import type { ADOApiResponse, ADOWorkItem } from '../../../types/ado.js';
-import type { BatchContextArgs } from '../../../types/queries.js';
+import type { ADOApiResponse, ADOWorkItem } from '../../../types/index.js';
+import type { BatchContextArgs } from '../../../types/index.js';
 
 interface GraphNode {
   id: number;

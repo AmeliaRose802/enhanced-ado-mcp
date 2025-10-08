@@ -2,7 +2,7 @@
  * Integration test for wit-ai-assignment tool
  */
 import { executeTool, setServerInstance } from '../services/tool-service.js';
-import type { AIAssignmentResult } from '../types/analysis.js';
+import type { AIAssignmentResult } from '../types/index.js';
 
 // Mock server for testing
 const mockServer = {

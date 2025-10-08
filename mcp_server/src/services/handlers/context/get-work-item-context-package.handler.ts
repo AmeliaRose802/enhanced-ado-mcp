@@ -2,8 +2,8 @@ import { logger } from '../../../utils/logger.js';
 import { buildSuccessResponse, buildNotFoundError, buildErrorResponse } from '../../../utils/response-builder.js';
 import { loadConfiguration } from '../../../config/config.js';
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
-import type { ADOWorkItem, ADOApiResponse } from '../../../types/ado.js';
-import type { ContextPackageArgs } from '../../../types/queries.js';
+import type { ADOWorkItem, ADOApiResponse } from '../../../types/index.js';
+import type { ContextPackageArgs } from '../../../types/index.js';
 
 interface CleanedFields {
   [key: string]: string | number | boolean | undefined;
