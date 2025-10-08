@@ -7,7 +7,7 @@
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -32,13 +32,14 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
     const queryData = queryHandleService.getQueryData(queryHandle);
     
     if (!selectedWorkItemIds || !queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "bulk-assign-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildNotFoundError(
+        'query-handle',
+        queryHandle,
+        {
+          source: 'bulk-assign-by-query-handle',
+          hint: 'Query handles expire after 1 hour.'
+        }
+      );
     }
 
     // Show selection information
