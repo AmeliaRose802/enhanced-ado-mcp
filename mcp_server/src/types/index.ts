@@ -25,20 +25,110 @@ export interface ParsedPrompt {
   content: string;
 }
 
+/**
+ * JSON Schema types for tool input validation
+ * Follows JSON Schema Draft 7 specification
+ */
+export interface JSONSchemaProperty {
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
+  description?: string;
+  enum?: unknown[];
+  default?: unknown;
+  items?: JSONSchemaProperty;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean | JSONSchemaProperty;
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  format?: string;
+  $ref?: string;
+  oneOf?: JSONSchemaProperty[];
+  anyOf?: JSONSchemaProperty[];
+  allOf?: JSONSchemaProperty[];
+  [key: string]: unknown; // Allow additional JSON Schema keywords
+}
+
+export interface JSONSchema {
+  type: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean | JSONSchemaProperty;
+  items?: JSONSchemaProperty;
+  description?: string;
+  title?: string;
+  $schema?: string;
+  definitions?: Record<string, JSONSchemaProperty>;
+  oneOf?: JSONSchemaProperty[];
+  anyOf?: JSONSchemaProperty[];
+  allOf?: JSONSchemaProperty[];
+  [key: string]: unknown; // Allow additional JSON Schema keywords
+}
+
 export interface ToolConfig {
   name: string;
   description: string;
   script: string; // underlying PowerShell script file
   schema: z.ZodTypeAny; // zod schema for validation
-  inputSchema: any; // JSON schema exposed to MCP clients
+  inputSchema: JSONSchema; // JSON schema exposed to MCP clients
 }
+
+/**
+ * JSON-serializable primitive values
+ */
+export type JSONPrimitive = string | number | boolean | null;
+
+/**
+ * JSON-serializable value types
+ * Represents any valid JSON structure
+ */
+export type JSONValue = 
+  | JSONPrimitive
+  | JSONValue[]
+  | { [key: string]: JSONValue };
+
+/**
+ * Tool execution result data
+ * Can be any JSON-serializable value or undefined
+ * This replaces 'any' while maintaining flexibility for various data structures
+ */
+export type ToolExecutionData = JSONValue | undefined;
+
+/**
+ * Helper to safely cast values to JSONValue for tool execution data
+ * Use this when you have complex types that should be JSON-serializable
+ */
+export function asToolData(value: unknown): ToolExecutionData {
+  return value as ToolExecutionData;
+}
+
+/**
+ * Metadata for tool execution results
+ * Can contain any JSON-serializable values
+ */
+export type ToolExecutionMetadata = {
+  [key: string]: JSONValue | undefined;
+} & {
+  timestamp?: string;
+  duration?: number;
+  tool?: string;
+  organization?: string;
+  project?: string;
+};
 
 export interface ToolExecutionResult {
   success: boolean;
-  data?: any;
-  metadata: Record<string, any>;
+  data?: ToolExecutionData;
+  metadata: ToolExecutionMetadata;
   errors: string[];
   warnings: string[];
+  raw?: {
+    stdout?: string;
+    stderr?: string;
+    exitCode?: number;
+  };
 }
 
 // Export all types from submodules

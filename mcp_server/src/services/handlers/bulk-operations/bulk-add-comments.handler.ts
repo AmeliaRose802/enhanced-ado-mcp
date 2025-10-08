@@ -3,7 +3,7 @@
  * Allows adding comments to multiple work items efficiently
  */
 
-import type { ToolConfig, ToolExecutionResult, BulkAddCommentsArgs, CommentItem } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData, BulkAddCommentsArgs, CommentItem } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { logger } from "../../../utils/logger.js";
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
@@ -107,7 +107,7 @@ export async function handleBulkAddComments(config: ToolConfig, args: unknown): 
 
     return {
       success: successCount > 0,
-      data: {
+      data: asToolData({
         summary: {
           total: items.length,
           succeeded: successCount,
@@ -115,7 +115,7 @@ export async function handleBulkAddComments(config: ToolConfig, args: unknown): 
         },
         results: results,
         message: `Bulk comment addition complete. ${successCount} succeeded, ${failureCount} failed.`
-      },
+      }),
       metadata: { 
         source: "bulk-add-comments"
       },

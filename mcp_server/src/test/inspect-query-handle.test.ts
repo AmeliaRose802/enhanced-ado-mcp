@@ -48,7 +48,7 @@ describe('Inspect Query Handle Handler', () => {
     description: 'Test',
     script: '',
     schema: inspectQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

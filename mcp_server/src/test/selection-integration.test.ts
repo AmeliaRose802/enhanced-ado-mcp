@@ -127,7 +127,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: inspectQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const inspectResult = await handleInspectQueryHandle(mockInspectConfig, { 
@@ -144,7 +144,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: selectItemsFromQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const previewResult = await handleSelectItemsFromQueryHandle(mockSelectConfig, {
@@ -164,7 +164,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const commentResult = await handleBulkCommentByQueryHandle(mockCommentConfig, {
@@ -195,7 +195,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: bulkUpdateByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const updateResult = await handleBulkUpdateByQueryHandle(mockUpdateConfig, {
@@ -232,7 +232,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const assignResult = await handleBulkAssignByQueryHandle(mockAssignConfig, {
@@ -282,7 +282,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const commentResult = await handleBulkCommentByQueryHandle(mockCommentConfig, {
@@ -330,7 +330,7 @@ describe('Selection Integration Tests', () => {
         description: 'Test',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkCommentByQueryHandle(mockCommentConfig, {
@@ -370,7 +370,7 @@ describe('Selection Integration Tests', () => {
           description: 'Test',
           script: '',
           schema: bulkCommentByQueryHandleSchema,
-          inputSchema: {}
+          inputSchema: { type: 'object' as const }
         };
 
         const result = await handleBulkCommentByQueryHandle(mockCommentConfig, {

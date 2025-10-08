@@ -1036,5 +1036,5 @@ export function getAvailableToolConfigs(hasSampling: boolean): ToolConfig[] {
 export const tools: Tool[] = toolConfigs.map(tc => ({
   name: tc.name,
   description: tc.description,
-  inputSchema: tc.inputSchema
+  inputSchema: tc.inputSchema as Tool['inputSchema']
 }));

@@ -56,7 +56,7 @@ describe('Validate Query Handle Handler', () => {
     description: 'Test',
     script: '',
     schema: validateQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

@@ -58,7 +58,7 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
     description: 'Test',
     script: '',
     schema: generateODataQuerySchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   const mockServerInstance = {

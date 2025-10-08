@@ -40,7 +40,16 @@ export interface AnalysisResult {
   missingElements: string[];
   strengths: string[];
   improvementAreas: string[];
-  rawAnalysis?: any;  // Full JSON response from AI for intelligent agent interpretation
+  rawAnalysis?: RawAIAnalysisData;  // Full JSON response from AI for intelligent agent interpretation
+}
+
+/**
+ * Raw AI Analysis Data
+ * Represents unstructured JSON response from AI analysis
+ * This is intentionally flexible as AI responses can vary in structure
+ */
+export interface RawAIAnalysisData {
+  [key: string]: unknown;
 }
 
 /**

@@ -148,6 +148,7 @@ export interface SubstantiveChangeResult {
   lastRevisionDate: string;
   isStale: boolean;
   staleDays: number;
+  [key: string]: unknown; // Allow additional properties
 }
 
 /**
@@ -196,6 +197,7 @@ export interface WorkItemAnalysis {
   completion?: CompletionAnalysis;
   priorities?: PriorityAnalysis;
   workload?: WorkloadAnalysis;
+  [key: string]: unknown; // Allow additional analysis types
 }
 
 /**

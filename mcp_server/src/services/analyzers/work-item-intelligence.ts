@@ -143,6 +143,8 @@ export class WorkItemIntelligenceAnalyzer {
       throw new Error(`Failed to create work item: ${result.errors?.join(', ')}`);
     }
 
-    return `Work item created successfully (ID: ${result.data?.id || 'unknown'})`;
+    // Type guard for work item result
+    const workItemId = (result.data as { id?: number })?.id || 'unknown';
+    return `Work item created successfully (ID: ${workItemId})`;
   }
 }

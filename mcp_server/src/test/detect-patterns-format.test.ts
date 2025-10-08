@@ -74,7 +74,7 @@ describe('Detect Patterns - Format Options', () => {
     description: 'Test',
     script: 'test.ps1',
     schema: detectPatternsSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   const baseArgs = {

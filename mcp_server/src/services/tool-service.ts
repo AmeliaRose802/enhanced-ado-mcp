@@ -1,4 +1,4 @@
-import type { ToolExecutionResult } from "../types/index.js";
+import { ToolExecutionResult, asToolData } from "../types/index.js";
 import type { MCPServer, MCPServerLike } from "../types/mcp.js";
 import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
 import { logger } from "../utils/logger.js";
@@ -164,7 +164,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     const result = await getLastSubstantiveChange(args as Parameters<typeof getLastSubstantiveChange>[0]);
     return { 
       success: true, 
-      data: result, 
+      data: asToolData(result), 
       metadata: { tool: name },
       errors: [],
       warnings: []

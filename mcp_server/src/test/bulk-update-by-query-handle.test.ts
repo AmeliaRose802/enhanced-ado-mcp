@@ -37,7 +37,7 @@ describe('Bulk Update By Query Handle Handler', () => {
     description: 'Test tool',
     script: '',
     schema: bulkUpdateByQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

@@ -2,7 +2,7 @@
  * Standard response builder for tool execution results
  */
 
-import type { ToolExecutionResult } from '../types/index.js';
+import type { ToolExecutionResult, JSONValue } from '../types/index.js';
 import { ErrorCategory, ErrorCode, type ErrorMetadata, createErrorMetadata, categorizeError } from '../types/error-categories.js';
 
 export function buildSuccessResponse(data: any, metadata: Record<string, any> = {}): ToolExecutionResult {
@@ -41,7 +41,7 @@ export function buildErrorResponse(
       samplingAvailable: true,
       errorCategory: errorCategory,
       errorCode: code,
-      errorMetadata
+      errorMetadata: errorMetadata as unknown as JSONValue
     },
     errors: [errorMsg],
     warnings: []
