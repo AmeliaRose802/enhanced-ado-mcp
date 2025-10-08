@@ -19,13 +19,14 @@ async function testConfigurationTools() {
     // Test 1: Get configuration
     console.log('1️⃣  Testing wit-get-config...');
     const configResult = await executeTool('wit-get-config', { Section: 'all' });
+    const configData = configResult.data as any;
     console.log('✅ Configuration tool result:', {
       success: configResult.success,
       hasData: !!configResult.data,
-      helpTextKeys: configResult.data?.helpText ? Object.keys(configResult.data.helpText) : []
+      helpTextKeys: configData?.helpText ? Object.keys(configData.helpText) : []
     });
-    console.log('   Configuration sections:', Object.keys(configResult.data?.configuration || {}));
-    console.log('   Area path guidance:', configResult.data?.helpText?.areaPath);
+    console.log('   Configuration sections:', Object.keys(configData?.configuration || {}));
+    console.log('   Area path guidance:', configData?.helpText?.areaPath);
     console.log();
 
     // Test 2: Get Azure DevOps section only
@@ -34,12 +35,13 @@ async function testConfigurationTools() {
       Section: 'azureDevOps', 
       IncludeSensitive: true 
     });
+    const adoConfigData = adoConfigResult.data as any;
     console.log('✅ Azure DevOps config result:', {
       success: adoConfigResult.success,
-      organization: adoConfigResult.data?.configuration?.azureDevOps?.organization,
-      project: adoConfigResult.data?.configuration?.azureDevOps?.project,
-      areaPath: adoConfigResult.data?.configuration?.azureDevOps?.areaPath,
-      defaultWorkItemType: adoConfigResult.data?.configuration?.azureDevOps?.defaultWorkItemType
+      organization: adoConfigData?.configuration?.azureDevOps?.organization,
+      project: adoConfigData?.configuration?.azureDevOps?.project,
+      areaPath: adoConfigData?.configuration?.azureDevOps?.areaPath,
+      defaultWorkItemType: adoConfigData?.configuration?.azureDevOps?.defaultWorkItemType
     });
     console.log();
 

@@ -90,18 +90,18 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       expect(result.data).toBeDefined();
       
       // Check that top-level @odata fields are NOT present
-      expect(result.data['@odata.context']).toBeUndefined();
-      expect(result.data['@odata.count']).toBeUndefined();
+      expect((result.data as any)['@odata.context']).toBeUndefined();
+      expect((result.data as any)['@odata.count']).toBeUndefined();
       
       // Check that count field is present (not an @odata field)
-      expect(result.data.count).toBe(2);
+      expect((result.data as any).count).toBe(2);
       
       // Check that @odata fields are stripped from results
-      expect(result.data.results).toHaveLength(2);
-      expect(result.data.results[0]['@odata.id']).toBeUndefined();
-      expect(result.data.results[0].WorkItemId).toBe(123);
-      expect(result.data.results[1]['@odata.id']).toBeUndefined();
-      expect(result.data.results[1].WorkItemId).toBe(456);
+      expect((result.data as any).results).toHaveLength(2);
+      expect((result.data as any).results[0]['@odata.id']).toBeUndefined();
+      expect((result.data as any).results[0].WorkItemId).toBe(123);
+      expect((result.data as any).results[1]['@odata.id']).toBeUndefined();
+      expect((result.data as any).results[1].WorkItemId).toBe(456);
     });
 
     it('should strip @odata.nextLink when present', async () => {
@@ -131,9 +131,9 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data['@odata.nextLink']).toBeUndefined();
-      expect(result.data['@odata.context']).toBeUndefined();
-      expect(result.data['@odata.count']).toBeUndefined();
+      expect((result.data as any)['@odata.nextLink']).toBeUndefined();
+      expect((result.data as any)['@odata.context']).toBeUndefined();
+      expect((result.data as any)['@odata.count']).toBeUndefined();
     });
 
     it('should filter out null values from results', async () => {
@@ -164,10 +164,10 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.results[0].AssignedTo).toBeUndefined();
-      expect(result.data.results[0].Tags).toBeUndefined();
-      expect(result.data.results[0].WorkItemId).toBe(123);
-      expect(result.data.results[0].Count).toBe(5);
+      expect((result.data as any).results[0].AssignedTo).toBeUndefined();
+      expect((result.data as any).results[0].Tags).toBeUndefined();
+      expect((result.data as any).results[0].WorkItemId).toBe(123);
+      expect((result.data as any).results[0].Count).toBe(5);
     });
   });
 
@@ -208,15 +208,15 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       expect(result.data).toBeDefined();
       
       // Check that top-level @odata fields ARE present
-      expect(result.data['@odata.context']).toBe(mockResponse['@odata.context']);
-      expect(result.data['@odata.count']).toBe(2);
+      expect((result.data as any)['@odata.context']).toBe(mockResponse['@odata.context']);
+      expect((result.data as any)['@odata.count']).toBe(2);
       
       // Check that @odata fields are kept in results
-      expect(result.data.results).toHaveLength(2);
-      expect(result.data.results[0]['@odata.id']).toBe(mockResponse.value[0]['@odata.id']);
-      expect(result.data.results[0].WorkItemId).toBe(123);
-      expect(result.data.results[1]['@odata.id']).toBe(mockResponse.value[1]['@odata.id']);
-      expect(result.data.results[1].WorkItemId).toBe(456);
+      expect((result.data as any).results).toHaveLength(2);
+      expect((result.data as any).results[0]['@odata.id']).toBe(mockResponse.value[0]['@odata.id']);
+      expect((result.data as any).results[0].WorkItemId).toBe(123);
+      expect((result.data as any).results[1]['@odata.id']).toBe(mockResponse.value[1]['@odata.id']);
+      expect((result.data as any).results[1].WorkItemId).toBe(456);
     });
 
     it('should include @odata.nextLink when present', async () => {
@@ -246,9 +246,9 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data['@odata.nextLink']).toBe(mockResponse['@odata.nextLink']);
-      expect(result.data['@odata.context']).toBe(mockResponse['@odata.context']);
-      expect(result.data['@odata.count']).toBe(100);
+      expect((result.data as any)['@odata.nextLink']).toBe(mockResponse['@odata.nextLink']);
+      expect((result.data as any)['@odata.context']).toBe(mockResponse['@odata.context']);
+      expect((result.data as any)['@odata.count']).toBe(100);
     });
 
     it('should NOT filter out null values when metadata is included', async () => {
@@ -281,10 +281,10 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
 
       expect(result.success).toBe(true);
       // When metadata is included, results are returned as-is
-      expect(result.data.results[0].AssignedTo).toBe(null);
-      expect(result.data.results[0].Tags).toBe(null);
-      expect(result.data.results[0].WorkItemId).toBe(123);
-      expect(result.data.results[0].Count).toBe(5);
+      expect((result.data as any).results[0].AssignedTo).toBe(null);
+      expect((result.data as any).results[0].Tags).toBe(null);
+      expect((result.data as any).results[0].WorkItemId).toBe(123);
+      expect((result.data as any).results[0].Count).toBe(5);
     });
   });
 
@@ -316,11 +316,11 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
 
       expect(result.success).toBe(true);
       // includeMetadata adds query and URL
-      expect(result.data.query).toBeDefined();
-      expect(result.data.analyticsUrl).toBeDefined();
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).analyticsUrl).toBeDefined();
       // includeOdataMetadata: false means no @odata fields
-      expect(result.data['@odata.context']).toBeUndefined();
-      expect(result.data['@odata.count']).toBeUndefined();
+      expect((result.data as any)['@odata.context']).toBeUndefined();
+      expect((result.data as any)['@odata.count']).toBeUndefined();
     });
 
     it('should include both types of metadata when both are true', async () => {
@@ -351,11 +351,11 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
 
       expect(result.success).toBe(true);
       // Both types of metadata should be present
-      expect(result.data.query).toBeDefined();
-      expect(result.data.analyticsUrl).toBeDefined();
-      expect(result.data['@odata.context']).toBe(mockResponse['@odata.context']);
-      expect(result.data['@odata.count']).toBe(1);
-      expect(result.data.results[0]['@odata.id']).toBe(mockResponse.value[0]['@odata.id']);
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).analyticsUrl).toBeDefined();
+      expect((result.data as any)['@odata.context']).toBe(mockResponse['@odata.context']);
+      expect((result.data as any)['@odata.count']).toBe(1);
+      expect((result.data as any).results[0]['@odata.id']).toBe(mockResponse.value[0]['@odata.id']);
     });
   });
 
@@ -383,9 +383,9 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data['@odata.context']).toBeUndefined();
-      expect(result.data.results[0]['@odata.id']).toBeUndefined();
-      expect(result.data.results[0].Count).toBe(42);
+      expect((result.data as any)['@odata.context']).toBeUndefined();
+      expect((result.data as any).results[0]['@odata.id']).toBeUndefined();
+      expect((result.data as any).results[0].Count).toBe(42);
     });
 
     it('should strip metadata for velocityMetrics query', async () => {
@@ -413,9 +413,9 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data['@odata.context']).toBeUndefined();
-      expect(result.data.results[0]['@odata.id']).toBeUndefined();
-      expect(result.data.results[0].CompletedDate).toBe("2024-01-15");
+      expect((result.data as any)['@odata.context']).toBeUndefined();
+      expect((result.data as any).results[0]['@odata.id']).toBeUndefined();
+      expect((result.data as any).results[0].CompletedDate).toBe("2024-01-15");
     });
   });
 });

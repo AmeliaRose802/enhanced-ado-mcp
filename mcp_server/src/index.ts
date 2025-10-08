@@ -15,7 +15,7 @@ import { checkSamplingSupport } from "./utils/sampling-client.js";
 import { listResources, getResourceContent } from "./services/resource-service.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { updateConfigFromCLI } from "./config/config.js";
+import { updateConfigFromCLI, type CLIArguments } from "./config/config.js";
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
@@ -140,7 +140,7 @@ const argv = yargs(hideBin(process.argv))
  */
 async function main() {
   try {
-    updateConfigFromCLI(argv);
+    updateConfigFromCLI(argv as any as CLIArguments);
 
     if (argv.verbose) {
       process.env.MCP_DEBUG = '1';

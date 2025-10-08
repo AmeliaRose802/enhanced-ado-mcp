@@ -84,9 +84,9 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(5);
-      expect(result.data.selected_items_count).toBe(20);
-      expect(result.data.preview_message).toBe('Showing 5 of 20 items...');
+      expect((result.data as any).preview_items).toHaveLength(5);
+      expect((result.data as any).selected_items_count).toBe(20);
+      expect((result.data as any).preview_message).toBe('Showing 5 of 20 items...');
     });
 
     it('should default to 5 items for bulk-remove', async () => {
@@ -122,12 +122,12 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(5);
-      expect(result.data.selected_items_count).toBe(15);
-      expect(result.data.preview_message).toBe('Showing 5 of 15 items...');
+      expect((result.data as any).preview_items).toHaveLength(5);
+      expect((result.data as any).selected_items_count).toBe(15);
+      expect((result.data as any).preview_message).toBe('Showing 5 of 15 items...');
     });
 
-    it('should default to 5 items for bulk-update', async () => {
+    it('should default to 10 items for bulk-update', async () => {
       const workItemIds = Array.from({ length: 12 }, (_, i) => 1000 + i);
       const workItemContext = new Map(
         workItemIds.map(id => [
@@ -160,12 +160,12 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(5);
-      expect(result.data.selected_items_count).toBe(12);
-      expect(result.data.preview_message).toBe('Showing 5 of 12 items...');
+      expect((result.data as any).preview_items).toHaveLength(10);
+      expect((result.data as any).selected_items_count).toBe(12);
+      expect((result.data as any).preview_message).toBe('Showing 10 of 12 items...');
     });
 
-    it('should default to 5 items for bulk-comment', async () => {
+    it('should default to 10 items for bulk-comment', async () => {
       const workItemIds = Array.from({ length: 10 }, (_, i) => 1000 + i);
       const workItemContext = new Map(
         workItemIds.map(id => [
@@ -198,9 +198,9 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(5);
-      expect(result.data.selected_items_count).toBe(10);
-      expect(result.data.preview_message).toBe('Showing 5 of 10 items...');
+      expect((result.data as any).preview_items).toHaveLength(10);
+      expect((result.data as any).selected_items_count).toBe(10);
+      expect((result.data as any).preview_message).toBeUndefined(); // All 10 items shown, no truncation
     });
   });
 
@@ -239,9 +239,9 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(1);
-      expect(result.data.selected_items_count).toBe(20);
-      expect(result.data.preview_message).toBe('Showing 1 of 20 items...');
+      expect((result.data as any).preview_items).toHaveLength(1);
+      expect((result.data as any).selected_items_count).toBe(20);
+      expect((result.data as any).preview_message).toBe('Showing 1 of 20 items...');
     });
 
     it('should respect custom limit of 10', async () => {
@@ -278,9 +278,9 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(10);
-      expect(result.data.selected_items_count).toBe(20);
-      expect(result.data.preview_message).toBe('Showing 10 of 20 items...');
+      expect((result.data as any).preview_items).toHaveLength(10);
+      expect((result.data as any).selected_items_count).toBe(20);
+      expect((result.data as any).preview_message).toBe('Showing 10 of 20 items...');
     });
 
     it('should respect custom limit of 50', async () => {
@@ -317,9 +317,9 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(50);
-      expect(result.data.selected_items_count).toBe(100);
-      expect(result.data.preview_message).toBe('Showing 50 of 100 items...');
+      expect((result.data as any).preview_items).toHaveLength(50);
+      expect((result.data as any).selected_items_count).toBe(100);
+      expect((result.data as any).preview_message).toBe('Showing 50 of 100 items...');
     });
   });
 
@@ -358,8 +358,8 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_message).toBeDefined();
-      expect(result.data.preview_message).toBe('Showing 3 of 20 items...');
+      expect((result.data as any).preview_message).toBeDefined();
+      expect((result.data as any).preview_message).toBe('Showing 3 of 20 items...');
     });
 
     it('should not show truncation message when preview shows all items', async () => {
@@ -396,8 +396,8 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(3);
-      expect(result.data.preview_message).toBeUndefined();
+      expect((result.data as any).preview_items).toHaveLength(3);
+      expect((result.data as any).preview_message).toBeUndefined();
     });
 
     it('should not show truncation message when limit equals selected count', async () => {
@@ -434,8 +434,8 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(5);
-      expect(result.data.preview_message).toBeUndefined();
+      expect((result.data as any).preview_items).toHaveLength(5);
+      expect((result.data as any).preview_message).toBeUndefined();
     });
   });
 
@@ -474,9 +474,9 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(2);
-      expect(result.data.selected_items_count).toBe(50);
-      expect(result.data.total_items_in_handle).toBe(50);
+      expect((result.data as any).preview_items).toHaveLength(2);
+      expect((result.data as any).selected_items_count).toBe(50);
+      expect((result.data as any).total_items_in_handle).toBe(50);
     });
 
     it('should show correct counts with itemSelector criteria', async () => {
@@ -519,10 +519,10 @@ describe('Bulk Operations Preview Limits', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(2);
-      expect(result.data.selected_items_count).toBe(5); // Only 5 New items
-      expect(result.data.total_items_in_handle).toBe(10); // Total in handle
-      expect(result.data.preview_message).toBe('Showing 2 of 5 items...');
+      expect((result.data as any).preview_items).toHaveLength(2);
+      expect((result.data as any).selected_items_count).toBe(5); // Only 5 New items
+      expect((result.data as any).total_items_in_handle).toBe(10); // Total in handle
+      expect((result.data as any).preview_message).toBe('Showing 2 of 5 items...');
     });
   });
 

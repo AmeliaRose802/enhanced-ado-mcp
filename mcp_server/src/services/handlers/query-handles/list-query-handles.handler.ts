@@ -70,7 +70,10 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
     // Build response with warnings if any
     const response = buildSuccessResponse(
       responseData,
-      { source: "list-query-handles" }
+      { 
+        source: "list-query-handles",
+        pagination: result.pagination
+      }
     );
     response.warnings = warnings;
     return response;

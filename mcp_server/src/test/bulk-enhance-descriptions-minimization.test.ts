@@ -119,10 +119,10 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.results).toHaveLength(2);
+      expect((result.data as any).results).toHaveLength(2);
       
       // Titles should NOT be present
-      result.data.results.forEach((item: any) => {
+      (result.data as any).results.forEach((item: any) => {
         expect(item.title).toBeUndefined();
         expect(item.work_item_id).toBeDefined();
       });
@@ -154,11 +154,11 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.results).toHaveLength(1);
+      expect((result.data as any).results).toHaveLength(1);
       
       // Titles SHOULD be present
-      expect(result.data.results[0].title).toBe('Work Item 101');
-      expect(result.data.results[0].work_item_id).toBe(101);
+      expect((result.data as any).results[0].title).toBe('Work Item 101');
+      expect((result.data as any).results[0].work_item_id).toBe(101);
     });
   });
 
@@ -188,10 +188,10 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.results).toHaveLength(1);
+      expect((result.data as any).results).toHaveLength(1);
       
       // Confidence should NOT be present
-      expect(result.data.results[0].confidence).toBeUndefined();
+      expect((result.data as any).results[0].confidence).toBeUndefined();
     });
 
     it('should omit high confidence scores even when includeConfidence: true', async () => {
@@ -220,10 +220,10 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.results).toHaveLength(1);
+      expect((result.data as any).results).toHaveLength(1);
       
       // High confidence (>= 0.85) should be omitted
-      expect(result.data.results[0].confidence).toBeUndefined();
+      expect((result.data as any).results[0].confidence).toBeUndefined();
     });
 
     it('should include low confidence scores when includeConfidence: true', async () => {
@@ -270,10 +270,10 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.results).toHaveLength(1);
+      expect((result.data as any).results).toHaveLength(1);
       
       // Low confidence (< 0.85) should be included
-      expect(result.data.results[0].confidence).toBe(0.70);
+      expect((result.data as any).results[0].confidence).toBe(0.70);
     });
   });
 
@@ -306,9 +306,9 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.results).toHaveLength(2);
+      expect((result.data as any).results).toHaveLength(2);
       
-      result.data.results.forEach((item: any) => {
+      (result.data as any).results.forEach((item: any) => {
         // Both should be omitted
         expect(item.title).toBeUndefined();
         expect(item.confidence).toBeUndefined();
@@ -349,3 +349,4 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
     });
   });
 });
+

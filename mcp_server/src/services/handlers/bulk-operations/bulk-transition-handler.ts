@@ -147,6 +147,17 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
 
+    // Check if any items were selected
+    if (selectedCount === 0) {
+      return {
+        success: false,
+        data: null,
+        metadata: { source: "bulk-transition-state-by-query-handle" },
+        errors: [`No items selected from query handle. Total items in handle: ${totalItems}. Selection criteria: ${JSON.stringify(itemSelector)}`],
+        warnings: ['Adjust your selection criteria or verify the query handle contains matching items']
+      };
+    }
+
     logger.info(`Bulk state transition: ${selectedCount} of ${totalItems} items to '${targetState}' (dry_run: ${dryRun}, validate: ${validateTransitions})`);
     if (itemSelector !== 'all') {
       logger.info(`Selection criteria: ${JSON.stringify(itemSelector)}`);
@@ -261,10 +272,39 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
         ? `Showing ${previewLimit} of ${selectedCount} items...` 
         : undefined;
 
-      // Count warnings from validation
-      const warnings = validationResults
-        .filter(r => r.validation.reason)
-        .map(r => `Work item ${r.id}: ${r.validation.reason}`);
+      // Collect warnings from validation or from checking work items directly
+      const warnings: string[] = [];
+      
+      // Add warnings from validation results
+      if (validationResults.length > 0) {
+        validationResults
+          .filter(r => r.validation.reason)
+          .forEach(r => warnings.push(`Work item ${r.id}: ${r.validation.reason}`));
+      } else {
+        // Even without explicit validation, warn about items already in target state or in Removed state
+        // Check fetched work items or fall back to workItemContext
+        if (workItems.length > 0) {
+          workItems.forEach(item => {
+            const currentState = item.fields['System.State'];
+            if (currentState === 'Removed') {
+              warnings.push(`Work item ${item.id}: Removed items will be filtered out during execution`);
+            } else if (currentState === targetState) {
+              warnings.push(`Work item ${item.id}: Work item already in target state '${targetState}'`);
+            }
+          });
+        } else {
+          // Fall back to workItemContext if we didn't fetch work items
+          selectedWorkItemIds.forEach((id: number) => {
+            const context = queryData.itemContext.find(item => item.id === id);
+            const currentState = context?.state || 'Unknown';
+            if (currentState === 'Removed') {
+              warnings.push(`Work item ${id}: Removed items will be filtered out during execution`);
+            } else if (currentState === targetState) {
+              warnings.push(`Work item ${id}: Work item already in target state '${targetState}'`);
+            }
+          });
+        }
+      }
 
       return {
         success: true,
@@ -289,7 +329,7 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
           itemSelector
         },
         errors: [],
-        warnings: warnings.length > 0 ? warnings.slice(0, 5) : []
+        warnings: warnings.length > 0 ? warnings.slice(0, 10) : []
       };
     }
 
@@ -419,9 +459,10 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
         comment: comment ? 'Comment added' : undefined,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
+        selected_items_count: selectedCount,
         item_selector: itemSelector,
-        successful: successCount,
-        failed: failureCount,
+        items_succeeded: successCount,
+        items_failed: failureCount,
         skipped: skippedCount,
         comments_added: comment ? commentsAdded : undefined,
         transitioned_items: transitionedItems,

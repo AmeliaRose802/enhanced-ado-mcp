@@ -57,6 +57,17 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
 
+    // Check if any items were selected
+    if (selectedCount === 0) {
+      return {
+        success: false,
+        data: null,
+        metadata: { source: "bulk-move-to-iteration" },
+        errors: [`No items selected from query handle. Total items in handle: ${totalItems}. Selection criteria: ${JSON.stringify(itemSelector)}`],
+        warnings: ['Adjust your selection criteria or verify the query handle contains matching items']
+      };
+    }
+
     logger.info(`Bulk move to iteration operation: ${selectedCount} of ${totalItems} work items to '${targetIterationPath}' (dry_run: ${dryRun})`);
     if (itemSelector !== 'all') {
       logger.info(`Selection criteria: ${JSON.stringify(itemSelector)}`);
@@ -249,6 +260,7 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
         : `${failureCount} of ${selectedCount} selected items failed (selection: ${JSON.stringify(itemSelector)})`;
       
       logger.warn(failureContext);
+      warnings.push(`${failureCount} item(s) failed to move`);
     }
 
     return {
@@ -258,9 +270,10 @@ export async function handleBulkMoveToIteration(config: ToolConfig, args: unknow
         target_iteration_path: targetIterationPath,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
+        selected_items_count: selectedCount,
         item_selector: itemSelector,
-        successful: successCount,
-        failed: failureCount,
+        items_succeeded: successCount,
+        items_failed: failureCount,
         children_updated: totalChildrenUpdated,
         results: results.map(r => ({
           id: r.workItemId,

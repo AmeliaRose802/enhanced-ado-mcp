@@ -135,9 +135,9 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(inspectResult.success).toBe(true);
-      expect(inspectResult.data.itemPreview).toBeDefined();
-      expect(inspectResult.data.work_item_count).toBe(5);
-      
+      expect((inspectResult.data as any).itemPreview).toBeDefined();
+      expect((inspectResult.data as any).work_item_count).toBe(5);
+
       // 3. Preview selection (critical bugs only)
       const mockSelectConfig = {
         name: 'wit-query-handle-select',
@@ -153,8 +153,8 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(previewResult.success).toBe(true);
-      expect(previewResult.data.selection_analysis.selected_items_count).toBe(2);
-      expect(previewResult.data.preview_items.every((i: any) => 
+      expect((previewResult.data as any).selection_analysis.selected_items_count).toBe(2);
+      expect((previewResult.data as any).preview_items.every((i: any) => 
         i.tags && i.tags.includes('critical')
       )).toBe(true);
       
@@ -176,7 +176,7 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(commentResult.success).toBe(true);
-      expect(commentResult.data.selected_items_count).toBe(2);
+      expect((commentResult.data as any).selected_items_count).toBe(2);
     });
   });
 
@@ -212,7 +212,7 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(updateResult.success).toBe(true);
-      expect(updateResult.data.selected_items_count).toBe(1);
+      expect((updateResult.data as any).selected_items_count).toBe(1);
     });
   });
 
@@ -243,7 +243,7 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(assignResult.success).toBe(true);
-      expect(assignResult.data.selected_items_count).toBe(4);
+      expect((assignResult.data as any).selected_items_count).toBe(4);
     });
   });
 
@@ -293,7 +293,7 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(commentResult.success).toBe(true);
-      expect(commentResult.data.selected_items_count).toBe(2);
+      expect((commentResult.data as any).selected_items_count).toBe(2);
     });
   });
 
@@ -342,7 +342,7 @@ describe('Selection Integration Tests', () => {
       });
       
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2);
+      expect((result.data as any).selected_items_count).toBe(2);
     });
   });
 
@@ -382,8 +382,8 @@ describe('Selection Integration Tests', () => {
         
         // Operation succeeds but affects 0 items
         expect(result.success).toBe(true);
-        expect(result.data.selected_items_count).toBe(0);
-        expect(result.data.summary).toContain('0 of 5');
+        expect((result.data as any).selected_items_count).toBe(0);
+        expect((result.data as any).summary).toContain('0 of 5');
       });
       
       it('should validate indices are within bounds', () => {
@@ -397,4 +397,4 @@ describe('Selection Integration Tests', () => {
       });
     });
   });
-});
+})

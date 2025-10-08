@@ -175,9 +175,9 @@ describe('Error Categorization System', () => {
       );
       
       expect(result.success).toBe(false);
-      expect(result.metadata.errorCategory).toBe(ErrorCategory.VALIDATION);
-      expect(result.metadata.errorMetadata).toBeDefined();
-      expect(result.metadata.errorMetadata.category).toBe(ErrorCategory.VALIDATION);
+      expect((result.metadata as any).errorCategory).toBe(ErrorCategory.VALIDATION);
+      expect((result.metadata as any).errorMetadata).toBeDefined();
+      expect((result.metadata as any).errorMetadata.category).toBe(ErrorCategory.VALIDATION);
     });
 
     it('should include error code in metadata when provided', () => {
@@ -188,14 +188,14 @@ describe('Error Categorization System', () => {
         ErrorCode.VALIDATION_SCHEMA
       );
       
-      expect(result.metadata.errorCode).toBe(ErrorCode.VALIDATION_SCHEMA);
-      expect(result.metadata.errorMetadata.code).toBe(ErrorCode.VALIDATION_SCHEMA);
+      expect((result.metadata as any).errorCode).toBe(ErrorCode.VALIDATION_SCHEMA);
+      expect((result.metadata as any).errorMetadata.code).toBe(ErrorCode.VALIDATION_SCHEMA);
     });
 
     it('should auto-categorize when category not provided', () => {
       const result = buildErrorResponse('Work item not found');
       
-      expect(result.metadata.errorCategory).toBe(ErrorCategory.NOT_FOUND);
+      expect((result.metadata as any).errorCategory).toBe(ErrorCategory.NOT_FOUND);
     });
 
     it('should maintain backwards compatibility with existing metadata', () => {
@@ -204,9 +204,9 @@ describe('Error Categorization System', () => {
         { source: 'test', customField: 'value' }
       );
       
-      expect(result.metadata.source).toBe('test');
-      expect(result.metadata.customField).toBe('value');
-      expect(result.metadata.samplingAvailable).toBe(true);
+      expect((result.metadata as any).source).toBe('test');
+      expect((result.metadata as any).customField).toBe('value');
+      expect((result.metadata as any).samplingAvailable).toBe(true);
     });
 
     it('should preserve error message in errors array', () => {
@@ -227,8 +227,8 @@ describe('Error Categorization System', () => {
       
       const result = buildValidationErrorResponse(zodError);
       
-      expect(result.metadata.errorCategory).toBe(ErrorCategory.VALIDATION);
-      expect(result.metadata.errorCode).toBe(ErrorCode.VALIDATION_SCHEMA);
+      expect((result.metadata as any).errorCategory).toBe(ErrorCategory.VALIDATION);
+      expect((result.metadata as any).errorCode).toBe(ErrorCode.VALIDATION_SCHEMA);
     });
 
     it('should maintain validation error formatting', () => {
@@ -257,8 +257,8 @@ describe('Error Categorization System', () => {
       
       const result = buildAzureCliErrorResponse(error);
       
-      expect(result.metadata.errorCategory).toBe(ErrorCategory.BUSINESS_LOGIC);
-      expect(result.metadata.errorCode).toBe(ErrorCode.AUTH_CLI_NOT_AVAILABLE);
+      expect((result.metadata as any).errorCategory).toBe(ErrorCategory.BUSINESS_LOGIC);
+      expect((result.metadata as any).errorCode).toBe(ErrorCode.AUTH_CLI_NOT_AVAILABLE);
     });
 
     it('should categorize not logged in as authentication error', () => {
@@ -270,8 +270,8 @@ describe('Error Categorization System', () => {
       
       const result = buildAzureCliErrorResponse(error);
       
-      expect(result.metadata.errorCategory).toBe(ErrorCategory.AUTHENTICATION);
-      expect(result.metadata.errorCode).toBe(ErrorCode.AUTH_NOT_LOGGED_IN);
+      expect((result.metadata as any).errorCategory).toBe(ErrorCategory.AUTHENTICATION);
+      expect((result.metadata as any).errorCode).toBe(ErrorCode.AUTH_NOT_LOGGED_IN);
     });
   });
 
@@ -281,7 +281,7 @@ describe('Error Categorization System', () => {
         const result = buildAuthenticationError('User not authenticated');
         
         expect(result.success).toBe(false);
-        expect(result.metadata.errorCategory).toBe(ErrorCategory.AUTHENTICATION);
+        expect((result.metadata as any).errorCategory).toBe(ErrorCategory.AUTHENTICATION);
         expect(result.errors[0]).toBe('User not authenticated');
       });
     });
@@ -291,9 +291,9 @@ describe('Error Categorization System', () => {
         const result = buildNetworkError('Connection failed');
         
         expect(result.success).toBe(false);
-        expect(result.metadata.errorCategory).toBe(ErrorCategory.NETWORK);
-        expect(result.metadata.errorCode).toBe(ErrorCode.NETWORK_CONNECTION_FAILED);
-        expect(result.metadata.errorMetadata.retryable).toBe(true);
+        expect((result.metadata as any).errorCategory).toBe(ErrorCategory.NETWORK);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.NETWORK_CONNECTION_FAILED);
+        expect((result.metadata as any).errorMetadata.retryable).toBe(true);
       });
     });
 
@@ -302,31 +302,31 @@ describe('Error Categorization System', () => {
         const result = buildNotFoundError('work-item', 12345);
         
         expect(result.success).toBe(false);
-        expect(result.metadata.errorCategory).toBe(ErrorCategory.NOT_FOUND);
-        expect(result.metadata.errorCode).toBe(ErrorCode.NOT_FOUND_WORK_ITEM);
+        expect((result.metadata as any).errorCategory).toBe(ErrorCategory.NOT_FOUND);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.NOT_FOUND_WORK_ITEM);
         expect(result.errors[0]).toContain('12345');
-        expect(result.metadata.resourceType).toBe('work-item');
-        expect(result.metadata.resourceId).toBe(12345);
+        expect((result.metadata as any).resourceType).toBe('work-item');
+        expect((result.metadata as any).resourceId).toBe(12345);
       });
 
       it('should create not found error for project', () => {
         const result = buildNotFoundError('project', 'MyProject');
         
-        expect(result.metadata.errorCode).toBe(ErrorCode.NOT_FOUND_PROJECT);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.NOT_FOUND_PROJECT);
         expect(result.errors[0]).toContain('MyProject');
       });
 
       it('should create not found error for query handle', () => {
         const result = buildNotFoundError('query-handle', 'qh_abc123');
         
-        expect(result.metadata.errorCode).toBe(ErrorCode.NOT_FOUND_QUERY_HANDLE);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.NOT_FOUND_QUERY_HANDLE);
         expect(result.errors[0]).toContain('qh_abc123');
       });
 
       it('should use generic not found code for unknown resource types', () => {
         const result = buildNotFoundError('custom-resource', 'res123');
         
-        expect(result.metadata.errorCode).toBe(ErrorCode.NOT_FOUND_RESOURCE);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.NOT_FOUND_RESOURCE);
       });
     });
 
@@ -335,8 +335,8 @@ describe('Error Categorization System', () => {
         const result = buildBusinessLogicError('Invalid state transition');
         
         expect(result.success).toBe(false);
-        expect(result.metadata.errorCategory).toBe(ErrorCategory.BUSINESS_LOGIC);
-        expect(result.metadata.errorCode).toBe(ErrorCode.BUSINESS_OPERATION_FAILED);
+        expect((result.metadata as any).errorCategory).toBe(ErrorCategory.BUSINESS_LOGIC);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.BUSINESS_OPERATION_FAILED);
       });
     });
 
@@ -345,10 +345,10 @@ describe('Error Categorization System', () => {
         const result = buildRateLimitError();
         
         expect(result.success).toBe(false);
-        expect(result.metadata.errorCategory).toBe(ErrorCategory.RATE_LIMIT);
-        expect(result.metadata.errorCode).toBe(ErrorCode.RATE_LIMIT_EXCEEDED);
+        expect((result.metadata as any).errorCategory).toBe(ErrorCategory.RATE_LIMIT);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.RATE_LIMIT_EXCEEDED);
         expect(result.errors[0]).toContain('Rate limit exceeded');
-        expect(result.metadata.errorMetadata.retryable).toBe(true);
+        expect((result.metadata as any).errorMetadata.retryable).toBe(true);
       });
 
       it('should create rate limit error with custom message', () => {
@@ -363,8 +363,8 @@ describe('Error Categorization System', () => {
         const result = buildPermissionError('Insufficient permissions to modify work item');
         
         expect(result.success).toBe(false);
-        expect(result.metadata.errorCategory).toBe(ErrorCategory.PERMISSION_DENIED);
-        expect(result.metadata.errorCode).toBe(ErrorCode.PERMISSION_DENIED);
+        expect((result.metadata as any).errorCategory).toBe(ErrorCategory.PERMISSION_DENIED);
+        expect((result.metadata as any).errorCode).toBe(ErrorCode.PERMISSION_DENIED);
       });
     });
   });
@@ -375,9 +375,9 @@ describe('Error Categorization System', () => {
       
       expect(result.success).toBe(false);
       expect(result.errors[0]).toBe('Some error');
-      expect(result.metadata.source).toBe('legacy');
-      expect(result.metadata.errorCategory).toBeDefined();
-      expect(result.metadata.errorMetadata).toBeDefined();
+      expect((result.metadata as any).source).toBe('legacy');
+      expect((result.metadata as any).errorCategory).toBeDefined();
+      expect((result.metadata as any).errorMetadata).toBeDefined();
     });
 
     it('should preserve existing metadata fields', () => {
@@ -387,9 +387,9 @@ describe('Error Categorization System', () => {
         customField: 123
       });
       
-      expect(result.metadata.tool).toBe('test-tool');
-      expect(result.metadata.timestamp).toBe('2025-01-01');
-      expect(result.metadata.customField).toBe(123);
+      expect((result.metadata as any).tool).toBe('test-tool');
+      expect((result.metadata as any).timestamp).toBe('2025-01-01');
+      expect((result.metadata as any).customField).toBe(123);
     });
   });
 
@@ -424,9 +424,9 @@ describe('Error Categorization System', () => {
         expect(error.success).toBe(false);
         expect(error.metadata.errorCategory).toBeDefined();
         expect(error.metadata.errorMetadata).toBeDefined();
-        expect(error.metadata.errorMetadata.category).toBeDefined();
-        expect(error.metadata.errorMetadata.timestamp).toBeDefined();
-        expect(typeof error.metadata.errorMetadata.retryable).toBe('boolean');
+        expect((error.metadata.errorMetadata as any).category).toBeDefined();
+        expect((error.metadata.errorMetadata as any).timestamp).toBeDefined();
+        expect(typeof (error.metadata.errorMetadata as any).retryable).toBe('boolean');
       });
     });
   });

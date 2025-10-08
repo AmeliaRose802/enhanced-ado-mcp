@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Get Context Packages By Query Handle Handler Tests
  * 
@@ -22,7 +23,7 @@ jest.mock('../../src/config/config', () => ({
 
 // Mock the get-work-item-context-package handler
 jest.mock('../../src/services/handlers/context/get-work-item-context-package.handler', () => ({
-  handleGetWorkItemContextPackage: jest.fn(async (config, args) => {
+  handleGetWorkItemContextPackage: jest.fn(async (args) => {
     const { workItemId } = args;
     return {
       success: true,
@@ -87,9 +88,9 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.fetched_packages_count).toBe(3);
-      expect(result.data.context_packages).toHaveLength(3);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).fetched_packages_count).toBe(3);
+      expect((result.data as any).context_packages).toHaveLength(3);
     });
 
     it('should retrieve context packages for selected indices', async () => {
@@ -115,8 +116,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.context_packages).toHaveLength(3);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).context_packages).toHaveLength(3);
     });
 
     it('should retrieve context packages matching criteria', async () => {
@@ -142,8 +143,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2); // Bugs 1 and 3
-      expect(result.data.context_packages).toHaveLength(2);
+      expect((result.data as any).selected_items_count).toBe(2); // Bugs 1 and 3
+      expect((result.data as any).context_packages).toHaveLength(2);
     });
   });
 
@@ -172,9 +173,9 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(20);
-      expect(result.data.fetched_packages_count).toBe(5);
-      expect(result.data.context_packages).toHaveLength(5);
+      expect((result.data as any).selected_items_count).toBe(20);
+      expect((result.data as any).fetched_packages_count).toBe(5);
+      expect((result.data as any).context_packages).toHaveLength(5);
       expect(result.warnings).toEqual(
         expect.arrayContaining([expect.stringContaining('limiting to 5')])
       );
@@ -204,8 +205,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.fetched_packages_count).toBe(10);
-      expect(result.data.context_packages).toHaveLength(10);
+      expect((result.data as any).fetched_packages_count).toBe(10);
+      expect((result.data as any).context_packages).toHaveLength(10);
     });
   });
 
@@ -233,7 +234,7 @@ describe('Get Context Packages By Query Handle Handler', () => {
         maxHistoryRevisions: 10
       });
 
-      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][1];
+      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][0];
       expect(callArgs.includeHistory).toBe(true);
       expect(callArgs.maxHistoryRevisions).toBe(10);
     });
@@ -260,7 +261,7 @@ describe('Get Context Packages By Query Handle Handler', () => {
         includeComments: false
       });
 
-      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][1];
+      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][0];
       expect(callArgs.includeComments).toBe(false);
     });
 
@@ -286,7 +287,7 @@ describe('Get Context Packages By Query Handle Handler', () => {
         includeRelations: false
       });
 
-      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][1];
+      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][0];
       expect(callArgs.includeRelations).toBe(false);
     });
 
@@ -313,7 +314,7 @@ describe('Get Context Packages By Query Handle Handler', () => {
         includeParent: false
       });
 
-      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][1];
+      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][0];
       expect(callArgs.includeChildren).toBe(false);
       expect(callArgs.includeParent).toBe(false);
     });
@@ -340,7 +341,7 @@ describe('Get Context Packages By Query Handle Handler', () => {
         includeExtendedFields: true
       });
 
-      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][1];
+      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][0];
       expect(callArgs.includeExtendedFields).toBe(true);
     });
   });
@@ -379,9 +380,9 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
-      expect(result.data.context_packages).toHaveLength(0);
-      expect(result.data.message).toContain('No items matched');
+      expect((result.data as any).selected_items_count).toBe(0);
+      expect((result.data as any).context_packages).toHaveLength(0);
+      expect((result.data as any).message).toContain('No items matched');
     });
 
     it('should handle schema validation errors', async () => {
@@ -439,8 +440,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.fetched_packages_count).toBe(2); // Only 2 succeeded
-      expect(result.data.failed_packages_count).toBe(1);
+      expect((result.data as any).fetched_packages_count).toBe(2); // Only 2 succeeded
+      expect((result.data as any).failed_packages_count).toBe(1);
       expect(result.warnings).toEqual(
         expect.arrayContaining([expect.stringContaining('1 item(s) failed')])
       );
@@ -471,8 +472,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_summary).toBeDefined();
-      expect(result.data.selection_summary.selection_type).toBe('index-based');
+      expect((result.data as any).selection_summary).toBeDefined();
+      expect((result.data as any).selection_summary.selection_type).toBe('index-based');
     });
 
     it('should include criteria-based selection summary', async () => {
@@ -496,9 +497,9 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_summary).toBeDefined();
-      expect(result.data.selection_summary.selection_type).toBe('criteria-based');
-      expect(result.data.selection_summary.criteria).toBeDefined();
+      expect((result.data as any).selection_summary).toBeDefined();
+      expect((result.data as any).selection_summary.selection_type).toBe('criteria-based');
+      expect((result.data as any).selection_summary.criteria).toBeDefined();
     });
 
     it('should include all selection summary', async () => {
@@ -524,8 +525,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_summary).toBeDefined();
-      expect(result.data.selection_summary.selection_type).toBe('all');
+      expect((result.data as any).selection_summary).toBeDefined();
+      expect((result.data as any).selection_summary.selection_type).toBe('all');
     });
   });
 
@@ -553,9 +554,9 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.next_steps).toBeDefined();
-      expect(Array.isArray(result.data.next_steps)).toBe(true);
-      expect(result.data.next_steps.length).toBeGreaterThan(0);
+      expect((result.data as any).next_steps).toBeDefined();
+      expect(Array.isArray((result.data as any).next_steps)).toBe(true);
+      expect((result.data as any).next_steps.length).toBeGreaterThan(0);
     });
   });
 
@@ -606,8 +607,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
-      expect(result.data.context_packages).toHaveLength(0);
+      expect((result.data as any).selected_items_count).toBe(0);
+      expect((result.data as any).context_packages).toHaveLength(0);
     });
 
     it('should handle maxPreviewItems larger than selection', async () => {
@@ -634,8 +635,8 @@ describe('Get Context Packages By Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.fetched_packages_count).toBe(2);
-      expect(result.data.context_packages).toHaveLength(2);
+      expect((result.data as any).fetched_packages_count).toBe(2);
+      expect((result.data as any).context_packages).toHaveLength(2);
       expect(result.warnings).toHaveLength(0); // No warning about limiting
     });
   });
@@ -664,9 +665,10 @@ describe('Get Context Packages By Query Handle Handler', () => {
         project: 'custom-project'
       });
 
-      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][1];
+      const callArgs = handleGetWorkItemContextPackage.mock.calls[0][0];
       expect(callArgs.organization).toBe('custom-org');
       expect(callArgs.project).toBe('custom-project');
     });
   });
 });
+

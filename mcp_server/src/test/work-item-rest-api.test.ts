@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test for the REST API-based work item creation
  */
@@ -19,11 +20,11 @@ async function testCreateWorkItemBasic() {
     
     if (result.success) {
       console.log("✅ Basic work item creation succeeded");
-      console.log(`   Work Item ID: ${result.data?.work_item?.id}`);
-      console.log(`   Title: ${result.data?.work_item?.title}`);
-      console.log(`   Type: ${result.data?.work_item?.type}`);
-      console.log(`   State: ${result.data?.work_item?.state}`);
-      console.log(`   URL: ${result.data?.work_item?.url}`);
+      console.log(`   Work Item ID: ${(result.data as any)?.work_item?.id}`);
+      console.log(`   Title: ${(result.data as any)?.work_item?.title}`);
+      console.log(`   Type: ${(result.data as any)?.work_item?.type}`);
+      console.log(`   State: ${(result.data as any)?.work_item?.state}`);
+      console.log(`   URL: ${(result.data as any)?.work_item?.url}`);
       console.log(`   Metadata source: ${result.metadata?.source}`);
     } else {
       console.log("❌ Basic work item creation failed");
@@ -70,15 +71,15 @@ async function testCreateWorkItemWithParent() {
     
     if (childResult.success) {
       console.log("✅ Child work item creation with parent linking succeeded");
-      console.log(`   Work Item ID: ${childResult.data?.work_item?.id}`);
-      console.log(`   Parent Linked: ${childResult.data?.work_item?.parent_linked}`);
+      console.log(`   Work Item ID: ${(childResult.data as any)?.work_item?.id}`);
+      console.log(`   Parent Linked: ${(childResult.data as any)?.work_item?.parent_linked}`);
       console.log(`   Metadata source: ${childResult.metadata?.source}`);
     } else {
       console.log("❌ Child work item creation failed");
       console.log(`   Errors: ${childResult.errors?.join(', ')}`);
     }
     
-    return childResult.success && childResult.data?.work_item?.parent_linked;
+    return childResult.success && (childResult.data as any)?.work_item?.parent_linked;
   } catch (error) {
     console.log("❌ Exception during parent/child work item creation:");
     console.log(`   ${error instanceof Error ? error.message : String(error)}`);
@@ -101,8 +102,8 @@ async function testCreateWorkItemWithAssignment() {
     
     if (result.success) {
       console.log("✅ Work item creation with @me assignment succeeded");
-      console.log(`   Work Item ID: ${result.data?.work_item?.id}`);
-      console.log(`   URL: ${result.data?.work_item?.url}`);
+      console.log(`   Work Item ID: ${(result.data as any)?.work_item?.id}`);
+      console.log(`   URL: ${(result.data as any)?.work_item?.url}`);
     } else {
       console.log("❌ Work item creation with @me assignment failed");
       console.log(`   Errors: ${result.errors?.join(', ')}`);
@@ -129,7 +130,7 @@ async function testMetadataSourceValidation() {
     
     if (result.success && result.metadata?.source === 'rest-api') {
       console.log("✅ Metadata source validation succeeded");
-      console.log(`   Source: ${result.metadata.source} (expected: rest-api)`);
+      console.log(`   Source: ${(result.metadata as any).source} (expected: rest-api)`);
     } else {
       console.log("❌ Metadata source validation failed");
       console.log(`   Expected: rest-api, Got: ${result.metadata?.source}`);
@@ -184,3 +185,4 @@ async function main() {
     process.exit(1);
   }
 }
+

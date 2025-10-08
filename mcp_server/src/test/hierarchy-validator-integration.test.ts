@@ -87,10 +87,10 @@ async function testHierarchyValidatorIntegration() {
     console.log('📝 Data keys:', Object.keys(result.data || {}));
     
     if (result.success && result.data) {
-      console.log(`   Analysis Context: ${result.data.analysisContext?.analyzedItemCount || 0} items`);
-      console.log(`   Health Summary: ${result.data.healthySummary?.itemsWellParented || 0} well-parented`);
-      console.log(`   Issues Found: ${result.data.issuesFound?.length || 0} items with issues`);
-      console.log(`   Recommendations: ${result.data.recommendations?.highPriorityActions?.length || 0} high priority actions`);
+      console.log(`   Analysis Context: ${(result.data as any).analysisContext?.analyzedItemCount || 0} items`);
+      console.log(`   Health Summary: ${(result.data as any).healthySummary?.itemsWellParented || 0} well-parented`);
+      console.log(`   Issues Found: ${(result.data as any).issuesFound?.length || 0} items with issues`);
+      console.log(`   Recommendations: ${(result.data as any).recommendations?.highPriorityActions?.length || 0} high priority actions`);
     }
     
     return result;

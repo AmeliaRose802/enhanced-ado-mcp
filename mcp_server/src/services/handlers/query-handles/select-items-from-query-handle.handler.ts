@@ -28,7 +28,10 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, itemSelector, previewCount = 10 } = parsed.data;
+    const { queryHandle, itemSelector, previewCount: requestedPreviewCount = 10 } = parsed.data;
+    
+    // Cap preview at 50 items (schema already validates max 50, but double-check)
+    const previewCount = Math.min(requestedPreviewCount, 50);
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
@@ -97,7 +100,13 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
         preview_items: previewItems,
         selection_summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`
       },
-      { source: "select-items-from-query-handle" }
+      { 
+        source: "select-items-from-query-handle",
+        queryHandle: queryHandle,
+        selectedCount: selectedCount,
+        totalItems: totalItems,
+        selectionType: selectionAnalysis.selection_type
+      }
     );
 
     if (selectedCount === 0) {

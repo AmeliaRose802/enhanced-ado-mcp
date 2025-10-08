@@ -740,19 +740,19 @@ Need to build a query?
 
 Need data?
 ├─ Individual items? → wit-get-work-items-by-query-wiql
-├─ Metrics/counts? → wit-query-analytics-odata
+├─ Metrics/counts? → wit-query-odata (wit-query-analytics-odata)
 └─ Full context? → wit-get-work-item-context-package
 
 Creating items?
-├─ Standard creation? → wit-create-new-item
+├─ Standard creation? → wit-create-item (wit-create-new-item)
 ├─ For Copilot? → wit-new-copilot-item
 └─ Assign existing? → wit-assign-to-copilot
 
 Analysis needed?
-├─ AI suitability? → wit-ai-assignment-analyzer
+├─ AI suitability? → wit-ai-assignment (wit-ai-assignment-analyzer)
 ├─ Quality check? → wit-intelligence-analyzer
 ├─ Find issues? → wit-detect-patterns
-└─ Validate hierarchy? → wit-validate-hierarchy
+└─ Validate hierarchy? → wit-analyze-hierarchy (wit-validate-hierarchy)
 
 Bulk operations?
 ├─ Add comments? → wit-bulk-comment-by-query-handle

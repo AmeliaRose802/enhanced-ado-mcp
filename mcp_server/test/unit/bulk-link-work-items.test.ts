@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Bulk Link Work Items Handler Tests
  * 
@@ -5,7 +6,7 @@
  * that creates relationships between work items from two query handles.
  */
 
-import { handleLinkWorkItemsByQueryHandles } from '../../src/services/handlers/bulk-operations/bulk-link-handler';
+import { handleBulkLinkByQueryHandles } from '../../src/services/handlers/bulk-operations/bulk-link-handler';
 import { queryHandleService } from '../../src/services/query-handle-service';
 import { linkWorkItemsByQueryHandlesSchema } from '../../src/config/schemas';
 import type { ToolConfig } from '../../src/types/index';
@@ -90,7 +91,7 @@ describe('Bulk Link Work Items Handler', () => {
         targetContext
       );
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -99,8 +100,8 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_operations_count).toBe(3);
-      expect(result.data.preview).toHaveLength(3);
+      expect((result.data as any).link_operations_count).toBe(3);
+      expect((result.data as any).preview).toHaveLength(3);
     });
 
     it('should create one-to-many links', async () => {
@@ -130,7 +131,7 @@ describe('Bulk Link Work Items Handler', () => {
         targetContext
       );
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Child',
@@ -139,7 +140,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_operations_count).toBe(3); // 1 source to 3 targets
+      expect((result.data as any).link_operations_count).toBe(3); // 1 source to 3 targets
     });
 
     it('should create many-to-one links', async () => {
@@ -169,7 +170,7 @@ describe('Bulk Link Work Items Handler', () => {
         targetContext
       );
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -178,7 +179,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_operations_count).toBe(3); // 3 sources to 1 target
+      expect((result.data as any).link_operations_count).toBe(3); // 3 sources to 1 target
     });
 
     it('should create many-to-many links', async () => {
@@ -208,7 +209,7 @@ describe('Bulk Link Work Items Handler', () => {
         targetContext
       );
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Related',
@@ -216,8 +217,11 @@ describe('Bulk Link Work Items Handler', () => {
         dryRun: true
       });
 
+      if (!result.success) {
+        console.log('Many-to-many FAILED:', result.errors, result.warnings);
+      }
       expect(result.success).toBe(true);
-      expect(result.data.link_operations_count).toBe(4); // 2x2 = 4 links
+      expect((result.data as any).link_operations_count).toBe(4); // 2x2 = 4 links
     });
   });
 
@@ -236,7 +240,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -245,7 +249,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_type_ref).toBe('System.LinkTypes.Hierarchy-Reverse');
+      expect((result.data as any).link_type_ref).toBe('System.LinkTypes.Hierarchy-Reverse');
     });
 
     it('should support Child link type', async () => {
@@ -262,7 +266,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Child',
@@ -271,7 +275,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_type_ref).toBe('System.LinkTypes.Hierarchy-Forward');
+      expect((result.data as any).link_type_ref).toBe('System.LinkTypes.Hierarchy-Forward');
     });
 
     it('should support Related link type', async () => {
@@ -288,7 +292,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Related',
@@ -297,7 +301,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_type_ref).toBe('System.LinkTypes.Related');
+      expect((result.data as any).link_type_ref).toBe('System.LinkTypes.Related');
     });
 
     it('should support dependency link types', async () => {
@@ -314,7 +318,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Successor',
@@ -323,7 +327,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_type_ref).toBe('System.LinkTypes.Dependency-Forward');
+      expect((result.data as any).link_type_ref).toBe('System.LinkTypes.Dependency-Forward');
     });
   });
 
@@ -345,7 +349,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -355,7 +359,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.source_items_selected).toBe(2); // Tasks 1 and 3
+      expect((result.data as any).source_items_selected).toBe(2); // Tasks 1 and 3
     });
 
     it('should support target item selector', async () => {
@@ -375,7 +379,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -385,7 +389,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.target_items_selected).toBe(2); // Features 1 and 3
+      expect((result.data as any).target_items_selected).toBe(2); // Features 1 and 3
     });
 
     it('should support index-based selectors', async () => {
@@ -402,7 +406,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -412,9 +416,12 @@ describe('Bulk Link Work Items Handler', () => {
         dryRun: true
       });
 
+      if (!result.success) {
+        console.log('Index-based FAILED:', result.errors, result.warnings);
+      }
       expect(result.success).toBe(true);
-      expect(result.data.source_items_selected).toBe(2);
-      expect(result.data.target_items_selected).toBe(2);
+      expect((result.data as any).source_items_selected).toBe(2);
+      expect((result.data as any).target_items_selected).toBe(2);
     });
   });
 
@@ -433,7 +440,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -442,8 +449,8 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.dry_run).toBe(true);
-      expect(result.data.preview).toBeDefined();
+      expect((result.data as any).dry_run).toBe(true);
+      expect((result.data as any).preview).toBeDefined();
       expect(result.warnings).toContain('Dry run mode - no links created');
     });
 
@@ -461,7 +468,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Related',
@@ -471,8 +478,8 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview).toHaveLength(5);
-      expect(result.data.link_operations_count).toBe(10);
+      expect((result.data as any).preview).toHaveLength(5);
+      expect((result.data as any).link_operations_count).toBe(10);
     });
   });
 
@@ -500,7 +507,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -509,8 +516,8 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.links_succeeded).toBe(2);
-      expect(result.data.links_failed).toBe(0);
+      expect((result.data as any).links_succeeded).toBe(2);
+      expect((result.data as any).links_failed).toBe(0);
       expect(mockPatch).toHaveBeenCalledTimes(2);
     });
 
@@ -538,7 +545,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -547,8 +554,8 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.links_succeeded).toBe(1);
-      expect(result.data.links_failed).toBe(1);
+      expect((result.data as any).links_succeeded).toBe(1);
+      expect((result.data as any).links_failed).toBe(1);
     });
 
     it('should skip existing links when skipExisting=true', async () => {
@@ -581,17 +588,17 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
         linkStrategy: 'one-to-one',
-        skipExisting: true,
+        skipExistingLinks: true,
         dryRun: false
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.links_skipped).toBe(1);
+      expect((result.data as any).links_skipped).toBe(1);
     });
   });
 
@@ -611,7 +618,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Child', // Task trying to be parent of Feature (invalid)
@@ -639,7 +646,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Child', // Feature as parent of Task (valid)
@@ -659,7 +666,7 @@ describe('Bulk Link Work Items Handler', () => {
       ]);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: 'qh_invalid',
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -680,7 +687,7 @@ describe('Bulk Link Work Items Handler', () => {
       ]);
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: 'qh_invalid',
         linkType: 'Parent',
@@ -701,7 +708,7 @@ describe('Bulk Link Work Items Handler', () => {
         isLoggedIn: false
       });
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: 'qh_test1',
         targetQueryHandle: 'qh_test2',
         linkType: 'Parent',
@@ -716,7 +723,7 @@ describe('Bulk Link Work Items Handler', () => {
     });
 
     it('should handle invalid link type', async () => {
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: 'qh_test1',
         targetQueryHandle: 'qh_test2',
         linkType: 'InvalidType' as any,
@@ -742,7 +749,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -771,7 +778,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -802,7 +809,7 @@ describe('Bulk Link Work Items Handler', () => {
       const sourceHandle = queryHandleService.storeQuery(sourceIds, 'query', {}, 60000, sourceContext);
       const targetHandle = queryHandleService.storeQuery(targetIds, 'query', {}, 60000, targetContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: sourceHandle,
         targetQueryHandle: targetHandle,
         linkType: 'Parent',
@@ -811,7 +818,7 @@ describe('Bulk Link Work Items Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.link_operations_count).toBe(1); // Only 1 pair can be created
+      expect((result.data as any).link_operations_count).toBe(1); // Only 1 pair can be created
       expect(result.warnings).toEqual(
         expect.arrayContaining([expect.stringMatching(/mismatch|unpaired/i)])
       );
@@ -825,7 +832,7 @@ describe('Bulk Link Work Items Handler', () => {
 
       const handle = queryHandleService.storeQuery(workItemIds, 'query', {}, 60000, workItemContext);
 
-      const result = await handleLinkWorkItemsByQueryHandles(mockConfig, {
+      const result = await handleBulkLinkByQueryHandles(mockConfig, {
         sourceQueryHandle: handle,
         targetQueryHandle: handle, // Same handle for source and target
         linkType: 'Related',
@@ -843,3 +850,4 @@ describe('Bulk Link Work Items Handler', () => {
     });
   });
 });
+

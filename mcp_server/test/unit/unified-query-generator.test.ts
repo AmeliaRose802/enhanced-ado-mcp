@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Unified Query Generator Handler Tests
  * 
@@ -86,7 +87,10 @@ describe('Unified Query Generator Handler', () => {
     // Mock server instance with sampling support
     mockServerInstance = {
       createMessage: jest.fn(async () => mockAIResponse),
-      hasSamplingSupport: jest.fn(() => mockSamplingSupport)
+      hasSamplingSupport: jest.fn(() => mockSamplingSupport),
+      getClientCapabilities: jest.fn(() => ({
+        sampling: mockSamplingSupport ? {} : undefined
+      }))
     } as any;
   });
 

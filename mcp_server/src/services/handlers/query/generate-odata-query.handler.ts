@@ -4,6 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { asToolData } from "../../../types/index.js";
 import type { WorkItemContext } from '../../../types/index.js';
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
@@ -72,7 +73,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
     let lastError: string | null = null;
     let isValid = false;
     let testResults: Record<string, unknown> | null = null;
-    let cumulativeUsage: Record<string, unknown> | null = null;
+    let cumulativeUsage: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | null = null;
 
     // Iterative generation and validation
     for (let attempt = 1; attempt <= maxIterations; attempt++) {
@@ -189,12 +190,12 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
           
           return {
             success: true,
-            data: {
+            data: asToolData({
               query: currentQuery,
               isValidated: testQuery && isValid,
               resultCount: 0,
               summary: `Successfully generated OData query but it returned 0 results. No query handle created.`
-            },
+            }),
             metadata: {
               source: "ai-sampling-odata-generator",
               validated: isValid,
@@ -207,7 +208,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         }
         
         // Extract work item IDs from OData results
-        const workItemIds = workItems.map((wi) => {
+        const workItemIds = workItems.map((wi: any) => {
           const wiRecord = wi as Record<string, unknown>;
           return (wiRecord.WorkItemId || wiRecord.workItemId || wiRecord.id) as number;
         });
@@ -251,7 +252,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         
         return {
           success: true,
-          data: {
+          data: asToolData({
             query_handle: handle,
             query: currentQuery,
             work_item_count: workItemIds.length,
@@ -267,7 +268,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
               "Always use dryRun: true first to preview changes before applying them"
             ],
             expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
-          },
+          }),
           metadata: {
             source: "ai-sampling-odata-generator",
             validated: isValid,
@@ -289,7 +290,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         // Fall back to returning just the query without handle
         return {
           success: true,
-          data: {
+          data: asToolData({
             query: currentQuery,
             isValidated: testQuery && isValid,
             ...(testResults && {
@@ -297,7 +298,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
               sampleResults: testResults.sampleResults
             }),
             summary: `Successfully generated OData query but failed to create query handle: ${error instanceof Error ? error.message : String(error)}`
-          },
+          }),
           metadata: {
             source: "ai-sampling-odata-generator",
             validated: isValid,
@@ -315,7 +316,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
 
     const result: ToolExecutionResult = {
       success: isValid,
-      data: {
+      data: asToolData({
         query: currentQuery,
         isValidated: testQuery && isValid,
         ...(testResults && {
@@ -325,7 +326,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         summary: isValid
           ? `Successfully generated OData query${testResults ? ` (found ${testResults.resultCount} results)` : ''}`
           : `Failed to generate valid query. Last error: ${lastError}`
-      },
+      }),
       metadata: {
         source: "ai-sampling-odata-generator",
         validated: isValid,

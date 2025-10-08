@@ -53,7 +53,7 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
 
     if (dryRun) {
       // Show preview of selected items
-      const previewLimit = maxPreviewItems || 5;
+      const previewLimit = maxPreviewItems;
       const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
         const context = queryData.itemContext.find(item => item.id === id);
         return {

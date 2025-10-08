@@ -4,6 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { asToolData } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { WorkItemContext } from '../../../types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
@@ -27,6 +28,11 @@ interface GenerateWiqlQueryArgs {
   maxResults?: number;
   includeFields?: string[];
   serverInstance?: MCPServer | MCPServerLike; // Server instance for sampling
+}
+
+interface TestResults {
+  resultCount: number;
+  sampleResults: Array<Record<string, unknown>>;
 }
 
 export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown, serverInstance: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
@@ -72,8 +78,8 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
     let currentQuery: string | null = null;
     let lastError: string | null = null;
     let isValid = false;
-    let testResults: Record<string, unknown> | null = null;
-    let cumulativeUsage: Record<string, unknown> | null = null;
+    let testResults: TestResults | null = null;
+    let cumulativeUsage: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | null = null;
 
     // Iterative generation and validation
     for (let attempt = 1; attempt <= maxIterations; attempt++) {
@@ -100,12 +106,22 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       // Accumulate usage information for metadata
       if (usage) {
         if (!cumulativeUsage) {
-          cumulativeUsage = { ...usage };
+          cumulativeUsage = {
+            inputTokens: typeof usage.inputTokens === 'number' ? usage.inputTokens : undefined,
+            outputTokens: typeof usage.outputTokens === 'number' ? usage.outputTokens : undefined,
+            totalTokens: typeof usage.totalTokens === 'number' ? usage.totalTokens : undefined
+          };
         } else {
           // Sum up token counts if present
-          if (usage.inputTokens) cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
-          if (usage.outputTokens) cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
-          if (usage.totalTokens) cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
+          if (typeof usage.inputTokens === 'number') {
+            cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
+          }
+          if (typeof usage.outputTokens === 'number') {
+            cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
+          }
+          if (typeof usage.totalTokens === 'number') {
+            cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
+          }
         }
       }
 
@@ -116,8 +132,8 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
         if (testResult.success) {
           isValid = true;
           testResults = {
-            resultCount: testResult.resultCount,
-            sampleResults: testResult.sampleResults
+            resultCount: testResult.resultCount!,
+            sampleResults: testResult.sampleResults!
           };
           logger.info(`✅ Query validated successfully on attempt ${attempt} (${testResult.resultCount} results)`);
           break;
@@ -202,7 +218,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
 
           return {
             success: true,
-            data: {
+            data: asToolData({
               query_handle: handle,
               query: currentQuery,
               work_items: queryResult.workItems,
@@ -228,7 +244,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
                   ...(queryResult.hasMore && { nextSkip: queryResult.skip + queryResult.top })
                 }
               })
-            },
+            }),
             metadata: {
               source: "ai-sampling-wiql-generator",
               validated: isValid,
@@ -252,13 +268,13 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
           logger.warn(`Query returned 0 results, skipping handle creation`);
           return {
             success: true,
-            data: {
+            data: asToolData({
               query: currentQuery,
               isValidated: testQuery && isValid,
               resultCount: 0,
               sampleResults: [],
               summary: `Successfully generated WIQL query (found 0 matching work items)`
-            },
+            }),
             metadata: {
               source: "ai-sampling-wiql-generator",
               validated: isValid,
@@ -276,7 +292,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
         logger.error('Failed to create query handle:', handleError);
         return {
           success: true,
-          data: {
+          data: asToolData({
             query: currentQuery,
             isValidated: testQuery && isValid,
             ...(testResults && {
@@ -286,7 +302,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
             summary: isValid
               ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ''}`
               : `Failed to generate valid query. Last error: ${lastError}`
-          },
+          }),
           metadata: {
             source: "ai-sampling-wiql-generator",
             validated: isValid,
@@ -306,7 +322,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
 
     const result: ToolExecutionResult = {
       success: isValid,
-      data: {
+      data: asToolData({
         query: currentQuery,
         isValidated: testQuery && isValid,
         ...(testResults && {
@@ -316,7 +332,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
         summary: isValid
           ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ''}`
           : `Failed to generate valid query. Last error: ${lastError}`
-      },
+      }),
       metadata: {
         source: "ai-sampling-wiql-generator",
         validated: isValid,

@@ -164,8 +164,12 @@ export function buildNotFoundError(
   
   const code = codeMap[resourceType.toLowerCase()] || ErrorCode.NOT_FOUND_RESOURCE;
   
+  const message = resourceType.toLowerCase() === 'query-handle'
+    ? `${resourceType} '${resourceId}' not found or expired`
+    : `${resourceType} '${resourceId}' not found`;
+  
   return buildErrorResponse(
-    `${resourceType} '${resourceId}' not found`,
+    message,
     { ...metadata, resourceType, resourceId },
     ErrorCategory.NOT_FOUND,
     code

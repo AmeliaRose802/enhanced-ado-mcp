@@ -57,7 +57,7 @@ The task involves fixing a specific bug with clear reproduction steps and accept
     
     console.log('✅ AI Assignment Analysis completed successfully!');
     console.log('📊 Result:');
-    const data = result.data as AIAssignmentResult;
+    const data = result.data as unknown as AIAssignmentResult;
     console.log(`   Decision: ${data.decision}`);
     console.log(`   Confidence: ${data.confidence}`);
     console.log(`   Risk Score: ${data.riskScore}`);

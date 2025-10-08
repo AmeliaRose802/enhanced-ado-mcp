@@ -55,7 +55,7 @@ export async function handleBulkRemoveByQueryHandle(config: ToolConfig, args: un
 
     if (dryRun) {
       // Show preview of selected items for destructive operation
-      const previewLimit = maxPreviewItems || 5;
+      const previewLimit = maxPreviewItems;
       const dryRunInfo = {
         totalInHandle: totalItems,
         selectedForRemoval: selectedCount,

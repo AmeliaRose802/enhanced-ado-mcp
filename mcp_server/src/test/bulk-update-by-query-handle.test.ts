@@ -79,8 +79,8 @@ describe('Bulk Update By Query Handle Handler', () => {
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.selected_items_count).toBe(3);
-      expect(result.data?.summary).toContain('all 3 items');
+      expect((result.data as any)?.selected_items_count).toBe(3);
+      expect((result.data as any)?.summary).toContain('all 3 items');
     });
 
     it('should log selection criteria for index-based selector', async () => {
@@ -111,9 +111,9 @@ describe('Bulk Update By Query Handle Handler', () => {
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.selected_items_count).toBe(2);
-      expect(result.data?.total_items_in_handle).toBe(4);
-      expect(result.data?.summary).toContain('2 selected items (from 4 total)');
+      expect((result.data as any)?.selected_items_count).toBe(2);
+      expect((result.data as any)?.total_items_in_handle).toBe(4);
+      expect((result.data as any)?.summary).toContain('2 selected items (from 4 total)');
     });
 
     it('should log selection criteria for criteria-based selector', async () => {
@@ -143,9 +143,9 @@ describe('Bulk Update By Query Handle Handler', () => {
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.selected_items_count).toBe(2); // Only Active items
-      expect(result.data?.total_items_in_handle).toBe(3);
-      expect(result.data?.summary).toContain('2 selected items (from 3 total)');
+      expect((result.data as any)?.selected_items_count).toBe(2); // Only Active items
+      expect((result.data as any)?.total_items_in_handle).toBe(3);
+      expect((result.data as any)?.summary).toContain('2 selected items (from 3 total)');
     });
   });
 
@@ -177,8 +177,8 @@ describe('Bulk Update By Query Handle Handler', () => {
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.preview_items).toHaveLength(3);
-      expect(result.data?.preview_items[0]).toHaveProperty('type');
+      expect((result.data as any)?.preview_items).toHaveLength(3);
+      expect((result.data as any)?.preview_items[0]).toHaveProperty('type');
     });
   });
 
@@ -209,7 +209,7 @@ describe('Bulk Update By Query Handle Handler', () => {
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.summary).toBe('DRY RUN: Would update 2 fields on all 2 items');
+      expect((result.data as any)?.summary).toBe('DRY RUN: Would update 2 fields on all 2 items');
     });
 
     it('should show selected vs total in dry run summary for filtered selector', async () => {
@@ -240,9 +240,9 @@ describe('Bulk Update By Query Handle Handler', () => {
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.summary).toBe('DRY RUN: Would update 1 fields on 2 selected items (from 5 total)');
-      expect(result.data?.selected_items_count).toBe(2);
-      expect(result.data?.total_items_in_handle).toBe(5);
+      expect((result.data as any)?.summary).toBe('DRY RUN: Would update 1 fields on 2 selected items (from 5 total)');
+      expect((result.data as any)?.selected_items_count).toBe(2);
+      expect((result.data as any)?.total_items_in_handle).toBe(5);
     });
   });
 
@@ -311,18 +311,19 @@ describe('Bulk Update By Query Handle Handler', () => {
           { op: 'replace', path: '/fields/System.State', value: 'Done' }
         ],
         itemSelector: 'all',
-        dryRun: true
+        dryRun: true,
+        maxPreviewItems: 5
       };
 
       const result = await handleBulkUpdateByQueryHandle(mockConfig, args);
 
       expect(result.success).toBe(true);
-      expect(result.data?.preview_items).toHaveLength(5); // Only first 5
-      expect(result.data?.selected_items_count).toBe(8); // But all 8 selected
-      expect(result.data?.preview_items[0]).toHaveProperty('work_item_id');
-      expect(result.data?.preview_items[0]).toHaveProperty('title');
-      expect(result.data?.preview_items[0]).toHaveProperty('state');
-      expect(result.data?.preview_items[0]).toHaveProperty('type');
+      expect((result.data as any)?.preview_items).toHaveLength(5); // Only first 5
+      expect((result.data as any)?.selected_items_count).toBe(8); // But all 8 selected
+      expect((result.data as any)?.preview_items[0]).toHaveProperty('work_item_id');
+      expect((result.data as any)?.preview_items[0]).toHaveProperty('title');
+      expect((result.data as any)?.preview_items[0]).toHaveProperty('state');
+      expect((result.data as any)?.preview_items[0]).toHaveProperty('type');
     });
   });
 
@@ -353,7 +354,7 @@ describe('Bulk Update By Query Handle Handler', () => {
 
       // Should default to selecting all items
       expect(result.success).toBe(true);
-      expect(result.data?.selected_items_count).toBe(3);
+      expect((result.data as any)?.selected_items_count).toBe(3);
     });
 
     it('should maintain existing error handling', async () => {

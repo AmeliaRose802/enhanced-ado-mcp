@@ -101,9 +101,9 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query).toBeDefined();
-      expect(result.data.query_handle).toBeUndefined();
-      expect(result.data.work_items).toBeUndefined();
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).query_handle).toBeUndefined();
+      expect((result.data as any).work_items).toBeUndefined();
     });
   });
 
@@ -184,18 +184,18 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query_handle).toBeDefined();
-      expect(result.data.query_handle).toMatch(/^qh_/);
-      expect(result.data.work_items).toBeDefined();
-      expect(result.data.work_items).toHaveLength(2);
-      expect(result.data.work_item_count).toBe(2);
-      expect(result.data.next_steps).toBeDefined();
-      expect(result.data.expires_at).toBeDefined();
-      expect(result.metadata.queryHandleMode).toBe(true);
-      expect(result.metadata.handle).toBe(result.data.query_handle);
+      expect((result.data as any).query_handle).toBeDefined();
+      expect((result.data as any).query_handle).toMatch(/^qh_/);
+      expect((result.data as any).work_items).toBeDefined();
+      expect((result.data as any).work_items).toHaveLength(2);
+      expect((result.data as any).work_item_count).toBe(2);
+      expect((result.data as any).next_steps).toBeDefined();
+      expect((result.data as any).expires_at).toBeDefined();
+      expect((result.metadata as any).queryHandleMode).toBe(true);
+      expect((result.metadata as any).handle).toBe((result.data as any).query_handle);
 
       // Verify the handle can be retrieved
-      const handle = result.data.query_handle;
+      const handle = (result.data as any).query_handle;
       const storedData = queryHandleService.getQueryData(handle);
       expect(storedData).toBeDefined();
       expect(storedData?.workItemIds).toEqual([123, 456]);
@@ -243,9 +243,9 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query).toBeDefined();
-      expect(result.data.query_handle).toBeUndefined();
-      expect(result.data.resultCount).toBe(0);
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).query_handle).toBeUndefined();
+      expect((result.data as any).resultCount).toBe(0);
       expect(result.warnings).toContain('⚠️ Query is valid but returned 0 results - you may need to adjust the criteria');
     });
 
@@ -309,9 +309,9 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.work_items[0]).toHaveProperty('additionalFields');
-      expect(result.data.work_items[0].additionalFields['System.Priority']).toBe(1);
-      expect(result.data.work_items[0].additionalFields['Microsoft.VSTS.Common.Severity']).toBe('High');
+      expect((result.data as any).work_items[0]).toHaveProperty('additionalFields');
+      expect((result.data as any).work_items[0].additionalFields['System.Priority']).toBe(1);
+      expect((result.data as any).work_items[0].additionalFields['Microsoft.VSTS.Common.Severity']).toBe('High');
 
       // Verify includeFields was passed to queryWorkItemsByWiql
       expect(mockQueryWorkItemsByWiql).toHaveBeenLastCalledWith(
@@ -355,8 +355,8 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query).toBeDefined();
-      expect(result.data.query_handle).toBeUndefined();
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).query_handle).toBeUndefined();
       expect(result.warnings.length).toBeGreaterThan(0);
       expect(result.warnings.some(w => w.includes('Failed to create query handle'))).toBe(true);
     });
@@ -407,7 +407,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         hasMore: false
       });
 
-      await handleGenerateWiqlQuery(
+      const result = await handleGenerateWiqlQuery(
         mockConfig,
         {
           description: 'Find active items',
@@ -419,7 +419,11 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         mockServerInstance
       );
 
+      // Verify the result was successful
+      expect(result.success).toBe(true);
+
       // Verify maxResults was passed as 'top' to queryWorkItemsByWiql
+      expect(mockQueryWorkItemsByWiql).toHaveBeenCalledTimes(2);
       expect(mockQueryWorkItemsByWiql).toHaveBeenLastCalledWith(
         expect.objectContaining({
           top: 50

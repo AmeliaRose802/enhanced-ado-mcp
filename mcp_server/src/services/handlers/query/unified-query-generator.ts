@@ -14,8 +14,8 @@ import { handleGenerateODataQuery } from "./generate-odata-query.handler.js";
 
 interface UnifiedQueryGeneratorArgs {
   description: string;
-  organization: string;
-  project: string;
+  organization?: string;
+  project?: string;
   maxIterations?: number;
   includeExamples?: boolean;
   testQuery?: boolean;
@@ -24,7 +24,6 @@ interface UnifiedQueryGeneratorArgs {
   returnQueryHandle?: boolean;
   maxResults?: number;
   includeFields?: string[];
-  serverInstance?: MCPServer | MCPServerLike;
 }
 
 interface FormatDecision {
@@ -105,19 +104,18 @@ export async function handleUnifiedQueryGenerator(
     if (result.success) {
       return {
         ...result,
-        data: {
+        data: typeof result.data === 'object' && result.data !== null ? {
           ...result.data,
-          formatDecision: {
-            selectedFormat: formatDecision.format,
-            confidence: formatDecision.confidence,
-            reasoning: formatDecision.reasoning
-          }
-        },
+          format: formatDecision.format
+        } : result.data,
         metadata: {
           ...result.metadata,
           intelligentRouting: true,
-          formatSelected: formatDecision.format,
-          selectionConfidence: formatDecision.confidence
+          formatDecision: {
+            format: formatDecision.format,
+            confidence: formatDecision.confidence,
+            reasoning: formatDecision.reasoning
+          }
         },
         warnings: [
           ...(result.warnings || []),

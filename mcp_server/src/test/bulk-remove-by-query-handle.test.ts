@@ -87,21 +87,21 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.dry_run).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.total_items_in_handle).toBe(3);
-      expect(result.data.preview_items).toHaveLength(3);
+      expect((result.data as any).dry_run).toBe(true);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).total_items_in_handle).toBe(3);
+      expect((result.data as any).preview_items).toHaveLength(3);
       
       // Check that preview items have all required fields
-      const firstItem = result.data.preview_items[0];
+      const firstItem = (result.data as any).preview_items[0];
       expect(firstItem).toHaveProperty('id');
       expect(firstItem).toHaveProperty('title');
       expect(firstItem).toHaveProperty('state');
       expect(firstItem).toHaveProperty('type');
       
       // Verify structured summary includes selection info
-      expect(result.data.summary).toContain('DRY RUN');
-      expect(result.data.summary).toContain('3 items');
+      expect((result.data as any).summary).toContain('DRY RUN');
+      expect((result.data as any).summary).toContain('3 items');
     });
 
     it('should show selection criteria in dry-run for criteria-based selection', async () => {
@@ -132,12 +132,12 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2); // Only Active items
-      expect(result.data.total_items_in_handle).toBe(4);
+      expect((result.data as any).selected_items_count).toBe(2); // Only Active items
+      expect((result.data as any).total_items_in_handle).toBe(4);
       
       // Verify summary shows selection criteria
-      expect(result.data.summary).toContain('selectionCriteria');
-      expect(result.data.summary).toContain('Active');
+      expect((result.data as any).summary).toContain('selectionCriteria');
+      expect((result.data as any).summary).toContain('Active');
     });
 
     it('should show "All items" in criteria for itemSelector="all"', async () => {
@@ -165,7 +165,7 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.summary).toContain('All items');
+      expect((result.data as any).summary).toContain('All items');
     });
 
     it('should limit preview items to 5 even with larger selection', async () => {
@@ -195,8 +195,8 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(10);
-      expect(result.data.preview_items).toHaveLength(5); // Limited to 5
+      expect((result.data as any).selected_items_count).toBe(10);
+      expect((result.data as any).preview_items).toHaveLength(5); // Limited to 5
     });
   });
 
@@ -269,8 +269,8 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.work_item_ids).toEqual([101, 103, 105]);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).work_item_ids).toEqual([101, 103, 105]);
     });
   });
 
@@ -301,7 +301,7 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
+      expect((result.data as any).selected_items_count).toBe(0);
     });
 
     it('should handle invalid indices gracefully', async () => {
@@ -331,7 +331,7 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
+      expect((result.data as any).selected_items_count).toBe(0);
     });
   });
 
@@ -362,7 +362,7 @@ describe('Bulk Remove By Query Handle Handler', () => {
 
       // Assert - Should default to selecting all items
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
     });
 
     it('should maintain existing error handling', async () => {

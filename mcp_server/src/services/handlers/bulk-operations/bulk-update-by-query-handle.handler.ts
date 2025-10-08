@@ -76,7 +76,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
 
     if (dryRun) {
       // Show preview of selected items and updates
-      const previewLimit = maxPreviewItems || 5;
+      const previewLimit = maxPreviewItems;
       const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
         const context = queryData.itemContext.find(item => item.id === id);
         return {

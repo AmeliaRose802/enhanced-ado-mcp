@@ -56,10 +56,10 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.total_items_in_handle).toBe(3);
-      expect(result.data.selection_analysis.selected_items_count).toBe(3);
-      expect(result.data.selection_analysis.selection_type).toBe('all');
-      expect(result.data.selection_summary).toContain('Selected 3 items out of 3');
+      expect((result.data as any).selection_analysis.total_items_in_handle).toBe(3);
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(3);
+      expect((result.data as any).selection_analysis.selection_type).toBe('all');
+      expect((result.data as any).selection_summary).toContain('Selected 3 items out of 3');
     });
 
     it('should return message for all items selected', async () => {
@@ -72,8 +72,8 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_summary).toContain('Selected 2 items out of 2');
-      expect(result.data.selection_analysis.selection_percentage).toBe('100.0%');
+      expect((result.data as any).selection_summary).toContain('Selected 2 items out of 2');
+      expect((result.data as any).selection_analysis.selection_percentage).toBe('100.0%');
     });
   });
 
@@ -102,13 +102,13 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.total_items_in_handle).toBe(5);
-      expect(result.data.selection_analysis.selected_items_count).toBe(3);
-      expect(result.data.selection_analysis.selection_type).toBe('index-based');
-      expect(result.data.preview_items).toHaveLength(3);
-      expect(result.data.preview_items[0].id).toBe(12345);
-      expect(result.data.preview_items[1].id).toBe(11111);
-      expect(result.data.preview_items[2].id).toBe(33333);
+      expect((result.data as any).selection_analysis.total_items_in_handle).toBe(5);
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(3);
+      expect((result.data as any).selection_analysis.selection_type).toBe('index-based');
+      expect((result.data as any).preview_items).toHaveLength(3);
+      expect((result.data as any).preview_items[0].id).toBe(12345);
+      expect((result.data as any).preview_items[1].id).toBe(11111);
+      expect((result.data as any).preview_items[2].id).toBe(33333);
     });
 
     it('should handle partial index matches', async () => {
@@ -121,8 +121,8 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(1);
-      expect(result.data.selection_analysis.selection_percentage).toBe('50.0%');
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(1);
+      expect((result.data as any).selection_analysis.selection_percentage).toBe('50.0%');
     });
   });
 
@@ -150,11 +150,11 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(2);
-      expect(result.data.selection_analysis.selection_type).toBe('criteria-based');
-      expect(result.data.selection_analysis.criteria_used).toContain('states');
-      expect(result.data.preview_items[0].state).toBe('Active');
-      expect(result.data.preview_items[1].state).toBe('Active');
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(2);
+      expect((result.data as any).selection_analysis.selection_type).toBe('criteria-based');
+      expect((result.data as any).selection_analysis.criteria_used).toContain('states');
+      expect((result.data as any).preview_items[0].state).toBe('Active');
+      expect((result.data as any).preview_items[1].state).toBe('Active');
     });
 
     it('should select items by tags criteria', async () => {
@@ -179,9 +179,9 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(2);
-      expect(result.data.preview_items[0].tags).toContain('Security');
-      expect(result.data.preview_items[1].tags).toContain('Security');
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(2);
+      expect((result.data as any).preview_items[0].tags).toContain('Security');
+      expect((result.data as any).preview_items[1].tags).toContain('Security');
     });
 
     it('should select items by daysInactive criteria', async () => {
@@ -207,9 +207,9 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(2);
-      expect(result.data.preview_items[0].id).toBe(67890);
-      expect(result.data.preview_items[1].id).toBe(11111);
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(2);
+      expect((result.data as any).preview_items[0].id).toBe(67890);
+      expect((result.data as any).preview_items[1].id).toBe(11111);
     });
 
     it('should combine multiple criteria with AND logic', async () => {
@@ -239,10 +239,10 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(2);
-      expect(result.data.selection_analysis.criteria_used).toEqual(['states', 'tags', 'daysInactiveMin']);
-      expect(result.data.preview_items[0].id).toBe(12345);
-      expect(result.data.preview_items[1].id).toBe(11111);
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(2);
+      expect((result.data as any).selection_analysis.criteria_used).toEqual(['states', 'tags', 'daysInactiveMin']);
+      expect((result.data as any).preview_items[0].id).toBe(12345);
+      expect((result.data as any).preview_items[1].id).toBe(11111);
     });
   });
 
@@ -268,9 +268,9 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(0);
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(0);
       expect(result.warnings).toContain('No items matched the selection criteria');
-      expect(result.data.preview_items).toHaveLength(0);
+      expect((result.data as any).preview_items).toHaveLength(0);
     });
   });
 
@@ -327,9 +327,9 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_analysis.selected_items_count).toBe(100);
-      expect(result.data.preview_items).toHaveLength(5);
-      expect(result.data.selection_analysis.showing_preview).toBe('5 of 100 selected items');
+      expect((result.data as any).selection_analysis.selected_items_count).toBe(100);
+      expect((result.data as any).preview_items).toHaveLength(5);
+      expect((result.data as any).selection_analysis.showing_preview).toBe('5 of 100 selected items');
     });
 
     it('should default preview to 10 items', async () => {
@@ -342,7 +342,7 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(10);
+      expect((result.data as any).preview_items).toHaveLength(10);
     });
 
     it('should cap preview at 50 items', async () => {
@@ -356,7 +356,7 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(50);
+      expect((result.data as any).preview_items).toHaveLength(50);
     });
 
     it('should include item details in preview', async () => {
@@ -387,7 +387,7 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      const preview = result.data.preview_items[0];
+      const preview = (result.data as any).preview_items[0];
       expect(preview.id).toBe(12345);
       expect(preview.title).toBe('Test Item');
       expect(preview.state).toBe('Active');
@@ -410,11 +410,11 @@ describe('Select Items From Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.metadata.source).toBe('select-items-from-query-handle');
-      expect(result.metadata.queryHandle).toBe(handle);
-      expect(result.metadata.selectedCount).toBe(2);
-      expect(result.metadata.totalItems).toBe(3);
-      expect(result.metadata.selectionType).toBe('index-based');
+      expect((result.metadata as any).source).toBe('select-items-from-query-handle');
+      expect((result.metadata as any).queryHandle).toBe(handle);
+      expect((result.metadata as any).selectedCount).toBe(2);
+      expect((result.metadata as any).totalItems).toBe(3);
+      expect((result.metadata as any).selectionType).toBe('index-based');
     });
   });
 });

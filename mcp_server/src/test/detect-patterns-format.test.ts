@@ -89,14 +89,14 @@ describe('Detect Patterns - Format Options', () => {
     
     expect(result.success).toBe(true);
     expect(result.data).toHaveProperty('categorized');
-    expect(result.data?.categorized).toHaveProperty('critical');
-    expect(result.data?.categorized).toHaveProperty('warning');
-    expect(result.data?.categorized).toHaveProperty('info');
+    expect((result.data as any)?.categorized).toHaveProperty('critical');
+    expect((result.data as any)?.categorized).toHaveProperty('warning');
+    expect((result.data as any)?.categorized).toHaveProperty('info');
     
     // Categorized format should have count and matches for each severity
-    expect(result.data?.categorized.warning).toHaveProperty('count');
-    expect(result.data?.categorized.warning).toHaveProperty('matches');
-    expect(Array.isArray(result.data?.categorized.warning.matches)).toBe(true);
+    expect((result.data as any)?.categorized.warning).toHaveProperty('count');
+    expect((result.data as any)?.categorized.warning).toHaveProperty('matches');
+    expect(Array.isArray((result.data as any)?.categorized.warning.matches)).toBe(true);
     
     // Should not have flat matches array at top level
     expect(result.data).not.toHaveProperty('matches');
@@ -115,9 +115,9 @@ describe('Detect Patterns - Format Options', () => {
     expect(result.data).toHaveProperty('byPattern');
     
     // Summary format should only have counts, not arrays
-    expect(result.data?.bySeverity).toHaveProperty('critical_count');
-    expect(result.data?.bySeverity).toHaveProperty('warning_count');
-    expect(result.data?.bySeverity).toHaveProperty('info_count');
+    expect((result.data as any)?.bySeverity).toHaveProperty('critical_count');
+    expect((result.data as any)?.bySeverity).toHaveProperty('warning_count');
+    expect((result.data as any)?.bySeverity).toHaveProperty('info_count');
     
     // Should not have matches arrays
     expect(result.data).not.toHaveProperty('matches');
@@ -132,11 +132,11 @@ describe('Detect Patterns - Format Options', () => {
     
     expect(result.success).toBe(true);
     expect(result.data).toHaveProperty('matches');
-    expect(Array.isArray(result.data?.matches)).toBe(true);
+    expect(Array.isArray((result.data as any)?.matches)).toBe(true);
     
     // Each match should have pattern field
-    if (result.data?.matches && result.data.matches.length > 0) {
-      const match = result.data.matches[0];
+    if ((result.data as any)?.matches && (result.data as any).matches.length > 0) {
+      const match = (result.data as any).matches[0];
       expect(match).toHaveProperty('pattern');
       expect(match).toHaveProperty('workItemId');
       expect(match).toHaveProperty('title');
@@ -172,13 +172,13 @@ describe('Detect Patterns - Format Options', () => {
     const result = await handleDetectPatterns(config, baseArgs);
     
     expect(result.success).toBe(true);
-    expect(result.data?.summary.totalMatches).toBeGreaterThan(0);
+    expect((result.data as any)?.summary.totalMatches).toBeGreaterThan(0);
     
     // Should detect the TODO pattern in work item 101
-    const allMatches = result.data?.categorized 
-      ? [...result.data.categorized.critical.matches, 
-         ...result.data.categorized.warning.matches, 
-         ...result.data.categorized.info.matches]
+    const allMatches = (result.data as any)?.categorized 
+      ? [...(result.data as any).categorized.critical.matches, 
+         ...(result.data as any).categorized.warning.matches, 
+         ...(result.data as any).categorized.info.matches]
       : [];
     
     const placeholderMatch = allMatches.find((m: any) => 
@@ -193,10 +193,10 @@ describe('Detect Patterns - Format Options', () => {
     expect(result.success).toBe(true);
     
     // Work items 102 and 103 have the same title
-    const allMatches = result.data?.categorized 
-      ? [...result.data.categorized.critical.matches, 
-         ...result.data.categorized.warning.matches, 
-         ...result.data.categorized.info.matches]
+    const allMatches = (result.data as any)?.categorized 
+      ? [...(result.data as any).categorized.critical.matches, 
+         ...(result.data as any).categorized.warning.matches, 
+         ...(result.data as any).categorized.info.matches]
       : [];
     
     const duplicateMatches = allMatches.filter((m: any) => 
@@ -211,10 +211,10 @@ describe('Detect Patterns - Format Options', () => {
     expect(result.success).toBe(true);
     
     // Work items 102 and 104 are in Active state but unassigned
-    const allMatches = result.data?.categorized 
-      ? [...result.data.categorized.critical.matches, 
-         ...result.data.categorized.warning.matches, 
-         ...result.data.categorized.info.matches]
+    const allMatches = (result.data as any)?.categorized 
+      ? [...(result.data as any).categorized.critical.matches, 
+         ...(result.data as any).categorized.warning.matches, 
+         ...(result.data as any).categorized.info.matches]
       : [];
     
     const unassignedMatches = allMatches.filter((m: any) => 
@@ -260,9 +260,9 @@ describe('Detect Patterns - Format Options', () => {
     expect(resultFlat.success).toBe(true);
     
     // All formats should report the same total match count
-    const categorizedTotal = resultCategorized.data?.summary.totalMatches;
-    const summaryTotal = resultSummary.data?.totalMatches;
-    const flatTotal = resultFlat.data?.matches?.length;
+    const categorizedTotal = (resultCategorized.data as any)?.summary.totalMatches;
+    const summaryTotal = (resultSummary.data as any)?.totalMatches;
+    const flatTotal = (resultFlat.data as any)?.matches?.length;
     
     expect(categorizedTotal).toBe(summaryTotal);
     expect(categorizedTotal).toBe(flatTotal);

@@ -4,6 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
+import { asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
@@ -296,14 +297,15 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
         },
         patternsSearched: patterns,
         message: `Found ${matches.length} pattern matches across ${workItems.length} work items`
-      };
+      } as any;
     }
 
     return buildSuccessResponse(
       responseData,
       {
         source: "detect-patterns",
-        matchCount: matches.length
+        matchCount: matches.length,
+        format
       }
     );
   } catch (error) {

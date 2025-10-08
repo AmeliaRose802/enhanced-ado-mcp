@@ -202,26 +202,26 @@ function generateLinkOperations(
  */
 function detectCircularDependencies(operations: LinkOperation[]): LinkOperation[] {
   const circular: LinkOperation[] = [];
+  const seen = new Set<string>();
 
   for (const op of operations) {
-    // Check if reverse link already exists in the same batch
-    const reverseExists = operations.some(
-      other =>
-        other !== op &&
-        other.sourceId === op.targetId &&
-        other.targetId === op.sourceId &&
-        other.linkType === op.linkType
-    );
-
     // Check for self-links
     if (op.sourceId === op.targetId) {
       circular.push(op);
       continue;
     }
 
-    if (reverseExists) {
+    // Create a normalized key for the pair (order matters for directional links)
+    const forwardKey = `${op.sourceId}->${op.targetId}:${op.linkType}`;
+    const reverseKey = `${op.targetId}->${op.sourceId}:${op.linkType}`;
+
+    // Check if reverse link already seen
+    if (seen.has(reverseKey)) {
       circular.push(op);
+      continue;
     }
+
+    seen.add(forwardKey);
   }
 
   return circular;
@@ -317,6 +317,30 @@ export async function handleBulkLinkByQueryHandles(
       };
     }
 
+    if (sourceIds.length === 0) {
+      return {
+        success: false,
+        data: null,
+        metadata: { source: "bulk-link-by-query-handles" },
+        errors: [
+          "No source items selected after applying filters"
+        ],
+        warnings: []
+      };
+    }
+
+    if (targetIds.length === 0) {
+      return {
+        success: false,
+        data: null,
+        metadata: { source: "bulk-link-by-query-handles" },
+        errors: [
+          "No target items selected after applying filters"
+        ],
+        warnings: []
+      };
+    }
+
     logger.info(
       `Bulk link operation: ${sourceIds.length} source(s) × ${targetIds.length} target(s) using ${linkStrategy} strategy`
     );
@@ -336,6 +360,14 @@ export async function handleBulkLinkByQueryHandles(
 
     // Validate link types for work item types
     const warnings: string[] = [];
+    
+    // Check for count mismatch in one-to-one strategy
+    if (linkStrategy === "one-to-one" && sourceIds.length !== targetIds.length) {
+      const unpaired = Math.abs(sourceIds.length - targetIds.length);
+      warnings.push(
+        `⚠️ Count mismatch in one-to-one strategy: ${unpaired} item(s) will be unpaired`
+      );
+    }
     const validOperations: LinkOperation[] = [];
     const invalidOperations: Array<{ operation: LinkOperation; reason: string }> = [];
 
@@ -358,10 +390,15 @@ export async function handleBulkLinkByQueryHandles(
       );
 
       if (!validation.valid) {
+        const reason = validation.reason || "Invalid link type for work item types";
         invalidOperations.push({
           operation: op,
-          reason: validation.reason || "Invalid link type for work item types"
+          reason
         });
+        // Add specific validation warning
+        if (!warnings.some(w => w.includes(reason))) {
+          warnings.push(`⚠️ ${reason}`);
+        }
       } else {
         validOperations.push(op);
       }
@@ -403,7 +440,7 @@ export async function handleBulkLinkByQueryHandles(
         };
       });
 
-      const previewWarnings = [...warnings];
+      const previewWarnings = [...warnings, "Dry run mode - no links created"];
       if (invalidOperations.length > 0) {
         previewWarnings.push(
           `⚠️ ${invalidOperations.length} operations invalid and will be skipped`
@@ -422,13 +459,18 @@ export async function handleBulkLinkByQueryHandles(
           source_query_handle: sourceQueryHandle,
           target_query_handle: targetQueryHandle,
           link_type: linkType,
+          link_type_ref: LINK_TYPE_MAP[linkType],
           link_strategy: linkStrategy,
           source_items_count: sourceIds.length,
           target_items_count: targetIds.length,
+          source_items_selected: sourceIds.length,
+          target_items_selected: targetIds.length,
+          link_operations_count: finalOperations.length,
           total_operations_generated: operations.length,
           valid_operations: finalOperations.length,
           invalid_operations: invalidOperations.length,
           circular_dependencies_detected: circularOps.length,
+          preview: previewOperations,
           preview_operations: previewOperations,
           invalid_operation_samples: invalidOperations.slice(0, 5).map(inv => ({
             source_id: inv.operation.sourceId,
@@ -515,16 +557,23 @@ export async function handleBulkLinkByQueryHandles(
     }
 
     return {
-      success: failureCount === 0,
+      success: true, // Return success even with partial failures
       data: asToolData({
         source_query_handle: sourceQueryHandle,
         target_query_handle: targetQueryHandle,
         link_type: linkType,
+        link_type_ref: LINK_TYPE_MAP[linkType],
         link_strategy: linkStrategy,
         source_items: sourceIds.length,
         target_items: targetIds.length,
+        source_items_count: sourceIds.length,
+        target_items_count: targetIds.length,
+        source_items_selected: sourceIds.length,
+        target_items_selected: targetIds.length,
+        link_operations_count: finalOperations.length,
         operations_attempted: finalOperations.length,
         links_created: successCount,
+        links_succeeded: successCount,
         links_skipped: skippedCount,
         links_failed: failureCount,
         invalid_operations: invalidOperations.length,

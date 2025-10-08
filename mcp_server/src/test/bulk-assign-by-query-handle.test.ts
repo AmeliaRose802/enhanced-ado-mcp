@@ -79,9 +79,9 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(4); // 2 New + 2 Active
-      expect(result.data.total_items_in_handle).toBe(5);
-      expect(result.data.summary).toContain('4 of 5');
+      expect((result.data as any).selected_items_count).toBe(4); // 2 New + 2 Active
+      expect((result.data as any).total_items_in_handle).toBe(5);
+      expect((result.data as any).summary).toContain('4 of 5');
     });
 
     it('should assign all items when itemSelector is "all"', async () => {
@@ -112,8 +112,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.total_items_in_handle).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).total_items_in_handle).toBe(3);
     });
 
     it('should assign only items at specified indices', async () => {
@@ -144,8 +144,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.work_item_ids).toEqual([101, 103, 105]);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).work_item_ids).toEqual([101, 103, 105]);
     });
   });
 
@@ -177,8 +177,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.summary).toContain('2 of 3');
-      expect(result.data.selected_items_count).toBe(2);
+      expect((result.data as any).summary).toContain('2 of 3');
+      expect((result.data as any).selected_items_count).toBe(2);
     });
 
     it('should show preview of items to be assigned', async () => {
@@ -208,11 +208,11 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toBeDefined();
-      expect(result.data.preview_items).toHaveLength(3);
-      expect(result.data.preview_items[0]).toHaveProperty('work_item_id');
-      expect(result.data.preview_items[0]).toHaveProperty('title');
-      expect(result.data.preview_items[0]).toHaveProperty('current_assignee');
+      expect((result.data as any).preview_items).toBeDefined();
+      expect((result.data as any).preview_items).toHaveLength(3);
+      expect((result.data as any).preview_items[0]).toHaveProperty('work_item_id');
+      expect((result.data as any).preview_items[0]).toHaveProperty('title');
+      expect((result.data as any).preview_items[0]).toHaveProperty('current_assignee');
     });
   });
 
@@ -244,8 +244,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
-      expect(result.data.summary).toContain('0 of 3');
+      expect((result.data as any).selected_items_count).toBe(0);
+      expect((result.data as any).summary).toContain('0 of 3');
     });
 
     it('should handle invalid indices gracefully', async () => {
@@ -276,7 +276,7 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
+      expect((result.data as any).selected_items_count).toBe(0);
     });
   });
 
@@ -324,8 +324,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(8);
-      expect(result.data.preview_items).toHaveLength(5); // Limited to 5
+      expect((result.data as any).selected_items_count).toBe(8);
+      expect((result.data as any).preview_items).toHaveLength(5); // Limited to 5
     });
   });
 
@@ -357,7 +357,7 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert - Should default to selecting all items
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
     });
 
     it('should maintain existing error handling', async () => {
@@ -403,8 +403,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.dry_run).toBe(true);
-      expect(result.data.summary).toContain('DRY RUN');
+      expect((result.data as any).dry_run).toBe(true);
+      expect((result.data as any).summary).toContain('DRY RUN');
     });
   });
 
@@ -437,7 +437,7 @@ describe('Bulk Assign By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2); // 101 and 104
+      expect((result.data as any).selected_items_count).toBe(2); // 101 and 104
     });
   });
 });

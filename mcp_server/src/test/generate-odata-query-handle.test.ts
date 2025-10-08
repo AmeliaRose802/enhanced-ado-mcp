@@ -99,9 +99,9 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query).toBeDefined();
-      expect(result.data.query_handle).toBeUndefined();
-      expect(result.data.work_items).toBeUndefined();
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).query_handle).toBeUndefined();
+      expect((result.data as any).work_items).toBeUndefined();
     });
   });
 
@@ -158,12 +158,12 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query_handle).toBeDefined();
-      expect(result.data.query_handle).toMatch(/^qh_/);
-      expect(result.data.work_items).toBeDefined();
-      expect(result.data.work_items).toHaveLength(1);
-      expect(result.data.work_item_count).toBe(1);
-      expect(result.metadata.queryHandleMode).toBe(true);
+      expect((result.data as any).query_handle).toBeDefined();
+      expect((result.data as any).query_handle).toMatch(/^qh_/);
+      expect((result.data as any).work_items).toBeDefined();
+      expect((result.data as any).work_items).toHaveLength(1);
+      expect((result.data as any).work_item_count).toBe(1);
+      expect((result.metadata as any).queryHandleMode).toBe(true);
     });
 
     it('should create a query handle and return work items', async () => {
@@ -230,18 +230,18 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query_handle).toBeDefined();
-      expect(result.data.query_handle).toMatch(/^qh_/);
-      expect(result.data.work_items).toBeDefined();
-      expect(result.data.work_items).toHaveLength(2);
-      expect(result.data.work_item_count).toBe(2);
-      expect(result.data.next_steps).toBeDefined();
-      expect(result.data.expires_at).toBeDefined();
-      expect(result.metadata.queryHandleMode).toBe(true);
-      expect(result.metadata.handle).toBe(result.data.query_handle);
+      expect((result.data as any).query_handle).toBeDefined();
+      expect((result.data as any).query_handle).toMatch(/^qh_/);
+      expect((result.data as any).work_items).toBeDefined();
+      expect((result.data as any).work_items).toHaveLength(2);
+      expect((result.data as any).work_item_count).toBe(2);
+      expect((result.data as any).next_steps).toBeDefined();
+      expect((result.data as any).expires_at).toBeDefined();
+      expect((result.metadata as any).queryHandleMode).toBe(true);
+      expect((result.metadata as any).handle).toBe((result.data as any).query_handle);
 
       // Verify the handle can be retrieved
-      const handle = result.data.query_handle;
+      const handle = (result.data as any).query_handle;
       const storedData = queryHandleService.getQueryData(handle);
       expect(storedData).toBeDefined();
       expect(storedData?.workItemIds).toEqual([123, 456]);
@@ -285,9 +285,9 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query).toBeDefined();
-      expect(result.data.query_handle).toBeUndefined();
-      expect(result.data.resultCount).toBe(0);
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).query_handle).toBeUndefined();
+      expect((result.data as any).resultCount).toBe(0);
       expect(result.warnings).toContain('⚠️ Query is valid but returned 0 results - you may need to adjust the criteria');
     });
 
@@ -338,8 +338,8 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.work_items[0]).toHaveProperty('Priority');
-      expect(result.data.work_items[0]).toHaveProperty('Severity');
+      expect((result.data as any).work_items[0]).toHaveProperty('Priority');
+      expect((result.data as any).work_items[0]).toHaveProperty('Severity');
     });
 
     it('should handle API errors gracefully and fallback to query-only response', async () => {
@@ -379,8 +379,8 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(result.data.query).toBeDefined();
-      expect(result.data.query_handle).toBeUndefined();
+      expect((result.data as any).query).toBeDefined();
+      expect((result.data as any).query_handle).toBeUndefined();
       expect(result.warnings.length).toBeGreaterThan(0);
       expect(result.warnings.some(w => w.includes('Failed to create query handle'))).toBe(true);
     });

@@ -4,6 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
+import { asToolData } from "../../../types/index.js";
 import { buildValidationErrorResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
@@ -133,11 +134,11 @@ export async function handleGetContextPackagesByQueryHandle(
           includeTags: true
         });
 
-        if (packageResult.success && packageResult.data) {
+        if (packageResult.success && packageResult.data && typeof packageResult.data === 'object' && 'contextPackage' in packageResult.data) {
           return {
             success: true,
             workItemId,
-            package: packageResult.data.contextPackage
+            package: (packageResult.data as any).contextPackage
           };
         } else {
           logger.warn(`Failed to fetch context package for work item ${workItemId}:`, packageResult.errors);
@@ -165,7 +166,7 @@ export async function handleGetContextPackagesByQueryHandle(
 
     if (failedPackages.length > 0) {
       warnings.push(
-        `Failed to fetch ${failedPackages.length} of ${itemsToFetch.length} context packages. ` +
+        `${failedPackages.length} item(s) failed to fetch context packages. ` +
         `IDs: ${failedPackages.map(p => p.workItemId).join(', ')}`
       );
     }
@@ -185,7 +186,7 @@ export async function handleGetContextPackagesByQueryHandle(
 
     return {
       success: true,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: queryData.workItemIds.length,
         selected_items_count: selectedWorkItemIds.length,
@@ -200,7 +201,7 @@ export async function handleGetContextPackagesByQueryHandle(
           "Use this rich context for AI-powered analysis and decision making",
           "Combine with bulk operation tools to take action on analyzed items"
         ]
-      },
+      }),
       metadata: {
         source: "get-context-packages-by-query-handle",
         query_handle_info: {

@@ -115,11 +115,11 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.itemPreview).toBeDefined();
-      expect(Array.isArray(result.data.itemPreview)).toBe(true);
+      expect((result.data as any).itemPreview).toBeDefined();
+      expect(Array.isArray((result.data as any).itemPreview)).toBe(true);
       
       // Check first item has index, id, title, state, type
-      const firstItem = result.data.itemPreview[0];
+      const firstItem = (result.data as any).itemPreview[0];
       expect(firstItem.index).toBe(0);
       expect(firstItem.id).toBe(123);
       expect(firstItem.title).toBe('Fix login bug');
@@ -137,7 +137,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      const itemWithTags = result.data.itemPreview.find((item: any) => item.id === 123);
+      const itemWithTags = (result.data as any).itemPreview.find((item: any) => item.id === 123);
       expect(itemWithTags.tags).toEqual(['frontend', 'urgent']);
     });
   });
@@ -152,16 +152,16 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selectionHints).toBeDefined();
-      expect(Array.isArray(result.data.selectionHints)).toBe(true);
-      expect(result.data.selectionHints.length).toBeGreaterThan(0);
+      expect((result.data as any).selectionHints).toBeDefined();
+      expect(Array.isArray((result.data as any).selectionHints)).toBe(true);
+      expect((result.data as any).selectionHints.length).toBeGreaterThan(0);
       
       // Check for specific hints
-      expect(result.data.selectionHints).toContain('Use index 0 to select the first item');
-      expect(result.data.selectionHints).toContain('Use [0, 2, 5] to select specific items by index');
-      expect(result.data.selectionHints.some((hint: string) => hint.includes('states'))).toBe(true);
-      expect(result.data.selectionHints.some((hint: string) => hint.includes('tags'))).toBe(true);
-      expect(result.data.selectionHints.some((hint: string) => hint.includes('daysInactiveMin'))).toBe(true);
+      expect((result.data as any).selectionHints).toContain('Use index 0 to select the first item');
+      expect((result.data as any).selectionHints).toContain('Use [0, 2, 5] to select specific items by index');
+      expect((result.data as any).selectionHints.some((hint: string) => hint.includes('states'))).toBe(true);
+      expect((result.data as any).selectionHints.some((hint: string) => hint.includes('tags'))).toBe(true);
+      expect((result.data as any).selectionHints.some((hint: string) => hint.includes('daysInactiveMin'))).toBe(true);
     });
   });
 
@@ -175,11 +175,11 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.availableSelectionCriteria).toBeDefined();
-      expect(Array.isArray(result.data.availableSelectionCriteria)).toBe(true);
+      expect((result.data as any).availableSelectionCriteria).toBeDefined();
+      expect(Array.isArray((result.data as any).availableSelectionCriteria)).toBe(true);
       
       // Check for states, types, and tags summaries
-      const criteriaStr = result.data.availableSelectionCriteria.join(' ');
+      const criteriaStr = (result.data as any).availableSelectionCriteria.join(' ');
       expect(criteriaStr).toContain('States available:');
       expect(criteriaStr).toContain('Work item types:');
       expect(criteriaStr).toContain('Tags available:');
@@ -199,7 +199,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      const statesLine = result.data.availableSelectionCriteria.find((line: string) => 
+      const statesLine = (result.data as any).availableSelectionCriteria.find((line: string) => 
         line.startsWith('States available:')
       );
       
@@ -217,7 +217,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      const typesLine = result.data.availableSelectionCriteria.find((line: string) => 
+      const typesLine = (result.data as any).availableSelectionCriteria.find((line: string) => 
         line.startsWith('Work item types:')
       );
       
@@ -237,11 +237,11 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selectionStats).toBeDefined();
-      expect(result.data.selectionStats.totalItems).toBe(4);
-      expect(result.data.selectionStats.byState).toBeDefined();
-      expect(result.data.selectionStats.byType).toBeDefined();
-      expect(result.data.selectionStats.byTags).toBeDefined();
+      expect((result.data as any).selectionStats).toBeDefined();
+      expect((result.data as any).selectionStats.totalItems).toBe(4);
+      expect((result.data as any).selectionStats.byState).toBeDefined();
+      expect((result.data as any).selectionStats.byType).toBeDefined();
+      expect((result.data as any).selectionStats.byTags).toBeDefined();
     });
 
     it('should have accurate state statistics', async () => {
@@ -253,7 +253,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selectionStats.byState).toEqual({
+      expect((result.data as any).selectionStats.byState).toEqual({
         Active: 2,
         New: 1,
         Done: 1
@@ -269,7 +269,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selectionStats.byType).toEqual({
+      expect((result.data as any).selectionStats.byType).toEqual({
         Bug: 1,
         Task: 2,
         Feature: 1
@@ -285,7 +285,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selectionStats.byTags).toEqual({
+      expect((result.data as any).selectionStats.byTags).toEqual({
         frontend: 1,
         urgent: 1,
         docs: 1,
@@ -309,12 +309,12 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.exampleSelectors).toBeDefined();
-      expect(Array.isArray(result.data.exampleSelectors)).toBe(true);
-      expect(result.data.exampleSelectors.length).toBeGreaterThan(0);
+      expect((result.data as any).exampleSelectors).toBeDefined();
+      expect(Array.isArray((result.data as any).exampleSelectors)).toBe(true);
+      expect((result.data as any).exampleSelectors.length).toBeGreaterThan(0);
       
       // Check examples reference actual data
-      const examplesStr = result.data.exampleSelectors.join(' ');
+      const examplesStr = (result.data as any).exampleSelectors.join(' ');
       expect(examplesStr).toContain('all 4 items');
       expect(examplesStr).toContain('Active');
     });
@@ -329,7 +329,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.exampleSelectors).toBeUndefined();
+      expect((result.data as any).exampleSelectors).toBeUndefined();
     });
 
     it('should omit contextual selection examples by default', async () => {
@@ -341,7 +341,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.exampleSelectors).toBeUndefined();
+      expect((result.data as any).exampleSelectors).toBeUndefined();
     });
 
     it('should include stale items example when applicable and includeExamples is true', async () => {
@@ -354,7 +354,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      const staleExample = result.data.exampleSelectors.find((ex: string) => 
+      const staleExample = (result.data as any).exampleSelectors.find((ex: string) => 
         ex.includes('daysInactiveMin')
       );
       
@@ -395,8 +395,8 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.itemPreview).toBeDefined();
-      expect(result.data.selectionStats).toBeDefined();
+      expect((result.data as any).itemPreview).toBeDefined();
+      expect((result.data as any).selectionStats).toBeDefined();
     });
 
     it('should work when includePreview is false', async () => {
@@ -408,10 +408,10 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.itemPreview).toBeUndefined();
-      expect(result.data.selectionHints).toBeUndefined();
-      expect(result.data.availableSelectionCriteria).toBeUndefined();
-      expect(result.data.selectionStats).toBeUndefined();
+      expect((result.data as any).itemPreview).toBeUndefined();
+      expect((result.data as any).selectionHints).toBeUndefined();
+      expect((result.data as any).availableSelectionCriteria).toBeUndefined();
+      expect((result.data as any).selectionStats).toBeUndefined();
     });
 
     it('should handle items without tags', async () => {
@@ -435,7 +435,7 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selectionStats.byTags).toEqual({});
+      expect((result.data as any).selectionStats.byTags).toEqual({});
     });
   });
 
@@ -449,9 +449,9 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview).toBeDefined();
-      expect(result.data.preview.showing).toBeDefined();
-      expect(result.data.preview.items).toBeDefined();
+      expect((result.data as any).preview).toBeDefined();
+      expect((result.data as any).preview.showing).toBeDefined();
+      expect((result.data as any).preview.items).toBeDefined();
     });
 
     it('should maintain legacy selection_info format', async () => {
@@ -463,11 +463,11 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_info).toBeDefined();
-      expect(result.data.selection_info.total_selectable_indices).toBeDefined();
-      expect(result.data.selection_info.available_criteria_tags).toBeDefined();
+      expect((result.data as any).selection_info).toBeDefined();
+      expect((result.data as any).selection_info.total_selectable_indices).toBeDefined();
+      expect((result.data as any).selection_info.available_criteria_tags).toBeDefined();
       // selection_examples should be omitted by default
-      expect(result.data.selection_info.selection_examples).toBeUndefined();
+      expect((result.data as any).selection_info.selection_examples).toBeUndefined();
     });
 
     it('should include selection_examples in legacy format when includeExamples is true', async () => {
@@ -480,10 +480,10 @@ describe('Inspect Query Handle Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selection_info).toBeDefined();
-      expect(result.data.selection_info.selection_examples).toBeDefined();
-      expect(result.data.selection_info.selection_examples.select_all).toBeDefined();
-      expect(result.data.selection_info.selection_examples.select_first_item).toBeDefined();
+      expect((result.data as any).selection_info).toBeDefined();
+      expect((result.data as any).selection_info.selection_examples).toBeDefined();
+      expect((result.data as any).selection_info.selection_examples.select_all).toBeDefined();
+      expect((result.data as any).selection_info.selection_examples.select_first_item).toBeDefined();
     });
   });
 });

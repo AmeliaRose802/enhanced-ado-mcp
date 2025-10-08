@@ -86,7 +86,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered intelligence analysis (uses sampling if available)
-  if (name === 'wit-ai-intelligence') {
+  if (name === 'wit-intelligence-analyzer') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -96,7 +96,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Enhanced AI assignment analysis (uses sampling if available)
-  if (name === 'wit-ai-assignment') {
+  if (name === 'wit-ai-assignment-analyzer') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -106,7 +106,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Personal workload analysis (uses sampling if available)
-  if (name === 'wit-ai-workload') {
+  if (name === 'wit-personal-workload-analyzer') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -116,7 +116,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Sprint planning analysis (uses sampling if available)
-  if (name === 'wit-ai-sprint-planning') {
+  if (name === 'wit-sprint-planning-analyzer') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -126,7 +126,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered tool discovery (uses sampling if available)
-  if (name === 'wit-ai-discover-tools') {
+  if (name === 'wit-discover-tools') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -240,21 +240,21 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Bulk intelligent enhancement tools (AI-powered)
-  if (name === 'wit-ai-bulk-enhance-descriptions') {
+  if (name === 'wit-bulk-enhance-descriptions-by-query-handle') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkEnhanceDescriptions(config, args, serverInstance);
   }
 
-  if (name === 'wit-ai-bulk-story-points') {
+  if (name === 'wit-bulk-assign-story-points-by-query-handle') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkAssignStoryPoints(config, args, serverInstance);
   }
 
-  if (name === 'wit-ai-bulk-acceptance-criteria') {
+  if (name === 'wit-bulk-add-acceptance-criteria-by-query-handle') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -262,7 +262,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered WIQL query generator
-  if (name === 'wit-ai-generate-wiql') {
+  if (name === 'wit-generate-wiql-query') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -270,7 +270,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered OData query generator
-  if (name === 'wit-ai-generate-odata') {
+  if (name === 'wit-generate-odata-query') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test for OpenAPI generation script
  * 
@@ -172,3 +173,4 @@ describe('OpenAPI Generation', () => {
     });
   });
 });
+

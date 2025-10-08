@@ -35,7 +35,7 @@ describe('Query Generator Usage Tracking', () => {
 
       // Verify usage IS in metadata
       expect(result.metadata).toBeDefined();
-      expect(result.metadata.usage).toBeDefined();
+      expect((result.metadata as any).usage).toBeDefined();
     });
 
     it('should accumulate usage across multiple iterations', () => {
@@ -88,7 +88,7 @@ describe('Query Generator Usage Tracking', () => {
       expect((result.data as any).usage).toBeUndefined();
 
       // Verify no usage in metadata (which is valid)
-      expect(result.metadata.usage).toBeUndefined();
+      expect((result.metadata as any).usage).toBeUndefined();
     });
 
     it('should maintain proper response structure for WIQL generator', () => {
@@ -118,16 +118,16 @@ describe('Query Generator Usage Tracking', () => {
       };
 
       // Verify data has all expected fields EXCEPT usage
-      expect(wiqlResult.data.query).toBeDefined();
-      expect(wiqlResult.data.isValidated).toBe(true);
-      expect(wiqlResult.data.resultCount).toBe(42);
-      expect(wiqlResult.data.sampleResults).toBeDefined();
-      expect(wiqlResult.data.summary).toContain("42 matching work items");
+      expect((wiqlResult.data as any).query).toBeDefined();
+      expect((wiqlResult.data as any).isValidated).toBe(true);
+      expect((wiqlResult.data as any).resultCount).toBe(42);
+      expect((wiqlResult.data as any).sampleResults).toBeDefined();
+      expect((wiqlResult.data as any).summary).toContain("42 matching work items");
       expect((wiqlResult.data as any).usage).toBeUndefined();
 
       // Verify metadata has usage
-      expect(wiqlResult.metadata.usage).toBeDefined();
-      expect(wiqlResult.metadata.usage.totalTokens).toBe(237);
+      expect((wiqlResult.metadata as any).usage).toBeDefined();
+      expect((wiqlResult.metadata as any).usage.totalTokens).toBe(237);
     });
 
     it('should maintain proper response structure for OData generator', () => {
@@ -157,14 +157,14 @@ describe('Query Generator Usage Tracking', () => {
       };
 
       // Verify data has all expected fields EXCEPT usage
-      expect(odataResult.data.query).toBeDefined();
-      expect(odataResult.data.isValidated).toBe(true);
-      expect(odataResult.data.resultCount).toBe(28);
+      expect((odataResult.data as any).query).toBeDefined();
+      expect((odataResult.data as any).isValidated).toBe(true);
+      expect((odataResult.data as any).resultCount).toBe(28);
       expect((odataResult.data as any).usage).toBeUndefined();
 
       // Verify metadata has usage
-      expect(odataResult.metadata.usage).toBeDefined();
-      expect(odataResult.metadata.usage.totalTokens).toBe(240);
+      expect((odataResult.metadata as any).usage).toBeDefined();
+      expect((odataResult.metadata as any).usage.totalTokens).toBe(240);
     });
   });
 

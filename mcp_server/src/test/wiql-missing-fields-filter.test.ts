@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test for WIQL query filtering by missing description and acceptance criteria
  */
@@ -185,3 +186,4 @@ async function main() {
 }
 
 main();
+

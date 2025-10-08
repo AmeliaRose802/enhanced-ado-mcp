@@ -94,7 +94,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
 
     if (dryRun) {
       // Show preview with template substitution for first few items
-      const previewLimit = maxPreviewItems || 5;
+      const previewLimit = maxPreviewItems;
       const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
         const context = queryData.workItemContext?.get(id);
         const substitutedComment = substituteTemplate(comment, id, context);

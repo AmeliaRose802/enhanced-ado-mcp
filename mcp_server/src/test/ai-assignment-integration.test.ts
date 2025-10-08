@@ -63,7 +63,7 @@ async function testToolIntegration() {
     console.log('📝 Data keys:', Object.keys(result.data || {}));
     
     if (result.success && result.data) {
-      const data = result.data as AIAssignmentResult;
+      const data = result.data as unknown as AIAssignmentResult;
       console.log(`   Decision: ${data.decision}`);
       console.log(`   Confidence: ${data.confidence}`);
       console.log(`   Risk Score: ${data.riskScore}`);

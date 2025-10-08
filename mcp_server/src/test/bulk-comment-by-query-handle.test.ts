@@ -78,8 +78,8 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(5);
-      expect(result.data.total_items_in_handle).toBe(5);
+      expect((result.data as any).selected_items_count).toBe(5);
+      expect((result.data as any).total_items_in_handle).toBe(5);
     });
 
     it('should default to "all" when itemSelector not provided', async () => {
@@ -109,7 +109,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
     });
   });
 
@@ -142,9 +142,9 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.total_items_in_handle).toBe(5);
-      expect(result.data.preview_items).toHaveLength(3);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).total_items_in_handle).toBe(5);
+      expect((result.data as any).preview_items).toHaveLength(3);
     });
 
     it('should handle single index selection', async () => {
@@ -175,7 +175,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(1);
+      expect((result.data as any).selected_items_count).toBe(1);
     });
   });
 
@@ -209,8 +209,8 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
-      expect(result.data.total_items_in_handle).toBe(5);
+      expect((result.data as any).selected_items_count).toBe(3);
+      expect((result.data as any).total_items_in_handle).toBe(5);
     });
 
     it('should comment on items matching multiple states', async () => {
@@ -241,7 +241,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
     });
   });
 
@@ -286,10 +286,10 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.has_template_variables).toBe(true);
-      expect(result.data.preview_items).toHaveLength(2);
-      expect(result.data.preview_items[0].substituted_comment).toContain('Item 101:');
-      expect(result.data.preview_items[0].substituted_comment).toContain('30 days');
+      expect((result.data as any).has_template_variables).toBe(true);
+      expect((result.data as any).preview_items).toHaveLength(2);
+      expect((result.data as any).preview_items[0].substituted_comment).toContain('Item 101:');
+      expect((result.data as any).preview_items[0].substituted_comment).toContain('30 days');
     });
 
     it('should warn when template variables are present but no context available', async () => {
@@ -347,9 +347,9 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2); // Only 102 and 104 are Active
-      expect(result.data.total_items_in_handle).toBe(5);
-      expect(result.data.summary).toContain('2 of 5');
+      expect((result.data as any).selected_items_count).toBe(2); // Only 102 and 104 are Active
+      expect((result.data as any).total_items_in_handle).toBe(5);
+      expect((result.data as any).summary).toContain('2 of 5');
     });
   });
 
@@ -381,7 +381,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert - Should default to selecting all items
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
     });
 
     it('should maintain existing error handling', async () => {
@@ -442,7 +442,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(0);
+      expect((result.data as any).selected_items_count).toBe(0);
     });
   });
 
@@ -475,8 +475,8 @@ describe('Bulk Comment By Query Handle Handler', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.preview_items).toHaveLength(5); // Default is now 5, not 3
-      expect(result.data.selected_items_count).toBe(5); // But all 5 selected
+      expect((result.data as any).preview_items).toHaveLength(5); // Default is now 5, not 3
+      expect((result.data as any).selected_items_count).toBe(5); // But all 5 selected
     });
   });
 });

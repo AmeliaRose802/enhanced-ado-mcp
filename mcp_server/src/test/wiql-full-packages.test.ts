@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test for the WIQL query tool with fetchFullPackages flag
  */
@@ -16,14 +17,15 @@ async function testFetchFullPackages() {
     });
     
     if (result.success) {
+      const data = result.data as any;
       console.log("✅ WIQL query with fetchFullPackages succeeded");
-      console.log(`   Work Items Found: ${result.data?.work_item_count}`);
-      console.log(`   Query Handle: ${result.data?.query_handle}`);
-      console.log(`   Full Packages Included: ${result.data?.fullPackagesIncluded}`);
-      console.log(`   Full Packages Count: ${result.data?.fullPackagesCount}`);
+      console.log(`   Work Items Found: ${data?.work_item_count}`);
+      console.log(`   Query Handle: ${data?.query_handle}`);
+      console.log(`   Full Packages Included: ${data?.fullPackagesIncluded}`);
+      console.log(`   Full Packages Count: ${data?.fullPackagesCount}`);
       
-      if (result.data?.full_packages && result.data.full_packages.length > 0) {
-        const pkg = result.data.full_packages[0];
+      if (data?.full_packages && data.full_packages.length > 0) {
+        const pkg = data.full_packages[0];
         console.log(`\n   First Package Details:`);
         console.log(`     - ID: #${pkg.id}`);
         console.log(`     - Title: ${pkg.title}`);
@@ -66,13 +68,14 @@ async function testFetchFullPackagesWithoutHandle() {
     });
     
     if (result.success) {
+      const data = result.data as any;
       console.log("✅ WIQL query with fetchFullPackages (no handle) succeeded");
-      console.log(`   Work Items Found: ${result.data?.count}`);
-      console.log(`   Full Packages Included: ${result.data?.fullPackagesIncluded}`);
-      console.log(`   Full Packages Count: ${result.data?.fullPackagesCount}`);
+      console.log(`   Work Items Found: ${data?.count}`);
+      console.log(`   Full Packages Included: ${data?.fullPackagesIncluded}`);
+      console.log(`   Full Packages Count: ${data?.fullPackagesCount}`);
       
-      if (result.data?.full_packages && result.data.full_packages.length > 0) {
-        console.log(`   First Package ID: #${result.data.full_packages[0].id}`);
+      if (data?.full_packages && data.full_packages.length > 0) {
+        console.log(`   First Package ID: #${data.full_packages[0].id}`);
       }
     } else {
       console.log("❌ WIQL query with fetchFullPackages (no handle) failed");
@@ -97,12 +100,13 @@ async function testRegularQueryStillWorks() {
     });
     
     if (result.success) {
+      const data = result.data as any;
       console.log("✅ Regular WIQL query succeeded");
-      console.log(`   Work Items Found: ${result.data?.work_item_count}`);
-      console.log(`   Full Packages Included: ${result.data?.fullPackagesIncluded || false}`);
+      console.log(`   Work Items Found: ${data?.work_item_count}`);
+      console.log(`   Full Packages Included: ${data?.fullPackagesIncluded || false}`);
       
       // Verify full_packages is NOT present
-      if (result.data?.full_packages) {
+      if (data?.full_packages) {
         console.log("❌ Unexpected: full_packages present when fetchFullPackages=false");
         return false;
       }
@@ -152,3 +156,4 @@ async function main() {
 }
 
 main();
+

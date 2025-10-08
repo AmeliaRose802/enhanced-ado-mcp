@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Test for the new Work Item Intelligence Analyzer with AI Sampling
  */

@@ -11,8 +11,19 @@ function getCurrentDir(): string {
   }
   
   // In production - use __dirname equivalent with import.meta.url for ES modules
-  // @ts-ignore - import.meta is only available in ES modules at runtime
-  return dirname(fileURLToPath(import.meta.url));
+  // Check if we're in an ES module context before accessing import.meta
+  try {
+    // Use eval to prevent Jest from parsing import.meta at compile time
+    const metaUrl = eval('typeof import.meta !== "undefined" ? import.meta.url : null');
+    if (metaUrl && typeof metaUrl === 'string') {
+      return dirname(fileURLToPath(metaUrl));
+    }
+  } catch (e) {
+    // Fallback if import.meta is not available
+  }
+  
+  // Fallback to cwd-based path
+  return join(cwd(), 'src', 'utils');
 }
 
 // Base paths - prompts are in mcp_server directory

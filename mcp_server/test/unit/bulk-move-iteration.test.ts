@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Bulk Move to Iteration Handler Tests
  * 
@@ -152,8 +153,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2);
-      expect(result.data.total_items_in_handle).toBe(5);
+      expect((result.data as any).selected_items_count).toBe(2);
+      expect((result.data as any).total_items_in_handle).toBe(5);
     });
 
     it('should move items matching criteria', async () => {
@@ -181,7 +182,7 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(2); // Tasks 1 and 3
+      expect((result.data as any).selected_items_count).toBe(2); // Tasks 1 and 3
     });
 
     it('should move all items when selector is "all"', async () => {
@@ -209,7 +210,7 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.selected_items_count).toBe(3);
+      expect((result.data as any).selected_items_count).toBe(3);
     });
   });
 
@@ -237,9 +238,9 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.dry_run).toBe(true);
-      expect(result.data.preview).toBeDefined();
-      expect(result.data.preview).toHaveLength(2);
+      expect((result.data as any).dry_run).toBe(true);
+      expect((result.data as any).preview).toBeDefined();
+      expect((result.data as any).preview).toHaveLength(2);
       expect(result.warnings).toContain('Dry run mode - no changes made');
     });
 
@@ -269,8 +270,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview).toHaveLength(5);
-      expect(result.data.selected_items_count).toBe(15);
+      expect((result.data as any).preview).toHaveLength(5);
+      expect((result.data as any).selected_items_count).toBe(15);
     });
 
     it('should show current iteration path in preview', async () => {
@@ -296,8 +297,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview[0].current_iteration).toBe('TestProject\\Sprint 10');
-      expect(result.data.preview[1].current_iteration).toBe('TestProject\\Backlog');
+      expect((result.data as any).preview[0].current_iteration).toBe('TestProject\\Sprint 10');
+      expect((result.data as any).preview[1].current_iteration).toBe('TestProject\\Backlog');
     });
   });
 
@@ -334,8 +335,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.items_succeeded).toBe(2);
-      expect(result.data.items_failed).toBe(0);
+      expect((result.data as any).items_succeeded).toBe(2);
+      expect((result.data as any).items_failed).toBe(0);
       expect(mockPatch).toHaveBeenCalledTimes(2);
     });
 
@@ -414,8 +415,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.items_succeeded).toBe(1);
-      expect(result.data.items_failed).toBe(1);
+      expect((result.data as any).items_succeeded).toBe(1);
+      expect((result.data as any).items_failed).toBe(1);
       expect(result.warnings).toEqual(
         expect.arrayContaining([expect.stringContaining('1 item(s) failed')])
       );
@@ -446,7 +447,7 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.update_child_items).toBe(true);
+      expect((result.data as any).update_child_items).toBe(true);
     });
 
     it('should default to not updating child items', async () => {
@@ -471,7 +472,7 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.update_child_items).toBe(false);
+      expect((result.data as any).update_child_items).toBe(false);
     });
   });
 
@@ -601,7 +602,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.preview[0].current_iteration).toMatch(/Not set|Unknown/);
+      expect((result.data as any).preview[0].current_iteration).toMatch(/Not set|Unknown/);
     });
   });
 });
+

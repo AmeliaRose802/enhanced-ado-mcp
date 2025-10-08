@@ -139,10 +139,10 @@ describe('List Query Handles Pagination', () => {
       const result = await handleListQueryHandles(config, {});
 
       expect(result.success).toBe(true);
-      expect(result.data.handles.length).toBe(50); // Default top
-      expect(result.data.pagination.total).toBe(75);
-      expect(result.data.pagination.hasMore).toBe(true);
-      expect(result.data.pagination.nextSkip).toBe(50);
+      expect((result.data as any).handles.length).toBe(50); // Default top
+      expect((result.data as any).pagination.total).toBe(75);
+      expect((result.data as any).pagination.hasMore).toBe(true);
+      expect((result.data as any).pagination.nextSkip).toBe(50);
       expect(result.warnings.length).toBeGreaterThan(0);
       expect(result.warnings.some((w: string) => w.includes('skip=50'))).toBe(true);
     });
@@ -164,10 +164,10 @@ describe('List Query Handles Pagination', () => {
       const result = await handleListQueryHandles(config, { top: 25, skip: 25 });
 
       expect(result.success).toBe(true);
-      expect(result.data.handles.length).toBe(25);
-      expect(result.data.pagination.skip).toBe(25);
-      expect(result.data.pagination.top).toBe(25);
-      expect(result.data.pagination.hasMore).toBe(true);
+      expect((result.data as any).handles.length).toBe(25);
+      expect((result.data as any).pagination.skip).toBe(25);
+      expect((result.data as any).pagination.top).toBe(25);
+      expect((result.data as any).pagination.hasMore).toBe(true);
     });
 
     it('should include pagination in metadata', async () => {
@@ -187,9 +187,9 @@ describe('List Query Handles Pagination', () => {
       const result = await handleListQueryHandles(config, {});
 
       expect(result.success).toBe(true);
-      expect(result.metadata.pagination).toBeDefined();
-      expect(result.metadata.pagination.total).toBe(10);
-      expect(result.metadata.pagination.hasMore).toBe(false);
+      expect((result.metadata as any).pagination).toBeDefined();
+      expect((result.metadata as any).pagination.total).toBe(10);
+      expect((result.metadata as any).pagination.hasMore).toBe(false);
     });
 
     it('should add warning when more results available', async () => {

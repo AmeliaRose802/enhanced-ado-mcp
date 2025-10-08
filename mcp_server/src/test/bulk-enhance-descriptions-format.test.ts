@@ -40,7 +40,7 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
         });
         expect(result.success).toBe(true);
         if (result.success) {
-          expect(result.data.returnFormat).toBe(testCase.returnFormat);
+          expect((result.data as any).returnFormat).toBe(testCase.returnFormat);
         }
       });
     });
@@ -59,7 +59,7 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.returnFormat).toBeUndefined();
+        expect((result.data as any).returnFormat).toBeUndefined();
       }
     });
 
@@ -75,7 +75,7 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.returnFormat).toBe('preview');
+        expect((result.data as any).returnFormat).toBe('preview');
       }
     });
   });
@@ -88,9 +88,9 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.dryRun).toBe(true);
+        expect((result.data as any).dryRun).toBe(true);
         // Default should be applied in handler based on dryRun
-        expect(result.data.returnFormat).toBeUndefined();
+        expect((result.data as any).returnFormat).toBeUndefined();
       }
     });
 
@@ -101,9 +101,9 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.dryRun).toBe(false);
+        expect((result.data as any).dryRun).toBe(false);
         // Default should be applied in handler based on dryRun
-        expect(result.data.returnFormat).toBeUndefined();
+        expect((result.data as any).returnFormat).toBeUndefined();
       }
     });
   });
@@ -117,8 +117,8 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.returnFormat).toBe('summary');
-        expect(result.data.dryRun).toBe(true);
+        expect((result.data as any).returnFormat).toBe('summary');
+        expect((result.data as any).dryRun).toBe(true);
       }
     });
 
@@ -130,8 +130,8 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.returnFormat).toBe('full');
-        expect(result.data.dryRun).toBe(true);
+        expect((result.data as any).returnFormat).toBe('full');
+        expect((result.data as any).dryRun).toBe(true);
       }
     });
 
@@ -143,8 +143,8 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.returnFormat).toBe('summary');
-        expect(result.data.dryRun).toBe(false);
+        expect((result.data as any).returnFormat).toBe('summary');
+        expect((result.data as any).dryRun).toBe(false);
       }
     });
 
@@ -156,8 +156,8 @@ describe('Bulk Enhance Descriptions - Response Format', () => {
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.returnFormat).toBe('preview');
-        expect(result.data.dryRun).toBe(false);
+        expect((result.data as any).returnFormat).toBe('preview');
+        expect((result.data as any).dryRun).toBe(false);
       }
     });
   });

@@ -3,7 +3,7 @@
  * Queries Azure DevOps Analytics using OData for efficient aggregations and metrics
  */
 
-import type { ToolConfig, ToolExecutionResult, ODataAnalyticsArgs, ODataResponse } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, ToolExecutionData, ToolExecutionMetadata, JSONValue, ODataAnalyticsArgs, ODataResponse } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -328,8 +328,8 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       data: responseData as unknown as ToolExecutionData,
       metadata: { 
         source: "odata-analytics",
-        ...(responseData.pagination && { pagination: responseData.pagination })
-      },
+        ...(pagination ? { pagination: pagination as Record<string, JSONValue> } : {})
+      } as ToolExecutionMetadata,
       errors: [],
       warnings
     };

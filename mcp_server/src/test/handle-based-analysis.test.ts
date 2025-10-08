@@ -105,12 +105,12 @@ describe('Handle-Based Analysis Tools', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data.query_handle).toBe(handle);
-      expect(result.data.item_count).toBe(2);
-      expect(result.data.results).toBeDefined();
-      expect(result.data.results.effort).toBeDefined();
-      expect(result.data.results.assignments).toBeDefined();
-      expect(result.data.results.completion).toBeDefined();
+      expect((result.data as any).query_handle).toBe(handle);
+      expect((result.data as any).item_count).toBe(2);
+      expect((result.data as any).results).toBeDefined();
+      expect((result.data as any).results.effort).toBeDefined();
+      expect((result.data as any).results.assignments).toBeDefined();
+      expect((result.data as any).results.completion).toBeDefined();
     });
 
     it('should return error for non-existent query handle', async () => {
@@ -135,11 +135,11 @@ describe('Handle-Based Analysis Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.results.effort).toBeDefined();
-      expect(result.data.results.effort.total_items).toBe(2);
-      expect(result.data.results.effort.total_story_points).toBe(8); // 5 + 3
-      expect(result.data.results.effort.items_with_story_points).toBe(2);
-      expect(result.data.results.effort.estimation_coverage).toBe(100);
+      expect((result.data as any).results.effort).toBeDefined();
+      expect((result.data as any).results.effort.total_items).toBe(2);
+      expect((result.data as any).results.effort.total_story_points).toBe(8); // 5 + 3
+      expect((result.data as any).results.effort.items_with_story_points).toBe(2);
+      expect((result.data as any).results.effort.estimation_coverage).toBe(100);
     });
 
     it('should analyze assignments correctly', async () => {
@@ -153,12 +153,12 @@ describe('Handle-Based Analysis Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.results.assignments).toBeDefined();
-      expect(result.data.results.assignments.total_items).toBe(2);
-      expect(result.data.results.assignments.assigned_items).toBe(2);
-      expect(result.data.results.assignments.unassigned_items).toBe(0);
-      expect(result.data.results.assignments.unique_assignees).toBe(2);
-      expect(result.data.results.assignments.assignment_coverage).toBe(100);
+      expect((result.data as any).results.assignments).toBeDefined();
+      expect((result.data as any).results.assignments.total_items).toBe(2);
+      expect((result.data as any).results.assignments.assigned_items).toBe(2);
+      expect((result.data as any).results.assignments.unassigned_items).toBe(0);
+      expect((result.data as any).results.assignments.unique_assignees).toBe(2);
+      expect((result.data as any).results.assignments.assignment_coverage).toBe(100);
     });
 
     it('should analyze risks correctly', async () => {
@@ -172,11 +172,11 @@ describe('Handle-Based Analysis Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.results.risks).toBeDefined();
-      expect(result.data.results.risks.total_items).toBe(2);
-      expect(result.data.results.risks.risk_level).toBeDefined();
-      expect(result.data.results.risks.identified_risks).toBeInstanceOf(Array);
-      expect(result.data.results.risks.risk_details.blocked_count).toBe(1); // One item has 'Blocked' tag
+      expect((result.data as any).results.risks).toBeDefined();
+      expect((result.data as any).results.risks.total_items).toBe(2);
+      expect((result.data as any).results.risks.risk_level).toBeDefined();
+      expect((result.data as any).results.risks.identified_risks).toBeInstanceOf(Array);
+      expect((result.data as any).results.risks.risk_details.blocked_count).toBe(1); // One item has 'Blocked' tag
     });
 
     it('should handle multiple analysis types', async () => {
@@ -190,12 +190,12 @@ describe('Handle-Based Analysis Tools', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(result.data.results.effort).toBeDefined();
-      expect(result.data.results.velocity).toBeDefined();
-      expect(result.data.results.assignments).toBeDefined();
-      expect(result.data.results.risks).toBeDefined();
-      expect(result.data.results.completion).toBeDefined();
-      expect(result.data.results.priorities).toBeDefined();
+      expect((result.data as any).results.effort).toBeDefined();
+      expect((result.data as any).results.velocity).toBeDefined();
+      expect((result.data as any).results.assignments).toBeDefined();
+      expect((result.data as any).results.risks).toBeDefined();
+      expect((result.data as any).results.completion).toBeDefined();
+      expect((result.data as any).results.priorities).toBeDefined();
     });
   });
 
@@ -217,19 +217,19 @@ describe('Handle-Based Analysis Tools', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data.total_handles).toBe(2);
-      expect(result.data.active_handles).toBe(2);
-      expect(result.data.expired_handles).toBe(0);
-      expect(result.data.guidance).toBeDefined();
-      expect(result.data.guidance.handle_lifetime).toBe('1 hour (default)');
+      expect((result.data as any).total_handles).toBe(2);
+      expect((result.data as any).active_handles).toBe(2);
+      expect((result.data as any).expired_handles).toBe(0);
+      expect((result.data as any).guidance).toBeDefined();
+      expect((result.data as any).guidance.handle_lifetime).toBe('1 hour (default)');
       
       // Verify handles array is populated
-      expect(result.data.handles).toBeDefined();
-      expect(Array.isArray(result.data.handles)).toBe(true);
-      expect(result.data.handles.length).toBe(2);
+      expect((result.data as any).handles).toBeDefined();
+      expect(Array.isArray((result.data as any).handles)).toBe(true);
+      expect((result.data as any).handles.length).toBe(2);
       
       // Verify each handle has the required fields
-      for (const handle of result.data.handles) {
+      for (const handle of (result.data as any).handles) {
         expect(handle).toHaveProperty('id');
         expect(handle).toHaveProperty('created_at');
         expect(handle).toHaveProperty('expires_at');
@@ -253,9 +253,9 @@ describe('Handle-Based Analysis Tools', () => {
       const result = await handleListQueryHandles(mockConfig, {});
 
       expect(result.success).toBe(true);
-      expect(result.data.handles.length).toBe(2);
+      expect((result.data as any).handles.length).toBe(2);
       
-      const itemCounts = result.data.handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
+      const itemCounts = (result.data as any).handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
       expect(itemCounts).toEqual([1, 5]);
     });
 
@@ -263,7 +263,7 @@ describe('Handle-Based Analysis Tools', () => {
       const result = await handleListQueryHandles(mockConfig, {});
 
       expect(result.success).toBe(true);
-      expect(result.data.total_handles).toBe(0);
+      expect((result.data as any).total_handles).toBe(0);
       expect(result.warnings).toContain('No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles.');
     });
 
@@ -276,7 +276,7 @@ describe('Handle-Based Analysis Tools', () => {
       const result = await handleListQueryHandles(mockConfig, {});
 
       expect(result.success).toBe(true);
-      expect(result.data.active_handles).toBe(12);
+      expect((result.data as any).active_handles).toBe(12);
       expect(result.warnings).toContain('High number of active handles (12). Consider cleaning up unused handles.');
     });
 
@@ -292,7 +292,7 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.success).toBe(true);
       // The exact counts depend on cleanup timing, but we should get stats
       expect(result.data).toBeDefined();
-      expect(result.data.guidance).toBeDefined();
+      expect((result.data as any).guidance).toBeDefined();
     });
 
     it('should exclude expired handles from handles array by default', async () => {
@@ -306,8 +306,8 @@ describe('Handle-Based Analysis Tools', () => {
       const result = await handleListQueryHandles(mockConfig, { includeExpired: false });
 
       expect(result.success).toBe(true);
-      expect(result.data.handles.length).toBe(1);
-      expect(result.data.handles[0].item_count).toBe(3);
+      expect((result.data as any).handles.length).toBe(1);
+      expect((result.data as any).handles[0].item_count).toBe(3);
     });
 
     it('should include expired handles when requested', async () => {
@@ -321,9 +321,9 @@ describe('Handle-Based Analysis Tools', () => {
       const result = await handleListQueryHandles(mockConfig, { includeExpired: true });
 
       expect(result.success).toBe(true);
-      expect(result.data.handles.length).toBe(2);
+      expect((result.data as any).handles.length).toBe(2);
       
-      const itemCounts = result.data.handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
+      const itemCounts = (result.data as any).handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
       expect(itemCounts).toEqual([2, 3]);
     });
   });
