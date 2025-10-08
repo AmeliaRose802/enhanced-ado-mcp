@@ -9,12 +9,12 @@
 
 The Enhanced ADO MCP Server provides safe bulk operation tools using the query handle pattern to prevent ID hallucination:
 
-1. **wit-bulk-comment-by-query-handle** - Add comments to multiple work items
-2. **wit-bulk-update-by-query-handle** - Update multiple work item fields
-3. **wit-bulk-assign-by-query-handle** - Assign multiple work items to a user
-4. **wit-bulk-remove-by-query-handle** - Move multiple work items to 'Removed' state
+1. **wit-bulk-comment** - Add comments to multiple work items
+2. **wit-bulk-update** - Update multiple work item fields
+3. **wit-bulk-assign** - Assign multiple work items to a user
+4. **wit-bulk-remove** - Move multiple work items to 'Removed' state
 
-All bulk operations use query handles from `wit-get-work-items-by-query-wiql` to eliminate ID hallucination risk.
+All bulk operations use query handles from `wit-query-wiql` to eliminate ID hallucination risk.
 
 ## Purpose
 
@@ -27,14 +27,14 @@ Enable safe bulk work item operations with:
 
 ## Tools
 
-### 1. wit-bulk-comment-by-query-handle
+### 1. wit-bulk-comment
 
 Add a comment to multiple work items identified by a query handle.
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 - `comment` (string) - Comment text (supports Markdown and template variables)
 
 **Optional:**
@@ -126,14 +126,14 @@ Adds personalized comment to each work item with staleness info.
 ```
 Adds formatted Markdown comment with warning.
 
-### 2. wit-bulk-update-by-query-handle
+### 2. wit-bulk-update
 
 Update multiple work items using JSON Patch operations.
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 - `updates` (array) - Array of JSON Patch operations
 
 **JSON Patch Operation:**
@@ -232,14 +232,14 @@ Adds tags to all items.
 ```
 Updates priority and iteration path.
 
-### 3. wit-bulk-assign-by-query-handle
+### 3. wit-bulk-assign
 
 Assign multiple work items to a user.
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 - `assignTo` (string) - User email or display name
 
 **Optional:**
@@ -282,14 +282,14 @@ Assign multiple work items to a user.
 }
 ```
 
-### 4. wit-bulk-remove-by-query-handle
+### 4. wit-bulk-remove
 
 Move multiple work items to 'Removed' state (does NOT permanently delete).
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 
 **Optional:**
 - `removeReason` (string) - Reason for removing (added as comment before state change)
@@ -338,7 +338,7 @@ Move multiple work items to 'Removed' state (does NOT permanently delete).
 ### Step 1: Query with Query Handle
 ```json
 {
-  "tool": "wit-get-work-items-by-query-wiql",
+  "tool": "wit-query-wiql",
   "arguments": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.CreatedDate] < @Today - 180",
     "includeSubstantiveChange": true,
@@ -351,7 +351,7 @@ Returns: `query_handle: "qh_c1b1b9a3..."`
 ### Step 2: Preview with Dry Run
 ```json
 {
-  "tool": "wit-bulk-comment-by-query-handle",
+  "tool": "wit-bulk-comment",
   "arguments": {
     "queryHandle": "qh_c1b1b9a3...",
     "comment": "Inactive for {daysInactive} days. Please review.",
@@ -364,7 +364,7 @@ Shows template substitution examples without making changes.
 ### Step 3: Execute Operation
 ```json
 {
-  "tool": "wit-bulk-comment-by-query-handle",
+  "tool": "wit-bulk-comment",
   "arguments": {
     "queryHandle": "qh_c1b1b9a3...",
     "comment": "Inactive for {daysInactive} days. Please review.",
@@ -440,7 +440,7 @@ No special configuration required. Uses defaults from `.ado-mcp-config.json`.
 ```bash
 # Test bulk comment with dry run
 {
-  "tool": "wit-bulk-comment-by-query-handle",
+  "tool": "wit-bulk-comment",
   "arguments": {
     "queryHandle": "qh_test...",
     "comment": "Test comment with {daysInactive} days",

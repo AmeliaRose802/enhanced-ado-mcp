@@ -333,7 +333,7 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
   },
   metadata: {
     timestamp: "2025-10-01T12:00:00Z",
-    tool: "wit-create-new-item"
+    tool: "wit-create-item"
   }
 }
 ```

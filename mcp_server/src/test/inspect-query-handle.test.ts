@@ -44,7 +44,7 @@ const inspectQueryHandleSchema = z.object({
 
 describe('Inspect Query Handle Handler', () => {
   const mockConfig = {
-    name: 'wit-inspect-query-handle',
+    name: 'wit-query-handle-inspect',
     description: 'Test',
     script: '',
     schema: inspectQueryHandleSchema,

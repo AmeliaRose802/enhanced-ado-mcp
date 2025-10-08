@@ -10,27 +10,27 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 ## Tools
 
 **Discovery & Analysis:**
-- `wit-get-work-items-by-query-wiql` - ⭐ **ENHANCED** Query security items with staleness data and query handles
-- `wit-inspect-query-handle` - ⭐ **NEW** Verify query handle contents and staleness statistics
-- `wit-get-work-items-context-batch` - Batch details (max 20-25 items)
-- `wit-extract-security-links` - Extract documentation links
+- `wit-query-wiql` - ⭐ **ENHANCED** Query security items with staleness data and query handles
+- `wit-query-handle-inspect` - ⭐ **NEW** Verify query handle contents and staleness statistics
+- `wit-get-context-batch` - Batch details (max 20-25 items)
+- `wit-analyze-security` - Extract documentation links
 
 **Work Item Management:**
-- `wit-create-new-item` - Create work items
-- `wit-assign-to-copilot` - Assign to GitHub Copilot
-- `wit-new-copilot-item` - Create and assign to Copilot
+- `wit-create-item` - Create work items
+- `wit-assign-copilot` - Assign to GitHub Copilot
+- `wit-create-copilot-item` - Create and assign to Copilot
 
 **Bulk Operations:**
-- `wit-bulk-comment-by-query-handle` - Add templated comments to security items
-- `wit-bulk-update-by-query-handle` - Update multiple security items
-- `wit-bulk-assign-by-query-handle` - Assign multiple security items
+- `wit-bulk-comment` - Add templated comments to security items
+- `wit-bulk-update` - Update multiple security items
+- `wit-bulk-assign` - Assign multiple security items
 
 ## Workflow
 
 ### 1. Enhanced Discovery with Query Handle
 Find security items using WIQL with staleness data and query handle:
 ```
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] NOT IN ('Closed', 'Done', 'Completed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"],
@@ -44,7 +44,7 @@ This returns BOTH security items with staleness data AND a query handle for bulk
 
 ### 1a. Verify Query Handle Contents
 ```
-Tool: wit-inspect-query-handle
+Tool: wit-query-handle-inspect
 Arguments: {
   queryHandle: "qh_from_previous_response",
   includePreview: true,
@@ -52,7 +52,7 @@ Arguments: {
 }
 ```
 
-Use `wit-extract-security-links` to get documentation URLs from items.
+Use `wit-analyze-security` to get documentation URLs from items.
 
 ### 2. Categorization
 Group by security domain:

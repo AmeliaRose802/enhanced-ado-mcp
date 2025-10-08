@@ -10,7 +10,7 @@ Reviewed all prompt files for OData Analytics queries and optimized them to use 
 
 ## Query Types Available
 
-The `wit-query-analytics-odata` tool supports these predefined query types:
+The `wit-query-odata` tool supports these predefined query types:
 
 1. **workItemCount** - Simple count of work items with filters
 2. **groupByState** - Group work items by state with counts

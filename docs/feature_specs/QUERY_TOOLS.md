@@ -9,10 +9,10 @@
 
 The Enhanced ADO MCP Server provides comprehensive query tools for finding and analyzing work items:
 
-1. **wit-get-work-items-by-query-wiql** - WIQL query execution with query handle pattern
-2. **wit-query-analytics-odata** - OData analytics for aggregations and metrics
-3. **wit-generate-wiql-query** - AI-powered WIQL query generation from natural language
-4. **wit-generate-odata-query** - AI-powered OData query generation from natural language
+1. **wit-query-wiql** - WIQL query execution with query handle pattern
+2. **wit-query-odata** - OData analytics for aggregations and metrics
+3. **wit-ai-generate-wiql** - AI-powered WIQL query generation from natural language
+4. **wit-ai-generate-odata** - AI-powered OData query generation from natural language
 
 These tools enable both manual query construction and AI-assisted query generation.
 
@@ -28,7 +28,7 @@ Enable flexible work item querying with:
 
 ## Tools
 
-### 1. wit-get-work-items-by-query-wiql
+### 1. wit-query-wiql
 
 🔐 **ANTI-HALLUCINATION TOOL:** Execute WIQL query and get both work item details AND a query handle for safe operations.
 
@@ -116,7 +116,7 @@ Returns items inactive for 180+ days with staleness analysis.
 ```
 Returns first 50 children of work item 12345.
 
-### 2. wit-query-analytics-odata
+### 2. wit-query-odata
 
 Query Azure DevOps Analytics using OData for efficient aggregations, metrics, and trend analysis.
 
@@ -227,7 +227,7 @@ Query Azure DevOps Analytics using OData for efficient aggregations, metrics, an
 }
 ```
 
-### 3. wit-generate-wiql-query
+### 3. wit-ai-generate-wiql
 
 🤖 **AI-POWERED:** Generate valid WIQL queries from natural language with iterative validation.
 
@@ -291,10 +291,10 @@ Query Azure DevOps Analytics using OData for efficient aggregations, metrics, an
     "summary": "Query handle created for 42 work item(s). Use the handle with bulk operation tools...",
     "next_steps": [
       "Review the work_items array to see what will be affected",
-      "Use wit-bulk-comment-by-query-handle to add comments to all items",
-      "Use wit-bulk-update-by-query-handle to update fields on all items",
-      "Use wit-bulk-assign-by-query-handle to assign all items to a user",
-      "Use wit-bulk-remove-by-query-handle to remove all items",
+      "Use wit-bulk-comment to add comments to all items",
+      "Use wit-bulk-update to update fields on all items",
+      "Use wit-bulk-assign to assign all items to a user",
+      "Use wit-bulk-remove to remove all items",
       "Always use dryRun: true first to preview changes before applying them"
     ],
     "expires_at": "2025-01-20T11:00:00Z"
@@ -332,7 +332,7 @@ Generates and tests WIQL query: `SELECT [System.Id] FROM WorkItems WHERE [System
 ```
 Returns query handle along with work items for safe bulk operations.
 
-### 4. wit-generate-odata-query
+### 4. wit-ai-generate-odata
 
 🤖 **AI-POWERED:** Generate valid OData Analytics queries from natural language with iterative validation.
 
@@ -375,8 +375,8 @@ Returns query handle along with work items for safe bulk operations.
     "summary": "Query handle created for 45 work item(s)...",
     "next_steps": [
       "Review the work_items array to see what will be affected",
-      "Use wit-bulk-comment-by-query-handle to add comments to all items",
-      "Use wit-bulk-update-by-query-handle to update fields on all items"
+      "Use wit-bulk-comment to add comments to all items",
+      "Use wit-bulk-update to update fields on all items"
     ],
     "expires_at": "2025-10-08T01:45:00Z"
   },
@@ -488,7 +488,7 @@ Uses defaults from `.ado-mcp-config.json`:
 ```bash
 # Test WIQL query
 {
-  "tool": "wit-get-work-items-by-query-wiql",
+  "tool": "wit-query-wiql",
   "arguments": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
     "maxResults": 10
@@ -497,7 +497,7 @@ Uses defaults from `.ado-mcp-config.json`:
 
 # Test AI query generation
 {
-  "tool": "wit-generate-wiql-query",
+  "tool": "wit-ai-generate-wiql",
   "arguments": {
     "description": "find all bugs assigned to me created this week"
   }

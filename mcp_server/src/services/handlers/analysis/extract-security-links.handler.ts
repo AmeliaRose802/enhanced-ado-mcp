@@ -1,5 +1,5 @@
 /**
- * Handler for wit-extract-security-links tool
+ * Handler for wit-analyze-security tool
  * Extracts instruction links from security scan work items
  */
 
@@ -46,7 +46,7 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: unkno
       warnings: [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-extract-security-links'
+        tool: 'wit-analyze-security'
       }
     };
   } catch (error) {

@@ -52,7 +52,7 @@ jest.mock('../utils/ado-http-client.js', () => ({
 
 describe('Validate Query Handle Handler', () => {
   const mockConfig = {
-    name: 'wit-validate-query-handle',
+    name: 'wit-query-handle-validate',
     description: 'Test',
     script: '',
     schema: validateQueryHandleSchema,

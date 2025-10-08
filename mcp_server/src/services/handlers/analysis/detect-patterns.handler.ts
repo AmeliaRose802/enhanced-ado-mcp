@@ -1,5 +1,5 @@
 /**
- * Handler for wit-detect-patterns tool
+ * Handler for wit-analyze-patterns tool
  * Identifies common issues: duplicates, placeholders, orphans, etc.
  */
 

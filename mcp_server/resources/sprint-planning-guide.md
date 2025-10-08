@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Sprint Planning Analyzer** (`wit-sprint-planning-analyzer`) is an AI-powered tool that helps create optimal sprint plans by analyzing team capacity, historical velocity, and proposing balanced work assignments across all team members.
+The **Sprint Planning Analyzer** (`wit-ai-sprint-planning`) is an AI-powered tool that helps create optimal sprint plans by analyzing team capacity, historical velocity, and proposing balanced work assignments across all team members.
 
 ## When to Use This Tool
 
@@ -177,18 +177,18 @@ For each team member:
 ## Integration with Other Tools
 
 ### Before Sprint Planning
-1. **Query Backlog**: Use `wit-get-work-items-by-query-wiql` to identify candidate items
-2. **Estimate Items**: Use `wit-bulk-assign-story-points-by-query-handle` to ensure all items have estimates
-3. **Analyze Velocity**: Use `wit-query-analytics-odata` to get historical completion data
+1. **Query Backlog**: Use `wit-query-wiql` to identify candidate items
+2. **Estimate Items**: Use `wit-ai-bulk-story-points` to ensure all items have estimates
+3. **Analyze Velocity**: Use `wit-query-odata` to get historical completion data
 
 ### After Sprint Planning
-1. **Assign Work**: Use `wit-bulk-assign-by-query-handle` to assign items to team members
+1. **Assign Work**: Use `wit-bulk-assign` to assign items to team members
 2. **Update Iterations**: Move items to the sprint iteration
-3. **Track Progress**: Use `wit-personal-workload-analyzer` to monitor individual workload
+3. **Track Progress**: Use `wit-ai-workload` to monitor individual workload
 
 ### During Sprint
-1. **Monitor Progress**: Use `wit-get-work-items-context-batch` to check sprint items
-2. **Adjust Assignments**: Use `wit-bulk-update-by-query-handle` to rebalance if needed
+1. **Monitor Progress**: Use `wit-get-context-batch` to check sprint items
+2. **Adjust Assignments**: Use `wit-bulk-update` to rebalance if needed
 
 ## Common Use Cases
 
@@ -257,12 +257,12 @@ For each team member:
 
 ## Related Tools
 
-- `wit-personal-workload-analyzer` - Analyze individual team member workload
-- `wit-get-work-items-by-query-wiql` - Query backlog items
-- `wit-bulk-assign-story-points-by-query-handle` - Estimate work items
-- `wit-query-analytics-odata` - Historical velocity data
-- `wit-bulk-assign-by-query-handle` - Batch assign work items
-- `wit-get-work-items-context-batch` - Get detailed work item context
+- `wit-ai-workload` - Analyze individual team member workload
+- `wit-query-wiql` - Query backlog items
+- `wit-ai-bulk-story-points` - Estimate work items
+- `wit-query-odata` - Historical velocity data
+- `wit-bulk-assign` - Batch assign work items
+- `wit-get-context-batch` - Get detailed work item context
 
 ## Tips for Success
 
@@ -326,5 +326,5 @@ For each team member:
 For issues or questions:
 1. Check this guide for common solutions
 2. Review the sprint planning prompt for detailed algorithm
-3. Use `wit-discover-tools` to find related tools
+3. Use `wit-ai-discover-tools` to find related tools
 4. Contact your MCP server administrator

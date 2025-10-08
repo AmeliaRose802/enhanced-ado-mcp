@@ -1,5 +1,5 @@
 /**
- * Handler for wit-analyze-by-query-handle tool
+ * Handler for wit-analyze-items tool
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
@@ -92,7 +92,7 @@ interface WorkItemAnalysis {
 }
 
 /**
- * Handler for wit-analyze-by-query-handle tool
+ * Handler for wit-analyze-items tool
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.

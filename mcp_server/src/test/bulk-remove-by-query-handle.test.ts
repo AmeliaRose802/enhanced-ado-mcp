@@ -42,7 +42,7 @@ jest.mock('../utils/ado-http-client.js', () => ({
 }));
 
 const mockConfig = {
-  name: 'wit-bulk-remove-by-query-handle',
+  name: 'wit-bulk-remove',
   description: 'Test config',
   script: '',
   schema: bulkRemoveByQueryHandleSchema,

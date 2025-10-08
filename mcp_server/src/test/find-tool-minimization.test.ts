@@ -88,7 +88,7 @@ describe('Tool Discovery Token Minimization', () => {
       const minimalResponse: any = {
         recommendations: [
           {
-            toolName: 'wit-create-new-item',
+            toolName: 'wit-create-item',
             confidence: 90,
             reasoning: 'User wants to create a new work item',
             requiredParameters: ['title'],
@@ -108,7 +108,7 @@ describe('Tool Discovery Token Minimization', () => {
       const fullResponse = {
         recommendations: [
           {
-            toolName: 'wit-create-new-item',
+            toolName: 'wit-create-item',
             confidence: 90,
             reasoning: 'User wants to create a new work item',
             exampleUsage: '{ title: "New Bug", description: "Bug description", workItemType: "Bug" }',
@@ -129,7 +129,7 @@ describe('Tool Discovery Token Minimization', () => {
       const responseWithoutExamples = JSON.stringify({
         recommendations: [
           {
-            toolName: 'wit-bulk-update-by-query-handle',
+            toolName: 'wit-bulk-update',
             confidence: 88,
             reasoning: 'Use bulk update to modify multiple items efficiently',
             requiredParameters: ['queryHandle', 'updates'],
@@ -142,7 +142,7 @@ describe('Tool Discovery Token Minimization', () => {
       const responseWithExamples = JSON.stringify({
         recommendations: [
           {
-            toolName: 'wit-bulk-update-by-query-handle',
+            toolName: 'wit-bulk-update',
             confidence: 88,
             reasoning: 'Use bulk update to modify multiple items efficiently',
             exampleUsage: '{ queryHandle: "qh_abc123", updates: { "System.Priority": 1, "System.Tags": "urgent" }, itemSelector: { states: ["Active"] }, dryRun: true }',

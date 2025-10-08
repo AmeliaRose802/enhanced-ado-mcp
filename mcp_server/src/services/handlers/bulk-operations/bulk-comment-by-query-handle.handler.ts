@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-comment-by-query-handle tool
+ * Handler for wit-bulk-comment tool
  * 
  * Adds comments to multiple work items identified by a query handle.
  * This eliminates ID hallucination risk by using the stored query results.

@@ -8,7 +8,7 @@ async function testFetchFullPackages() {
   console.log("\n🧪 Testing WIQL query with fetchFullPackages...");
   
   try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 3, // Limit to 3 items to minimize API calls
       fetchFullPackages: true,
@@ -58,7 +58,7 @@ async function testFetchFullPackagesWithoutHandle() {
   console.log("\n🧪 Testing WIQL query with fetchFullPackages (no handle)...");
   
   try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 2, // Limit to 2 items
       fetchFullPackages: true,
@@ -91,7 +91,7 @@ async function testRegularQueryStillWorks() {
   console.log("\n🧪 Testing regular WIQL query (without fetchFullPackages)...");
   
   try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 5
     });

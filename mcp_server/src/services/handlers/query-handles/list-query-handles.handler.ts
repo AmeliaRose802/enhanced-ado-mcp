@@ -1,5 +1,5 @@
 /**
- * Handler for wit-list-query-handles tool
+ * Handler for wit-query-handle-list tool
  * 
  * Lists all active query handles to help users track and manage them.
  * Makes handles feel like persistent, manageable resources.
@@ -45,14 +45,14 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
         handle_lifetime: "1 hour (default)",
         cleanup_frequency: "Every 5 minutes",
         max_recommended: "Keep under 10 active handles for performance",
-        usage_tip: "Use wit-validate-query-handle to check specific handle status"
+        usage_tip: "Use wit-query-handle-validate to check specific handle status"
       }
     };
 
     const warnings: string[] = [];
     
     if (stats.totalHandles === 0) {
-      warnings.push("No query handles found. Use wit-get-work-items-by-query-wiql with returnQueryHandle=true to create handles.");
+      warnings.push("No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles.");
     }
     
     if (stats.expiredHandles > 0) {

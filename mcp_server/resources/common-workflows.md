@@ -10,7 +10,7 @@ End-to-end workflows combining multiple tools.
 
 ### Option A: Generate WIQL Query for Work Items
 ```json
-// Tool: wit-generate-wiql-query
+// Tool: wit-ai-generate-wiql
 {
   "description": "Find all active bugs assigned to me created in the last 30 days with high priority",
   "includeExamples": true,
@@ -26,7 +26,7 @@ End-to-end workflows combining multiple tools.
 
 **Then execute:**
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.AssignedTo] = @Me AND [System.CreatedDate] >= @Today - 30 AND [Microsoft.VSTS.Common.Priority] = 1",
   "includeFields": ["System.Title", "System.State", "Microsoft.VSTS.Common.Priority"],
@@ -36,7 +36,7 @@ End-to-end workflows combining multiple tools.
 
 ### Option B: Generate OData Query for Analytics
 ```json
-// Tool: wit-generate-odata-query
+// Tool: wit-ai-generate-odata
 {
   "description": "Count completed work items grouped by type in the last 90 days",
   "includeExamples": true,
@@ -52,7 +52,7 @@ End-to-end workflows combining multiple tools.
 
 **Then execute directly or use in further analysis:**
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "custom",
   "customODataQuery": "$apply=filter(CompletedDate ge 2024-10-01Z)/groupby((WorkItemType), aggregate($count as Count))"
@@ -73,7 +73,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Analyze the Feature
 ```json
-// Tool: wit-intelligence-analyzer
+// Tool: wit-ai-intelligence
 {
   "workItemId": 12345,
   "analysisType": "comprehensive"
@@ -88,7 +88,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: Create Child Items
 ```json
-// Tool: wit-create-new-item (repeat for each child)
+// Tool: wit-create-item (repeat for each child)
 {
   "title": "Implement authentication API",
   "workItemType": "Task",
@@ -100,7 +100,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Validate Hierarchy
 ```json
-// Tool: wit-validate-hierarchy-fast
+// Tool: wit-analyze-hierarchy
 {
   "workItemIds": [12345, 12346, 12347, 12348]
 }
@@ -113,7 +113,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 4: Assign to Copilot (Optional)
 ```json
-// Tool: wit-assign-to-copilot
+// Tool: wit-assign-copilot
 {
   "WorkItemId": 12346,
   "repositoryId": "repo-abc-123"
@@ -129,7 +129,7 @@ End-to-end workflows combining multiple tools.
 ### Step 1: Get All Items in Area
 ```json
 // Option A: Build query with AI
-// Tool: wit-generate-wiql-query
+// Tool: wit-ai-generate-wiql
 {
   "description": "all items in my area that are not removed or done",
   "includeExamples": false,
@@ -137,7 +137,7 @@ End-to-end workflows combining multiple tools.
 }
 
 // Option B: Use direct WIQL query
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",
   "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
@@ -147,7 +147,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: Detect Patterns and Issues
 ```json
-// Tool: wit-detect-patterns
+// Tool: wit-analyze-patterns
 {
   "workItemIds": [100, 101, 102, ...], // from step 1
   "patterns": ["orphaned", "missing_description", "duplicates"]
@@ -161,7 +161,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Validate Hierarchies
 ```json
-// Tool: wit-validate-hierarchy-fast
+// Tool: wit-analyze-hierarchy
 {
   "workItemIds": [100, 101, 102, ...]
 }
@@ -169,7 +169,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 4: Bulk Notify Owners
 ```json
-// Tool: wit-bulk-comment-by-query-handle
+// Tool: wit-bulk-comment
 {
   "queryHandle": "qh_items_with_issues",
   "comment": "Please review and update this work item. Missing required information."
@@ -184,7 +184,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Check Team Velocity
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "velocityMetrics",
   "dateRangeField": "CompletedDate",
@@ -196,7 +196,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: Get Candidate Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
   "includeFields": ["System.Title", "System.Priority", "System.StoryPoints"],
@@ -206,7 +206,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Analyze for AI Assignment
 ```json
-// Tool: wit-ai-assignment-analyzer (for each candidate)
+// Tool: wit-ai-assignment (for each candidate)
 {
   "workItemId": 12345,
   "analysisDepth": "quick"
@@ -220,7 +220,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 4: Assign Work
 ```json
-// Tool: wit-new-copilot-item (for AI-suitable items)
+// Tool: wit-create-copilot-item (for AI-suitable items)
 {
   "title": "Implement user service",
   "workItemType": "Task",
@@ -238,7 +238,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Find Security Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'Security' OR [System.WorkItemType] = 'Security'",
   "includeFields": ["System.Title", "System.State", "System.Description"],
@@ -248,7 +248,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: Extract Security Links
 ```json
-// Tool: wit-extract-security-links (for each security item)
+// Tool: wit-analyze-security (for each security item)
 {
   "workItemId": 12345
 }
@@ -261,7 +261,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Get Full Context
 ```json
-// Tool: wit-get-work-item-context-package
+// Tool: wit-get-context
 {
   "workItemIds": [12345],
   "includeParents": true,
@@ -279,7 +279,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Get Root Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
   "includeFields": ["System.Title", "System.WorkItemType"],
@@ -289,7 +289,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: For Each Root, Get Children
 ```json
-// Tool: wit-get-work-items-by-query-wiql (repeat per root)
+// Tool: wit-query-wiql (repeat per root)
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
   "includeFields": ["System.Title", "System.WorkItemType", "System.Parent"],
@@ -302,7 +302,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Validate Complete Hierarchy
 ```json
-// Tool: wit-validate-hierarchy-fast
+// Tool: wit-analyze-hierarchy
 {
   "workItemIds": [12345, 12346, ...] // all items in tree
 }
@@ -316,7 +316,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 1: Get Recent Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.ChangedDate] >= @Today - 14 AND [System.State] = 'Active'",
   "includeFields": ["System.Title", "System.Description"],
@@ -326,7 +326,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 2: Analyze Each Item
 ```json
-// Tool: wit-intelligence-analyzer
+// Tool: wit-ai-intelligence
 {
   "workItemId": 12345,
   "analysisType": "comprehensive"
@@ -341,7 +341,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 3: Detect Common Issues
 ```json
-// Tool: wit-detect-patterns
+// Tool: wit-analyze-patterns
 {
   "workItemIds": [12345, 12346, ...],
   "patterns": ["missing_description", "missing_acceptance_criteria"]
@@ -350,7 +350,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Notify Team
 ```json
-// Tool: wit-bulk-comment-by-query-handle
+// Tool: wit-bulk-comment
 {
   "queryHandle": "qh_analyzed_items",
   "comment": "AI analysis suggests improvements. Please review attached recommendations."
@@ -365,7 +365,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 1: Overall Counts
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "groupByState",
   "areaPath": "MyProject\\MyTeam"
@@ -374,7 +374,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 2: Type Distribution
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "groupByType",
   "filters": {"State": "Active"}
@@ -383,7 +383,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 3: Team Velocity
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "velocityMetrics",
   "dateRangeField": "CompletedDate",
@@ -394,7 +394,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Cycle Time
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "cycleTimeMetrics",
   "computeCycleTime": true,
@@ -404,7 +404,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 5: Work Distribution
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-query-odata
 {
   "queryType": "groupByAssignee",
   "filters": {"State": "Active"},
@@ -421,7 +421,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 1: Get Backlog Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
   "includeFields": ["System.Title", "System.Description"],
@@ -431,7 +431,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 2: Analyze Each for AI Suitability
 ```json
-// Tool: wit-ai-assignment-analyzer
+// Tool: wit-ai-assignment
 {
   "workItemId": 12345,
   "analysisDepth": "comprehensive"
@@ -440,7 +440,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 3: Create AI-Ready Tasks
 ```json
-// Tool: wit-new-copilot-item
+// Tool: wit-create-copilot-item
 {
   "title": "Well-defined task from analysis",
   "workItemType": "Task",
@@ -452,7 +452,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Monitor Progress
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = 'GitHub Copilot' AND [System.State] = 'Active'"
 }

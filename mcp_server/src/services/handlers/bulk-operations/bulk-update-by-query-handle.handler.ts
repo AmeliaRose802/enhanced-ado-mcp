@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-update-by-query-handle tool
+ * Handler for wit-bulk-update tool
  * 
  * Updates multiple work items identified by a query handle using JSON Patch operations.
  * This eliminates ID hallucination risk by using the stored query results.

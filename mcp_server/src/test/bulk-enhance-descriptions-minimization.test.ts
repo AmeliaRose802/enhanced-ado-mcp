@@ -74,7 +74,7 @@ jest.mock('../utils/sampling-client.js', () => ({
 
 describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
   const mockConfig: ToolConfig = {
-    name: 'wit-bulk-enhance-descriptions-by-query-handle',
+    name: 'wit-ai-bulk-enhance-descriptions',
     description: 'Test tool',
     script: '',
     schema: bulkEnhanceDescriptionsByQueryHandleSchema,

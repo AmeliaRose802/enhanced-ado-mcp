@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-assign-by-query-handle tool
+ * Handler for wit-bulk-assign tool
  * 
  * Assigns multiple work items to a user, identified by a query handle.
  * This eliminates ID hallucination risk by using the stored query results.

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-create-new-item tool
+ * Handler for wit-create-item tool
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";

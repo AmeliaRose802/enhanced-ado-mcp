@@ -10,11 +10,11 @@
 
 The Enhanced ADO MCP Server provides sophisticated AI-powered intelligence and planning tools:
 
-1. **wit-intelligence-analyzer** - Comprehensive work item quality analysis
-2. **wit-ai-assignment-analyzer** - AI suitability assessment for work items
-3. **wit-personal-workload-analyzer** - Burnout and workload analysis
-4. **wit-sprint-planning-analyzer** - AI-assisted sprint planning
-5. **wit-discover-tools** - Natural language tool discovery
+1. **wit-ai-intelligence** - Comprehensive work item quality analysis
+2. **wit-ai-assignment** - AI suitability assessment for work items
+3. **wit-ai-workload** - Burnout and workload analysis
+4. **wit-ai-sprint-planning** - AI-assisted sprint planning
+5. **wit-ai-discover-tools** - Natural language tool discovery
 
 These tools leverage AI to provide insights, recommendations, and intelligent automation for work item management.
 
@@ -29,7 +29,7 @@ Enable intelligent work item management with:
 
 ## Tools
 
-### 1. wit-intelligence-analyzer
+### 1. wit-ai-intelligence
 
 AI-powered work item analysis for completeness, AI-readiness, and enhancement suggestions.
 
@@ -143,7 +143,7 @@ AI-powered work item analysis for completeness, AI-readiness, and enhancement su
 }
 ```
 
-### 2. wit-ai-assignment-analyzer
+### 2. wit-ai-assignment
 
 Enhanced AI assignment suitability analysis with detailed reasoning.
 
@@ -216,7 +216,7 @@ Enhanced AI assignment suitability analysis with detailed reasoning.
 }
 ```
 
-### 3. wit-personal-workload-analyzer
+### 3. wit-ai-workload
 
 AI-powered personal workload analysis for burnout risk assessment.
 
@@ -310,7 +310,7 @@ AI-powered personal workload analysis for burnout risk assessment.
 }
 ```
 
-### 4. wit-sprint-planning-analyzer
+### 4. wit-ai-sprint-planning
 
 AI-powered sprint planning with capacity balancing and skill matching.
 
@@ -437,7 +437,7 @@ AI-powered sprint planning with capacity balancing and skill matching.
 }
 ```
 
-### 5. wit-discover-tools
+### 5. wit-ai-discover-tools
 
 AI-powered tool discovery from natural language intent.
 
@@ -468,7 +468,7 @@ AI-powered tool discovery from natural language intent.
     "intent": "I want to find all stale bugs and update their priority",
     "recommendations": [
       {
-        "tool_name": "wit-get-work-items-by-query-wiql",
+        "tool_name": "wit-query-wiql",
         "confidence": 0.95,
         "rationale": "Best for finding stale bugs using WIQL query with staleness filtering",
         "usage_summary": "Query for bugs, filter by daysInactive, get query handle",
@@ -479,7 +479,7 @@ AI-powered tool discovery from natural language intent.
         }
       },
       {
-        "tool_name": "wit-bulk-update-by-query-handle",
+        "tool_name": "wit-bulk-update",
         "confidence": 0.93,
         "rationale": "Use query handle from first tool to safely update priority",
         "usage_summary": "Update priority field using JSON Patch operations",
@@ -497,8 +497,8 @@ AI-powered tool discovery from natural language intent.
     ],
     "workflow_suggestion": "1. Query for stale bugs → 2. Inspect query handle → 3. Update priorities in bulk",
     "related_tools": [
-      "wit-inspect-query-handle",
-      "wit-detect-patterns"
+      "wit-query-handle-inspect",
+      "wit-analyze-patterns"
     ]
   },
   "errors": [],
@@ -567,7 +567,7 @@ Requires VS Code with GitHub Copilot extension.
 
 ```bash
 {
-  "tool": "wit-intelligence-analyzer",
+  "tool": "wit-ai-intelligence",
   "arguments": {
     "title": "Implement user authentication",
     "description": "Add OAuth 2.0 login",

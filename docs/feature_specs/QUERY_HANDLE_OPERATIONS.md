@@ -9,11 +9,11 @@
 
 The Enhanced ADO MCP Server provides comprehensive query handle management tools for the anti-hallucination pattern:
 
-1. **wit-validate-query-handle** - Validate handle and get metadata
-2. **wit-inspect-query-handle** - Detailed inspection with staleness data
-3. **wit-select-items-from-query-handle** - Preview item selection before bulk ops
-4. **wit-list-query-handles** - List all active query handles
-5. **wit-analyze-by-query-handle** - Analyze work items using handle
+1. **wit-query-handle-validate** - Validate handle and get metadata
+2. **wit-query-handle-inspect** - Detailed inspection with staleness data
+3. **wit-query-handle-select** - Preview item selection before bulk ops
+4. **wit-query-handle-list** - List all active query handles
+5. **wit-analyze-items** - Analyze work items using handle
 
 These tools make query handles feel like persistent, manageable resources rather than ephemeral strings.
 
@@ -28,7 +28,7 @@ Enable safe query handle management with:
 
 ## Tools
 
-### 1. wit-validate-query-handle
+### 1. wit-query-handle-validate
 
 Validate a query handle and get metadata about stored query results.
 
@@ -89,7 +89,7 @@ Validate a query handle and get metadata about stored query results.
 }
 ```
 
-### 2. wit-inspect-query-handle
+### 2. wit-query-handle-inspect
 
 🔍 **HANDLE INSPECTOR:** Detailed inspection including staleness data and analysis metadata.
 
@@ -162,7 +162,7 @@ Validate a query handle and get metadata about stored query results.
 ```
 Shows what template variables are available for bulk comment operations.
 
-### 3. wit-select-items-from-query-handle
+### 3. wit-query-handle-select
 
 🎯 **ITEM SELECTOR:** Preview item selection before bulk operations.
 
@@ -258,7 +258,7 @@ Previews only Active and New items.
 ```
 Previews items inactive for 180+ days.
 
-### 4. wit-list-query-handles
+### 4. wit-query-handle-list
 
 📋 **HANDLE REGISTRY:** List all active query handles for tracking and management.
 
@@ -311,7 +311,7 @@ Previews items inactive for 180+ days.
 }
 ```
 
-### 5. wit-analyze-by-query-handle
+### 5. wit-analyze-items
 
 🔐 **HANDLE-BASED ANALYSIS:** Analyze work items using handle to prevent ID hallucination.
 
@@ -390,7 +390,7 @@ Comprehensive sprint planning analysis.
 ### Step 1: Create Query Handle
 ```json
 {
-  "tool": "wit-get-work-items-by-query-wiql",
+  "tool": "wit-query-wiql",
   "arguments": {
     "wiqlQuery": "...",
     "includeSubstantiveChange": true,
@@ -402,7 +402,7 @@ Comprehensive sprint planning analysis.
 ### Step 2: Inspect Handle
 ```json
 {
-  "tool": "wit-inspect-query-handle",
+  "tool": "wit-query-handle-inspect",
   "arguments": {
     "queryHandle": "qh_...",
     "includePreview": true,
@@ -414,7 +414,7 @@ Comprehensive sprint planning analysis.
 ### Step 3: Preview Selection
 ```json
 {
-  "tool": "wit-select-items-from-query-handle",
+  "tool": "wit-query-handle-select",
   "arguments": {
     "queryHandle": "qh_...",
     "itemSelector": { "states": ["Active"] }
@@ -425,7 +425,7 @@ Comprehensive sprint planning analysis.
 ### Step 4: Execute Bulk Operation
 ```json
 {
-  "tool": "wit-bulk-comment-by-query-handle",
+  "tool": "wit-bulk-comment",
   "arguments": {
     "queryHandle": "qh_...",
     "comment": "..."
@@ -496,7 +496,7 @@ No special configuration required. Query handles managed in-memory by server.
 # Create handle
 # Then inspect it
 {
-  "tool": "wit-inspect-query-handle",
+  "tool": "wit-query-handle-inspect",
   "arguments": {
     "queryHandle": "qh_test..."
   }
