@@ -76,8 +76,12 @@ export interface ADOFieldOperation {
   op: 'add' | 'replace' | 'remove' | 'test';
   /** Field path (e.g., '/fields/System.Title') */
   path: string;
-  /** New value for add/replace operations - must be JSON-serializable */
-  value?: JSONValue;
+  /** 
+   * New value for add/replace operations
+   * Can be any JSON-serializable value or Azure DevOps-specific structures
+   * Use unknown for flexibility as ADO API accepts various formats
+   */
+  value?: unknown;
   /** Source path for copy/move operations */
   from?: string;
 }

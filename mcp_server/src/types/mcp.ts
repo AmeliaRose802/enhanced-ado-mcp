@@ -58,10 +58,12 @@ export interface SamplingCapabilities {
 /**
  * MCPServer-like object for testing purposes
  * Defines minimal interface required for sampling operations
+ * Note: This interface is intentionally flexible to support test mocks
+ * that may have simplified structures
  */
 export interface MCPServerLike {
-  createMessage?: (params: SamplingMessageParams) => Promise<SamplingMessageResult>;
-  getClientCapabilities?: () => { sampling?: SamplingCapabilities } | undefined;
+  createMessage?: (params: SamplingMessageParams | unknown) => Promise<SamplingMessageResult | unknown>;
+  getClientCapabilities?: () => { sampling?: SamplingCapabilities | boolean | unknown } | undefined;
   /** 
    * Allow additional properties for test mocks
    * Test mocks may include functions and complex types that cannot be constrained
