@@ -3,7 +3,7 @@
  */
 
 import { WorkItemRepository } from '../repositories/work-item.repository.js';
-import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult } from '../types/ado.js';
+import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult } from '../types/index.js';
 
 // Mock the ado-token module
 jest.mock('../utils/ado-token.js', () => ({
