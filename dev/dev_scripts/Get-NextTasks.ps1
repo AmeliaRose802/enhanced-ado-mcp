@@ -97,26 +97,28 @@ if ($allCompletedTasks.Count -eq 0) {
     
     $wave1Tasks = $allTasks | Where-Object { $_.Wave -eq 1 }
     
-    if ($Format -eq "Json") {
-        $wave1Output = @{
-            timestamp = (Get-Date -Format "o")
-            completed_tasks = @()
-            available_tasks = $wave1Tasks | ForEach-Object {
-                @{
-                    TaskId = $_.TaskId
-                    Summary = $_.Summary
-                    Description = $_.Description
-                    RuntimeMin = $_.RuntimeMin
-                    Wave = $_.Wave
-                    ConflictsWith = $_.ConflictsWith
-                    Files = $_.Files
-                }
+    # Build output data for file (always do this regardless of format)
+    $wave1Output = @{
+        timestamp = (Get-Date -Format "o")
+        completed_tasks = @()
+        available_tasks = $wave1Tasks | ForEach-Object {
+            @{
+                TaskId = $_.TaskId
+                Summary = $_.Summary
+                Description = $_.Description
+                RuntimeMin = $_.RuntimeMin
+                Wave = $_.Wave
+                ConflictsWith = $_.ConflictsWith
+                Files = $_.Files
             }
-            total_tasks = $allTasks.Count
-            completed_count = 0
-            progress_percent = 0
-            can_run_in_parallel = $wave1Tasks.TaskId
         }
+        total_tasks = $allTasks.Count
+        completed_count = 0
+        progress_percent = 0
+        can_run_in_parallel = $wave1Tasks.TaskId
+    }
+    
+    if ($Format -eq "Json") {
         $wave1Output | ConvertTo-Json -Depth 10
     }
     elseif ($Format -eq "List") {
@@ -288,6 +290,27 @@ else {
     Write-Host "AVAILABLE TASKS ($($availableTasks.Count) ready to start)" -ForegroundColor Cyan
     Write-Host ""
     
+    # Calculate progress (needed for all output formats and file writing)
+    $totalTasks = $allTasks.Count
+    $completedCount = $allCompletedTasks.Count
+    $progressPercent = [math]::Round(($completedCount / $totalTasks) * 100, 1)
+    
+    # Calculate parallelizable tasks (needed for all output formats and file writing)
+    $canRunInParallel = @()
+    foreach ($task in $availableTasks) {
+        $hasConflict = $false
+        foreach ($other in $availableTasks) {
+            if ($task.TaskId -ne $other.TaskId -and 
+                ($task.ConflictsWith -contains $other.TaskId)) {
+                $hasConflict = $true
+                break
+            }
+        }
+        if (-not $hasConflict) {
+            $canRunInParallel += $task.TaskId
+        }
+    }
+    
     if ($Format -eq "Json") {
         $output = @{
             timestamp = (Get-Date -Format "o")
@@ -296,26 +319,10 @@ else {
             total_tasks = $totalTasks
             completed_count = $completedCount
             progress_percent = $progressPercent
-            can_run_in_parallel = @()
-        }
-        
-        # Calculate parallelizable tasks
-        foreach ($task in $availableTasks) {
-            $hasConflict = $false
-            foreach ($other in $availableTasks) {
-                if ($task.TaskId -ne $other.TaskId -and 
-                    ($task.ConflictsWith -contains $other.TaskId)) {
-                    $hasConflict = $true
-                    break
-                }
-            }
-            if (-not $hasConflict) {
-                $output.can_run_in_parallel += $task.TaskId
-            }
+            can_run_in_parallel = $canRunInParallel
         }
         
         $output | ConvertTo-Json -Depth 10
-        exit 0
     }
     elseif ($Format -eq "List") {
         foreach ($task in ($availableTasks | Sort-Object Wave, RuntimeMin)) {
@@ -351,21 +358,6 @@ else {
     }
     
     # Show parallelization hints
-    $canRunInParallel = @()
-    foreach ($task in $availableTasks) {
-        $hasConflict = $false
-        foreach ($other in $availableTasks) {
-            if ($task.TaskId -ne $other.TaskId -and 
-                ($task.ConflictsWith -contains $other.TaskId)) {
-                $hasConflict = $true
-                break
-            }
-        }
-        if (-not $hasConflict) {
-            $canRunInParallel += $task.TaskId
-        }
-    }
-    
     if ($canRunInParallel.Count -gt 1) {
         Write-Host "💡 " -NoNewline -ForegroundColor Yellow
         Write-Host "PARALLELIZATION TIP:" -ForegroundColor Yellow
@@ -388,10 +380,6 @@ else {
     }
     
     # Write detailed output to file for agent reference
-    $totalTasks = $allTasks.Count
-    $completedCount = $allCompletedTasks.Count
-    $progressPercent = [math]::Round(($completedCount / $totalTasks) * 100, 1)
-    
     $outputData = @{
         timestamp = (Get-Date -Format "o")
         completed_tasks = $allCompletedTasks
