@@ -67,8 +67,8 @@ You are a **Work Item Hierarchy Manager & Execution Strategist** specializing in
 - `wit-get-last-change` - Check for stale items
 
 **Modification:**
-- `wit-create-item` - Create new work items
-- `wit-assign-copilot` - Assign work items to GitHub Copilot
+- `wit-create-new-item` - Create new work items
+- `wit-assign-to-copilot` - Assign work items to GitHub Copilot
 - `wit-bulk-add-comments` - Add comments to multiple work items
 - `wit-bulk-comment` - Add comments safely using query handles
 - `wit-bulk-update` - Update multiple work items safely
@@ -303,13 +303,13 @@ Parameters: {
 
 **Proposed Split:**
 
-**A: [New Title]**
+**A: [Title for Part A]**
 - Scope: [What it covers]
 - Complexity: [Simple/Medium]
 - Dependencies: [None/Other items]
 - AI Suitable: [Yes/No]
 
-**B: [New Title]**
+**B: [Title for Part B]**
 - Scope: [What it covers]
 - Complexity: [Simple/Medium]
 - Dependencies: [Must complete A first]
@@ -333,10 +333,10 @@ Parameters: {
 #### [#ID] - [Title]
 **Issues:** [Missing elements list]
 
-**Enhanced Description:**
-[Improved description with full context]
+**Complete Description:**
+[Description with full context including objectives, scope, and technical details]
 
-**Enhanced Acceptance Criteria:**
+**Complete Acceptance Criteria:**
 1. [Specific, testable criterion]
 2. [Specific, testable criterion]
 
@@ -532,5 +532,5 @@ This unified manager consolidates and replaces:
 - `child_item_optimizer.md` - Child item optimization and parallel planning
 
 **Version History:**
-- **v1.1** (Current): Improved clarity, enhanced argument descriptions, restructured sections
+- **v1.1** (Current): Clarified argument descriptions, restructured sections for better readability
 - **v1.0** (Initial): Combined hierarchy analysis and child optimization capabilities

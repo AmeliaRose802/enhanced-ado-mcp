@@ -51,8 +51,8 @@ Always warn about:
 ## Tool Categories
 
 ### Creation Tools
-- `wit-create-item`: Create single work item
-- `wit-create-copilot-item`: Create and assign to Copilot
+- `wit-create-new-item`: Create single work item
+- `wit-new-copilot-item`: Create and assign to Copilot
 
 ### Query Tools
 - `wit-query-wiql`: Execute WIQL queries
@@ -90,7 +90,7 @@ Always warn about:
 - `wit-get-config`: View server configuration
 
 ### Integration Tools
-- `wit-assign-copilot`: Assign existing item to Copilot
+- `wit-assign-to-copilot`: Assign existing item to Copilot
 - `wit-analyze-security`: Extract security scan links
 
 ## Response Format

@@ -13,8 +13,8 @@ Analyze child items under parent `{{parent_work_item_id}}`, plan parallel execut
 - `wit-query-wiql` - Query child items with activity data
 - `wit-get-context-batch` - Batch details (max 20-30 items)
 - `wit-ai-assignment` - AI suitability analysis
-- `wit-assign-copilot` - Assign to GitHub Copilot
-- `wit-create-item` - Create work items
+- `wit-assign-to-copilot` - Assign to GitHub Copilot
+- `wit-create-new-item` - Create work items
 
 ## Workflow
 
@@ -84,7 +84,7 @@ Use format below.
   - Decision: AI Fit
   - Risk: 25
   - Rationale: Isolated change, test coverage
-  - Action: ✅ Assigned via `wit-assign-copilot`
+  - Action: ✅ Assigned via `wit-assign-to-copilot`
 
 ## Next Steps
 1. Human review for X items
