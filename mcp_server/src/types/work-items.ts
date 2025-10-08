@@ -367,9 +367,10 @@ export interface PatternDetectionResult {
 }
 
 /**
- * Hierarchy Validation Result - Parent-child relationship checks
+ * Simple Hierarchy Validation Result - Basic parent-child relationship checks
+ * @deprecated Use HierarchyValidationResult from analysis.ts for detailed validation
  */
-export interface HierarchyValidationResult {
+export interface SimpleHierarchyValidationResult {
   valid: boolean;
   total_items: number;
   issues: Array<{

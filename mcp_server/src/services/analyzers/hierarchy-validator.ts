@@ -10,7 +10,7 @@ import type {
   HierarchyValidatorArgs, 
   HierarchyValidationResult,
   WorkItemHierarchyInfo
-} from '../sampling-types.js';
+} from '../../types/analysis.js';
 import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/ado.js';
 import { logger } from '../../utils/logger.js';
 import { getRequiredConfig } from '../../config/config.js';

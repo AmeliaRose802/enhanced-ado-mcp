@@ -1,5 +1,5 @@
 import type { ToolExecutionResult } from '../../types/index.js';
-import type { SprintPlanningAnalyzerArgs, SprintPlanningResult } from '../sampling-types.js';
+import type { SprintPlanningAnalyzerArgs, SprintPlanningResult } from '../../types/analysis.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
