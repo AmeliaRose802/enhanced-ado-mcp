@@ -30,41 +30,101 @@ export interface ParsedPrompt {
  * Follows JSON Schema Draft 7 specification
  */
 export interface JSONSchemaProperty {
+  /** JSON Schema type */
   type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
+  /** Human-readable description */
   description?: string;
-  enum?: unknown[];
-  default?: unknown;
+  /** Allowed enum values - must be JSON-serializable */
+  enum?: JSONValue[];
+  /** Default value - must be JSON-serializable */
+  default?: JSONValue;
+  /** Schema for array items */
   items?: JSONSchemaProperty;
+  /** Properties for object types */
   properties?: Record<string, JSONSchemaProperty>;
+  /** Required property names for object types */
   required?: string[];
+  /** Additional properties setting or schema */
   additionalProperties?: boolean | JSONSchemaProperty;
+  /** Minimum string length */
   minLength?: number;
+  /** Maximum string length */
   maxLength?: number;
+  /** Minimum numeric value */
   minimum?: number;
+  /** Maximum numeric value */
   maximum?: number;
+  /** Regex pattern for string validation */
   pattern?: string;
+  /** Format hint (e.g., 'email', 'uri', 'date-time') */
   format?: string;
+  /** Reference to a definition */
   $ref?: string;
+  /** One of these schemas must match */
   oneOf?: JSONSchemaProperty[];
+  /** Any of these schemas may match */
   anyOf?: JSONSchemaProperty[];
+  /** All of these schemas must match */
   allOf?: JSONSchemaProperty[];
-  [key: string]: unknown; // Allow additional JSON Schema keywords
+  /** 
+   * Allow additional JSON Schema keywords
+   * Note: This includes complex schema properties that may not be simple JSON values
+   */
+  [key: string]: 
+    | string 
+    | number 
+    | boolean 
+    | null 
+    | undefined
+    | JSONValue[]
+    | JSONSchemaProperty
+    | JSONSchemaProperty[]
+    | Record<string, JSONSchemaProperty>;
 }
 
+/**
+ * JSON Schema root definition
+ * Represents a complete JSON Schema document
+ */
 export interface JSONSchema {
+  /** Root type of the schema */
   type: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+  /** Properties for object schemas */
   properties?: Record<string, JSONSchemaProperty>;
+  /** Required property names */
   required?: string[];
+  /** Additional properties setting or schema */
   additionalProperties?: boolean | JSONSchemaProperty;
+  /** Schema for array items */
   items?: JSONSchemaProperty;
+  /** Human-readable description */
   description?: string;
+  /** Schema title */
   title?: string;
+  /** JSON Schema version identifier */
   $schema?: string;
+  /** Reusable schema definitions */
   definitions?: Record<string, JSONSchemaProperty>;
+  /** One of these schemas must match */
   oneOf?: JSONSchemaProperty[];
+  /** Any of these schemas may match */
   anyOf?: JSONSchemaProperty[];
+  /** All of these schemas must match */
   allOf?: JSONSchemaProperty[];
-  [key: string]: unknown; // Allow additional JSON Schema keywords
+  /** 
+   * Allow additional JSON Schema keywords
+   * Note: This includes complex schema properties that may not be simple JSON values
+   */
+  [key: string]: 
+    | string 
+    | number 
+    | boolean 
+    | null 
+    | undefined
+    | string[]
+    | JSONSchemaProperty
+    | JSONSchemaProperty[]
+    | Record<string, JSONSchemaProperty>;
 }
 
 export interface ToolConfig {

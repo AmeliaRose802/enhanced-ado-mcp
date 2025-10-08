@@ -9,6 +9,7 @@
  */
 
 import type { ADOWorkItem, ADOWorkItemFields, ADORelation, ADOIdentity } from './ado.js';
+import type { JSONValue } from './index.js';
 
 /**
  * Work Item - Standard Azure DevOps work item structure
@@ -39,7 +40,11 @@ export interface WorkItemContext {
   acceptanceCriteria?: string;
   createdDate?: string;
   changedDate?: string;
-  [key: string]: unknown; // Allow additional computed fields
+  /** 
+   * Allow additional computed fields
+   * Note: Computed fields are JSON-serializable primitive values
+   */
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 /**
@@ -148,7 +153,11 @@ export interface SubstantiveChangeResult {
   lastRevisionDate: string;
   isStale: boolean;
   staleDays: number;
-  [key: string]: unknown; // Allow additional properties
+  /** 
+   * Allow additional properties
+   * Note: Additional fields are JSON-serializable primitive values
+   */
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 /**
@@ -181,7 +190,8 @@ export interface BulkOperationResult {
     workItemId: number;
     success: boolean;
     error?: string;
-    data?: unknown;
+    /** Additional result data - must be JSON-serializable */
+    data?: JSONValue;
   }>;
   summary?: string;
 }
@@ -197,7 +207,19 @@ export interface WorkItemAnalysis {
   completion?: CompletionAnalysis;
   priorities?: PriorityAnalysis;
   workload?: WorkloadAnalysis;
-  [key: string]: unknown; // Allow additional analysis types
+  /** 
+   * Allow additional analysis types
+   * Note: Analysis results are complex structured objects
+   */
+  [key: string]: 
+    | EffortAnalysis 
+    | VelocityAnalysis 
+    | AssignmentAnalysis 
+    | RiskAnalysis 
+    | CompletionAnalysis 
+    | PriorityAnalysis 
+    | WorkloadAnalysis 
+    | undefined;
 }
 
 /**
