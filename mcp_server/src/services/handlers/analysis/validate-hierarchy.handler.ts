@@ -9,7 +9,12 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildSuccessResponse,
+  buildErrorResponse,
+} from "../../../utils/response-builder.js";
 
 interface ValidateHierarchyArgs {
   workItemIds?: number[];
@@ -31,38 +36,38 @@ interface HierarchyViolation {
   parentTitle?: string;
   parentType?: string;
   parentState?: string;
-  violationType: 'invalid_parent_type' | 'invalid_state_progression' | 'orphaned_child';
-  severity: 'error' | 'warning';
+  violationType: "invalid_parent_type" | "invalid_state_progression" | "orphaned_child";
+  severity: "error" | "warning";
   issue: string;
   expectedCorrection: string;
 }
 
 // Define valid parent-child type relationships (Azure DevOps standard hierarchy)
 const VALID_CHILD_TYPES: Record<string, string[]> = {
-  'Key Result': ['Epic'],
-  'Epic': ['Feature'],
-  'Feature': ['Product Backlog Item', 'User Story'],
-  'Product Backlog Item': ['Task', 'Bug'],
-  'User Story': ['Task', 'Bug'],
-  'Task': [], // Tasks don't have children
-  'Bug': []  // Bugs don't have children
+  "Key Result": ["Epic"],
+  Epic: ["Feature"],
+  Feature: ["Product Backlog Item", "User Story"],
+  "Product Backlog Item": ["Task", "Bug"],
+  "User Story": ["Task", "Bug"],
+  Task: [], // Tasks don't have children
+  Bug: [], // Bugs don't have children
 };
 
 // Define state progression rules
 // Parent cannot be in an earlier state than active children
 const STATE_HIERARCHY: Record<string, number> = {
-  'New': 1,
-  'Proposed': 1,
-  'To Do': 1,
-  'Active': 2,
-  'Committed': 2,
-  'In Progress': 2,
-  'Doing': 2,
-  'Resolved': 3,
-  'Done': 4,
-  'Completed': 4,
-  'Closed': 4,
-  'Removed': 5
+  New: 1,
+  Proposed: 1,
+  "To Do": 1,
+  Active: 2,
+  Committed: 2,
+  "In Progress": 2,
+  Doing: 2,
+  Resolved: 3,
+  Done: 4,
+  Completed: 4,
+  Closed: 4,
+  Removed: 5,
 };
 
 /**
@@ -81,7 +86,10 @@ function isValidChildType(parentType: string, childType: string): boolean {
  * Parent cannot be "New" if child is "Active" or "Done"
  * Parent cannot be "Done" if child is still "Active" or "New"
  */
-function isValidStateProgression(parentState: string, childState: string): { valid: boolean; issue?: string } {
+function isValidStateProgression(
+  parentState: string,
+  childState: string
+): { valid: boolean; issue?: string } {
   const parentLevel = STATE_HIERARCHY[parentState];
   const childLevel = STATE_HIERARCHY[childState];
 
@@ -94,7 +102,7 @@ function isValidStateProgression(parentState: string, childState: string): { val
   if (parentLevel === 1 && childLevel >= 2) {
     return {
       valid: false,
-      issue: `Parent is in '${parentState}' but child is in '${childState}'. Parent should be at least 'Active' when children are in progress.`
+      issue: `Parent is in '${parentState}' but child is in '${childState}'. Parent should be at least 'Active' when children are in progress.`,
     };
   }
 
@@ -102,14 +110,17 @@ function isValidStateProgression(parentState: string, childState: string): { val
   if (parentLevel === 4 && childLevel < 3) {
     return {
       valid: false,
-      issue: `Parent is in '${parentState}' but child is still '${childState}'. All children must be completed or resolved before parent can be marked done.`
+      issue: `Parent is in '${parentState}' but child is still '${childState}'. All children must be completed or resolved before parent can be marked done.`,
     };
   }
 
   return { valid: true };
 }
 
-export async function handleValidateHierarchy(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleValidateHierarchy(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -118,7 +129,7 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     const parsed = config.schema.safeParse(args || {});
     if (!parsed.success) {
-      return buildValidationErrorResponse(parsed.error, 'validate-hierarchy');
+      return buildValidationErrorResponse(parsed.error, "validate-hierarchy");
     }
 
     const {
@@ -129,70 +140,77 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       maxResults = 500,
       includeSubAreas = true,
       validateTypes = true,
-      validateStates = true
+      validateStates = true,
     } = parsed.data as ValidateHierarchyArgs;
 
     logger.debug(`Validating hierarchy (types=${validateTypes}, states=${validateStates})`);
 
-    let workItems: Array<{id: number; title: string; type: string; state: string; additionalFields?: Record<string, unknown>}> = [];
+    let workItems: Array<{
+      id: number;
+      title: string;
+      type: string;
+      state: string;
+      additionalFields?: Record<string, unknown>;
+    }> = [];
 
     // Get work items either by IDs or area path
     if (workItemIds && workItemIds.length > 0) {
       const result = await queryWorkItemsByWiql({
-        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${workItemIds.join(',')})`,
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${workItemIds.join(",")})`,
         organization,
         project,
-        includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        maxResults: workItemIds.length
+        includeFields: ["System.Parent", "System.State", "System.WorkItemType", "System.Title"],
+        maxResults: workItemIds.length,
       });
       workItems = result.workItems;
     } else if (areaPath) {
       const escapedAreaPath = escapeAreaPath(areaPath);
-      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${escapedAreaPath}'` : `[System.AreaPath] = '${escapedAreaPath}'`;
+      const areaClause = includeSubAreas
+        ? `[System.AreaPath] UNDER '${escapedAreaPath}'`
+        : `[System.AreaPath] = '${escapedAreaPath}'`;
       const result = await queryWorkItemsByWiql({
         wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed', 'Done', 'Completed', 'Resolved') ORDER BY [System.WorkItemType], [System.Id]`,
         organization,
         project,
-        includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        maxResults
+        includeFields: ["System.Parent", "System.State", "System.WorkItemType", "System.Title"],
+        maxResults,
       });
       workItems = result.workItems;
     } else {
-      return buildErrorResponse(
-        'Either workItemIds or areaPath must be provided',
-        { source: 'validate-hierarchy' }
-      );
+      return buildErrorResponse("Either workItemIds or areaPath must be provided", {
+        source: "validate-hierarchy",
+      });
     }
 
     logger.debug(`Analyzing ${workItems.length} work items for hierarchy violations`);
 
     const violations: HierarchyViolation[] = [];
     const parentIds = new Set<number>();
-    
+
     // Collect all parent IDs that need to be fetched
     for (const item of workItems) {
-      const parentId = item.additionalFields?.['System.Parent'];
-      if (typeof parentId === 'number') {
+      const parentId = item.additionalFields?.["System.Parent"];
+      if (typeof parentId === "number") {
         parentIds.add(parentId);
       }
     }
 
     // Fetch parent work items in batch if needed
-    const parentMap = new Map<number, {id: number; title: string; type: string; state: string}>();
+    const parentMap = new Map<number, { id: number; title: string; type: string; state: string }>();
     if (parentIds.size > 0 && (validateTypes || validateStates)) {
       const parentIdArray = Array.from(parentIds);
-      
+
       // Fetch in batches of 200 to avoid URL length limits
       for (let i = 0; i < parentIdArray.length; i += 200) {
         const batch = parentIdArray.slice(i, i + 200);
         const result = await queryWorkItemsByWiql({
-          wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${batch.join(',')})`,
+          wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${batch.join(",")})`,
           organization,
           project,
-          includeFields: ['System.State', 'System.WorkItemType', 'System.Title'],
-          maxResults: batch.length
+          includeFields: ["System.State", "System.WorkItemType", "System.Title"],
+          maxResults: batch.length,
         });
-        
+
         for (const parent of result.workItems) {
           parentMap.set(parent.id, parent);
         }
@@ -201,11 +219,11 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     // Validate each work item
     for (const item of workItems) {
-      const parentId = item.additionalFields?.['System.Parent'];
-      
-      if (typeof parentId === 'number') {
+      const parentId = item.additionalFields?.["System.Parent"];
+
+      if (typeof parentId === "number") {
         const parent = parentMap.get(parentId);
-        
+
         if (!parent) {
           // Parent exists but is outside the scope (possibly Removed/Closed)
           violations.push({
@@ -214,10 +232,10 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
             type: item.type,
             state: item.state,
             parentId: parentId,
-            violationType: 'orphaned_child',
-            severity: 'warning',
+            violationType: "orphaned_child",
+            severity: "warning",
             issue: `Parent work item #${parentId} not found or is in Removed/Closed state`,
-            expectedCorrection: `Verify parent #${parentId} exists and is in an active state, or unlink this item from its parent`
+            expectedCorrection: `Verify parent #${parentId} exists and is in an active state, or unlink this item from its parent`,
           });
           continue;
         }
@@ -234,10 +252,10 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
               parentTitle: parent.title,
               parentType: parent.type,
               parentState: parent.state,
-              violationType: 'invalid_parent_type',
-              severity: 'error',
+              violationType: "invalid_parent_type",
+              severity: "error",
               issue: `${item.type} cannot be a child of ${parent.type}`,
-              expectedCorrection: `Valid children for ${parent.type}: ${VALID_CHILD_TYPES[parent.type]?.join(', ') || 'none'}`
+              expectedCorrection: `Valid children for ${parent.type}: ${VALID_CHILD_TYPES[parent.type]?.join(", ") || "none"}`,
             });
           }
         }
@@ -255,27 +273,27 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
               parentTitle: parent.title,
               parentType: parent.type,
               parentState: parent.state,
-              violationType: 'invalid_state_progression',
-              severity: 'warning',
-              issue: stateCheck.issue || 'Invalid state progression',
-              expectedCorrection: `Update parent to appropriate state or adjust child state to align with parent`
+              violationType: "invalid_state_progression",
+              severity: "warning",
+              issue: stateCheck.issue || "Invalid state progression",
+              expectedCorrection: `Update parent to appropriate state or adjust child state to align with parent`,
             });
           }
         }
       } else {
         // No parent - check if this should have a parent
-        const shouldHaveParent = !['Key Result', 'Epic'].includes(item.type);
-        
+        const shouldHaveParent = !["Key Result", "Epic"].includes(item.type);
+
         if (shouldHaveParent) {
           violations.push({
             workItemId: item.id,
             title: item.title,
             type: item.type,
             state: item.state,
-            violationType: 'orphaned_child',
-            severity: 'warning',
+            violationType: "orphaned_child",
+            severity: "warning",
             issue: `${item.type} has no parent link`,
-            expectedCorrection: `${item.type} items should be linked to a parent (e.g., ${getExpectedParentTypes(item.type).join(' or ')})`
+            expectedCorrection: `${item.type} items should be linked to a parent (e.g., ${getExpectedParentTypes(item.type).join(" or ")})`,
           });
         }
       }
@@ -283,14 +301,16 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     // Categorize violations
     const byType = {
-      invalid_parent_type: violations.filter(v => v.violationType === 'invalid_parent_type'),
-      invalid_state_progression: violations.filter(v => v.violationType === 'invalid_state_progression'),
-      orphaned_child: violations.filter(v => v.violationType === 'orphaned_child')
+      invalid_parent_type: violations.filter((v) => v.violationType === "invalid_parent_type"),
+      invalid_state_progression: violations.filter(
+        (v) => v.violationType === "invalid_state_progression"
+      ),
+      orphaned_child: violations.filter((v) => v.violationType === "orphaned_child"),
     };
 
     const bySeverity = {
-      error: violations.filter(v => v.severity === 'error'),
-      warning: violations.filter(v => v.severity === 'warning')
+      error: violations.filter((v) => v.severity === "error"),
+      warning: violations.filter((v) => v.severity === "warning"),
     };
 
     return buildSuccessResponse(
@@ -303,30 +323,27 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
           byViolationType: {
             invalid_parent_type: byType.invalid_parent_type.length,
             invalid_state_progression: byType.invalid_state_progression.length,
-            orphaned_child: byType.orphaned_child.length
-          }
+            orphaned_child: byType.orphaned_child.length,
+          },
         },
         violations: violations,
         categorized: {
           byType,
-          bySeverity
+          bySeverity,
         },
         validationRules: {
           validChildTypes: VALID_CHILD_TYPES,
-          stateHierarchy: STATE_HIERARCHY
-        }
+          stateHierarchy: STATE_HIERARCHY,
+        },
       },
-      { 
+      {
         source: "validate-hierarchy",
-        violationCount: violations.length
+        violationCount: violations.length,
       }
     );
   } catch (error) {
-    logger.error('Validate hierarchy error:', error);
-    return buildErrorResponse(
-      error as Error,
-      { source: "validate-hierarchy" }
-    );
+    logger.error("Validate hierarchy error:", error);
+    return buildErrorResponse(error as Error, { source: "validate-hierarchy" });
   }
 }
 
@@ -335,12 +352,12 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
  */
 function getExpectedParentTypes(childType: string): string[] {
   const parentTypes: string[] = [];
-  
+
   for (const [parentType, validChildren] of Object.entries(VALID_CHILD_TYPES)) {
     if (validChildren.includes(childType)) {
       parentTypes.push(parentType);
     }
   }
-  
+
   return parentTypes;
 }

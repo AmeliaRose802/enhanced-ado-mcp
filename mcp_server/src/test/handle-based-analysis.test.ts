@@ -2,38 +2,38 @@
  * Tests for new handle-based analysis tools
  */
 
-import { handleAnalyzeByQueryHandle } from '../services/handlers/ai-powered/analyze-by-query-handle.handler.js';
-import { handleListQueryHandles } from '../services/handlers/query-handles/list-query-handles.handler.js';
-import { queryHandleService } from '../services/query-handle-service.js';
-import { analyzeByQueryHandleSchema, listQueryHandlesSchema } from '../config/schemas.js';
+import { handleAnalyzeByQueryHandle } from "../services/handlers/ai-powered/analyze-by-query-handle.handler.js";
+import { handleListQueryHandles } from "../services/handlers/query-handles/list-query-handles.handler.js";
+import { queryHandleService } from "../services/query-handle-service.js";
+import { analyzeByQueryHandleSchema, listQueryHandlesSchema } from "../config/schemas.js";
 
 // Mock configuration
-jest.mock('../config/config.js', () => ({
+jest.mock("../config/config.js", () => ({
   loadConfiguration: jest.fn(() => ({
     azureDevOps: {
-      organization: 'test-org',
-      project: 'test-project',
-      areaPath: '',
-      iterationPath: '',
-      defaultWorkItemType: 'Task',
+      organization: "test-org",
+      project: "test-project",
+      areaPath: "",
+      iterationPath: "",
+      defaultWorkItemType: "Task",
       defaultPriority: 2,
-      defaultAssignedTo: '',
-      inheritParentPaths: false
-    }
+      defaultAssignedTo: "",
+      inheritParentPaths: false,
+    },
   })),
-  updateConfigFromCLI: jest.fn()
+  updateConfigFromCLI: jest.fn(),
 }));
 
 // Mock Azure CLI validation
-jest.mock('../services/ado-discovery-service.js', () => ({
+jest.mock("../services/ado-discovery-service.js", () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
-    isLoggedIn: true
-  }))
+    isLoggedIn: true,
+  })),
 }));
 
 // Mock ADO HTTP Client
-jest.mock('../utils/ado-http-client.js', () => ({
+jest.mock("../utils/ado-http-client.js", () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
     get: jest.fn().mockResolvedValue({
       data: {
@@ -41,40 +41,40 @@ jest.mock('../utils/ado-http-client.js', () => ({
           {
             id: 12345,
             fields: {
-              'System.Title': 'Test Item 1',
-              'System.WorkItemType': 'PBI',
-              'System.State': 'Active',
-              'System.AssignedTo': { displayName: 'John Doe' },
-              'Microsoft.VSTS.Scheduling.StoryPoints': 5,
-              'Microsoft.VSTS.Common.Priority': 2,
-              'System.CreatedDate': '2025-01-01T00:00:00Z',
-              'System.ChangedDate': '2025-10-01T00:00:00Z',
-              'System.Tags': '',
-              'System.Description': 'Test description'
-            }
+              "System.Title": "Test Item 1",
+              "System.WorkItemType": "PBI",
+              "System.State": "Active",
+              "System.AssignedTo": { displayName: "John Doe" },
+              "Microsoft.VSTS.Scheduling.StoryPoints": 5,
+              "Microsoft.VSTS.Common.Priority": 2,
+              "System.CreatedDate": "2025-01-01T00:00:00Z",
+              "System.ChangedDate": "2025-10-01T00:00:00Z",
+              "System.Tags": "",
+              "System.Description": "Test description",
+            },
           },
           {
             id: 67890,
             fields: {
-              'System.Title': 'Test Item 2',
-              'System.WorkItemType': 'Bug',
-              'System.State': 'Done',
-              'System.AssignedTo': { displayName: 'Jane Smith' },
-              'Microsoft.VSTS.Scheduling.StoryPoints': 3,
-              'Microsoft.VSTS.Common.Priority': 1,
-              'System.CreatedDate': '2025-02-01T00:00:00Z',
-              'System.ChangedDate': '2025-10-02T00:00:00Z',
-              'System.Tags': 'Blocked',
-              'System.Description': 'Bug description'
-            }
-          }
-        ]
-      }
-    })
-  }))
+              "System.Title": "Test Item 2",
+              "System.WorkItemType": "Bug",
+              "System.State": "Done",
+              "System.AssignedTo": { displayName: "Jane Smith" },
+              "Microsoft.VSTS.Scheduling.StoryPoints": 3,
+              "Microsoft.VSTS.Common.Priority": 1,
+              "System.CreatedDate": "2025-02-01T00:00:00Z",
+              "System.ChangedDate": "2025-10-02T00:00:00Z",
+              "System.Tags": "Blocked",
+              "System.Description": "Bug description",
+            },
+          },
+        ],
+      },
+    }),
+  })),
 }));
 
-describe('Handle-Based Analysis Tools', () => {
+describe("Handle-Based Analysis Tools", () => {
   beforeEach(() => {
     queryHandleService.clearAll();
   });
@@ -83,16 +83,16 @@ describe('Handle-Based Analysis Tools', () => {
     queryHandleService.stopCleanup();
   });
 
-  describe('wit-analyze-items', () => {
+  describe("wit-analyze-items", () => {
     const mockConfig = {
-      name: 'wit-analyze-items',
-      description: 'Test',
-      script: '',
+      name: "wit-analyze-items",
+      description: "Test",
+      script: "",
       schema: analyzeByQueryHandleSchema,
-      inputSchema: { type: 'object' as const }
+      inputSchema: { type: "object" as const },
     };
 
-    it('should analyze work items using query handle', async () => {
+    it("should analyze work items using query handle", async () => {
       // Set up query handle
       const workItemIds = [12345, 67890];
       const query = 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"';
@@ -100,7 +100,7 @@ describe('Handle-Based Analysis Tools', () => {
 
       const result = await handleAnalyzeByQueryHandle(mockConfig, {
         queryHandle: handle,
-        analysisType: ['effort', 'assignments', 'completion']
+        analysisType: ["effort", "assignments", "completion"],
       });
 
       expect(result.success).toBe(true);
@@ -113,25 +113,25 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.results.completion).toBeDefined();
     });
 
-    it('should return error for non-existent query handle', async () => {
+    it("should return error for non-existent query handle", async () => {
       const result = await handleAnalyzeByQueryHandle(mockConfig, {
-        queryHandle: 'qh_nonexistent',
-        analysisType: ['effort']
+        queryHandle: "qh_nonexistent",
+        analysisType: ["effort"],
       });
 
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain('not found or expired');
+      expect(result.errors[0]).toContain("not found or expired");
     });
 
-    it('should analyze effort correctly', async () => {
+    it("should analyze effort correctly", async () => {
       const workItemIds = [12345, 67890];
-      const query = 'SELECT [System.Id] FROM WorkItems';
+      const query = "SELECT [System.Id] FROM WorkItems";
       const handle = queryHandleService.storeQuery(workItemIds, query);
 
       const result = await handleAnalyzeByQueryHandle(mockConfig, {
         queryHandle: handle,
-        analysisType: ['effort']
+        analysisType: ["effort"],
       });
 
       expect(result.success).toBe(true);
@@ -142,14 +142,14 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.results.effort.estimation_coverage).toBe(100);
     });
 
-    it('should analyze assignments correctly', async () => {
+    it("should analyze assignments correctly", async () => {
       const workItemIds = [12345, 67890];
-      const query = 'SELECT [System.Id] FROM WorkItems';
+      const query = "SELECT [System.Id] FROM WorkItems";
       const handle = queryHandleService.storeQuery(workItemIds, query);
 
       const result = await handleAnalyzeByQueryHandle(mockConfig, {
         queryHandle: handle,
-        analysisType: ['assignments']
+        analysisType: ["assignments"],
       });
 
       expect(result.success).toBe(true);
@@ -161,14 +161,14 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.results.assignments.assignment_coverage).toBe(100);
     });
 
-    it('should analyze risks correctly', async () => {
+    it("should analyze risks correctly", async () => {
       const workItemIds = [12345, 67890];
-      const query = 'SELECT [System.Id] FROM WorkItems';
+      const query = "SELECT [System.Id] FROM WorkItems";
       const handle = queryHandleService.storeQuery(workItemIds, query);
 
       const result = await handleAnalyzeByQueryHandle(mockConfig, {
         queryHandle: handle,
-        analysisType: ['risks']
+        analysisType: ["risks"],
       });
 
       expect(result.success).toBe(true);
@@ -179,14 +179,14 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.results.risks.risk_details.blocked_count).toBe(1); // One item has 'Blocked' tag
     });
 
-    it('should handle multiple analysis types', async () => {
+    it("should handle multiple analysis types", async () => {
       const workItemIds = [12345, 67890];
-      const query = 'SELECT [System.Id] FROM WorkItems';
+      const query = "SELECT [System.Id] FROM WorkItems";
       const handle = queryHandleService.storeQuery(workItemIds, query);
 
       const result = await handleAnalyzeByQueryHandle(mockConfig, {
         queryHandle: handle,
-        analysisType: ['effort', 'velocity', 'assignments', 'risks', 'completion', 'priorities']
+        analysisType: ["effort", "velocity", "assignments", "risks", "completion", "priorities"],
       });
 
       expect(result.success).toBe(true);
@@ -199,19 +199,25 @@ describe('Handle-Based Analysis Tools', () => {
     });
   });
 
-  describe('wit-query-handle-list', () => {
+  describe("wit-query-handle-list", () => {
     const mockConfig = {
-      name: 'wit-query-handle-list',
-      description: 'Test',
-      script: '',
+      name: "wit-query-handle-list",
+      description: "Test",
+      script: "",
       schema: listQueryHandlesSchema,
-      inputSchema: { type: 'object' as const }
+      inputSchema: { type: "object" as const },
     };
 
-    it('should list query handle statistics', async () => {
+    it("should list query handle statistics", async () => {
       // Create some handles
-      queryHandleService.storeQuery([1, 2, 3], 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"');
-      queryHandleService.storeQuery([4, 5, 6], 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "New"');
+      queryHandleService.storeQuery(
+        [1, 2, 3],
+        'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"'
+      );
+      queryHandleService.storeQuery(
+        [4, 5, 6],
+        'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "New"'
+      );
 
       const result = await handleListQueryHandles(mockConfig, {});
 
@@ -221,71 +227,80 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.active_handles).toBe(2);
       expect(result.data.expired_handles).toBe(0);
       expect(result.data.guidance).toBeDefined();
-      expect(result.data.guidance.handle_lifetime).toBe('1 hour (default)');
-      
+      expect(result.data.guidance.handle_lifetime).toBe("1 hour (default)");
+
       // Verify handles array is populated
       expect(result.data.handles).toBeDefined();
       expect(Array.isArray(result.data.handles)).toBe(true);
       expect(result.data.handles.length).toBe(2);
-      
+
       // Verify each handle has the required fields
       for (const handle of result.data.handles) {
-        expect(handle).toHaveProperty('id');
-        expect(handle).toHaveProperty('created_at');
-        expect(handle).toHaveProperty('expires_at');
-        expect(handle).toHaveProperty('item_count');
-        expect(handle).toHaveProperty('has_context');
-        
+        expect(handle).toHaveProperty("id");
+        expect(handle).toHaveProperty("created_at");
+        expect(handle).toHaveProperty("expires_at");
+        expect(handle).toHaveProperty("item_count");
+        expect(handle).toHaveProperty("has_context");
+
         expect(handle.id).toMatch(/^qh_/);
-        expect(typeof handle.created_at).toBe('string');
-        expect(typeof handle.expires_at).toBe('string');
-        expect(typeof handle.item_count).toBe('number');
-        expect(typeof handle.has_context).toBe('boolean');
+        expect(typeof handle.created_at).toBe("string");
+        expect(typeof handle.expires_at).toBe("string");
+        expect(typeof handle.item_count).toBe("number");
+        expect(typeof handle.has_context).toBe("boolean");
         expect(handle.item_count).toBeGreaterThan(0);
       }
     });
 
-    it('should populate handles with correct item count', async () => {
+    it("should populate handles with correct item count", async () => {
       // Create handles with different item counts
-      queryHandleService.storeQuery([1, 2, 3, 4, 5], 'SELECT [System.Id] FROM WorkItems');
-      queryHandleService.storeQuery([10], 'SELECT [System.Id] FROM WorkItems');
+      queryHandleService.storeQuery([1, 2, 3, 4, 5], "SELECT [System.Id] FROM WorkItems");
+      queryHandleService.storeQuery([10], "SELECT [System.Id] FROM WorkItems");
 
       const result = await handleListQueryHandles(mockConfig, {});
 
       expect(result.success).toBe(true);
       expect(result.data.handles.length).toBe(2);
-      
-      const itemCounts = result.data.handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
+
+      const itemCounts = result.data.handles
+        .map((h: any) => h.item_count)
+        .sort((a: number, b: number) => a - b);
       expect(itemCounts).toEqual([1, 5]);
     });
 
-    it('should provide warnings when no handles exist', async () => {
+    it("should provide warnings when no handles exist", async () => {
       const result = await handleListQueryHandles(mockConfig, {});
 
       expect(result.success).toBe(true);
       expect(result.data.total_handles).toBe(0);
-      expect(result.warnings).toContain('No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles.');
+      expect(result.warnings).toContain(
+        "No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles."
+      );
     });
 
-    it('should warn about high number of handles', async () => {
+    it("should warn about high number of handles", async () => {
       // Create many handles
       for (let i = 0; i < 12; i++) {
-        queryHandleService.storeQuery([i], `SELECT [System.Id] FROM WorkItems WHERE [System.Id] = ${i}`);
+        queryHandleService.storeQuery(
+          [i],
+          `SELECT [System.Id] FROM WorkItems WHERE [System.Id] = ${i}`
+        );
       }
 
       const result = await handleListQueryHandles(mockConfig, {});
 
       expect(result.success).toBe(true);
       expect(result.data.active_handles).toBe(12);
-      expect(result.warnings).toContain('High number of active handles (12). Consider cleaning up unused handles.');
+      expect(result.warnings).toContain(
+        "High number of active handles (12). Consider cleaning up unused handles."
+      );
     });
 
-    it('should handle expired handles', async () => {
+    it("should handle expired handles", async () => {
       // Create expired handle
-      queryHandleService.storeQuery([1, 2], 'SELECT [System.Id] FROM WorkItems', undefined, 1); // 1ms TTL
-      
+      queryHandleService.storeQuery([1, 2], "SELECT [System.Id] FROM WorkItems", undefined, 1); // 1ms TTL
+
       // Wait for expiration
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const result = await handleListQueryHandles(mockConfig, {});
 
@@ -295,13 +310,13 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.guidance).toBeDefined();
     });
 
-    it('should exclude expired handles from handles array by default', async () => {
+    it("should exclude expired handles from handles array by default", async () => {
       // Create one active and one expired handle
-      queryHandleService.storeQuery([1, 2, 3], 'SELECT [System.Id] FROM WorkItems');
-      queryHandleService.storeQuery([4, 5], 'SELECT [System.Id] FROM WorkItems', undefined, 1); // 1ms TTL
-      
+      queryHandleService.storeQuery([1, 2, 3], "SELECT [System.Id] FROM WorkItems");
+      queryHandleService.storeQuery([4, 5], "SELECT [System.Id] FROM WorkItems", undefined, 1); // 1ms TTL
+
       // Wait for expiration
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const result = await handleListQueryHandles(mockConfig, { includeExpired: false });
 
@@ -310,20 +325,22 @@ describe('Handle-Based Analysis Tools', () => {
       expect(result.data.handles[0].item_count).toBe(3);
     });
 
-    it('should include expired handles when requested', async () => {
+    it("should include expired handles when requested", async () => {
       // Create one active and one expired handle
-      queryHandleService.storeQuery([1, 2, 3], 'SELECT [System.Id] FROM WorkItems');
-      queryHandleService.storeQuery([4, 5], 'SELECT [System.Id] FROM WorkItems', undefined, 1); // 1ms TTL
-      
+      queryHandleService.storeQuery([1, 2, 3], "SELECT [System.Id] FROM WorkItems");
+      queryHandleService.storeQuery([4, 5], "SELECT [System.Id] FROM WorkItems", undefined, 1); // 1ms TTL
+
       // Wait for expiration
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const result = await handleListQueryHandles(mockConfig, { includeExpired: true });
 
       expect(result.success).toBe(true);
       expect(result.data.handles.length).toBe(2);
-      
-      const itemCounts = result.data.handles.map((h: any) => h.item_count).sort((a: number, b: number) => a - b);
+
+      const itemCounts = result.data.handles
+        .map((h: any) => h.item_count)
+        .sort((a: number, b: number) => a - b);
       expect(itemCounts).toEqual([2, 3]);
     });
   });

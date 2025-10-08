@@ -1,19 +1,25 @@
 /**
  * Handler for wit-bulk-comment tool
- * 
+ *
  * Adds comments to multiple work items identified by a query handle.
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
 
-export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleBulkCommentByQueryHandle(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -25,19 +31,22 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, comment, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
+    const { queryHandle, comment, itemSelector, dryRun, maxPreviewItems, organization, project } =
+      parsed.data;
 
     // Retrieve work item IDs and context from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
     const queryData = queryHandleService.getQueryData(queryHandle);
-    
+
     if (!selectedWorkItemIds || !queryData) {
       return {
         success: false,
         data: null,
         metadata: { source: "bulk-comment-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
+        errors: [
+          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        ],
+        warnings: [],
       };
     }
 
@@ -46,7 +55,11 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     const selectedCount = selectedWorkItemIds.length;
 
     // Function to substitute template variables in comments
-    const substituteTemplate = (template: string, workItemId: number, context?: Record<string, unknown>): string => {
+    const substituteTemplate = (
+      template: string,
+      workItemId: number,
+      context?: Record<string, unknown>
+    ): string => {
       if (!context || !queryData.workItemContext) {
         return template;
       }
@@ -57,29 +70,32 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       }
 
       let result = template;
-      
+
       // Substitute staleness data if available
       if (workItemContext.daysInactive !== undefined) {
         result = result.replace(/\{daysInactive\}/g, String(workItemContext.daysInactive));
       }
-      
+
       if (workItemContext.lastSubstantiveChangeDate) {
-        result = result.replace(/\{lastSubstantiveChangeDate\}/g, String(workItemContext.lastSubstantiveChangeDate));
+        result = result.replace(
+          /\{lastSubstantiveChangeDate\}/g,
+          String(workItemContext.lastSubstantiveChangeDate)
+        );
       }
 
       // Substitute other context data
       if (workItemContext.title) {
         result = result.replace(/\{title\}/g, String(workItemContext.title));
       }
-      
+
       if (workItemContext.state) {
         result = result.replace(/\{state\}/g, String(workItemContext.state));
       }
-      
+
       if (workItemContext.type) {
         result = result.replace(/\{type\}/g, String(workItemContext.type));
       }
-      
+
       if (workItemContext.assignedTo) {
         result = result.replace(/\{assignedTo\}/g, String(workItemContext.assignedTo));
       }
@@ -90,7 +106,9 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       return result;
     };
 
-    logger.info(`Bulk comment operation: ${selectedCount} of ${totalItems} work items selected (dry_run: ${dryRun})`);
+    logger.info(
+      `Bulk comment operation: ${selectedCount} of ${totalItems} work items selected (dry_run: ${dryRun})`
+    );
 
     if (dryRun) {
       // Show preview with template substitution for first few items
@@ -101,27 +119,31 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         return {
           work_item_id: id,
           title: context?.title || "No title available",
-          substituted_comment: substitutedComment.substring(0, 200) + (substitutedComment.length > 200 ? '...' : ''),
+          substituted_comment:
+            substitutedComment.substring(0, 200) + (substitutedComment.length > 200 ? "..." : ""),
           template_variables_found: {
             daysInactive: context?.daysInactive !== undefined,
             lastSubstantiveChangeDate: !!context?.lastSubstantiveChangeDate,
             title: !!context?.title,
             state: !!context?.state,
-            assignedTo: !!context?.assignedTo
-          }
+            assignedTo: !!context?.assignedTo,
+          },
         };
       });
 
-      const hasTemplateVariables = comment.includes('{') && comment.includes('}');
+      const hasTemplateVariables = comment.includes("{") && comment.includes("}");
       const warnings: string[] = [];
-      
+
       if (hasTemplateVariables && !queryData.workItemContext) {
-        warnings.push("Comment contains template variables (e.g., {daysInactive}) but query handle has no context data. Variables will not be substituted.");
+        warnings.push(
+          "Comment contains template variables (e.g., {daysInactive}) but query handle has no context data. Variables will not be substituted."
+        );
       }
 
-      const previewMessage = selectedCount > previewLimit 
-        ? `Showing ${previewLimit} of ${selectedCount} items...` 
-        : undefined;
+      const previewMessage =
+        selectedCount > previewLimit
+          ? `Showing ${previewLimit} of ${selectedCount} items...`
+          : undefined;
 
       return {
         success: true,
@@ -136,17 +158,17 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
           context_data_available: !!queryData.workItemContext,
           preview_items: previewItems,
           preview_message: previewMessage,
-          summary: `DRY RUN: Would add ${hasTemplateVariables ? 'templated' : 'static'} comment to ${selectedCount} of ${totalItems} work item(s)`
+          summary: `DRY RUN: Would add ${hasTemplateVariables ? "templated" : "static"} comment to ${selectedCount} of ${totalItems} work item(s)`,
         }),
-        metadata: { 
+        metadata: {
           source: "bulk-comment-by-query-handle",
           dryRun: true,
           itemSelector,
           hasTemplateVariables,
-          contextDataAvailable: !!queryData.workItemContext
+          contextDataAvailable: !!queryData.workItemContext,
         },
         errors: [],
-        warnings
+        warnings,
       };
     }
 
@@ -161,14 +183,14 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     for (const workItemId of selectedWorkItemIds) {
       try {
         const url = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
-        
+
         // Substitute template variables if context is available
         const context = queryData.workItemContext?.get(workItemId);
         const finalComment = substituteTemplate(comment, workItemId, context);
-        
+
         await httpClient.post(url, {
           text: finalComment,
-          format: 1  // 1 = Markdown, 0 = PlainText
+          format: 1, // 1 = Markdown, 0 = PlainText
         });
 
         results.push({ workItemId, success: true });
@@ -180,8 +202,8 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.filter(r => !r.success).length;
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.filter((r) => !r.success).length;
 
     return {
       success: failureCount === 0,
@@ -193,25 +215,26 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         successful: successCount,
         failed: failureCount,
         results,
-        summary: `Successfully added comment to ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
+        summary: `Successfully added comment to ${successCount} of ${selectedCount} selected work items${failureCount > 0 ? ` (${failureCount} failed)` : ""}`,
       }),
       metadata: {
         source: "bulk-comment-by-query-handle",
-        itemSelector
+        itemSelector,
       },
-      errors: failureCount > 0 
-        ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
-      warnings: []
+      errors:
+        failureCount > 0
+          ? results.filter((r) => !r.success).map((r) => `Work item ${r.workItemId}: ${r.error}`)
+          : [],
+      warnings: [],
     };
   } catch (error) {
-    logger.error('Bulk comment by query handle error:', error);
+    logger.error("Bulk comment by query handle error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "bulk-comment-by-query-handle" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

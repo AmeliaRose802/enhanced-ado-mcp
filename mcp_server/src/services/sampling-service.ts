@@ -2,20 +2,20 @@
  * Main Sampling Service - Simple orchestration layer
  */
 
-import type { ToolExecutionResult } from '../types/index.js';
-import type { MCPServer, MCPServerLike } from '../types/mcp.js';
-import type { 
+import type { ToolExecutionResult } from "../types/index.js";
+import type { MCPServer, MCPServerLike } from "../types/mcp.js";
+import type {
   WorkItemIntelligenceArgs,
   AIAssignmentAnalyzerArgs,
   PersonalWorkloadAnalyzerArgs,
-  SprintPlanningAnalyzerArgs
-} from './sampling-types.js';
+  SprintPlanningAnalyzerArgs,
+} from "./sampling-types.js";
 
-import { WorkItemIntelligenceAnalyzer } from './analyzers/work-item-intelligence.js';
-import { AIAssignmentAnalyzer } from './analyzers/ai-assignment.js';
-import { PersonalWorkloadAnalyzer } from './analyzers/personal-workload.js';
-import { SprintPlanningAnalyzer } from './analyzers/sprint-planner.js';
-import { ToolDiscoveryAnalyzer, type ToolDiscoveryArgs } from './analyzers/tool-discovery.js';
+import { WorkItemIntelligenceAnalyzer } from "./analyzers/work-item-intelligence.js";
+import { AIAssignmentAnalyzer } from "./analyzers/ai-assignment.js";
+import { PersonalWorkloadAnalyzer } from "./analyzers/personal-workload.js";
+import { SprintPlanningAnalyzer } from "./analyzers/sprint-planner.js";
+import { ToolDiscoveryAnalyzer, type ToolDiscoveryArgs } from "./analyzers/tool-discovery.js";
 
 export class SamplingService {
   private workItemAnalyzer: WorkItemIntelligenceAnalyzer;
@@ -23,7 +23,7 @@ export class SamplingService {
   private personalWorkloadAnalyzer: PersonalWorkloadAnalyzer;
   private sprintPlanningAnalyzer: SprintPlanningAnalyzer;
   private toolDiscoveryAnalyzer: ToolDiscoveryAnalyzer;
-  
+
   constructor(private server: MCPServer | MCPServerLike) {
     this.workItemAnalyzer = new WorkItemIntelligenceAnalyzer(server);
     this.aiAssignmentAnalyzer = new AIAssignmentAnalyzer(server);
@@ -53,5 +53,5 @@ export class SamplingService {
   }
 }
 
-export * from './sampling-types.js';
-export type { ToolDiscoveryArgs } from './analyzers/tool-discovery.js';
+export * from "./sampling-types.js";
+export type { ToolDiscoveryArgs } from "./analyzers/tool-discovery.js";

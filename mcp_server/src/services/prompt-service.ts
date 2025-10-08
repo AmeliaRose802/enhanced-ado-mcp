@@ -11,89 +11,93 @@ import type { MCPServerConfig } from "../config/config.js";
 /**
  * Create template variables object from config
  */
-function createTemplateVariables(config: MCPServerConfig, args: Record<string, unknown> = {}): Record<string, string | number | boolean> {
+function createTemplateVariables(
+  config: MCPServerConfig,
+  args: Record<string, unknown> = {}
+): Record<string, string | number | boolean> {
   const now = new Date();
   const month = now.getMonth();
   const quarter = Math.floor(month / 3) + 1;
   const semester = `Q${quarter}`;
-  
+
   // Calculate date ranges based on analysis_period_days parameter
-  const analysisPeriodDays = typeof args.analysis_period_days === 'number' ? args.analysis_period_days : 90;
+  const analysisPeriodDays =
+    typeof args.analysis_period_days === "number" ? args.analysis_period_days : 90;
   const endDate = new Date();
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - analysisPeriodDays);
-  
+
   // Format dates as YYYY-MM-DD for OData queries
   const formatDate = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   };
-  
+
   // Extract area substring for OData contains() filtering
   // OData doesn't support eq/startswith/under operators, so we use contains() with a unique substring
   const extractAreaSubstring = (areaPath: string): string => {
-    if (!areaPath) return '';
+    if (!areaPath) return "";
     // Get the last two segments of the area path for uniqueness
     // e.g., "One\\Azure Compute\\OneFleet Node\\Azure Host Agent" -> "OneFleet Node\\\\Azure Host Agent"
-    const segments = areaPath.split('\\').filter(s => s.length > 0);
+    const segments = areaPath.split("\\").filter((s) => s.length > 0);
     if (segments.length >= 2) {
       // Use last 2 segments, double-escape backslashes for OData
-      return segments.slice(-2).join('\\\\');
+      return segments.slice(-2).join("\\\\");
     }
     // If only one segment, use it as-is with double backslash escape
-    return segments.join('\\\\');
+    return segments.join("\\\\");
   };
-  
+
   // Extract simple area substring for OData contains() filtering without backslashes
   // Needed for specific OData queries that require unescaped area path segments
   const extractAreaSimpleSubstring = (areaPath: string): string => {
-    if (!areaPath) return '';
+    if (!areaPath) return "";
     // Get the last meaningful segment without backslashes
     // e.g., "One\\Azure Compute\\OneFleet Node\\Azure Host" -> "Azure Host"
-    const segments = areaPath.split('\\').filter(s => s.length > 0);
+    const segments = areaPath.split("\\").filter((s) => s.length > 0);
     if (segments.length >= 1) {
       // Return the last segment without any escaping
       return segments[segments.length - 1];
     }
-    return '';
+    return "";
   };
-  
+
   return {
     // Core config variables (escape area paths for use in WIQL/OData queries)
-    area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
-    area_substring: extractAreaSubstring(config.azureDevOps.areaPath || ''),
-    area_path_simple_substring: extractAreaSimpleSubstring(config.azureDevOps.areaPath || ''),
-    project: config.azureDevOps.project || '',
-    project_name: config.azureDevOps.project || '',
+    area_path: escapeAreaPath(config.azureDevOps.areaPath || ""),
+    area_substring: extractAreaSubstring(config.azureDevOps.areaPath || ""),
+    area_path_simple_substring: extractAreaSimpleSubstring(config.azureDevOps.areaPath || ""),
+    project: config.azureDevOps.project || "",
+    project_name: config.azureDevOps.project || "",
     org_url: `https://dev.azure.com/${config.azureDevOps.organization}`,
-    organization: config.azureDevOps.organization || '',
-    iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ''),
-    assigned_to: config.azureDevOps.defaultAssignedTo || '',
-    work_item_type: config.azureDevOps.defaultWorkItemType || '',
-    priority: config.azureDevOps.defaultPriority?.toString() || '',
-    branch: config.gitRepository.defaultBranch || '',
-    
+    organization: config.azureDevOps.organization || "",
+    iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ""),
+    assigned_to: config.azureDevOps.defaultAssignedTo || "",
+    work_item_type: config.azureDevOps.defaultWorkItemType || "",
+    priority: config.azureDevOps.defaultPriority?.toString() || "",
+    branch: config.gitRepository.defaultBranch || "",
+
     // Config defaults with prefix
     default_organization: config.azureDevOps.organization,
     default_project: config.azureDevOps.project,
-    default_area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
-    default_iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ''),
+    default_area_path: escapeAreaPath(config.azureDevOps.areaPath || ""),
+    default_iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ""),
     default_work_item_type: config.azureDevOps.defaultWorkItemType,
     default_priority: config.azureDevOps.defaultPriority?.toString(),
     default_assigned_to: config.azureDevOps.defaultAssignedTo,
     default_branch: config.gitRepository.defaultBranch,
-    
+
     // Date range variables (auto-calculated)
     start_date: formatDate(startDate),
     end_date: formatDate(endDate),
     today: formatDate(now),
     analysis_period_days: analysisPeriodDays,
-    
+
     // Computed values
     semester: semester,
     max_age_days: 180,
     include_child_areas: true,
     max_items: 50,
-    dry_run: true
+    dry_run: true,
   };
 }
 
@@ -112,80 +116,80 @@ interface PromptFrontmatter {
  */
 export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | null> {
   try {
-    const content = await readFile(filePath, 'utf-8');
-    const lines = content.split('\n');
-    
+    const content = await readFile(filePath, "utf-8");
+    const lines = content.split("\n");
+
     // Check if it starts with YAML frontmatter
-    if (!lines[0].trim().startsWith('---')) {
+    if (!lines[0].trim().startsWith("---")) {
       return null;
     }
-    
+
     // Find the end of frontmatter
     let frontmatterEnd = -1;
     for (let i = 1; i < lines.length; i++) {
-      if (lines[i].trim() === '---') {
+      if (lines[i].trim() === "---") {
         frontmatterEnd = i;
         break;
       }
     }
-    
+
     if (frontmatterEnd === -1) {
       return null;
     }
-    
+
     // Parse frontmatter
     const frontmatterLines = lines.slice(1, frontmatterEnd);
     const frontmatter: PromptFrontmatter = {};
     let inArguments = false;
     const argumentsObject: Record<string, PromptArgument> = {};
-    
+
     for (const line of frontmatterLines) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      
-      if (trimmed === 'arguments:') {
+
+      if (trimmed === "arguments:") {
         inArguments = true;
         continue;
       }
-      
+
       if (inArguments) {
         // Parse argument line like: "  item_title: { type: string, required: true, description: "..." }"
         const argMatch = trimmed.match(/^(\w+):\s*\{\s*(.+)\s*\}$/);
         if (argMatch) {
           const [, argName, argProps] = argMatch;
-          const props: PromptArgument = { type: 'string', required: false };
-          
+          const props: PromptArgument = { type: "string", required: false };
+
           // Parse properties with proper quoted string handling
           let currentPos = 0;
           const propPairs: string[] = [];
-          
+
           while (currentPos < argProps.length) {
             // Find the next key: value pair
-            const nextComma = argProps.indexOf(',', currentPos);
-            const nextColon = argProps.indexOf(':', currentPos);
-            
+            const nextComma = argProps.indexOf(",", currentPos);
+            const nextColon = argProps.indexOf(":", currentPos);
+
             if (nextColon === -1) break;
-            
+
             // Check if this is a description field with quotes
-            if (argProps.substring(currentPos, nextColon).trim() === 'description') {
+            if (argProps.substring(currentPos, nextColon).trim() === "description") {
               // Find the quoted string
               const afterColon = argProps.substring(nextColon + 1).trim();
               if (afterColon.startsWith('"')) {
                 // Find the closing quote
                 let endQuote = afterColon.indexOf('"', 1);
-                while (endQuote !== -1 && afterColon[endQuote - 1] === '\\') {
+                while (endQuote !== -1 && afterColon[endQuote - 1] === "\\") {
                   endQuote = afterColon.indexOf('"', endQuote + 1);
                 }
                 if (endQuote !== -1) {
                   const descValue = afterColon.substring(0, endQuote + 1);
                   propPairs.push(`description: ${descValue}`);
                   currentPos = nextColon + 1 + endQuote + 1;
-                  if (argProps[currentPos] === ',') currentPos++;
+                  if (argProps[currentPos] === ",") currentPos++;
                   continue;
                 }
               }
             }
-            
+
             // Regular property parsing
             if (nextComma === -1) {
               propPairs.push(argProps.substring(currentPos).trim());
@@ -195,26 +199,26 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
               currentPos = nextComma + 1;
             }
           }
-          
-          // Process the parsed pairs  
+
+          // Process the parsed pairs
           for (const pair of propPairs) {
-            const colonIndex = pair.indexOf(':');
+            const colonIndex = pair.indexOf(":");
             if (colonIndex === -1) continue;
-            
+
             const key = pair.substring(0, colonIndex).trim();
             const value = pair.substring(colonIndex + 1).trim();
-            
-            if (key === 'type') {
+
+            if (key === "type") {
               props.type = value;
-            } else if (key === 'required') {
-              props.required = value === 'true';
-            } else if (key === 'description') {
-              props.description = value.replace(/^["']|["']$/g, '');
-            } else if (key === 'default') {
-              props.default = value.replace(/^["']|["']$/g, '');
+            } else if (key === "required") {
+              props.required = value === "true";
+            } else if (key === "description") {
+              props.description = value.replace(/^["']|["']$/g, "");
+            } else if (key === "default") {
+              props.default = value.replace(/^["']|["']$/g, "");
             }
           }
-          
+
           argumentsObject[argName] = props;
         }
       } else {
@@ -223,28 +227,28 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
         if (keyValueMatch) {
           const [, key, value] = keyValueMatch;
           // Explicitly handle known keys
-          if (key === 'name') {
+          if (key === "name") {
             frontmatter.name = value;
-          } else if (key === 'description') {
+          } else if (key === "description") {
             frontmatter.description = value;
-          } else if (key === 'version') {
+          } else if (key === "version") {
             frontmatter.version = value;
           }
         }
       }
     }
-    
+
     frontmatter.arguments = argumentsObject;
-    
+
     // Get the prompt content (everything after frontmatter)
-    const promptContent = lines.slice(frontmatterEnd + 1).join('\n');
-    
+    const promptContent = lines.slice(frontmatterEnd + 1).join("\n");
+
     return {
-      name: frontmatter.name || basename(filePath, '.md'),
-      description: frontmatter.description || '',
-      version: parseInt(frontmatter.version || '') || 1,
+      name: frontmatter.name || basename(filePath, ".md"),
+      description: frontmatter.description || "",
+      version: parseInt(frontmatter.version || "") || 1,
       arguments: argumentsObject,
-      content: promptContent
+      content: promptContent,
     };
   } catch (error) {
     logger.warn(`Error parsing prompt file ${filePath}:`, error);
@@ -258,32 +262,32 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
 export async function loadPrompts(): Promise<Prompt[]> {
   try {
     const files = await readdir(promptsDir);
-    const promptFiles = files.filter((f: string) => f.endsWith('.md'));
-    
+    const promptFiles = files.filter((f: string) => f.endsWith(".md"));
+
     const prompts: Prompt[] = [];
-    
+
     for (const file of promptFiles) {
       const filePath = join(promptsDir, file);
       const parsed = await parsePromptFile(filePath);
-      
+
       if (parsed) {
         const prompt: Prompt = {
           name: parsed.name,
           description: parsed.description,
-          arguments: Object.keys(parsed.arguments).map(argName => ({
+          arguments: Object.keys(parsed.arguments).map((argName) => ({
             name: argName,
             description: parsed.arguments[argName].description,
-            required: parsed.arguments[argName].required
-          }))
+            required: parsed.arguments[argName].required,
+          })),
         };
-        
+
         prompts.push(prompt);
       }
     }
-    
+
     return prompts;
   } catch (error) {
-    logger.warn('Error loading prompts:', error);
+    logger.warn("Error loading prompts:", error);
     return [];
   }
 }
@@ -291,20 +295,23 @@ export async function loadPrompts(): Promise<Prompt[]> {
 /**
  * Get prompt content with template substitution
  */
-export async function getPromptContent(name: string, args: Record<string, unknown> = {}): Promise<string> {
+export async function getPromptContent(
+  name: string,
+  args: Record<string, unknown> = {}
+): Promise<string> {
   try {
     const files = await readdir(promptsDir);
-    const promptFiles = files.filter((f: string) => f.endsWith('.md'));
-    
+    const promptFiles = files.filter((f: string) => f.endsWith(".md"));
+
     for (const file of promptFiles) {
       const filePath = join(promptsDir, file);
       const parsed = await parsePromptFile(filePath);
-      
+
       if (parsed && parsed.name === name) {
         const content = parsed.content;
-        
+
         // Import config after prompt is found to avoid circular dependencies
-        const { loadConfiguration } = await import('../config/config.js');
+        const { loadConfiguration } = await import("../config/config.js");
         const config = loadConfiguration();
 
         // Apply argument defaults from prompt definition first
@@ -317,24 +324,30 @@ export async function getPromptContent(name: string, args: Record<string, unknow
 
         // Create comprehensive template variables from config (pass args for date calculation)
         const configVars = createTemplateVariables(config, argsWithDefaults);
-        
+
         // Merge with user-provided args (args override config defaults)
         const allVars = { ...configVars, ...argsWithDefaults };
-        
+
         // Apply template variables to defaults that contain template syntax
         for (const [argName, argDef] of Object.entries(parsed.arguments)) {
-          if (argName in allVars && typeof allVars[argName] === 'string' && (allVars[argName] as string).includes('{{')) {
+          if (
+            argName in allVars &&
+            typeof allVars[argName] === "string" &&
+            (allVars[argName] as string).includes("{{")
+          ) {
             allVars[argName] = applyTemplateVariables(allVars[argName] as string, configVars);
           }
         }
-        
+
         // Apply all template substitutions
         return applyTemplateVariables(content, allVars);
       }
     }
-    
+
     throw new Error(`Prompt '${name}' not found`);
   } catch (error) {
-    throw new Error(`Error getting prompt content: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Error getting prompt content: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }

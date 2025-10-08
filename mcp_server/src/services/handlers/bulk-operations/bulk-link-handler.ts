@@ -1,6 +1,6 @@
 /**
  * Handler for wit-link-work-items-by-query-handles tool
- * 
+ *
  * Creates relationships between work items identified by two query handles.
  * Supports multiple link types and strategies for efficient bulk relationship creation.
  * This eliminates ID hallucination risk by using stored query results.
@@ -9,7 +9,10 @@
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { ADOWorkItem, ADOFieldOperation } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -19,13 +22,13 @@ import { loadConfiguration } from "../../../config/config.js";
  * Map user-friendly link types to ADO internal link type references
  */
 const LINK_TYPE_MAP: Record<string, string> = {
-  "Parent": "System.LinkTypes.Hierarchy-Reverse",
-  "Child": "System.LinkTypes.Hierarchy-Forward",
-  "Related": "System.LinkTypes.Related",
-  "Predecessor": "System.LinkTypes.Dependency-Reverse",
-  "Successor": "System.LinkTypes.Dependency-Forward",
-  "Affects": "Microsoft.VSTS.Common.Affects-Forward",
-  "Affected By": "Microsoft.VSTS.Common.Affects-Reverse"
+  Parent: "System.LinkTypes.Hierarchy-Reverse",
+  Child: "System.LinkTypes.Hierarchy-Forward",
+  Related: "System.LinkTypes.Related",
+  Predecessor: "System.LinkTypes.Dependency-Reverse",
+  Successor: "System.LinkTypes.Dependency-Forward",
+  Affects: "Microsoft.VSTS.Common.Affects-Forward",
+  "Affected By": "Microsoft.VSTS.Common.Affects-Reverse",
 };
 
 /**
@@ -73,13 +76,13 @@ function validateLinkTypeForWorkItems(
     if (!VALID_PARENT_TYPES.includes(targetType)) {
       return {
         valid: false,
-        reason: `Target work item type '${targetType}' cannot be a parent (valid parent types: ${VALID_PARENT_TYPES.join(", ")})`
+        reason: `Target work item type '${targetType}' cannot be a parent (valid parent types: ${VALID_PARENT_TYPES.join(", ")})`,
       };
     }
     if (!VALID_CHILD_TYPES.includes(sourceType)) {
       return {
         valid: false,
-        reason: `Source work item type '${sourceType}' cannot be a child (valid child types: ${VALID_CHILD_TYPES.join(", ")})`
+        reason: `Source work item type '${sourceType}' cannot be a child (valid child types: ${VALID_CHILD_TYPES.join(", ")})`,
       };
     }
   } else if (linkType === "Child") {
@@ -87,13 +90,13 @@ function validateLinkTypeForWorkItems(
     if (!VALID_PARENT_TYPES.includes(sourceType)) {
       return {
         valid: false,
-        reason: `Source work item type '${sourceType}' cannot be a parent (valid parent types: ${VALID_PARENT_TYPES.join(", ")})`
+        reason: `Source work item type '${sourceType}' cannot be a parent (valid parent types: ${VALID_PARENT_TYPES.join(", ")})`,
       };
     }
     if (!VALID_CHILD_TYPES.includes(targetType)) {
       return {
         valid: false,
-        reason: `Target work item type '${targetType}' cannot be a child (valid child types: ${VALID_CHILD_TYPES.join(", ")})`
+        reason: `Target work item type '${targetType}' cannot be a child (valid child types: ${VALID_CHILD_TYPES.join(", ")})`,
       };
     }
   }
@@ -111,7 +114,9 @@ async function checkExistingLink(
   linkTypeRef: string
 ): Promise<boolean> {
   try {
-    const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${sourceId}?$expand=relations`);
+    const response = await httpClient.get<ADOWorkItem>(
+      `wit/workitems/${sourceId}?$expand=relations`
+    );
     const workItem = response.data;
 
     if (!workItem.relations) {
@@ -156,7 +161,7 @@ function generateLinkOperations(
         operations.push({
           sourceId: sourceIds[i],
           targetId: targetIds[i],
-          linkType
+          linkType,
         });
       }
       break;
@@ -206,7 +211,7 @@ function detectCircularDependencies(operations: LinkOperation[]): LinkOperation[
   for (const op of operations) {
     // Check if reverse link already exists in the same batch
     const reverseExists = operations.some(
-      other =>
+      (other) =>
         other !== op &&
         other.sourceId === op.targetId &&
         other.targetId === op.sourceId &&
@@ -249,9 +254,9 @@ async function createLink(
       value: {
         rel: linkTypeRef,
         url: `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${operation.targetId}`,
-        attributes: comment ? { comment } : undefined
-      }
-    }
+        attributes: comment ? { comment } : undefined,
+      },
+    },
   ];
 
   await httpClient.patch(`wit/workitems/${operation.sourceId}`, linkFields);
@@ -284,7 +289,7 @@ export async function handleBulkLinkByQueryHandles(
       dryRun,
       maxPreviewItems,
       organization,
-      project
+      project,
     } = parsed.data;
 
     // Resolve source and target work items
@@ -299,9 +304,9 @@ export async function handleBulkLinkByQueryHandles(
         data: null,
         metadata: { source: "bulk-link-by-query-handles" },
         errors: [
-          `Source query handle '${sourceQueryHandle}' not found or expired. Query handles expire after 1 hour.`
+          `Source query handle '${sourceQueryHandle}' not found or expired. Query handles expire after 1 hour.`,
         ],
-        warnings: []
+        warnings: [],
       };
     }
 
@@ -311,9 +316,9 @@ export async function handleBulkLinkByQueryHandles(
         data: null,
         metadata: { source: "bulk-link-by-query-handles" },
         errors: [
-          `Target query handle '${targetQueryHandle}' not found or expired. Query handles expire after 1 hour.`
+          `Target query handle '${targetQueryHandle}' not found or expired. Query handles expire after 1 hour.`,
         ],
-        warnings: []
+        warnings: [],
       };
     }
 
@@ -330,7 +335,7 @@ export async function handleBulkLinkByQueryHandles(
         data: null,
         metadata: { source: "bulk-link-by-query-handles" },
         errors: ["No link operations generated. Check that both source and target have items."],
-        warnings: []
+        warnings: [],
       };
     }
 
@@ -340,13 +345,13 @@ export async function handleBulkLinkByQueryHandles(
     const invalidOperations: Array<{ operation: LinkOperation; reason: string }> = [];
 
     for (const op of operations) {
-      const sourceContext = sourceData.itemContext.find(item => item.id === op.sourceId);
-      const targetContext = targetData.itemContext.find(item => item.id === op.targetId);
+      const sourceContext = sourceData.itemContext.find((item) => item.id === op.sourceId);
+      const targetContext = targetData.itemContext.find((item) => item.id === op.targetId);
 
       if (!sourceContext || !targetContext) {
         invalidOperations.push({
           operation: op,
-          reason: "Missing work item context"
+          reason: "Missing work item context",
         });
         continue;
       }
@@ -360,7 +365,7 @@ export async function handleBulkLinkByQueryHandles(
       if (!validation.valid) {
         invalidOperations.push({
           operation: op,
-          reason: validation.reason || "Invalid link type for work item types"
+          reason: validation.reason || "Invalid link type for work item types",
         });
       } else {
         validOperations.push(op);
@@ -377,29 +382,30 @@ export async function handleBulkLinkByQueryHandles(
 
     // Remove circular dependencies from valid operations
     const finalOperations = validOperations.filter(
-      op => !circularOps.some(circ => circ.sourceId === op.sourceId && circ.targetId === op.targetId)
+      (op) =>
+        !circularOps.some((circ) => circ.sourceId === op.sourceId && circ.targetId === op.targetId)
     );
 
     if (dryRun) {
       // Preview mode
       const previewLimit = maxPreviewItems || 10;
-      const previewOperations = finalOperations.slice(0, previewLimit).map(op => {
-        const sourceContext = sourceData.itemContext.find(item => item.id === op.sourceId);
-        const targetContext = targetData.itemContext.find(item => item.id === op.targetId);
+      const previewOperations = finalOperations.slice(0, previewLimit).map((op) => {
+        const sourceContext = sourceData.itemContext.find((item) => item.id === op.sourceId);
+        const targetContext = targetData.itemContext.find((item) => item.id === op.targetId);
 
         return {
           source: {
             id: op.sourceId,
             title: sourceContext?.title || "Unknown",
-            type: sourceContext?.type || "Unknown"
+            type: sourceContext?.type || "Unknown",
           },
           target: {
             id: op.targetId,
             title: targetContext?.title || "Unknown",
-            type: targetContext?.type || "Unknown"
+            type: targetContext?.type || "Unknown",
           },
           linkType: op.linkType,
-          linkTypeReference: LINK_TYPE_MAP[op.linkType]
+          linkTypeReference: LINK_TYPE_MAP[op.linkType],
         };
       });
 
@@ -430,20 +436,20 @@ export async function handleBulkLinkByQueryHandles(
           invalid_operations: invalidOperations.length,
           circular_dependencies_detected: circularOps.length,
           preview_operations: previewOperations,
-          invalid_operation_samples: invalidOperations.slice(0, 5).map(inv => ({
+          invalid_operation_samples: invalidOperations.slice(0, 5).map((inv) => ({
             source_id: inv.operation.sourceId,
             target_id: inv.operation.targetId,
-            reason: inv.reason
+            reason: inv.reason,
           })),
-          summary: `DRY RUN: Would create ${finalOperations.length} links using ${linkStrategy} strategy`
+          summary: `DRY RUN: Would create ${finalOperations.length} links using ${linkStrategy} strategy`,
         },
         metadata: {
           source: "bulk-link-by-query-handles",
           dryRun: true,
-          linkStrategy
+          linkStrategy,
         },
         errors: [],
-        warnings: previewWarnings
+        warnings: previewWarnings,
       };
     }
 
@@ -469,7 +475,7 @@ export async function handleBulkLinkByQueryHandles(
               linkType: op.linkType,
               success: true,
               skipped: true,
-              skipReason: "Link already exists"
+              skipReason: "Link already exists",
             });
             logger.debug(`Skipped existing link: ${op.sourceId} -> ${op.targetId}`);
             continue;
@@ -483,7 +489,7 @@ export async function handleBulkLinkByQueryHandles(
           sourceId: op.sourceId,
           targetId: op.targetId,
           linkType: op.linkType,
-          success: true
+          success: true,
         });
 
         logger.debug(`Created link: ${op.sourceId} -> ${op.targetId} (${op.linkType})`);
@@ -494,15 +500,15 @@ export async function handleBulkLinkByQueryHandles(
           targetId: op.targetId,
           linkType: op.linkType,
           success: false,
-          error: errorMsg
+          error: errorMsg,
         });
         logger.error(`Failed to create link ${op.sourceId} -> ${op.targetId}:`, error);
       }
     }
 
-    const successCount = results.filter(r => r.success && !r.skipped).length;
-    const skippedCount = results.filter(r => r.skipped).length;
-    const failureCount = results.filter(r => !r.success).length;
+    const successCount = results.filter((r) => r.success && !r.skipped).length;
+    const skippedCount = results.filter((r) => r.skipped).length;
+    const failureCount = results.filter((r) => !r.success).length;
 
     // Add summary warnings
     if (invalidOperations.length > 0) {
@@ -535,20 +541,20 @@ export async function handleBulkLinkByQueryHandles(
           invalidOperations.length > 0
             ? ` (${invalidOperations.length} invalid operations skipped)`
             : ""
-        }`
+        }`,
       }),
       metadata: {
         source: "bulk-link-by-query-handles",
-        linkStrategy
+        linkStrategy,
       },
       errors:
         failureCount > 0
           ? results
-              .filter(r => !r.success)
+              .filter((r) => !r.success)
               .slice(0, 10)
-              .map(r => `Link ${r.sourceId} -> ${r.targetId}: ${r.error}`)
+              .map((r) => `Link ${r.sourceId} -> ${r.targetId}: ${r.error}`)
           : [],
-      warnings
+      warnings,
     };
   } catch (error) {
     logger.error("Bulk link by query handles error:", error);
@@ -557,7 +563,7 @@ export async function handleBulkLinkByQueryHandles(
       data: null,
       metadata: { source: "bulk-link-by-query-handles" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

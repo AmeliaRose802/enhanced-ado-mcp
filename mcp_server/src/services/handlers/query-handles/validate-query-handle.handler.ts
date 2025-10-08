@@ -1,14 +1,24 @@
 /**
  * Handler for wit-query-handle-validate tool
- * 
+ *
  * Validates a query handle and returns metadata about the stored query results.
  * Useful for checking if a handle is still valid before using it in bulk operations.
  */
 
-import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
+import type {
+  ToolConfig,
+  ToolExecutionResult,
+  JSONValue,
+  ToolExecutionData,
+} from "../../../types/index.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildNotFoundError,
+  buildErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -35,7 +45,10 @@ interface ValidateQueryHandleResult {
   sample_items_error?: string;
 }
 
-export async function handleValidateQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleValidateQueryHandle(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -51,11 +64,11 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
 
     // Retrieve query data from handle
     const queryData = queryHandleService.getQueryData(queryHandle);
-    
+
     if (!queryData) {
-      return buildNotFoundError('query-handle', queryHandle, {
-        source: 'validate-query-handle',
-        hint: 'Query handles expire after 1 hour.'
+      return buildNotFoundError("query-handle", queryHandle, {
+        source: "validate-query-handle",
+        hint: "Query handles expire after 1 hour.",
       });
     }
 
@@ -68,7 +81,7 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
       created_at: queryData.createdAt.toISOString(),
       expires_at: queryData.expiresAt.toISOString(),
       time_remaining_minutes: Math.round((queryData.expiresAt.getTime() - Date.now()) / 60000),
-      original_query: queryData.query
+      original_query: queryData.query,
     };
 
     // Add metadata if present
@@ -96,9 +109,9 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
             if (response.data) {
               sampleItems.push({
                 id: response.data.id,
-                title: response.data.fields?.['System.Title'],
-                type: response.data.fields?.['System.WorkItemType'],
-                state: response.data.fields?.['System.State']
+                title: response.data.fields?.["System.Title"],
+                type: response.data.fields?.["System.WorkItemType"],
+                state: response.data.fields?.["System.State"],
               });
             }
           } catch (err) {
@@ -121,15 +134,11 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
       data: result as unknown as ToolExecutionData,
       metadata: { source: "validate-query-handle" },
       errors: [],
-      warnings: []
+      warnings: [],
     };
-
   } catch (error) {
     logger.error(`Error in handleValidateQueryHandle: ${error}`);
     // Auto-categorizes error based on message
-    return buildErrorResponse(
-      error as Error,
-      { source: 'validate-query-handle' }
-    );
+    return buildErrorResponse(error as Error, { source: "validate-query-handle" });
   }
 }

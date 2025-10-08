@@ -1,15 +1,24 @@
 /**
  * Unified handler for wit-query-handle-info tool
  * Combines functionality from validate, inspect, and select handlers
- * 
+ *
  * Default behavior: Returns basic inspection data (like wit-inspect-query-handle)
  * With detailed=true: Includes validation and selection analysis capabilities
  */
 
-import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
+import type {
+  ToolConfig,
+  ToolExecutionResult,
+  JSONValue,
+  ToolExecutionData,
+} from "../../../types/index.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildNotFoundError,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -36,7 +45,7 @@ interface WorkItemSample {
 }
 
 interface SelectionAnalysis {
-  selection_type: 'index-based' | 'all' | 'criteria-based';
+  selection_type: "index-based" | "all" | "criteria-based";
   total_items_in_handle: number;
   selected_items_count: number;
   selection_percentage: string;
@@ -44,35 +53,40 @@ interface SelectionAnalysis {
   criteria_used?: string[];
 }
 
-export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleQueryHandleInfo(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const parsed = config.schema.safeParse(args || {});
     if (!parsed.success) {
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { 
-      queryHandle, 
+    const {
+      queryHandle,
       detailed = false,
-      includePreview = true, 
-      includeStats = true, 
+      includePreview = true,
+      includeStats = true,
       includeExamples = false,
       itemSelector,
       previewCount = 10,
       includeSampleItems = false,
       organization,
-      project
+      project,
     } = parsed.data;
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
-      return buildNotFoundError('query-handle', queryHandle, {
-        source: 'query-handle-info',
-        hint: 'Query handles expire after 1 hour.'
+      return buildNotFoundError("query-handle", queryHandle, {
+        source: "query-handle-info",
+        hint: "Query handles expire after 1 hour.",
       });
     }
 
-    logger.info(`Getting info for query handle: ${queryHandle} (${queryData.workItemIds.length} items, detailed=${detailed})`);
+    logger.info(
+      `Getting info for query handle: ${queryHandle} (${queryData.workItemIds.length} items, detailed=${detailed})`
+    );
 
     // Build base response (always included)
     const response: Record<string, JSONValue> = {
@@ -83,7 +97,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
       query: queryData.query,
       metadata: queryData.metadata || {},
       has_item_context: !!queryData.itemContext,
-      selection_enabled: true
+      selection_enabled: true,
     };
 
     // Include analysis metadata if available and requested
@@ -94,23 +108,26 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
         analysis_timestamp: queryData.analysisMetadata.analysisTimestamp,
         staleness_success_count: queryData.analysisMetadata.successCount || 0,
         staleness_failure_count: queryData.analysisMetadata.failureCount || 0,
-        staleness_coverage: queryData.analysisMetadata.successCount ? 
-          ((queryData.analysisMetadata.successCount / queryData.workItemIds.length) * 100).toFixed(1) + '%' : 
-          'N/A'
+        staleness_coverage: queryData.analysisMetadata.successCount
+          ? (
+              (queryData.analysisMetadata.successCount / queryData.workItemIds.length) *
+              100
+            ).toFixed(1) + "%"
+          : "N/A",
       } as JSONValue;
     }
 
     // Include preview of work items with indices and selection hints
     if (includePreview) {
-      const previewItems: PreviewItem[] = queryData.itemContext.slice(0, 10).map(item => {
+      const previewItems: PreviewItem[] = queryData.itemContext.slice(0, 10).map((item) => {
         const context = queryData.workItemContext?.get(item.id);
-        
+
         const previewItem: PreviewItem = {
           index: item.index,
           id: item.id,
           title: item.title,
           state: item.state,
-          type: item.type
+          type: item.type,
         };
 
         if (item.daysInactive !== undefined) {
@@ -137,11 +154,11 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
       const typeStats: Record<string, number> = {};
       const tagStats: Record<string, number> = {};
 
-      queryData.itemContext.forEach(item => {
+      queryData.itemContext.forEach((item) => {
         stateStats[item.state] = (stateStats[item.state] || 0) + 1;
         typeStats[item.type] = (typeStats[item.type] || 0) + 1;
         if (item.tags) {
-          item.tags.forEach(tag => {
+          item.tags.forEach((tag) => {
             tagStats[tag] = (tagStats[tag] || 0) + 1;
           });
         }
@@ -149,23 +166,23 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
 
       // Build available criteria summary
       const availableCriteria: string[] = [];
-      
+
       const statesSummary = Object.entries(stateStats)
-        .map(([state, count]) => `${state} (${count} item${count !== 1 ? 's' : ''})`)
-        .join(', ');
+        .map(([state, count]) => `${state} (${count} item${count !== 1 ? "s" : ""})`)
+        .join(", ");
       availableCriteria.push(`States available: ${statesSummary}`);
-      
+
       const typesSummary = Object.entries(typeStats)
-        .map(([type, count]) => `${type} (${count} item${count !== 1 ? 's' : ''})`)
-        .join(', ');
+        .map(([type, count]) => `${type} (${count} item${count !== 1 ? "s" : ""})`)
+        .join(", ");
       availableCriteria.push(`Work item types: ${typesSummary}`);
-      
+
       if (Object.keys(tagStats).length > 0) {
         const tagsSummary = Object.entries(tagStats)
           .sort(([, a], [, b]) => b - a)
           .slice(0, 10)
-          .map(([tag, count]) => `${tag} (${count} item${count !== 1 ? 's' : ''})`)
-          .join(', ');
+          .map(([tag, count]) => `${tag} (${count} item${count !== 1 ? "s" : ""})`)
+          .join(", ");
         availableCriteria.push(`Tags available: ${tagsSummary}`);
       }
 
@@ -175,7 +192,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
         totalItems: queryData.workItemIds.length,
         byState: stateStats,
         byType: typeStats,
-        byTags: tagStats
+        byTags: tagStats,
       };
 
       // Add selection hints
@@ -184,34 +201,44 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
         `Use [0, 2, 5] to select specific items by index`,
         `Use {states: ["Active"]} to select all Active items`,
         `Use {tags: ["critical"]} to select items tagged "critical"`,
-        `Use {daysInactiveMin: 7} to select stale items (inactive 7+ days)`
+        `Use {daysInactiveMin: 7} to select stale items (inactive 7+ days)`,
       ];
-      
+
       // Only include examples when explicitly requested
       if (includeExamples) {
         const totalItems = queryData.workItemIds.length;
         const exampleStates = Object.keys(stateStats).slice(0, 2);
         const exampleTags = Object.keys(tagStats).slice(0, 1);
-        const hasStaleItems = queryData.itemContext.some(item => item.daysInactive && item.daysInactive >= 7);
-        
+        const hasStaleItems = queryData.itemContext.some(
+          (item) => item.daysInactive && item.daysInactive >= 7
+        );
+
         const selectionExamples: string[] = [
           `"all" - selects all ${totalItems} items`,
           `[0, 1, 2] - selects first 3 items`,
         ];
-        
+
         if (exampleStates.length > 0) {
           const stateCount = stateStats[exampleStates[0]] || 0;
-          selectionExamples.push(`{states: ["${exampleStates[0]}"]} - selects ${stateCount} ${exampleStates[0]} item${stateCount !== 1 ? 's' : ''}`);
+          selectionExamples.push(
+            `{states: ["${exampleStates[0]}"]} - selects ${stateCount} ${exampleStates[0]} item${stateCount !== 1 ? "s" : ""}`
+          );
         }
-        
+
         if (exampleTags.length > 0) {
           const tagCount = tagStats[exampleTags[0]] || 0;
-          selectionExamples.push(`{tags: ["${exampleTags[0]}"]} - selects ${tagCount} item${tagCount !== 1 ? 's' : ''} tagged "${exampleTags[0]}"`);
+          selectionExamples.push(
+            `{tags: ["${exampleTags[0]}"]} - selects ${tagCount} item${tagCount !== 1 ? "s" : ""} tagged "${exampleTags[0]}"`
+          );
         }
-        
+
         if (hasStaleItems) {
-          const staleCount = queryData.itemContext.filter(item => item.daysInactive && item.daysInactive >= 7).length;
-          selectionExamples.push(`{daysInactiveMin: 7} - selects ${staleCount} stale item${staleCount !== 1 ? 's' : ''}`);
+          const staleCount = queryData.itemContext.filter(
+            (item) => item.daysInactive && item.daysInactive >= 7
+          ).length;
+          selectionExamples.push(
+            `{daysInactiveMin: 7} - selects ${staleCount} stale item${staleCount !== 1 ? "s" : ""}`
+          );
         }
 
         response.exampleSelectors = selectionExamples;
@@ -226,16 +253,20 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
     response.expiration_info = {
       expires_in_minutes: minutesUntilExpiration,
       expires_in_hours: (minutesUntilExpiration / 60).toFixed(1),
-      is_expired: timeUntilExpiration <= 0
+      is_expired: timeUntilExpiration <= 0,
     };
 
     const warnings: string[] = [];
     if (minutesUntilExpiration < 10) {
-      warnings.push(`Query handle expires in ${minutesUntilExpiration} minutes. Consider regenerating soon.`);
+      warnings.push(
+        `Query handle expires in ${minutesUntilExpiration} minutes. Consider regenerating soon.`
+      );
     }
 
     if (queryData.analysisMetadata?.failureCount && queryData.analysisMetadata.failureCount > 0) {
-      warnings.push(`${queryData.analysisMetadata.failureCount} work items failed staleness analysis - they lack lastSubstantiveChangeDate/daysInactive fields`);
+      warnings.push(
+        `${queryData.analysisMetadata.failureCount} work items failed staleness analysis - they lack lastSubstantiveChangeDate/daysInactive fields`
+      );
     }
 
     // Add detailed validation data if requested
@@ -244,14 +275,14 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
         valid: true,
         item_count: queryData.workItemIds.length,
         time_remaining_minutes: minutesUntilExpiration,
-        original_query: queryData.query
+        original_query: queryData.query,
       };
 
       // Fetch sample items from ADO API if requested
       if (includeSampleItems && queryData.workItemIds.length > 0) {
         const azValidation = validateAzureCLI();
         if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-          warnings.push('Azure CLI not available for fetching sample items');
+          warnings.push("Azure CLI not available for fetching sample items");
         } else {
           const sampleIds = queryData.workItemIds.slice(0, 5);
           const cfg = loadConfiguration();
@@ -271,9 +302,9 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
                 if (adoResponse.data) {
                   sampleItems.push({
                     id: adoResponse.data.id,
-                    title: adoResponse.data.fields?.['System.Title'],
-                    type: adoResponse.data.fields?.['System.WorkItemType'],
-                    state: adoResponse.data.fields?.['System.State']
+                    title: adoResponse.data.fields?.["System.Title"],
+                    type: adoResponse.data.fields?.["System.WorkItemType"],
+                    state: adoResponse.data.fields?.["System.State"],
                   });
                 }
               } catch (err) {
@@ -287,7 +318,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
             }
           } catch (err) {
             logger.error(`Error fetching sample items: ${err}`);
-            warnings.push('Failed to fetch sample items from Azure DevOps API');
+            warnings.push("Failed to fetch sample items from Azure DevOps API");
           }
         }
       }
@@ -296,44 +327,49 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
     // Add selection analysis if itemSelector is provided and detailed mode is on
     if (detailed && itemSelector !== undefined) {
       const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
-      
+
       if (!selectedWorkItemIds) {
-        warnings.push('Failed to resolve item selector - selection analysis not included');
+        warnings.push("Failed to resolve item selector - selection analysis not included");
       } else {
         const totalItems = queryData.workItemIds.length;
         const selectedCount = selectedWorkItemIds.length;
 
         // Build preview of selected items
-        const selectedPreviewItems = selectedWorkItemIds.slice(0, Math.min(previewCount, 50)).map((id: number) => {
-          const context = queryData.itemContext.find(item => item.id === id);
-          const workItemContext = queryData.workItemContext?.get(id);
-          
-          return {
-            index: context?.index,
-            id,
-            title: context?.title || "No title",
-            state: context?.state || "Unknown",
-            type: context?.type || "Unknown",
-            days_inactive: context?.daysInactive,
-            assigned_to: workItemContext?.assignedTo || "Unassigned",
-            tags: context?.tags
-          };
-        });
+        const selectedPreviewItems = selectedWorkItemIds
+          .slice(0, Math.min(previewCount, 50))
+          .map((id: number) => {
+            const context = queryData.itemContext.find((item) => item.id === id);
+            const workItemContext = queryData.workItemContext?.get(id);
+
+            return {
+              index: context?.index,
+              id,
+              title: context?.title || "No title",
+              state: context?.state || "Unknown",
+              type: context?.type || "Unknown",
+              days_inactive: context?.daysInactive,
+              assigned_to: workItemContext?.assignedTo || "Unassigned",
+              tags: context?.tags,
+            };
+          });
 
         // Analyze selection
         const selectionAnalysis: SelectionAnalysis = {
-          selection_type: Array.isArray(itemSelector) ? 'index-based' : 
-                         typeof itemSelector === 'string' ? 'all' : 'criteria-based',
+          selection_type: Array.isArray(itemSelector)
+            ? "index-based"
+            : typeof itemSelector === "string"
+              ? "all"
+              : "criteria-based",
           total_items_in_handle: totalItems,
           selected_items_count: selectedCount,
-          selection_percentage: ((selectedCount / totalItems) * 100).toFixed(1) + '%',
-          showing_preview: `${selectedPreviewItems.length} of ${selectedCount} selected items`
+          selection_percentage: ((selectedCount / totalItems) * 100).toFixed(1) + "%",
+          showing_preview: `${selectedPreviewItems.length} of ${selectedCount} selected items`,
         };
 
         // Add criteria analysis if applicable
-        if (typeof itemSelector === 'object' && !Array.isArray(itemSelector)) {
-          const criteriaUsed = Object.keys(itemSelector).filter(key => 
-            itemSelector[key as keyof typeof itemSelector] !== undefined
+        if (typeof itemSelector === "object" && !Array.isArray(itemSelector)) {
+          const criteriaUsed = Object.keys(itemSelector).filter(
+            (key) => itemSelector[key as keyof typeof itemSelector] !== undefined
           );
           selectionAnalysis.criteria_used = criteriaUsed;
         }
@@ -342,11 +378,11 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
           item_selector: itemSelector as JSONValue,
           analysis: selectionAnalysis as unknown as JSONValue,
           preview_items: selectedPreviewItems as unknown as JSONValue,
-          summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`
+          summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`,
         };
 
         if (selectedCount === 0) {
-          warnings.push('No items matched the selection criteria');
+          warnings.push("No items matched the selection criteria");
         }
       }
     }
@@ -354,24 +390,23 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
     return {
       success: true,
       data: response as unknown as ToolExecutionData,
-      metadata: { 
+      metadata: {
         source: "query-handle-info",
         handle: queryHandle,
         detailed_mode: detailed,
-        inspected_at: new Date().toISOString()
+        inspected_at: new Date().toISOString(),
       },
       errors: [],
-      warnings
+      warnings,
     };
-
   } catch (error) {
-    logger.error('Query handle info error:', error);
+    logger.error("Query handle info error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "query-handle-info" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

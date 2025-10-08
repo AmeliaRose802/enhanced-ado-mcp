@@ -17,82 +17,89 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { updateConfigFromCLI } from "./config/config.js";
 
-const server = new Server({
-  name: "enhanced-ado-mcp-server",
-  version: "1.4.1"
-}, {
-  capabilities: {
-    tools: {},
-    prompts: {},
-    resources: {},
-    sampling: {}
+const server = new Server(
+  {
+    name: "enhanced-ado-mcp-server",
+    version: "1.4.1",
+  },
+  {
+    capabilities: {
+      tools: {},
+      prompts: {},
+      resources: {},
+      sampling: {},
+    },
   }
-});
+);
 
 // Request handler with proper error handling
 server.fallbackRequestHandler = async (request: any) => {
   logger.debug(`Handling request: ${request.method}`, JSON.stringify(request.params));
-  
+
   if (request.method === "tools/list") {
     const hasSampling = checkSamplingSupport(server);
     const availableToolConfigs = getAvailableToolConfigs(hasSampling);
-    const availableTools = availableToolConfigs.map(tc => ({
+    const availableTools = availableToolConfigs.map((tc) => ({
       name: tc.name,
       description: tc.description,
-      inputSchema: tc.inputSchema
+      inputSchema: tc.inputSchema,
     }));
-    
+
     if (!hasSampling) {
-      logger.info('Sampling not supported - AI-powered tools disabled');
+      logger.info("Sampling not supported - AI-powered tools disabled");
     }
-    
+
     return { tools: availableTools };
   }
-  
+
   if (request.method === "prompts/list") {
     const prompts = await loadPrompts();
     return { prompts };
   }
-  
+
   if (request.method === "prompts/get") {
     const { name, arguments: args } = request.params || {};
     const content = await getPromptContent(name, args);
     return {
-      messages: [{
-        role: "user",
-        content: { type: "text", text: content }
-      }]
+      messages: [
+        {
+          role: "user",
+          content: { type: "text", text: content },
+        },
+      ],
     };
   }
-  
+
   if (request.method === "resources/list") {
     const resources = listResources();
     return { resources };
   }
-  
+
   if (request.method === "resources/read") {
     const { uri } = request.params || {};
     const content = await getResourceContent(uri);
     return {
-      contents: [{
-        uri: content.uri,
-        name: content.name,
-        mimeType: content.mimeType,
-        text: content.text
-      }]
+      contents: [
+        {
+          uri: content.uri,
+          name: content.name,
+          mimeType: content.mimeType,
+          text: content.text,
+        },
+      ],
     };
   }
-  
+
   if (request.method === "tools/call") {
     const { name, arguments: args } = request.params || {};
     const result = await executeTool(name, args);
     logger.debug(`Tool '${name}' completed (success=${result.success}).`);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      ...(result.success === false && { isError: true })
+      ...(result.success === false && { isError: true }),
     };
   }
-  
+
   return {} as any;
 };
 
@@ -112,25 +119,25 @@ const argv = yargs(hideBin(process.argv))
       })
       .positional("project", {
         describe: "Azure DevOps project name",
-        type: "string", 
+        type: "string",
         demandOption: true,
       });
   })
   .option("area-path", {
     alias: "a",
     describe: "Default area path",
-    type: "string"
+    type: "string",
   })
   .option("copilot-guid", {
     alias: "g",
     describe: "GitHub Copilot user GUID (required for Copilot tools)",
-    type: "string"
+    type: "string",
   })
   .option("verbose", {
     alias: "v",
     describe: "Enable verbose logging",
     type: "boolean",
-    default: false
+    default: false,
   })
   .help()
   .parseSync();
@@ -143,28 +150,27 @@ async function main() {
     updateConfigFromCLI(argv);
 
     if (argv.verbose) {
-      process.env.MCP_DEBUG = '1';
+      process.env.MCP_DEBUG = "1";
     }
 
     const useHybrid = process.env.MCP_HYBRID === "1";
-    
+
     logger.info(`enhanced-ado-msp MCP server starting (${useHybrid ? "hybrid" : "stdio"})`);
-    
+
     // Set server instance with type assertion to handle SDK generic complexity
     setServerInstance(server as any);
-    
+
     const transport = useHybrid ? new HybridStdioServerTransport() : new StdioServerTransport();
     await server.connect(transport as any);
-    
+
     logger.markMCPConnected();
-    
   } catch (error) {
     logger.error("Failed to start MCP server:", error);
     process.exit(1);
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   logger.error("Fatal server error", err);
   process.exit(1);
 });

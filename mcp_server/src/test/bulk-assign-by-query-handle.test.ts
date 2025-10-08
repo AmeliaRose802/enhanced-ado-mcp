@@ -3,41 +3,41 @@
  * Validates itemSelector parameter and backward compatibility
  */
 
-import { handleBulkAssignByQueryHandle } from '../services/handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
-import { queryHandleService } from '../services/query-handle-service.js';
-import { bulkAssignByQueryHandleSchema } from '../config/schemas.js';
-import type { ToolConfig } from '../types/index.js';
+import { handleBulkAssignByQueryHandle } from "../services/handlers/bulk-operations/bulk-assign-by-query-handle.handler.js";
+import { queryHandleService } from "../services/query-handle-service.js";
+import { bulkAssignByQueryHandleSchema } from "../config/schemas.js";
+import type { ToolConfig } from "../types/index.js";
 
 // Mock the dependencies
-jest.mock('../services/ado-discovery-service.js', () => ({
+jest.mock("../services/ado-discovery-service.js", () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
-    isLoggedIn: true
-  }))
+    isLoggedIn: true,
+  })),
 }));
 
-jest.mock('../utils/ado-http-client.js', () => ({
+jest.mock("../utils/ado-http-client.js", () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
-    patch: jest.fn().mockResolvedValue({})
-  }))
+    patch: jest.fn().mockResolvedValue({}),
+  })),
 }));
 
-jest.mock('../config/config.js', () => ({
+jest.mock("../config/config.js", () => ({
   loadConfiguration: jest.fn(() => ({
     azureDevOps: {
-      organization: 'test-org',
-      project: 'test-project'
-    }
-  }))
+      organization: "test-org",
+      project: "test-project",
+    },
+  })),
 }));
 
-describe('Bulk Assign By Query Handle Handler', () => {
+describe("Bulk Assign By Query Handle Handler", () => {
   const mockConfig: ToolConfig = {
-    name: 'wit-bulk-assign',
-    description: 'Test tool',
-    script: '',
+    name: "wit-bulk-assign",
+    description: "Test tool",
+    script: "",
     schema: bulkAssignByQueryHandleSchema,
-    inputSchema: { type: 'object' as const }
+    inputSchema: { type: "object" as const },
   };
 
   beforeEach(() => {
@@ -49,22 +49,25 @@ describe('Bulk Assign By Query Handle Handler', () => {
     queryHandleService.stopCleanup();
   });
 
-  describe('Assignment applies to selected items only', () => {
-    it('should assign only selected items to user', async () => {
+  describe("Assignment applies to selected items only", () => {
+    it("should assign only selected items to user", async () => {
       // Arrange
       const workItemIds = [101, 102, 103, 104, 105];
       const workItemContext = new Map([
-        [101, { id: 101, title: 'Task 1', state: 'New', type: 'Task', assignedTo: '' }],
-        [102, { id: 102, title: 'Task 2', state: 'Active', type: 'Task', assignedTo: '' }],
-        [103, { id: 103, title: 'Task 3', state: 'New', type: 'Task', assignedTo: '' }],
-        [104, { id: 104, title: 'Task 4', state: 'Done', type: 'Task', assignedTo: 'old@example.com' }],
-        [105, { id: 105, title: 'Task 5', state: 'Active', type: 'Task', assignedTo: '' }]
+        [101, { id: 101, title: "Task 1", state: "New", type: "Task", assignedTo: "" }],
+        [102, { id: 102, title: "Task 2", state: "Active", type: "Task", assignedTo: "" }],
+        [103, { id: 103, title: "Task 3", state: "New", type: "Task", assignedTo: "" }],
+        [
+          104,
+          { id: 104, title: "Task 4", state: "Done", type: "Task", assignedTo: "old@example.com" },
+        ],
+        [105, { id: 105, title: "Task 5", state: "Active", type: "Task", assignedTo: "" }],
       ]);
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -72,32 +75,32 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act - Select only New and Active items
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: { states: ['New', 'Active'] },
-        assignTo: 'user@company.com',
-        dryRun: true
+        itemSelector: { states: ["New", "Active"] },
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
       expect(result.success).toBe(true);
       expect(result.data.selected_items_count).toBe(4); // 2 New + 2 Active
       expect(result.data.total_items_in_handle).toBe(5);
-      expect(result.data.summary).toContain('4 of 5');
+      expect(result.data.summary).toContain("4 of 5");
     });
 
     it('should assign all items when itemSelector is "all"', async () => {
       // Arrange
       const workItemIds = [101, 102, 103];
       const workItemContext = new Map(
-        workItemIds.map(id => [
+        workItemIds.map((id) => [
           id,
-          { id, title: `Task ${id}`, state: 'Active', type: 'Task', assignedTo: '' }
+          { id, title: `Task ${id}`, state: "Active", type: "Task", assignedTo: "" },
         ])
       );
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -105,9 +108,9 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: 'all',
-        assignTo: 'team@company.com',
-        dryRun: true
+        itemSelector: "all",
+        assignTo: "team@company.com",
+        dryRun: true,
       });
 
       // Assert
@@ -116,20 +119,20 @@ describe('Bulk Assign By Query Handle Handler', () => {
       expect(result.data.total_items_in_handle).toBe(3);
     });
 
-    it('should assign only items at specified indices', async () => {
+    it("should assign only items at specified indices", async () => {
       // Arrange
       const workItemIds = [101, 102, 103, 104, 105];
       const workItemContext = new Map(
-        workItemIds.map(id => [
+        workItemIds.map((id) => [
           id,
-          { id, title: `Task ${id}`, state: 'Active', type: 'Task', assignedTo: '' }
+          { id, title: `Task ${id}`, state: "Active", type: "Task", assignedTo: "" },
         ])
       );
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -138,8 +141,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
         itemSelector: [0, 2, 4],
-        assignTo: 'dev@company.com',
-        dryRun: true
+        assignTo: "dev@company.com",
+        dryRun: true,
       });
 
       // Assert
@@ -149,20 +152,20 @@ describe('Bulk Assign By Query Handle Handler', () => {
     });
   });
 
-  describe('Clear messaging about assignment scope', () => {
+  describe("Clear messaging about assignment scope", () => {
     it('should include "selected" in summary when using criteria selector', async () => {
       // Arrange
       const workItemIds = [101, 102, 103];
       const workItemContext = new Map([
-        [101, { id: 101, title: 'Task 1', state: 'Active', type: 'Task' }],
-        [102, { id: 102, title: 'Task 2', state: 'New', type: 'Task' }],
-        [103, { id: 103, title: 'Task 3', state: 'Active', type: 'Task' }]
+        [101, { id: 101, title: "Task 1", state: "Active", type: "Task" }],
+        [102, { id: 102, title: "Task 2", state: "New", type: "Task" }],
+        [103, { id: 103, title: "Task 3", state: "Active", type: "Task" }],
       ]);
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -170,30 +173,39 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: { states: ['Active'] },
-        assignTo: 'user@example.com',
-        dryRun: true
+        itemSelector: { states: ["Active"] },
+        assignTo: "user@example.com",
+        dryRun: true,
       });
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.data.summary).toContain('2 of 3');
+      expect(result.data.summary).toContain("2 of 3");
       expect(result.data.selected_items_count).toBe(2);
     });
 
-    it('should show preview of items to be assigned', async () => {
+    it("should show preview of items to be assigned", async () => {
       // Arrange
       const workItemIds = [101, 102, 103];
       const workItemContext = new Map([
-        [101, { id: 101, title: 'Bug Fix', state: 'Active', type: 'Bug', assignedTo: 'old@example.com' }],
-        [102, { id: 102, title: 'Feature', state: 'New', type: 'Feature', assignedTo: '' }],
-        [103, { id: 103, title: 'Task', state: 'Active', type: 'Task', assignedTo: '' }]
+        [
+          101,
+          {
+            id: 101,
+            title: "Bug Fix",
+            state: "Active",
+            type: "Bug",
+            assignedTo: "old@example.com",
+          },
+        ],
+        [102, { id: 102, title: "Feature", state: "New", type: "Feature", assignedTo: "" }],
+        [103, { id: 103, title: "Task", state: "Active", type: "Task", assignedTo: "" }],
       ]);
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -201,35 +213,35 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: 'all',
-        assignTo: 'new@example.com',
-        dryRun: true
+        itemSelector: "all",
+        assignTo: "new@example.com",
+        dryRun: true,
       });
 
       // Assert
       expect(result.success).toBe(true);
       expect(result.data.preview_items).toBeDefined();
       expect(result.data.preview_items).toHaveLength(3);
-      expect(result.data.preview_items[0]).toHaveProperty('work_item_id');
-      expect(result.data.preview_items[0]).toHaveProperty('title');
-      expect(result.data.preview_items[0]).toHaveProperty('current_assignee');
+      expect(result.data.preview_items[0]).toHaveProperty("work_item_id");
+      expect(result.data.preview_items[0]).toHaveProperty("title");
+      expect(result.data.preview_items[0]).toHaveProperty("current_assignee");
     });
   });
 
-  describe('Empty selection handling', () => {
-    it('should handle empty selection gracefully', async () => {
+  describe("Empty selection handling", () => {
+    it("should handle empty selection gracefully", async () => {
       // Arrange
       const workItemIds = [101, 102, 103];
       const workItemContext = new Map([
-        [101, { id: 101, title: 'Task 1', state: 'Active', type: 'Task' }],
-        [102, { id: 102, title: 'Task 2', state: 'Active', type: 'Task' }],
-        [103, { id: 103, title: 'Task 3', state: 'Active', type: 'Task' }]
+        [101, { id: 101, title: "Task 1", state: "Active", type: "Task" }],
+        [102, { id: 102, title: "Task 2", state: "Active", type: "Task" }],
+        [103, { id: 103, title: "Task 3", state: "Active", type: "Task" }],
       ]);
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -237,31 +249,28 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act - Select items with non-existent state
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: { states: ['NonExistent'] },
-        assignTo: 'user@company.com',
-        dryRun: true
+        itemSelector: { states: ["NonExistent"] },
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
       expect(result.success).toBe(true);
       expect(result.data.selected_items_count).toBe(0);
-      expect(result.data.summary).toContain('0 of 3');
+      expect(result.data.summary).toContain("0 of 3");
     });
 
-    it('should handle invalid indices gracefully', async () => {
+    it("should handle invalid indices gracefully", async () => {
       // Arrange
       const workItemIds = [101, 102];
       const workItemContext = new Map(
-        workItemIds.map(id => [
-          id,
-          { id, title: `Task ${id}`, state: 'Active', type: 'Task' }
-        ])
+        workItemIds.map((id) => [id, { id, title: `Task ${id}`, state: "Active", type: "Task" }])
       );
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -270,8 +279,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
         itemSelector: [5, 10],
-        assignTo: 'user@company.com',
-        dryRun: true
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
@@ -280,36 +289,33 @@ describe('Bulk Assign By Query Handle Handler', () => {
     });
   });
 
-  describe('Edge cases', () => {
-    it('should return error for invalid query handle', async () => {
+  describe("Edge cases", () => {
+    it("should return error for invalid query handle", async () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
-        queryHandle: 'invalid-handle',
-        itemSelector: 'all',
-        assignTo: 'user@company.com',
-        dryRun: true
+        queryHandle: "invalid-handle",
+        itemSelector: "all",
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain('not found or expired');
+      expect(result.errors[0]).toContain("not found or expired");
     });
 
-    it('should limit preview to 5 items', async () => {
+    it("should limit preview to 5 items", async () => {
       // Arrange
       const workItemIds = [101, 102, 103, 104, 105, 106, 107, 108];
       const workItemContext = new Map(
-        workItemIds.map(id => [
-          id,
-          { id, title: `Task ${id}`, state: 'Active', type: 'Task' }
-        ])
+        workItemIds.map((id) => [id, { id, title: `Task ${id}`, state: "Active", type: "Task" }])
       );
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -317,9 +323,9 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: 'all',
-        assignTo: 'user@company.com',
-        dryRun: true
+        itemSelector: "all",
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
@@ -329,21 +335,18 @@ describe('Bulk Assign By Query Handle Handler', () => {
     });
   });
 
-  describe('Backward Compatibility', () => {
+  describe("Backward Compatibility", () => {
     it('should work when itemSelector is not provided (defaults to "all")', async () => {
       // Arrange
       const workItemIds = [101, 102, 103];
       const workItemContext = new Map(
-        workItemIds.map(id => [
-          id,
-          { id, title: `Task ${id}`, state: 'Active', type: 'Task' }
-        ])
+        workItemIds.map((id) => [id, { id, title: `Task ${id}`, state: "Active", type: "Task" }])
       );
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -351,8 +354,8 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act - Old API call without itemSelector
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        assignTo: 'user@company.com',
-        dryRun: true
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert - Should default to selecting all items
@@ -360,12 +363,12 @@ describe('Bulk Assign By Query Handle Handler', () => {
       expect(result.data.selected_items_count).toBe(3);
     });
 
-    it('should maintain existing error handling', async () => {
+    it("should maintain existing error handling", async () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
-        queryHandle: 'invalid',
-        assignTo: 'user@company.com',
-        dryRun: true
+        queryHandle: "invalid",
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
@@ -374,21 +377,18 @@ describe('Bulk Assign By Query Handle Handler', () => {
     });
   });
 
-  describe('Dry Run Mode', () => {
-    it('should indicate dry run in response', async () => {
+  describe("Dry Run Mode", () => {
+    it("should indicate dry run in response", async () => {
       // Arrange
       const workItemIds = [101, 102];
       const workItemContext = new Map(
-        workItemIds.map(id => [
-          id,
-          { id, title: `Task ${id}`, state: 'Active', type: 'Task' }
-        ])
+        workItemIds.map((id) => [id, { id, title: `Task ${id}`, state: "Active", type: "Task" }])
       );
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -396,33 +396,33 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: 'all',
-        assignTo: 'user@company.com',
-        dryRun: true
+        itemSelector: "all",
+        assignTo: "user@company.com",
+        dryRun: true,
       });
 
       // Assert
       expect(result.success).toBe(true);
       expect(result.data.dry_run).toBe(true);
-      expect(result.data.summary).toContain('DRY RUN');
+      expect(result.data.summary).toContain("DRY RUN");
     });
   });
 
-  describe('Multiple criteria selection', () => {
-    it('should support multiple selection criteria', async () => {
+  describe("Multiple criteria selection", () => {
+    it("should support multiple selection criteria", async () => {
       // Arrange
       const workItemIds = [101, 102, 103, 104];
       const workItemContext = new Map([
-        [101, { id: 101, title: 'Bug fix', state: 'Active', type: 'Bug', tags: ['urgent'] }],
-        [102, { id: 102, title: 'Feature', state: 'New', type: 'Feature', tags: ['urgent'] }],
-        [103, { id: 103, title: 'Task', state: 'Active', type: 'Task', tags: ['normal'] }],
-        [104, { id: 104, title: 'Another bug', state: 'Active', type: 'Bug', tags: ['urgent'] }]
+        [101, { id: 101, title: "Bug fix", state: "Active", type: "Bug", tags: ["urgent"] }],
+        [102, { id: 102, title: "Feature", state: "New", type: "Feature", tags: ["urgent"] }],
+        [103, { id: 103, title: "Task", state: "Active", type: "Task", tags: ["normal"] }],
+        [104, { id: 104, title: "Another bug", state: "Active", type: "Bug", tags: ["urgent"] }],
       ]);
-      
+
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        'SELECT [System.Id] FROM WorkItems',
-        { project: 'TestProject', queryType: 'wiql' },
+        "SELECT [System.Id] FROM WorkItems",
+        { project: "TestProject", queryType: "wiql" },
         60000,
         workItemContext
       );
@@ -430,9 +430,9 @@ describe('Bulk Assign By Query Handle Handler', () => {
       // Act - Select Active items with urgent tag
       const result = await handleBulkAssignByQueryHandle(mockConfig, {
         queryHandle: handle,
-        itemSelector: { states: ['Active'], tags: ['urgent'] },
-        assignTo: 'urgent-team@company.com',
-        dryRun: true
+        itemSelector: { states: ["Active"], tags: ["urgent"] },
+        assignTo: "urgent-team@company.com",
+        dryRun: true,
       });
 
       // Assert

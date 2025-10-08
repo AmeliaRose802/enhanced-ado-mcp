@@ -4,13 +4,16 @@
  */
 
 import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
-import { buildValidationErrorResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "./get-work-item-context-package.handler.js";
 
 interface SelectionSummary {
-  selection_type: 'index-based' | 'all' | 'criteria-based';
+  selection_type: "index-based" | "all" | "criteria-based";
   criteria?: JSONValue;
 }
 import { loadConfiguration } from "../../../config/config.js";
@@ -31,7 +34,7 @@ export async function handleGetContextPackagesByQueryHandle(
 
     const {
       queryHandle,
-      itemSelector = 'all',
+      itemSelector = "all",
       includeHistory = false,
       maxHistoryRevisions = 5,
       includeComments = true,
@@ -41,7 +44,7 @@ export async function handleGetContextPackagesByQueryHandle(
       includeExtendedFields = false,
       maxPreviewItems = 10,
       organization,
-      project
+      project,
     } = parsed.data;
 
     const cfg = loadConfiguration();
@@ -55,8 +58,10 @@ export async function handleGetContextPackagesByQueryHandle(
         success: false,
         data: null,
         metadata: { source: "get-context-packages-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
+        errors: [
+          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        ],
+        warnings: [],
       };
     }
 
@@ -68,7 +73,7 @@ export async function handleGetContextPackagesByQueryHandle(
         data: null,
         metadata: { source: "get-context-packages-by-query-handle" },
         errors: [`Failed to resolve item selector for query handle '${queryHandle}'`],
-        warnings: []
+        warnings: [],
       };
     }
 
@@ -80,22 +85,22 @@ export async function handleGetContextPackagesByQueryHandle(
           total_items_in_handle: queryData.workItemIds.length,
           selected_items_count: 0,
           context_packages: [],
-          message: "No items matched the selection criteria"
+          message: "No items matched the selection criteria",
         },
         metadata: { source: "get-context-packages-by-query-handle" },
         errors: [],
-        warnings: []
+        warnings: [],
       };
     }
 
     const warnings: string[] = [];
-    
+
     // Limit to maxPreviewItems to avoid overwhelming context
     const itemsToFetch = selectedWorkItemIds.slice(0, maxPreviewItems);
     if (selectedWorkItemIds.length > maxPreviewItems) {
       warnings.push(
         `Selected ${selectedWorkItemIds.length} items but limiting to ${maxPreviewItems} context packages to preserve context window. ` +
-        `Adjust maxPreviewItems parameter to retrieve more (max 50).`
+          `Adjust maxPreviewItems parameter to retrieve more (max 50).`
       );
     }
 
@@ -103,11 +108,13 @@ export async function handleGetContextPackagesByQueryHandle(
     if (itemsToFetch.length > 20) {
       warnings.push(
         `Fetching ${itemsToFetch.length} context packages will make ${itemsToFetch.length * 2} API calls. ` +
-        `Consider using smaller batches or more selective criteria for better performance.`
+          `Consider using smaller batches or more selective criteria for better performance.`
       );
     }
 
-    logger.info(`Fetching context packages for ${itemsToFetch.length} work items from query handle ${queryHandle}`);
+    logger.info(
+      `Fetching context packages for ${itemsToFetch.length} work items from query handle ${queryHandle}`
+    );
 
     // Fetch context packages for all selected items
     const packagePromises = itemsToFetch.map(async (workItemId: number) => {
@@ -130,21 +137,24 @@ export async function handleGetContextPackagesByQueryHandle(
           maxChildDepth: 1,
           maxRelatedItems: 50,
           includeAttachments: false,
-          includeTags: true
+          includeTags: true,
         });
 
         if (packageResult.success && packageResult.data) {
           return {
             success: true,
             workItemId,
-            package: packageResult.data.contextPackage
+            package: packageResult.data.contextPackage,
           };
         } else {
-          logger.warn(`Failed to fetch context package for work item ${workItemId}:`, packageResult.errors);
+          logger.warn(
+            `Failed to fetch context package for work item ${workItemId}:`,
+            packageResult.errors
+          );
           return {
             success: false,
             workItemId,
-            error: packageResult.errors?.[0] || 'Unknown error'
+            error: packageResult.errors?.[0] || "Unknown error",
           };
         }
       } catch (error) {
@@ -152,7 +162,7 @@ export async function handleGetContextPackagesByQueryHandle(
         return {
           success: false,
           workItemId,
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         };
       }
     });
@@ -160,26 +170,29 @@ export async function handleGetContextPackagesByQueryHandle(
     const packageResults = await Promise.all(packagePromises);
 
     // Separate successful and failed packages
-    const successfulPackages = packageResults.filter(r => r.success);
-    const failedPackages = packageResults.filter(r => !r.success);
+    const successfulPackages = packageResults.filter((r) => r.success);
+    const failedPackages = packageResults.filter((r) => !r.success);
 
     if (failedPackages.length > 0) {
       warnings.push(
         `Failed to fetch ${failedPackages.length} of ${itemsToFetch.length} context packages. ` +
-        `IDs: ${failedPackages.map(p => p.workItemId).join(', ')}`
+          `IDs: ${failedPackages.map((p) => p.workItemId).join(", ")}`
       );
     }
 
     // Build context packages array
-    const contextPackages = successfulPackages.map(r => r.package);
+    const contextPackages = successfulPackages.map((r) => r.package);
 
     // Build selection summary
     const selectionSummary: SelectionSummary = {
-      selection_type: Array.isArray(itemSelector) ? 'index-based' : 
-                     typeof itemSelector === 'string' ? 'all' : 'criteria-based'
+      selection_type: Array.isArray(itemSelector)
+        ? "index-based"
+        : typeof itemSelector === "string"
+          ? "all"
+          : "criteria-based",
     };
 
-    if (typeof itemSelector === 'object' && !Array.isArray(itemSelector)) {
+    if (typeof itemSelector === "object" && !Array.isArray(itemSelector)) {
       selectionSummary.criteria = itemSelector;
     }
 
@@ -198,14 +211,14 @@ export async function handleGetContextPackagesByQueryHandle(
           "Review context_packages array for detailed work item information",
           "Each package includes core fields, relations, comments, and optional history",
           "Use this rich context for AI-powered analysis and decision making",
-          "Combine with bulk operation tools to take action on analyzed items"
-        ]
+          "Combine with bulk operation tools to take action on analyzed items",
+        ],
       },
       metadata: {
         source: "get-context-packages-by-query-handle",
         query_handle_info: {
           created_at: queryData.createdAt.toISOString(),
-          expires_at: queryData.expiresAt.toISOString()
+          expires_at: queryData.expiresAt.toISOString(),
         },
         packages_included: {
           history: includeHistory,
@@ -213,16 +226,16 @@ export async function handleGetContextPackagesByQueryHandle(
           relations: includeRelations,
           children: includeChildren,
           parent: includeParent,
-          extended_fields: includeExtendedFields
-        }
+          extended_fields: includeExtendedFields,
+        },
       },
       errors: [],
-      warnings
+      warnings,
     };
   } catch (error) {
-    logger.error('Get context packages by query handle error:', error);
-    return buildErrorResponse(error as Error, { 
-      tool: 'wit-get-context-packages-by-query-handle' 
+    logger.error("Get context packages by query handle error:", error);
+    return buildErrorResponse(error as Error, {
+      tool: "wit-get-context-packages-by-query-handle",
     });
   }
 }

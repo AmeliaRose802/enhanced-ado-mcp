@@ -7,9 +7,9 @@ function getCurrentDir(): string {
   // In test/Jest environment, use process.cwd()
   if (process.env.JEST_WORKER_ID !== undefined) {
     // We're in Jest - use cwd and navigate to src/utils
-    return join(cwd(), 'src', 'utils');
+    return join(cwd(), "src", "utils");
   }
-  
+
   // In production - use __dirname equivalent with import.meta.url for ES modules
   // @ts-ignore - import.meta is only available in ES modules at runtime
   return dirname(fileURLToPath(import.meta.url));

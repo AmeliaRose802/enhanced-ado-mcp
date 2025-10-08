@@ -3,7 +3,7 @@
  */
 export class Logger {
   private mcpConnected = false;
-  
+
   // Mark when MCP transport is connected - after this, avoid stderr logging
   markMCPConnected() {
     this.mcpConnected = true;

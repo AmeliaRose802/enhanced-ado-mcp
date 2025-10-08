@@ -1,7 +1,7 @@
 /**
  * Integration test for wit-hierarchy-validator tool
  */
-import { executeTool, setServerInstance } from '../services/tool-service.js';
+import { executeTool, setServerInstance } from "../services/tool-service.js";
 
 // Mock server for testing
 const mockServer = {
@@ -55,18 +55,18 @@ PRIORITY ACTIONS:
 BEST PRACTICES OBSERVED:
 - Clear Epic → Feature → Task progression where implemented
 - Logical content grouping in well-parented items
-- Appropriate work item type usage`
-      }
+- Appropriate work item type usage`,
+      },
     };
-  }
+  },
 };
 
 async function testHierarchyValidatorIntegration() {
-  console.log('🧪 Testing wit-hierarchy-validator integration...');
-  
+  console.log("🧪 Testing wit-hierarchy-validator integration...");
+
   // Set up the mock server instance
   setServerInstance(mockServer);
-  
+
   const testArgs = {
     WorkItemIds: [5001, 5002, 5003, 5004, 5005], // Provide specific work item IDs
     AreaPath: "MyProject\\Mobile\\UserExperience",
@@ -76,34 +76,40 @@ async function testHierarchyValidatorIntegration() {
     SuggestAlternatives: true,
     IncludeConfidenceScores: true,
     FilterByWorkItemType: ["Epic", "Feature", "Task", "Bug"],
-    ExcludeStates: ["Done", "Removed"]
+    ExcludeStates: ["Done", "Removed"],
   };
 
   try {
-    const result = await executeTool('wit-hierarchy-validator', testArgs);
-    
-    console.log('✅ Hierarchy Validator integration test passed!');
-    console.log('📊 Success:', result.success);
-    console.log('📝 Data keys:', Object.keys(result.data || {}));
-    
+    const result = await executeTool("wit-hierarchy-validator", testArgs);
+
+    console.log("✅ Hierarchy Validator integration test passed!");
+    console.log("📊 Success:", result.success);
+    console.log("📝 Data keys:", Object.keys(result.data || {}));
+
     if (result.success && result.data) {
-      console.log(`   Analysis Context: ${result.data.analysisContext?.analyzedItemCount || 0} items`);
-      console.log(`   Health Summary: ${result.data.healthySummary?.itemsWellParented || 0} well-parented`);
+      console.log(
+        `   Analysis Context: ${result.data.analysisContext?.analyzedItemCount || 0} items`
+      );
+      console.log(
+        `   Health Summary: ${result.data.healthySummary?.itemsWellParented || 0} well-parented`
+      );
       console.log(`   Issues Found: ${result.data.issuesFound?.length || 0} items with issues`);
-      console.log(`   Recommendations: ${result.data.recommendations?.highPriorityActions?.length || 0} high priority actions`);
+      console.log(
+        `   Recommendations: ${result.data.recommendations?.highPriorityActions?.length || 0} high priority actions`
+      );
     }
-    
+
     return result;
   } catch (error) {
-    console.error('❌ Hierarchy Validator integration test failed:', error);
+    console.error("❌ Hierarchy Validator integration test failed:", error);
     throw error;
   }
 }
 
 // Run test
 testHierarchyValidatorIntegration()
-  .then(() => console.log('🎉 Integration test completed successfully!'))
-  .catch(error => {
-    console.error('💥 Integration test failed:', error);
+  .then(() => console.log("🎉 Integration test completed successfully!"))
+  .catch((error) => {
+    console.error("💥 Integration test failed:", error);
     process.exit(1);
   });

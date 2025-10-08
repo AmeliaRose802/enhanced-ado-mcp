@@ -3,9 +3,17 @@
  * Queries Azure DevOps Analytics using OData for efficient aggregations and metrics
  */
 
-import type { ToolConfig, ToolExecutionResult, ODataAnalyticsArgs, ODataResponse } from "../../../types/index.js";
+import type {
+  ToolConfig,
+  ToolExecutionResult,
+  ODataAnalyticsArgs,
+  ODataResponse,
+} from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
@@ -16,17 +24,20 @@ import { escapeAreaPath } from "../../../utils/work-item-parser.js";
  * @param results - Array of result items from OData response
  * @param stripMetadata - Whether to strip @odata.* fields (default true)
  */
-function cleanODataResults(results: Record<string, unknown>[], stripMetadata: boolean = true): Record<string, unknown>[] {
+function cleanODataResults(
+  results: Record<string, unknown>[],
+  stripMetadata: boolean = true
+): Record<string, unknown>[] {
   if (!stripMetadata) {
     // Return results as-is when metadata should be included
     return results;
   }
-  
-  return results.map(item => {
+
+  return results.map((item) => {
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(item)) {
       // Skip OData metadata fields and null values
-      if (!key.startsWith('@odata') && value !== null) {
+      if (!key.startsWith("@odata") && value !== null) {
         cleaned[key] = value;
       }
     }
@@ -38,8 +49,22 @@ function cleanODataResults(results: Record<string, unknown>[], stripMetadata: bo
  * Build OData query based on query type and parameters
  */
 function buildODataQuery(args: ODataAnalyticsArgs): string {
-  const { queryType, filters, groupBy, select, orderBy, dateRangeField, dateRangeStart, dateRangeEnd, 
-          areaPath, iterationPath, top, skip, computeCycleTime, customODataQuery } = args;
+  const {
+    queryType,
+    filters,
+    groupBy,
+    select,
+    orderBy,
+    dateRangeField,
+    dateRangeStart,
+    dateRangeEnd,
+    areaPath,
+    iterationPath,
+    top,
+    skip,
+    computeCycleTime,
+    customODataQuery,
+  } = args;
 
   let query = "";
   const filterClauses: string[] = [];
@@ -47,11 +72,11 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
   // Build filter clauses
   if (filters) {
     for (const [key, value] of Object.entries(filters)) {
-      if (typeof value === 'string') {
+      if (typeof value === "string") {
         filterClauses.push(`${key} eq '${value}'`);
-      } else if (typeof value === 'number') {
+      } else if (typeof value === "number") {
         filterClauses.push(`${key} eq ${value}`);
-      } else if (typeof value === 'boolean') {
+      } else if (typeof value === "boolean") {
         filterClauses.push(`${key} eq ${value}`);
       }
     }
@@ -71,7 +96,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
     filterClauses.push(`startswith(Area/AreaPath, '${escapeAreaPath(areaPath)}')`);
   }
 
-  // Add iteration path filter - use 'startswith' for hierarchical filtering  
+  // Add iteration path filter - use 'startswith' for hierarchical filtering
   // Analytics API uses Iteration/IterationPath navigation property
   if (iterationPath) {
     filterClauses.push(`startswith(Iteration/IterationPath, '${escapeAreaPath(iterationPath)}')`);
@@ -82,7 +107,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       // Simple count of work items
       query = "$apply=aggregate($count as Count)";
       if (filterClauses.length > 0) {
-        query = `$apply=filter(${filterClauses.join(' and ')})/aggregate($count as Count)`;
+        query = `$apply=filter(${filterClauses.join(" and ")})/aggregate($count as Count)`;
       }
       break;
 
@@ -90,7 +115,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       // Group by state with counts
       query = "$apply=groupby((State), aggregate($count as Count))";
       if (filterClauses.length > 0) {
-        query = `$apply=filter(${filterClauses.join(' and ')})/groupby((State), aggregate($count as Count))`;
+        query = `$apply=filter(${filterClauses.join(" and ")})/groupby((State), aggregate($count as Count))`;
       }
       if (orderBy) {
         query += `&$orderby=${orderBy}`;
@@ -103,7 +128,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       // Group by work item type with counts
       query = "$apply=groupby((WorkItemType), aggregate($count as Count))";
       if (filterClauses.length > 0) {
-        query = `$apply=filter(${filterClauses.join(' and ')})/groupby((WorkItemType), aggregate($count as Count))`;
+        query = `$apply=filter(${filterClauses.join(" and ")})/groupby((WorkItemType), aggregate($count as Count))`;
       }
       if (orderBy) {
         query += `&$orderby=${orderBy}`;
@@ -116,7 +141,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       // Group by assignee with counts
       query = "$apply=groupby((AssignedTo/UserName), aggregate($count as Count))";
       if (filterClauses.length > 0) {
-        query = `$apply=filter(${filterClauses.join(' and ')})/groupby((AssignedTo/UserName), aggregate($count as Count))`;
+        query = `$apply=filter(${filterClauses.join(" and ")})/groupby((AssignedTo/UserName), aggregate($count as Count))`;
       }
       if (orderBy) {
         query += `&$orderby=${orderBy}`;
@@ -130,8 +155,8 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       const velocityDateField = dateRangeField || "CompletedDate";
       let velocityFilter = filterClauses.slice();
       velocityFilter.push(`${velocityDateField} ne null`);
-      
-      query = `$apply=filter(${velocityFilter.join(' and ')})/groupby((${velocityDateField}), aggregate($count as Count))`;
+
+      query = `$apply=filter(${velocityFilter.join(" and ")})/groupby((${velocityDateField}), aggregate($count as Count))`;
       if (orderBy) {
         query += `&$orderby=${orderBy}`;
       } else {
@@ -144,12 +169,12 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       let cycleTimeFilter = filterClauses.slice();
       cycleTimeFilter.push("CompletedDate ne null");
       cycleTimeFilter.push("CreatedDate ne null");
-      
+
       if (computeCycleTime) {
         // Compute cycle time in days using totaloffsetminutes to convert Duration to numeric
         // totaloffsetminutes returns the duration in minutes, divide by 1440 to get days
-        query = `$apply=filter(${cycleTimeFilter.join(' and ')})/compute(totaloffsetminutes(CompletedDate sub CreatedDate) div 1440 as CycleTimeDays)/groupby((AssignedTo/UserName), aggregate(CycleTimeDays with average as AvgCycleTime, CycleTimeDays with max as MaxCycleTime, $count as CompletedCount))`;
-        
+        query = `$apply=filter(${cycleTimeFilter.join(" and ")})/compute(totaloffsetminutes(CompletedDate sub CreatedDate) div 1440 as CycleTimeDays)/groupby((AssignedTo/UserName), aggregate(CycleTimeDays with average as AvgCycleTime, CycleTimeDays with max as MaxCycleTime, $count as CompletedCount))`;
+
         // Order by the computed aggregation field
         if (orderBy) {
           query += `&$orderby=${orderBy}`;
@@ -158,8 +183,8 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
         }
       } else {
         // Just count completed items by assignee without cycle time computation
-        query = `$apply=filter(${cycleTimeFilter.join(' and ')})/groupby((AssignedTo/UserName), aggregate($count as CompletedCount))`;
-        
+        query = `$apply=filter(${cycleTimeFilter.join(" and ")})/groupby((AssignedTo/UserName), aggregate($count as CompletedCount))`;
+
         // Order by count
         if (orderBy) {
           query += `&$orderby=${orderBy}`;
@@ -194,7 +219,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
 
   // Add select clause if provided
   if (select && select.length > 0 && !query.includes("$apply")) {
-    query += `&$select=${select.join(',')}`;
+    query += `&$select=${select.join(",")}`;
   }
 
   return query;
@@ -203,7 +228,10 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
 /**
  * Execute OData Analytics query
  */
-export async function handleODataAnalytics(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleODataAnalytics(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -216,19 +244,19 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     }
 
     let queryArgs = parsed.data as ODataAnalyticsArgs;
-    
+
     // Import config to get default area path
-    const { loadConfiguration } = await import('../../../config/config.js');
+    const { loadConfiguration } = await import("../../../config/config.js");
     const serverConfig = loadConfiguration();
-    
+
     // Apply default area path if not provided
     if (!queryArgs.areaPath && serverConfig.azureDevOps.areaPath) {
       queryArgs = { ...queryArgs, areaPath: serverConfig.azureDevOps.areaPath };
       logger.debug(`Applied default area path: ${serverConfig.azureDevOps.areaPath}`);
     }
-    
+
     logger.debug(`Executing OData Analytics query: ${queryArgs.queryType}`);
-    
+
     // Build the OData query
     const odataQuery = buildODataQuery(queryArgs);
     logger.debug(`OData query string: ${odataQuery}`);
@@ -236,31 +264,35 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     // Construct the Analytics API URL
     const baseUrl = `https://analytics.dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_odata/v4.0-preview`;
     const fullUrl = `${baseUrl}/WorkItems?${odataQuery}`;
-    
+
     // Get Azure DevOps token - Analytics API uses Bearer token auth
     const token = getAzureDevOpsToken();
-    
+
     // Execute the query with direct fetch - Analytics API doesn't use api-version parameter
     const response = await fetch(fullUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(`OData Analytics query failed: ${response.status} ${response.statusText} - ${errorText}`);
-      throw new Error(`Analytics API error: ${response.status} ${response.statusText} - ${errorText}`);
+      logger.error(
+        `OData Analytics query failed: ${response.status} ${response.statusText} - ${errorText}`
+      );
+      throw new Error(
+        `Analytics API error: ${response.status} ${response.statusText} - ${errorText}`
+      );
     }
 
-    const data = await response.json() as ODataResponse;
-    
+    const data = (await response.json()) as ODataResponse;
+
     // Determine whether to include OData metadata (default: false)
     const includeOdataMetadata = queryArgs.includeOdataMetadata ?? false;
-    
+
     // Clean OData metadata from results based on parameter
     const cleanedResults = cleanODataResults(data.value, !includeOdataMetadata);
     const resultCount = data["@odata.count"] || cleanedResults.length || 0;
@@ -271,32 +303,33 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     const skip = queryArgs.skip || 0;
     const returned = cleanedResults.length;
     const hasNextLink = !!data["@odata.nextLink"];
-    
+
     // Build concise response - only include what's needed
     const responseData: Record<string, unknown> = {
       summary: summary,
       count: resultCount,
-      results: cleanedResults
+      results: cleanedResults,
     };
-    
+
     // Add pagination metadata when applicable
-    const isPaginationSupported = !odataQuery.includes("$apply") || queryArgs.queryType === "velocityMetrics";
+    const isPaginationSupported =
+      !odataQuery.includes("$apply") || queryArgs.queryType === "velocityMetrics";
     if (isPaginationSupported && (returned >= top || hasNextLink || skip > 0)) {
       const pagination: Record<string, unknown> = {
         skip,
         top,
         returned,
-        hasMore: hasNextLink || returned >= top
+        hasMore: hasNextLink || returned >= top,
       };
-      
+
       // Add nextSkip only if there are more results
       if (hasNextLink || returned >= top) {
         pagination.nextSkip = skip + returned;
       }
-      
+
       responseData.pagination = pagination;
     }
-    
+
     // Include top-level OData metadata if requested
     if (includeOdataMetadata) {
       if (data["@odata.context"]) {
@@ -309,7 +342,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
         responseData["@odata.nextLink"] = data["@odata.nextLink"];
       }
     }
-    
+
     // Only include full metadata if explicitly requested
     if (queryArgs.includeMetadata) {
       responseData.query = odataQuery;
@@ -320,27 +353,29 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     const warnings: string[] = [];
     const pagination = responseData.pagination as Record<string, unknown> | undefined;
     if (pagination?.hasMore) {
-      warnings.push(`More results available. Use skip=${pagination.nextSkip} to get the next page.`);
+      warnings.push(
+        `More results available. Use skip=${pagination.nextSkip} to get the next page.`
+      );
     }
 
     return {
       success: true,
       data: responseData as unknown as ToolExecutionData,
-      metadata: { 
+      metadata: {
         source: "odata-analytics",
-        ...(responseData.pagination && { pagination: responseData.pagination })
+        ...(responseData.pagination && { pagination: responseData.pagination }),
       },
       errors: [],
-      warnings
+      warnings,
     };
   } catch (error) {
-    logger.error('OData Analytics handler error:', error);
+    logger.error("OData Analytics handler error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "odata-analytics" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }
@@ -348,40 +383,58 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
 /**
  * Generate a human-readable summary based on query type and results
  */
-function generateSummary(queryType: string, count: number, results: Record<string, unknown>[]): string {
+function generateSummary(
+  queryType: string,
+  count: number,
+  results: Record<string, unknown>[]
+): string {
   switch (queryType) {
     case "workItemCount":
       return `Total work items: ${results[0]?.Count || 0}`;
-    
+
     case "groupByState":
-      const statesSummary = results.slice(0, 5).map(r => `${r.State}: ${r.Count}`).join(", ");
+      const statesSummary = results
+        .slice(0, 5)
+        .map((r) => `${r.State}: ${r.Count}`)
+        .join(", ");
       return `Work items by state (top ${Math.min(5, count)}): ${statesSummary}`;
-    
+
     case "groupByType":
-      const typesSummary = results.slice(0, 5).map(r => `${r.WorkItemType}: ${r.Count}`).join(", ");
+      const typesSummary = results
+        .slice(0, 5)
+        .map((r) => `${r.WorkItemType}: ${r.Count}`)
+        .join(", ");
       return `Work items by type (top ${Math.min(5, count)}): ${typesSummary}`;
-    
+
     case "groupByAssignee":
-      const assigneeSummary = results.slice(0, 5).map(r => {
-        const assignedTo = r.AssignedTo as Record<string, unknown> | undefined;
-        const userName = assignedTo?.UserName as string | undefined;
-        return `${userName || 'Unassigned'}: ${r.Count}`;
-      }).join(", ");
+      const assigneeSummary = results
+        .slice(0, 5)
+        .map((r) => {
+          const assignedTo = r.AssignedTo as Record<string, unknown> | undefined;
+          const userName = assignedTo?.UserName as string | undefined;
+          return `${userName || "Unassigned"}: ${r.Count}`;
+        })
+        .join(", ");
       return `Work items by assignee (top ${Math.min(5, count)}): ${assigneeSummary}`;
-    
+
     case "velocityMetrics":
       return `Found ${count} dates with completed work items`;
-    
+
     case "cycleTimeMetrics":
-      const avgCycleTime = results.length > 0 ? (results.reduce((sum, r) => {
-        const cycleTime = r.AvgCycleTime as number | undefined;
-        return sum + (cycleTime || 0);
-      }, 0) / results.length).toFixed(1) : 0;
+      const avgCycleTime =
+        results.length > 0
+          ? (
+              results.reduce((sum, r) => {
+                const cycleTime = r.AvgCycleTime as number | undefined;
+                return sum + (cycleTime || 0);
+              }, 0) / results.length
+            ).toFixed(1)
+          : 0;
       return `Cycle time metrics for ${count} assignees (avg: ${avgCycleTime} days)`;
-    
+
     case "customQuery":
       return `Custom query returned ${count} results`;
-    
+
     default:
       return `Query returned ${count} results`;
   }

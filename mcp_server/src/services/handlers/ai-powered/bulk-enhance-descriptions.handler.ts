@@ -1,6 +1,6 @@
 /**
  * Handler for wit-ai-bulk-enhance-descriptions tool
- * 
+ *
  * Uses AI to generate improved descriptions for multiple work items.
  * Processes items in batches using intelligent sampling.
  */
@@ -9,7 +9,11 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/inde
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -30,17 +34,17 @@ interface EnhancementResult {
 
 /**
  * Handler for wit-ai-bulk-enhance-descriptions tool
- * 
+ *
  * Uses AI to generate improved descriptions for multiple work items.
  * The AI analyzes existing content (title, tags, current description) and generates
  * enhanced descriptions that are clear, comprehensive, and follow best practices.
- * 
+ *
  * Enhancement styles:
  * - 'concise': Brief, focused descriptions (150-200 words)
  * - 'detailed': Comprehensive descriptions with context (300-400 words)
  * - 'technical': Technical audience with implementation details
  * - 'business': Business stakeholder audience with value focus
- * 
+ *
  * @param config - Tool configuration containing the Zod schema for validation
  * @param args - Arguments object expected to contain:
  *   - queryHandle: string - The query handle ID from a previous WIQL query
@@ -107,7 +111,11 @@ interface EnhancementResult {
  * ```
  * @since 1.4.0
  */
-export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: unknown, server: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
+export async function handleBulkEnhanceDescriptions(
+  config: ToolConfig,
+  args: unknown,
+  server: MCPServer | MCPServerLike
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -119,23 +127,23 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { 
-      queryHandle, 
-      itemSelector, 
-      sampleSize, 
-      enhancementStyle, 
-      preserveExisting, 
-      dryRun, 
+    const {
+      queryHandle,
+      itemSelector,
+      sampleSize,
+      enhancementStyle,
+      preserveExisting,
+      dryRun,
       maxPreviewItems,
       returnFormat: userReturnFormat,
       includeTitles,
       includeConfidence,
-      organization, 
-      project 
+      organization,
+      project,
     } = parsed.data;
 
     // Apply default format based on dryRun mode if not specified
-    const returnFormat = userReturnFormat || (dryRun ? 'summary' : 'preview');
+    const returnFormat = userReturnFormat || (dryRun ? "summary" : "preview");
 
     // Check sampling support
     const samplingClient = new SamplingClient(server);
@@ -146,24 +154,28 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
     // Retrieve work item IDs from query handle
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
     const queryData = queryHandleService.getQueryData(queryHandle);
-    
+
     if (!selectedWorkItemIds || !queryData) {
       return {
         success: false,
         data: null,
         metadata: { source: "bulk-enhance-descriptions" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
+        errors: [
+          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        ],
+        warnings: [],
       };
     }
 
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
-    
+
     // Limit to sampleSize
     const itemsToProcess = selectedWorkItemIds.slice(0, sampleSize);
-    
-    logger.info(`Bulk description enhancement: processing ${itemsToProcess.length} of ${selectedCount} selected work items (dry_run: ${dryRun})`);
+
+    logger.info(
+      `Bulk description enhancement: processing ${itemsToProcess.length} of ${selectedCount} selected work items (dry_run: ${dryRun})`
+    );
 
     // Fetch work item details
     const cfg = loadConfiguration();
@@ -179,19 +191,19 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
         const response = await httpClient.get(`wit/workitems/${workItemId}?api-version=7.1`);
         const workItem = response.data as ADOWorkItem;
 
-        const title = workItem.fields['System.Title'] as string;
-        const description = (workItem.fields['System.Description'] as string) || '';
-        const workItemType = workItem.fields['System.WorkItemType'] as string;
-        const state = workItem.fields['System.State'] as string;
-        const tags = (workItem.fields['System.Tags'] as string) || '';
+        const title = workItem.fields["System.Title"] as string;
+        const description = (workItem.fields["System.Description"] as string) || "";
+        const workItemType = workItem.fields["System.WorkItemType"] as string;
+        const state = workItem.fields["System.State"] as string;
+        const tags = (workItem.fields["System.Tags"] as string) || "";
 
         // Skip completed items
-        if (['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        if (["Done", "Completed", "Closed", "Resolved", "Removed"].includes(state)) {
           results.push({
             workItemId,
             title,
             success: false,
-            skipped: `Item is in ${state} state - not processing completed work`
+            skipped: `Item is in ${state} state - not processing completed work`,
           });
           continue;
         }
@@ -200,20 +212,20 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
         const userContent = `
 Work Item: ${title}
 Type: ${workItemType}
-Current Description: ${description || '(empty)'}
+Current Description: ${description || "(empty)"}
 Tags: ${tags}
 Enhancement Style: ${enhancementStyle}
 Preserve Existing: ${preserveExisting}
 
-${preserveExisting && description ? 'Build upon and improve the existing description.' : 'Create a new comprehensive description.'}
+${preserveExisting && description ? "Build upon and improve the existing description." : "Create a new comprehensive description."}
 `;
 
         // Call AI
         const aiResult = await samplingClient.createMessage({
-          systemPromptName: 'description-enhancer',
+          systemPromptName: "description-enhancer",
           userContent,
-          maxTokens: enhancementStyle === 'concise' ? 200 : 400,
-          temperature: 0.4
+          maxTokens: enhancementStyle === "concise" ? 200 : 400,
+          temperature: 0.4,
         });
 
         const responseText = samplingClient.extractResponseText(aiResult);
@@ -224,23 +236,24 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
             workItemId,
             title,
             success: false,
-            error: 'AI failed to generate enhanced description'
+            error: "AI failed to generate enhanced description",
           });
           continue;
         }
 
-        const enhancedDescription = preserveExisting && description 
-          ? `${description}\n\n---\n\n${jsonData.enhancedDescription}`
-          : jsonData.enhancedDescription;
+        const enhancedDescription =
+          preserveExisting && description
+            ? `${description}\n\n---\n\n${jsonData.enhancedDescription}`
+            : jsonData.enhancedDescription;
 
         // Update work item (unless dry run)
         if (!dryRun) {
           const updates = [
             {
-              op: 'add',
-              path: '/fields/System.Description',
-              value: enhancedDescription
-            }
+              op: "add",
+              path: "/fields/System.Description",
+              value: enhancedDescription,
+            },
           ];
 
           await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
@@ -252,74 +265,77 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
           success: true,
           enhancedDescription,
           improvementReason: jsonData.improvementReason,
-          confidence: jsonData.confidenceScore
+          confidence: jsonData.confidenceScore,
         });
-
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         results.push({
           workItemId,
-          title: 'Unknown',
+          title: "Unknown",
           success: false,
-          error: errorMsg
+          error: errorMsg,
         });
         logger.error(`Failed to enhance description for work item ${workItemId}:`, error);
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const skippedCount = results.filter(r => r.skipped).length;
-    const failureCount = results.filter(r => !r.success && !r.skipped).length;
+    const successCount = results.filter((r) => r.success).length;
+    const skippedCount = results.filter((r) => r.skipped).length;
+    const failureCount = results.filter((r) => !r.success && !r.skipped).length;
 
     // Apply preview limit for dry-run mode
-    const previewLimit = dryRun ? (maxPreviewItems || 5) : results.length;
+    const previewLimit = dryRun ? maxPreviewItems || 5 : results.length;
     const displayResults = results.slice(0, previewLimit);
-    const previewMessage = dryRun && results.length > previewLimit 
-      ? `Showing ${previewLimit} of ${results.length} items...` 
-      : undefined;
+    const previewMessage =
+      dryRun && results.length > previewLimit
+        ? `Showing ${previewLimit} of ${results.length} items...`
+        : undefined;
 
     // Format results based on returnFormat
     let formattedResults;
-    if (returnFormat === 'summary') {
+    if (returnFormat === "summary") {
       // Summary: Only counts, no item details (most efficient)
       formattedResults = undefined;
-    } else if (returnFormat === 'preview') {
+    } else if (returnFormat === "preview") {
       // Preview: Include 200 char preview of enhanced description
-      formattedResults = displayResults.map(r => ({
+      formattedResults = displayResults.map((r) => ({
         work_item_id: r.workItemId,
-        status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed',
-        preview: r.enhancedDescription ? r.enhancedDescription.substring(0, 200) + (r.enhancedDescription.length > 200 ? '...' : '') : undefined,
+        status: r.success ? "enhanced" : r.skipped ? "skipped" : "failed",
+        preview: r.enhancedDescription
+          ? r.enhancedDescription.substring(0, 200) +
+            (r.enhancedDescription.length > 200 ? "..." : "")
+          : undefined,
         error: r.error,
-        skip_reason: r.skipped
+        skip_reason: r.skipped,
       }));
     } else {
       // Full: Complete details (respects includeTitles and includeConfidence params)
-      formattedResults = displayResults.map(r => {
+      formattedResults = displayResults.map((r) => {
         const result: Record<string, unknown> = {
           work_item_id: r.workItemId,
-          status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed'
+          status: r.success ? "enhanced" : r.skipped ? "skipped" : "failed",
         };
-        
+
         // Only include title if requested (default: false to save tokens)
         if (includeTitles) {
           result.title = r.title;
         }
-        
+
         // Include enhanced description
         if (r.enhancedDescription) {
           result.enhanced_description = r.enhancedDescription;
         }
-        
+
         // Include improvement reason
         if (r.improvementReason) {
           result.improvement_reason = r.improvementReason;
         }
-        
+
         // Only include confidence when requested AND score < 0.85 (uncertainty threshold)
         if (includeConfidence && r.confidence !== undefined && r.confidence < 0.85) {
           result.confidence = r.confidence;
         }
-        
+
         // Include error/skip messages
         if (r.error) {
           result.error = r.error;
@@ -327,7 +343,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         if (r.skipped) {
           result.skip_reason = r.skipped;
         }
-        
+
         return result;
       });
     }
@@ -349,31 +365,31 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         failed: failureCount,
         results: formattedResults,
         preview_message: previewMessage,
-        summary: dryRun 
+        summary: dryRun
           ? `DRY RUN: Generated ${successCount} enhanced descriptions (${skippedCount} skipped, ${failureCount} failed)`
-          : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`
+          : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`,
       }),
       metadata: {
         source: "bulk-enhance-descriptions",
         itemSelector,
         enhancementStyle,
-        dryRun
+        dryRun,
       },
-      errors: failureCount > 0 
-        ? results.filter(r => r.error).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
-      warnings: skippedCount > 0 
-        ? [`${skippedCount} items skipped (completed/closed work items)`]
-        : []
+      errors:
+        failureCount > 0
+          ? results.filter((r) => r.error).map((r) => `Work item ${r.workItemId}: ${r.error}`)
+          : [],
+      warnings:
+        skippedCount > 0 ? [`${skippedCount} items skipped (completed/closed work items)`] : [],
     };
   } catch (error) {
-    logger.error('Bulk enhance descriptions error:', error);
+    logger.error("Bulk enhance descriptions error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "bulk-enhance-descriptions" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }
