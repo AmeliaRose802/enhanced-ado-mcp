@@ -27,23 +27,23 @@ export interface ADORelation {
  * Common system fields - can be extended with custom fields
  */
 export interface ADOWorkItemFields {
-  'System.Id': number;
-  'System.Title': string;
-  'System.WorkItemType': string;
-  'System.State': string;
-  'System.AreaPath'?: string;
-  'System.IterationPath'?: string;
-  'System.AssignedTo'?: ADOIdentity;
-  'System.CreatedDate'?: string;
-  'System.ChangedDate'?: string;
-  'System.CreatedBy'?: ADOIdentity;
-  'System.ChangedBy'?: ADOIdentity;
-  'System.Description'?: string;
-  'System.Tags'?: string;
-  'Microsoft.VSTS.Common.AcceptanceCriteria'?: string;
-  'Microsoft.VSTS.Common.Priority'?: number;
-  'Microsoft.VSTS.Scheduling.StoryPoints'?: number;
-  'Microsoft.VSTS.Scheduling.RemainingWork'?: number;
+  "System.Id": number;
+  "System.Title": string;
+  "System.WorkItemType": string;
+  "System.State": string;
+  "System.AreaPath"?: string;
+  "System.IterationPath"?: string;
+  "System.AssignedTo"?: ADOIdentity;
+  "System.CreatedDate"?: string;
+  "System.ChangedDate"?: string;
+  "System.CreatedBy"?: ADOIdentity;
+  "System.ChangedBy"?: ADOIdentity;
+  "System.Description"?: string;
+  "System.Tags"?: string;
+  "Microsoft.VSTS.Common.AcceptanceCriteria"?: string;
+  "Microsoft.VSTS.Common.Priority"?: number;
+  "Microsoft.VSTS.Scheduling.StoryPoints"?: number;
+  "Microsoft.VSTS.Scheduling.RemainingWork"?: number;
   [key: string]: unknown; // Allow additional custom fields
 }
 
@@ -63,7 +63,7 @@ export interface ADOWorkItem {
  * ADO Work Item Update Field Operation
  */
 export interface ADOFieldOperation {
-  op: 'add' | 'replace' | 'remove' | 'test';
+  op: "add" | "replace" | "remove" | "test";
   path: string;
   value?: unknown;
   from?: string;
@@ -73,8 +73,8 @@ export interface ADOFieldOperation {
  * ADO WIQL Query Result
  */
 export interface ADOWiqlResult {
-  queryType: 'flat' | 'tree' | 'oneHop';
-  queryResultType: 'workItem' | 'workItemLink';
+  queryType: "flat" | "tree" | "oneHop";
+  queryResultType: "workItem" | "workItemLink";
   asOf: string;
   columns: Array<{ referenceName: string; name: string }>;
   sortColumns?: Array<{ field: { referenceName: string; name: string }; descending: boolean }>;

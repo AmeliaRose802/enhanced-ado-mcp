@@ -7,7 +7,11 @@ import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
@@ -29,7 +33,11 @@ interface GenerateWiqlQueryArgs {
   serverInstance?: MCPServer | MCPServerLike; // Server instance for sampling
 }
 
-export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown, serverInstance: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
+export async function handleGenerateWiqlQuery(
+  config: ToolConfig,
+  args: unknown,
+  serverInstance: MCPServer | MCPServerLike
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -57,7 +65,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       iterationPath,
       returnQueryHandle = false,
       maxResults = 200,
-      includeFields
+      includeFields,
     } = parsed.data as GenerateWiqlQueryArgs;
 
     logger.info(`Generating WIQL query from description: "${description}"`);
@@ -94,7 +102,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       iterations.push({
         attempt,
         query: currentQuery,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       // Accumulate usage information for metadata
@@ -103,32 +111,39 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
           cumulativeUsage = { ...usage };
         } else {
           // Sum up token counts if present
-          if (usage.inputTokens) cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
-          if (usage.outputTokens) cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
-          if (usage.totalTokens) cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
+          if (usage.inputTokens)
+            cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
+          if (usage.outputTokens)
+            cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
+          if (usage.totalTokens)
+            cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
         }
       }
 
       // Test the query if requested
       if (testQuery) {
         const testResult = await testWiqlQuery(currentQuery, organization, project);
-        
+
         if (testResult.success) {
           isValid = true;
           testResults = {
             resultCount: testResult.resultCount,
-            sampleResults: testResult.sampleResults
+            sampleResults: testResult.sampleResults,
           };
-          logger.info(`✅ Query validated successfully on attempt ${attempt} (${testResult.resultCount} results)`);
+          logger.info(
+            `✅ Query validated successfully on attempt ${attempt} (${testResult.resultCount} results)`
+          );
           break;
         } else {
           lastError = testResult.error || "Unknown validation error";
           iterations[iterations.length - 1].error = lastError;
           logger.warn(`❌ Query validation failed on attempt ${attempt}: ${lastError}`);
-          
+
           // If this is the last iteration, we'll return the best effort
           if (attempt === maxIterations) {
-            logger.warn(`Max iterations reached. Returning last generated query despite validation failure.`);
+            logger.warn(
+              `Max iterations reached. Returning last generated query despite validation failure.`
+            );
           }
         }
       } else {
@@ -143,27 +158,38 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
     if (returnQueryHandle && isValid && currentQuery) {
       try {
         logger.info(`Executing query to create handle with maxResults=${maxResults}`);
-        
+
         // Execute the query with full results
         const queryResult = await queryWorkItemsByWiql({
           wiqlQuery: currentQuery,
           organization,
           project,
           top: maxResults,
-          includeFields: includeFields || ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.CreatedDate', 'System.ChangedDate', 'System.AssignedTo', 'System.AreaPath', 'System.IterationPath', 'System.Tags']
+          includeFields: includeFields || [
+            "System.Id",
+            "System.Title",
+            "System.WorkItemType",
+            "System.State",
+            "System.CreatedDate",
+            "System.ChangedDate",
+            "System.AssignedTo",
+            "System.AreaPath",
+            "System.IterationPath",
+            "System.Tags",
+          ],
         });
 
         // Only create handle if we have results
         if (queryResult.workItems && queryResult.workItems.length > 0) {
           const workItemIds = queryResult.workItems.map((wi) => wi.id);
-          
+
           // Build work item context map
           const workItemContext = new Map<number, WorkItemContext>();
           for (const wi of queryResult.workItems) {
             // Get tags from System.Tags field (stored as semicolon-separated string)
-            const tagsValue = wi.additionalFields?.['System.Tags'];
-            const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
-            
+            const tagsValue = wi.additionalFields?.["System.Tags"];
+            const tagsString = typeof tagsValue === "string" ? tagsValue : "";
+
             workItemContext.set(wi.id, {
               title: wi.title,
               state: wi.state,
@@ -174,7 +200,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
               iterationPath: wi.iterationPath,
               changedDate: wi.changedDate,
               tags: tagsString,
-              ...(wi.additionalFields && wi.additionalFields)
+              ...(wi.additionalFields && wi.additionalFields),
             });
           }
 
@@ -183,15 +209,15 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
             generatedFromDescription: description,
             analysisTimestamp: new Date().toISOString(),
             resultCount: queryResult.count,
-            totalCount: queryResult.totalCount
+            totalCount: queryResult.totalCount,
           };
-          
+
           const handle = queryHandleService.storeQuery(
             workItemIds,
             currentQuery,
             {
               project,
-              queryType: 'wiql-generated'
+              queryType: "wiql-generated",
             },
             60 * 60 * 1000, // 1 hour TTL
             workItemContext,
@@ -216,18 +242,18 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
                 "Use wit-bulk-update to update fields on all items",
                 "Use wit-bulk-assign to assign all items to a user",
                 "Use wit-bulk-remove to remove all items",
-                "Always use dryRun: true first to preview changes before applying them"
+                "Always use dryRun: true first to preview changes before applying them",
               ],
               expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-              ...((queryResult.totalCount > queryResult.top) && {
+              ...(queryResult.totalCount > queryResult.top && {
                 pagination: {
                   skip: queryResult.skip,
                   top: queryResult.top,
                   totalCount: queryResult.totalCount,
                   hasMore: queryResult.hasMore,
-                  ...(queryResult.hasMore && { nextSkip: queryResult.skip + queryResult.top })
-                }
-              })
+                  ...(queryResult.hasMore && { nextSkip: queryResult.skip + queryResult.top }),
+                },
+              }),
             },
             metadata: {
               source: "ai-sampling-wiql-generator",
@@ -237,15 +263,21 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
               handle,
               count: workItemIds.length,
               totalCount: queryResult.totalCount,
-              ...(cumulativeUsage && { usage: cumulativeUsage })
+              ...(cumulativeUsage && { usage: cumulativeUsage }),
             },
             errors: [],
             warnings: [
               ...(queryResult.hasMore
-                ? [`Query returned ${queryResult.totalCount} total results. Handle contains first ${workItemIds.length} items. Use pagination if you need all results.`]
+                ? [
+                    `Query returned ${queryResult.totalCount} total results. Handle contains first ${workItemIds.length} items. Use pagination if you need all results.`,
+                  ]
                 : []),
-              ...(queryResult.totalCount > 1000 ? [`⚠️ Query returned ${queryResult.totalCount} results - consider adding more specific filters`] : [])
-            ]
+              ...(queryResult.totalCount > 1000
+                ? [
+                    `⚠️ Query returned ${queryResult.totalCount} results - consider adding more specific filters`,
+                  ]
+                : []),
+            ],
           };
         } else {
           // Query returned no results - return query-only response
@@ -257,23 +289,23 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
               isValidated: testQuery && isValid,
               resultCount: 0,
               sampleResults: [],
-              summary: `Successfully generated WIQL query (found 0 matching work items)`
+              summary: `Successfully generated WIQL query (found 0 matching work items)`,
             },
             metadata: {
               source: "ai-sampling-wiql-generator",
               validated: isValid,
               iterationCount: iterations.length,
-              ...(cumulativeUsage && { usage: cumulativeUsage })
+              ...(cumulativeUsage && { usage: cumulativeUsage }),
             },
             errors: [],
             warnings: [
-              "⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"
-            ]
+              "⚠️ Query is valid but returned 0 results - you may need to adjust the criteria",
+            ],
           };
         }
       } catch (handleError) {
         // If handle creation fails, fallback to query-only response
-        logger.error('Failed to create query handle:', handleError);
+        logger.error("Failed to create query handle:", handleError);
         return {
           success: true,
           data: {
@@ -281,25 +313,33 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
             isValidated: testQuery && isValid,
             ...(testResults && {
               resultCount: testResults.resultCount,
-              sampleResults: testResults.sampleResults
+              sampleResults: testResults.sampleResults,
             }),
             summary: isValid
-              ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ''}`
-              : `Failed to generate valid query. Last error: ${lastError}`
+              ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ""}`
+              : `Failed to generate valid query. Last error: ${lastError}`,
           },
           metadata: {
             source: "ai-sampling-wiql-generator",
             validated: isValid,
             iterationCount: iterations.length,
-            ...(cumulativeUsage && { usage: cumulativeUsage })
+            ...(cumulativeUsage && { usage: cumulativeUsage }),
           },
           errors: [],
           warnings: [
             `Failed to create query handle: ${handleError instanceof Error ? handleError.message : String(handleError)}`,
-            ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : []),
-            ...(testResults && testResults.resultCount === 0 ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"] : []),
-            ...(testResults && testResults.resultCount > 1000 ? [`⚠️ Query returned ${testResults.resultCount} results - consider adding more specific filters`] : [])
-          ]
+            ...(!testQuery
+              ? ["Query validation was skipped - query may contain syntax errors"]
+              : []),
+            ...(testResults && testResults.resultCount === 0
+              ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"]
+              : []),
+            ...(testResults && testResults.resultCount > 1000
+              ? [
+                  `⚠️ Query returned ${testResults.resultCount} results - consider adding more specific filters`,
+                ]
+              : []),
+          ],
         };
       }
     }
@@ -311,36 +351,41 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
         isValidated: testQuery && isValid,
         ...(testResults && {
           resultCount: testResults.resultCount,
-          sampleResults: testResults.sampleResults
+          sampleResults: testResults.sampleResults,
         }),
         summary: isValid
-          ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ''}`
-          : `Failed to generate valid query. Last error: ${lastError}`
+          ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ""}`
+          : `Failed to generate valid query. Last error: ${lastError}`,
       },
       metadata: {
         source: "ai-sampling-wiql-generator",
         validated: isValid,
         iterationCount: iterations.length,
-        ...(cumulativeUsage && { usage: cumulativeUsage })
+        ...(cumulativeUsage && { usage: cumulativeUsage }),
       },
       errors: isValid ? [] : [lastError || "Failed to generate valid query"],
       warnings: [
         ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : []),
-        ...(testResults && testResults.resultCount === 0 ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"] : []),
-        ...(testResults && testResults.resultCount > 1000 ? [`⚠️ Query returned ${testResults.resultCount} results - consider adding more specific filters`] : [])
-      ]
+        ...(testResults && testResults.resultCount === 0
+          ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"]
+          : []),
+        ...(testResults && testResults.resultCount > 1000
+          ? [
+              `⚠️ Query returned ${testResults.resultCount} results - consider adding more specific filters`,
+            ]
+          : []),
+      ],
     };
 
     return result;
-
   } catch (error) {
-    logger.error('WIQL query generation handler error:', error);
+    logger.error("WIQL query generation handler error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "ai-sampling-wiql-generator" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }
@@ -357,16 +402,15 @@ async function generateQueryWithAI(
   includeExamples: boolean,
   feedback?: { previousQuery: string | null; error: string | null }
 ): Promise<{ query: string; usage?: Record<string, unknown> }> {
-  
   // Build variables for the system prompt
   const variables: Record<string, string> = {
     PROJECT: project,
-    AREA_PATH: areaPath || '',
-    ITERATION_PATH: iterationPath || ''
-  }
-  
+    AREA_PATH: areaPath || "",
+    ITERATION_PATH: iterationPath || "",
+  };
+
   let userContent = `Generate a WIQL query for the following request:\n\n${description}`;
-  
+
   if (feedback?.previousQuery && feedback?.error) {
     userContent += `\n\n---\n\n**PREVIOUS ATTEMPT FAILED**\n\nPrevious Query:\n\`\`\`sql\n${feedback.previousQuery}\n\`\`\`\n\nError:\n${feedback.error}\n\nPlease fix the query to address this error.`;
   }
@@ -376,12 +420,12 @@ async function generateQueryWithAI(
     userContent,
     variables,
     maxTokens: 800,
-    temperature: 0.3 // Low temperature for precise syntax
+    temperature: 0.3, // Low temperature for precise syntax
   });
 
   const responseText = samplingClient.extractResponseText(aiResult);
   const query = extractWiqlQuery(responseText);
-  
+
   if (!query) {
     throw new Error("Failed to extract WIQL query from AI response");
   }
@@ -391,7 +435,7 @@ async function generateQueryWithAI(
 
   return {
     query: cleanWiqlQuery(query),
-    usage
+    usage,
   };
 }
 
@@ -402,7 +446,12 @@ async function testWiqlQuery(
   query: string,
   organization: string,
   project: string
-): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: Array<Record<string, unknown>> }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  resultCount?: number;
+  sampleResults?: Array<Record<string, unknown>>;
+}> {
   try {
     // Execute with a limit to avoid large result sets during testing
     const result = await queryWorkItemsByWiql({
@@ -410,7 +459,7 @@ async function testWiqlQuery(
       organization,
       project,
       top: 10, // Only fetch first 10 for validation
-      includeFields: ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State']
+      includeFields: ["System.Id", "System.Title", "System.WorkItemType", "System.State"],
     });
 
     return {
@@ -420,18 +469,18 @@ async function testWiqlQuery(
         id: wi.id,
         title: wi.title,
         type: wi.type,
-        state: wi.state
-      }))
+        state: wi.state,
+      })),
     };
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     // Parse common WIQL errors for better feedback
     let parsedError = errorMessage;
-    
+
     if (errorMessage.includes("ORDER BY")) {
-      parsedError = "ORDER BY clause is not supported in WorkItemLinks queries. Use WorkItems query instead or remove ORDER BY.";
+      parsedError =
+        "ORDER BY clause is not supported in WorkItemLinks queries. Use WorkItems query instead or remove ORDER BY.";
     } else if (errorMessage.includes("syntax error") || errorMessage.includes("VS402337")) {
       parsedError = `WIQL syntax error: ${errorMessage}. Check field names, brackets, and operators.`;
     } else if (errorMessage.includes("field")) {
@@ -440,7 +489,7 @@ async function testWiqlQuery(
 
     return {
       success: false,
-      error: parsedError
+      error: parsedError,
     };
   }
 }

@@ -2,17 +2,17 @@
  * Tests for wit-query-handle-list pagination functionality
  */
 
-import { queryHandleService } from '../services/query-handle-service.js';
-import { handleListQueryHandles } from '../services/handlers/query-handles/list-query-handles.handler.js';
-import { listQueryHandlesSchema } from '../config/schemas.js';
-import * as adoDiscoveryService from '../services/ado-discovery-service.js';
+import { queryHandleService } from "../services/query-handle-service.js";
+import { handleListQueryHandles } from "../services/handlers/query-handles/list-query-handles.handler.js";
+import { listQueryHandlesSchema } from "../config/schemas.js";
+import * as adoDiscoveryService from "../services/ado-discovery-service.js";
 
 // Mock Azure CLI validation
-jest.mock('../services/ado-discovery-service.js', () => ({
-  validateAzureCLI: jest.fn(() => ({ isAvailable: true, isLoggedIn: true }))
+jest.mock("../services/ado-discovery-service.js", () => ({
+  validateAzureCLI: jest.fn(() => ({ isAvailable: true, isLoggedIn: true })),
 }));
 
-describe('List Query Handles Pagination', () => {
+describe("List Query Handles Pagination", () => {
   beforeEach(() => {
     // Clear all handles before each test
     queryHandleService.clearAll();
@@ -23,8 +23,8 @@ describe('List Query Handles Pagination', () => {
     queryHandleService.clearAll();
   });
 
-  describe('Service Level Pagination', () => {
-    it('should return paginated handles with default top=50 and skip=0', () => {
+  describe("Service Level Pagination", () => {
+    it("should return paginated handles with default top=50 and skip=0", () => {
       // Create 100 test handles
       for (let i = 0; i < 100; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
@@ -41,7 +41,7 @@ describe('List Query Handles Pagination', () => {
       expect(result.pagination.nextSkip).toBe(50);
     });
 
-    it('should return second page with skip=50', () => {
+    it("should return second page with skip=50", () => {
       // Create 100 test handles
       for (let i = 0; i < 100; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
@@ -58,7 +58,7 @@ describe('List Query Handles Pagination', () => {
       expect(result.pagination.nextSkip).toBeUndefined();
     });
 
-    it('should handle partial last page', () => {
+    it("should handle partial last page", () => {
       // Create 75 test handles
       for (let i = 0; i < 75; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
@@ -75,7 +75,7 @@ describe('List Query Handles Pagination', () => {
       expect(result.pagination.nextSkip).toBeUndefined();
     });
 
-    it('should handle skip beyond total', () => {
+    it("should handle skip beyond total", () => {
       // Create 10 test handles
       for (let i = 0; i < 10; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
@@ -92,7 +92,7 @@ describe('List Query Handles Pagination', () => {
       expect(result.pagination.nextSkip).toBeUndefined();
     });
 
-    it('should respect custom top parameter', () => {
+    it("should respect custom top parameter", () => {
       // Create 100 test handles
       for (let i = 0; i < 100; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
@@ -108,7 +108,7 @@ describe('List Query Handles Pagination', () => {
       expect(result.pagination.nextSkip).toBe(10);
     });
 
-    it('should handle empty result set', () => {
+    it("should handle empty result set", () => {
       const result = queryHandleService.getAllHandles(false, 50, 0);
 
       expect(result.handles.length).toBe(0);
@@ -121,19 +121,19 @@ describe('List Query Handles Pagination', () => {
     });
   });
 
-  describe('Handler Level Pagination', () => {
-    it('should return paginated response with default parameters', async () => {
+  describe("Handler Level Pagination", () => {
+    it("should return paginated response with default parameters", async () => {
       // Create 75 test handles
       for (let i = 0; i < 75; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
       }
 
       const config = {
-        name: 'wit-query-handle-list',
+        name: "wit-query-handle-list",
         schema: listQueryHandlesSchema,
-        description: 'Test',
-        script: '',
-        inputSchema: { type: 'object' as const }
+        description: "Test",
+        script: "",
+        inputSchema: { type: "object" as const },
       };
 
       const result = await handleListQueryHandles(config, {});
@@ -144,21 +144,21 @@ describe('List Query Handles Pagination', () => {
       expect(result.data.pagination.hasMore).toBe(true);
       expect(result.data.pagination.nextSkip).toBe(50);
       expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings.some((w: string) => w.includes('skip=50'))).toBe(true);
+      expect(result.warnings.some((w: string) => w.includes("skip=50"))).toBe(true);
     });
 
-    it('should accept custom top and skip parameters', async () => {
+    it("should accept custom top and skip parameters", async () => {
       // Create 100 test handles
       for (let i = 0; i < 100; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
       }
 
       const config = {
-        name: 'wit-query-handle-list',
+        name: "wit-query-handle-list",
         schema: listQueryHandlesSchema,
-        description: 'Test',
-        script: '',
-        inputSchema: { type: 'object' as const }
+        description: "Test",
+        script: "",
+        inputSchema: { type: "object" as const },
       };
 
       const result = await handleListQueryHandles(config, { top: 25, skip: 25 });
@@ -170,18 +170,18 @@ describe('List Query Handles Pagination', () => {
       expect(result.data.pagination.hasMore).toBe(true);
     });
 
-    it('should include pagination in metadata', async () => {
+    it("should include pagination in metadata", async () => {
       // Create 10 test handles
       for (let i = 0; i < 10; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
       }
 
       const config = {
-        name: 'wit-query-handle-list',
+        name: "wit-query-handle-list",
         schema: listQueryHandlesSchema,
-        description: 'Test',
-        script: '',
-        inputSchema: { type: 'object' as const }
+        description: "Test",
+        script: "",
+        inputSchema: { type: "object" as const },
       };
 
       const result = await handleListQueryHandles(config, {});
@@ -192,73 +192,75 @@ describe('List Query Handles Pagination', () => {
       expect(result.metadata.pagination.hasMore).toBe(false);
     });
 
-    it('should add warning when more results available', async () => {
+    it("should add warning when more results available", async () => {
       // Create 100 test handles
       for (let i = 0; i < 100; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
       }
 
       const config = {
-        name: 'wit-query-handle-list',
+        name: "wit-query-handle-list",
         schema: listQueryHandlesSchema,
-        description: 'Test',
-        script: '',
-        inputSchema: { type: 'object' as const }
+        description: "Test",
+        script: "",
+        inputSchema: { type: "object" as const },
       };
 
       const result = await handleListQueryHandles(config, { top: 20 });
 
       expect(result.success).toBe(true);
-      expect(result.warnings).toContain('Showing 20 of 100 handles. Use skip=20 to get the next page.');
+      expect(result.warnings).toContain(
+        "Showing 20 of 100 handles. Use skip=20 to get the next page."
+      );
     });
 
-    it('should not add pagination warning when all results returned', async () => {
+    it("should not add pagination warning when all results returned", async () => {
       // Create 10 test handles
       for (let i = 0; i < 10; i++) {
         queryHandleService.storeQuery([i], `test-query-${i}`, {});
       }
 
       const config = {
-        name: 'wit-query-handle-list',
+        name: "wit-query-handle-list",
         schema: listQueryHandlesSchema,
-        description: 'Test',
-        script: '',
-        inputSchema: { type: 'object' as const }
+        description: "Test",
+        script: "",
+        inputSchema: { type: "object" as const },
       };
 
       const result = await handleListQueryHandles(config, {});
 
       expect(result.success).toBe(true);
-      expect(result.warnings.some((w: string) => w.includes('skip='))).toBe(false);
+      expect(result.warnings.some((w: string) => w.includes("skip="))).toBe(false);
     });
   });
 
-  describe('Schema Validation', () => {
-    it('should validate top parameter within range', () => {
+  describe("Schema Validation", () => {
+    it("should validate top parameter within range", () => {
       const validInput = { top: 100 };
       const result = listQueryHandlesSchema.safeParse(validInput);
       expect(result.success).toBe(true);
     });
 
-    it('should reject top parameter above max', () => {
+    it("should reject top parameter above max", () => {
       const invalidInput = { top: 300 };
       const result = listQueryHandlesSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
     });
 
-    it('should reject top parameter below min', () => {
+    it("should reject top parameter below min", () => {
       const invalidInput = { top: 0 };
       const result = listQueryHandlesSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
     });
 
-    it('should reject negative skip parameter', () => {
+    it("should reject negative skip parameter", () => {
       const invalidInput = { skip: -10 };
       const result = listQueryHandlesSchema.safeParse(invalidInput);
       expect(result.success).toBe(false);
     });
 
-    it('should apply default values when not provided', () => {
+    it("should apply default values when not provided", () => {
       const result = listQueryHandlesSchema.parse({});
       expect(result.top).toBe(50);
       expect(result.skip).toBe(0);

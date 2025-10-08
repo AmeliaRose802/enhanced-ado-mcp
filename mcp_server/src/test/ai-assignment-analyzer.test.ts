@@ -1,13 +1,13 @@
-import { SamplingService } from '../services/sampling-service.js';
-import { AIAssignmentAnalyzerArgs } from '../services/sampling-service.js';
-import type { AIAssignmentResult } from '../types/analysis.js';
+import { SamplingService } from "../services/sampling-service.js";
+import { AIAssignmentAnalyzerArgs } from "../services/sampling-service.js";
+import type { AIAssignmentResult } from "../types/analysis.js";
 
 /**
  * Test the new AI Assignment Analyzer tool
  */
 async function testAIAssignmentAnalyzer() {
-  console.log('🧪 Testing AI Assignment Analyzer...');
-  
+  console.log("🧪 Testing AI Assignment Analyzer...");
+
   // Mock server instance
   const mockServer = {
     getClientCapabilities: () => ({ sampling: true }),
@@ -37,47 +37,49 @@ GUARDRAILS:
 - Sensitive areas: No
 - Code review needed: Yes
 
-The task involves fixing a specific bug with clear reproduction steps and acceptance criteria. This is an ideal candidate for GitHub Copilot assignment.`
-        }
+The task involves fixing a specific bug with clear reproduction steps and acceptance criteria. This is an ideal candidate for GitHub Copilot assignment.`,
+        },
       };
-    }
+    },
   };
 
   const samplingService = new SamplingService(mockServer);
-  
+
   const testArgs: AIAssignmentAnalyzerArgs = {
-    workItemId: 12345,  // Mock work item ID
+    workItemId: 12345, // Mock work item ID
     organization: "test-org",
     project: "test-project",
-    outputFormat: "detailed"
+    outputFormat: "detailed",
   };
 
   try {
     const result = await samplingService.analyzeAIAssignment(testArgs);
-    
-    console.log('✅ AI Assignment Analysis completed successfully!');
-    console.log('📊 Result:');
+
+    console.log("✅ AI Assignment Analysis completed successfully!");
+    console.log("📊 Result:");
     const data = result.data as AIAssignmentResult;
     console.log(`   Decision: ${data.decision}`);
     console.log(`   Confidence: ${data.confidence}`);
     console.log(`   Risk Score: ${data.riskScore}`);
-    console.log(`   Files Estimate: ${data.estimatedScope.files.min}-${data.estimatedScope.files.max}`);
+    console.log(
+      `   Files Estimate: ${data.estimatedScope.files.min}-${data.estimatedScope.files.max}`
+    );
     console.log(`   Complexity: ${data.estimatedScope.complexity}`);
     console.log(`   Strategy: ${data.assignmentStrategy}`);
-    
+
     return result;
   } catch (error) {
-    console.error('❌ AI Assignment Analysis failed:', error);
+    console.error("❌ AI Assignment Analysis failed:", error);
     throw error;
   }
 }
 
 // Run test if called directly
-if (process.argv[1]?.endsWith('ai-assignment-analyzer.test.js')) {
+if (process.argv[1]?.endsWith("ai-assignment-analyzer.test.js")) {
   testAIAssignmentAnalyzer()
-    .then(() => console.log('🎉 Test completed successfully!'))
-    .catch(error => {
-      console.error('💥 Test failed:', error);
+    .then(() => console.log("🎉 Test completed successfully!"))
+    .catch((error) => {
+      console.error("💥 Test failed:", error);
       process.exit(1);
     });
 }

@@ -31,7 +31,12 @@ export class HybridStdioServerTransport {
   send(message: any) {
     return new Promise<void>((resolve) => {
       const json = JSON.stringify(message);
-      const framingMode = process.env.MCP_FORCE_CONTENT_LENGTH === "1" ? "cl" : process.env.MCP_FORCE_NEWLINE === "1" ? "nl" : "auto";
+      const framingMode =
+        process.env.MCP_FORCE_CONTENT_LENGTH === "1"
+          ? "cl"
+          : process.env.MCP_FORCE_NEWLINE === "1"
+            ? "nl"
+            : "auto";
       let payload: string;
       if (framingMode === "cl") {
         payload = `Content-Length: ${Buffer.byteLength(json, "utf8")}\r\n\r\n${json}`;
@@ -41,7 +46,8 @@ export class HybridStdioServerTransport {
         // auto: prefer Content-Length for maximum compatibility
         payload = `Content-Length: ${Buffer.byteLength(json, "utf8")}\r\n\r\n${json}`;
       }
-      if (this._stdout.write(payload)) resolve(); else this._stdout.once("drain", resolve);
+      if (this._stdout.write(payload)) resolve();
+      else this._stdout.once("drain", resolve);
     });
   }
 
@@ -54,26 +60,29 @@ export class HybridStdioServerTransport {
         const headerEnd = this._buffer.indexOf("\r\n\r\n");
         const firstNewline = this._buffer.indexOf("\n");
         const startsWithBrace = this._buffer[0] === 0x7b; // '{'
-        const startsWithContentLength = this._buffer.toString("utf8", 0, 15).toLowerCase().startsWith("content-length");
+        const startsWithContentLength = this._buffer
+          .toString("utf8", 0, 15)
+          .toLowerCase()
+          .startsWith("content-length");
 
         if (startsWithContentLength && headerEnd !== -1) {
           const header = this._buffer.toString("utf8", 0, headerEnd);
-            const match = /Content-Length:\s*(\d+)/i.exec(header);
-            if (!match) {
-              // Malformed header: drop line and continue
-              this._buffer = this._buffer.subarray(headerEnd + 4);
-              continue;
-            }
-            const length = parseInt(match[1], 10);
-            const totalLen = headerEnd + 4 + length;
-            if (this._buffer.length < totalLen) {
-              // Wait for more data
-              return;
-            }
-            const body = this._buffer.toString("utf8", headerEnd + 4, totalLen);
-            this._buffer = this._buffer.subarray(totalLen);
-            this._emitMessage(body);
-            continue; // loop for more
+          const match = /Content-Length:\s*(\d+)/i.exec(header);
+          if (!match) {
+            // Malformed header: drop line and continue
+            this._buffer = this._buffer.subarray(headerEnd + 4);
+            continue;
+          }
+          const length = parseInt(match[1], 10);
+          const totalLen = headerEnd + 4 + length;
+          if (this._buffer.length < totalLen) {
+            // Wait for more data
+            return;
+          }
+          const body = this._buffer.toString("utf8", headerEnd + 4, totalLen);
+          this._buffer = this._buffer.subarray(totalLen);
+          this._emitMessage(body);
+          continue; // loop for more
         } else if (!startsWithContentLength && startsWithBrace && firstNewline !== -1) {
           // Newline-delimited JSON
           const line = this._buffer.toString("utf8", 0, firstNewline).trimEnd();

@@ -1,13 +1,13 @@
-import crypto from 'crypto';
-import { logger } from '../utils/logger.js';
+import crypto from "crypto";
+import { logger } from "../utils/logger.js";
 
 /**
  * Query Handle Service
- * 
+ *
  * Manages query handles for WIQL queries to enable safe bulk operations
  * without risk of ID hallucination. Query handles store the actual work item IDs
  * returned from Azure DevOps, which can then be used for bulk operations.
- * 
+ *
  * Key features:
  * - Generate unique handles for query results
  * - Store work item IDs with expiration (default 1 hour)
@@ -50,7 +50,7 @@ interface QueryHandleData {
   selectionMetadata: {
     totalItems: number;
     selectableIndices: number[];
-    criteriaTags: string[];  // Available for criteria-based selection
+    criteriaTags: string[]; // Available for criteria-based selection
   };
   analysisMetadata?: {
     includeSubstantiveChange?: boolean;
@@ -83,9 +83,9 @@ interface ItemContext {
 }
 
 // Item selection types
-type ItemSelector = 
-  | 'all'
-  | number[]  // Array of indices
+type ItemSelector =
+  | "all"
+  | number[] // Array of indices
   | SelectionCriteria;
 
 class QueryHandleService {
@@ -102,12 +102,12 @@ class QueryHandleService {
    * Generate a unique query handle
    */
   private generateHandle(): string {
-    return `qh_${crypto.randomBytes(16).toString('hex')}`;
+    return `qh_${crypto.randomBytes(16).toString("hex")}`;
   }
 
   /**
    * Store a query result with a handle
-   * 
+   *
    * @param workItemIds Array of work item IDs from the query
    * @param query Original WIQL query
    * @param metadata Optional metadata about the query
@@ -119,10 +119,10 @@ class QueryHandleService {
   storeQuery(
     workItemIds: number[],
     query: string,
-    metadata?: QueryHandleData['metadata'],
+    metadata?: QueryHandleData["metadata"],
     ttlMs: number = this.defaultTTL,
-    workItemContext?: QueryHandleData['workItemContext'],
-    analysisMetadata?: QueryHandleData['analysisMetadata']
+    workItemContext?: QueryHandleData["workItemContext"],
+    analysisMetadata?: QueryHandleData["analysisMetadata"]
   ): string {
     const handle = this.generateHandle();
     const now = new Date();
@@ -135,15 +135,18 @@ class QueryHandleService {
         index,
         id,
         title: context?.title || `Work Item ${id}`,
-        state: context?.state || 'Unknown',
-        type: context?.type || 'Unknown',
+        state: context?.state || "Unknown",
+        type: context?.type || "Unknown",
         daysInactive: context?.daysInactive,
         lastChange: context?.lastSubstantiveChangeDate || context?.changedDate,
-        tags: context?.tags 
-          ? (Array.isArray(context.tags) 
-              ? context.tags 
-              : context.tags.split(';').map((t: string) => t.trim()).filter((t: string) => t))
-          : undefined
+        tags: context?.tags
+          ? Array.isArray(context.tags)
+            ? context.tags
+            : context.tags
+                .split(";")
+                .map((t: string) => t.trim())
+                .filter((t: string) => t)
+          : undefined,
       };
     });
 
@@ -151,7 +154,7 @@ class QueryHandleService {
     const selectionMetadata = {
       totalItems: workItemIds.length,
       selectableIndices: workItemIds.map((_, index) => index),
-      criteriaTags: [...new Set(itemContext.flatMap(item => item.tags || []))]
+      criteriaTags: [...new Set(itemContext.flatMap((item) => item.tags || []))],
     };
 
     this.handles.set(handle, {
@@ -163,7 +166,7 @@ class QueryHandleService {
       workItemContext,
       itemContext,
       selectionMetadata,
-      analysisMetadata
+      analysisMetadata,
     });
 
     return handle;
@@ -171,13 +174,13 @@ class QueryHandleService {
 
   /**
    * Retrieve work item IDs by query handle
-   * 
+   *
    * @param handle Query handle string
    * @returns Array of work item IDs, or null if handle not found/expired
    */
   getWorkItemIds(handle: string): number[] | null {
     const data = this.handles.get(handle);
-    
+
     if (!data) {
       return null;
     }
@@ -193,13 +196,13 @@ class QueryHandleService {
 
   /**
    * Get full query handle data (including metadata)
-   * 
+   *
    * @param handle Query handle string
    * @returns Query handle data or null if not found/expired
    */
   getQueryData(handle: string): QueryHandleData | null {
     const data = this.handles.get(handle);
-    
+
     if (!data) {
       return null;
     }
@@ -215,7 +218,7 @@ class QueryHandleService {
 
   /**
    * Get work item context data for a specific work item from a handle
-   * 
+   *
    * @param handle Query handle string
    * @param workItemId Work item ID to get context for
    * @returns Work item context or null if not found
@@ -230,22 +233,22 @@ class QueryHandleService {
 
   /**
    * Get analysis metadata for a query handle
-   * 
+   *
    * @param handle Query handle string
    * @returns Analysis metadata or null if not found
    */
-  getAnalysisMetadata(handle: string): QueryHandleData['analysisMetadata'] | null {
+  getAnalysisMetadata(handle: string): QueryHandleData["analysisMetadata"] | null {
     const data = this.getQueryData(handle);
     return data?.analysisMetadata || null;
   }
 
   /**
    * Selects work items from a query handle using zero-based indices.
-   * 
+   *
    * This method allows efficient selection of specific work items by their position
    * in the query results. Only valid indices (within range) are processed; invalid
    * indices are silently filtered out.
-   * 
+   *
    * @param handle - The query handle ID (format: 'qh_' followed by hex string)
    * @param indices - Array of zero-based indices to select from the query results.
    *                  Indices must be >= 0 and < total items in handle.
@@ -269,21 +272,19 @@ class QueryHandleService {
     const data = this.getQueryData(handle);
     if (!data) return null;
 
-    const validIndices = indices.filter(index => 
-      index >= 0 && index < data.workItemIds.length
-    );
+    const validIndices = indices.filter((index) => index >= 0 && index < data.workItemIds.length);
 
-    return validIndices.map(index => data.workItemIds[index]);
+    return validIndices.map((index) => data.workItemIds[index]);
   }
 
   /**
    * Selects work items from a query handle using criteria-based filtering.
-   * 
+   *
    * Filters work items based on state, title keywords, tags, or inactivity period.
    * All criteria are combined using AND logic - items must match ALL provided criteria.
    * String matching is case-insensitive. If a work item lacks a field (e.g., daysInactive),
    * it will not match criteria requiring that field.
-   * 
+   *
    * @param handle - The query handle ID (format: 'qh_' followed by hex string)
    * @param criteria - Selection criteria object with the following optional properties:
    *   - states: Array of state names to match (e.g., ['Active', 'New'])
@@ -331,7 +332,7 @@ class QueryHandleService {
     const data = this.getQueryData(handle);
     if (!data) return null;
 
-    const matchingItems = data.itemContext.filter(item => {
+    const matchingItems = data.itemContext.filter((item) => {
       // State filter
       if (criteria.states && !criteria.states.includes(item.state)) {
         return false;
@@ -340,7 +341,7 @@ class QueryHandleService {
       // Title contains filter
       if (criteria.titleContains) {
         const titleLower = item.title.toLowerCase();
-        const hasMatch = criteria.titleContains.some(term => 
+        const hasMatch = criteria.titleContains.some((term) =>
           titleLower.includes(term.toLowerCase())
         );
         if (!hasMatch) return false;
@@ -348,18 +349,24 @@ class QueryHandleService {
 
       // Tags filter
       if (criteria.tags && item.tags) {
-        const hasMatch = criteria.tags.some(tag => 
-          item.tags!.some(itemTag => itemTag.toLowerCase().includes(tag.toLowerCase()))
+        const hasMatch = criteria.tags.some((tag) =>
+          item.tags!.some((itemTag) => itemTag.toLowerCase().includes(tag.toLowerCase()))
         );
         if (!hasMatch) return false;
       }
 
       // Days inactive range filter
       if (item.daysInactive !== undefined) {
-        if (criteria.daysInactiveMin !== undefined && item.daysInactive < criteria.daysInactiveMin) {
+        if (
+          criteria.daysInactiveMin !== undefined &&
+          item.daysInactive < criteria.daysInactiveMin
+        ) {
           return false;
         }
-        if (criteria.daysInactiveMax !== undefined && item.daysInactive > criteria.daysInactiveMax) {
+        if (
+          criteria.daysInactiveMax !== undefined &&
+          item.daysInactive > criteria.daysInactiveMax
+        ) {
           return false;
         }
       }
@@ -367,12 +374,12 @@ class QueryHandleService {
       return true;
     });
 
-    return matchingItems.map(item => item.id);
+    return matchingItems.map((item) => item.id);
   }
 
   /**
    * Get selectable indices for a query handle
-   * 
+   *
    * @param handle Query handle string
    * @returns Array of selectable indices, or null if handle not found
    */
@@ -383,12 +390,12 @@ class QueryHandleService {
 
   /**
    * Retrieves detailed context for a work item at a specific index position.
-   * 
+   *
    * Returns an ItemContext object containing essential metadata about the work item,
    * including its position in the query results, ID, title, state, type, and optional
    * staleness information. This is useful for understanding item details without
    * fetching the full work item from Azure DevOps.
-   * 
+   *
    * @param handle - The query handle ID (format: 'qh_' followed by hex string)
    * @param index - Zero-based index of the item in the query results (must be >= 0 and < total items)
    * @returns ItemContext object with the following properties:
@@ -400,7 +407,7 @@ class QueryHandleService {
    *   - daysInactive?: number - Days since last substantive change (if staleness analysis performed)
    *   - lastChange?: string - ISO date of last change
    *   - tags?: string[] - Array of tags associated with the work item
-   * 
+   *
    *   Returns null if:
    *   - Handle not found or expired
    *   - Index is out of range (< 0 or >= total items)
@@ -409,7 +416,7 @@ class QueryHandleService {
    * ```typescript
    * // Get context for the first item in query results
    * const context = queryHandleService.getItemContext('qh_abc123', 0);
-   * // Returns: { index: 0, id: 12345, title: 'Fix login bug', state: 'Active', 
+   * // Returns: { index: 0, id: 12345, title: 'Fix login bug', state: 'Active',
    * //            type: 'Bug', daysInactive: 5, tags: ['critical', 'security'] }
    * ```
    * @example
@@ -436,13 +443,13 @@ class QueryHandleService {
 
   /**
    * Resolves an ItemSelector to work item IDs, supporting multiple selection patterns.
-   * 
+   *
    * This is the primary method for selecting work items from a query handle. It accepts
    * three selector types and delegates to the appropriate specialized method:
    * - String 'all': Returns all work items in the handle
    * - Array of numbers: Treats as indices and calls getItemsByIndices()
    * - Object: Treats as criteria and calls getItemsByCriteria()
-   * 
+   *
    * @param handle - The query handle ID (format: 'qh_' followed by hex string)
    * @param selector - One of three selection patterns:
    *   1. 'all': Select all work items in the query handle
@@ -486,7 +493,7 @@ class QueryHandleService {
     const data = this.getQueryData(handle);
     if (!data) return null;
 
-    if (selector === 'all') {
+    if (selector === "all") {
       return data.workItemIds;
     }
 
@@ -495,7 +502,7 @@ class QueryHandleService {
     }
 
     // Validate selector is an object before treating as criteria
-    if (selector && typeof selector === 'object') {
+    if (selector && typeof selector === "object") {
       return this.getItemsByCriteria(handle, selector);
     }
 
@@ -505,7 +512,7 @@ class QueryHandleService {
 
   /**
    * Delete a query handle manually
-   * 
+   *
    * @param handle Query handle string
    * @returns true if deleted, false if not found
    */
@@ -536,19 +543,23 @@ class QueryHandleService {
     return {
       totalHandles: this.handles.size,
       activeHandles: activeCount,
-      expiredHandles: expiredCount
+      expiredHandles: expiredCount,
     };
   }
 
   /**
    * Get all handles with their details
-   * 
+   *
    * @param includeExpired Whether to include expired handles (default: false)
    * @param top Maximum number of handles to return (default: 50)
    * @param skip Number of handles to skip for pagination (default: 0)
    * @returns Object containing paginated handles and metadata
    */
-  getAllHandles(includeExpired: boolean = false, top: number = 50, skip: number = 0): {
+  getAllHandles(
+    includeExpired: boolean = false,
+    top: number = 50,
+    skip: number = 0
+  ): {
     handles: Array<{
       id: string;
       created_at: string;
@@ -576,7 +587,7 @@ class QueryHandleService {
 
     for (const [handle, data] of this.handles.entries()) {
       const isExpired = now > data.expiresAt;
-      
+
       if (!includeExpired && isExpired) {
         continue;
       }
@@ -586,7 +597,7 @@ class QueryHandleService {
         created_at: data.createdAt.toISOString(),
         expires_at: data.expiresAt.toISOString(),
         item_count: data.workItemIds.length,
-        has_context: data.itemContext && data.itemContext.length > 0
+        has_context: data.itemContext && data.itemContext.length > 0,
       });
     }
 
@@ -594,7 +605,7 @@ class QueryHandleService {
     const total = allHandles.length;
     const paginatedHandles = allHandles.slice(skip, skip + top);
     const returned = paginatedHandles.length;
-    const hasMore = (skip + returned) < total;
+    const hasMore = skip + returned < total;
 
     return {
       handles: paginatedHandles,
@@ -604,8 +615,8 @@ class QueryHandleService {
         top,
         returned,
         hasMore,
-        ...(hasMore && { nextSkip: skip + returned })
-      }
+        ...(hasMore && { nextSkip: skip + returned }),
+      },
     };
   }
 
@@ -631,12 +642,15 @@ class QueryHandleService {
    */
   private startCleanup(): void {
     if (!this.cleanupInterval) {
-      this.cleanupInterval = setInterval(() => {
-        const deleted = this.cleanup();
-        if (deleted > 0) {
-          logger.debug(`Cleaned up ${deleted} expired query handles`);
-        }
-      }, 5 * 60 * 1000); // Run every 5 minutes
+      this.cleanupInterval = setInterval(
+        () => {
+          const deleted = this.cleanup();
+          if (deleted > 0) {
+            logger.debug(`Cleaned up ${deleted} expired query handles`);
+          }
+        },
+        5 * 60 * 1000
+      ); // Run every 5 minutes
     }
   }
 

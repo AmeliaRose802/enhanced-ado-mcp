@@ -19,13 +19,15 @@ export function extractWiqlQuery(text: string): string | null {
   if (codeBlockMatch) {
     const content = codeBlockMatch[1].trim();
     // Check if it looks like a WIQL query
-    if (content.toUpperCase().includes('SELECT') && content.toUpperCase().includes('FROM')) {
+    if (content.toUpperCase().includes("SELECT") && content.toUpperCase().includes("FROM")) {
       return content;
     }
   }
 
   // Try to find SELECT...FROM pattern in plain text
-  const selectMatch = text.match(/SELECT[\s\S]+?FROM[\s\S]+?(?:WHERE[\s\S]+?)?(?:ORDER BY[\s\S]+?)?(?=\n\n|\n$|$)/i);
+  const selectMatch = text.match(
+    /SELECT[\s\S]+?FROM[\s\S]+?(?:WHERE[\s\S]+?)?(?:ORDER BY[\s\S]+?)?(?=\n\n|\n$|$)/i
+  );
   if (selectMatch) {
     return selectMatch[0].trim();
   }
@@ -38,17 +40,19 @@ export function extractWiqlQuery(text: string): string | null {
  * Removes extra whitespace, normalizes line breaks
  */
 export function cleanWiqlQuery(query: string): string {
-  return query
-    .trim()
-    // Normalize line breaks
-    .replace(/\r\n/g, '\n')
-    // Remove multiple spaces
-    .replace(/ +/g, ' ')
-    // Remove leading/trailing whitespace from each line
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .join('\n');
+  return (
+    query
+      .trim()
+      // Normalize line breaks
+      .replace(/\r\n/g, "\n")
+      // Remove multiple spaces
+      .replace(/ +/g, " ")
+      // Remove leading/trailing whitespace from each line
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .join("\n")
+  );
 }
 
 /**
@@ -57,24 +61,25 @@ export function cleanWiqlQuery(query: string): string {
 export function validateWiqlStructure(query: string): { valid: boolean; error?: string } {
   const upperQuery = query.toUpperCase();
 
-  if (!upperQuery.includes('SELECT')) {
-    return { valid: false, error: 'Query must contain SELECT clause' };
+  if (!upperQuery.includes("SELECT")) {
+    return { valid: false, error: "Query must contain SELECT clause" };
   }
 
-  if (!upperQuery.includes('FROM')) {
-    return { valid: false, error: 'Query must contain FROM clause' };
+  if (!upperQuery.includes("FROM")) {
+    return { valid: false, error: "Query must contain FROM clause" };
   }
 
   const fromClause = query.match(/FROM\s+(WorkItems|WorkItemLinks)/i);
   if (!fromClause) {
-    return { valid: false, error: 'FROM clause must specify WorkItems or WorkItemLinks' };
+    return { valid: false, error: "FROM clause must specify WorkItems or WorkItemLinks" };
   }
 
   // Check for ORDER BY with WorkItemLinks
-  if (fromClause[1].toUpperCase() === 'WORKITEMLINKS' && upperQuery.includes('ORDER BY')) {
-    return { 
-      valid: false, 
-      error: 'ORDER BY is not supported with WorkItemLinks queries. Use WorkItems query or remove ORDER BY clause.' 
+  if (fromClause[1].toUpperCase() === "WORKITEMLINKS" && upperQuery.includes("ORDER BY")) {
+    return {
+      valid: false,
+      error:
+        "ORDER BY is not supported with WorkItemLinks queries. Use WorkItems query or remove ORDER BY clause.",
     };
   }
 
@@ -84,12 +89,12 @@ export function validateWiqlStructure(query: string): { valid: boolean; error?: 
 /**
  * Get query type from WIQL query
  */
-export function getWiqlQueryType(query: string): 'WorkItems' | 'WorkItemLinks' | 'Unknown' {
+export function getWiqlQueryType(query: string): "WorkItems" | "WorkItemLinks" | "Unknown" {
   const fromMatch = query.match(/FROM\s+(WorkItems|WorkItemLinks)/i);
   if (!fromMatch) {
-    return 'Unknown';
+    return "Unknown";
   }
-  return fromMatch[1] as 'WorkItems' | 'WorkItemLinks';
+  return fromMatch[1] as "WorkItems" | "WorkItemLinks";
 }
 
 /**

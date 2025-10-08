@@ -1,19 +1,28 @@
 /**
  * Handler for wit-bulk-assign tool
- * 
+ *
  * Assigns multiple work items to a user, identified by a query handle.
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildNotFoundError,
+  buildSuccessResponse,
+  buildErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
 
-export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleBulkAssignByQueryHandle(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -25,29 +34,28 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, assignTo, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
+    const { queryHandle, assignTo, itemSelector, dryRun, maxPreviewItems, organization, project } =
+      parsed.data;
 
     // Retrieve work item IDs from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
     const queryData = queryHandleService.getQueryData(queryHandle);
-    
+
     if (!selectedWorkItemIds || !queryData) {
-      return buildNotFoundError(
-        'query-handle',
-        queryHandle,
-        {
-          source: 'bulk-assign-by-query-handle',
-          hint: 'Query handles expire after 1 hour.'
-        }
-      );
+      return buildNotFoundError("query-handle", queryHandle, {
+        source: "bulk-assign-by-query-handle",
+        hint: "Query handles expire after 1 hour.",
+      });
     }
 
     // Show selection information
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
 
-    logger.info(`Bulk assign operation: ${selectedCount} of ${totalItems} work items to '${assignTo}' (dry_run: ${dryRun})`);
-    if (itemSelector !== 'all') {
+    logger.info(
+      `Bulk assign operation: ${selectedCount} of ${totalItems} work items to '${assignTo}' (dry_run: ${dryRun})`
+    );
+    if (itemSelector !== "all") {
       logger.info(`Selection criteria: ${JSON.stringify(itemSelector)}`);
     }
 
@@ -55,19 +63,20 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       // Show preview of selected items
       const previewLimit = maxPreviewItems || 5;
       const previewItems = selectedWorkItemIds.slice(0, previewLimit).map((id: number) => {
-        const context = queryData.itemContext.find(item => item.id === id);
+        const context = queryData.itemContext.find((item) => item.id === id);
         return {
           work_item_id: id,
           index: context?.index,
           title: context?.title || "No title available",
           state: context?.state || "Unknown",
-          current_assignee: queryData.workItemContext?.get(id)?.assignedTo || "Unassigned"
+          current_assignee: queryData.workItemContext?.get(id)?.assignedTo || "Unassigned",
         };
       });
 
-      const previewMessage = selectedCount > previewLimit 
-        ? `Showing ${previewLimit} of ${selectedCount} items...` 
-        : undefined;
+      const previewMessage =
+        selectedCount > previewLimit
+          ? `Showing ${previewLimit} of ${selectedCount} items...`
+          : undefined;
 
       return {
         success: true,
@@ -81,15 +90,15 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
           assign_to: assignTo,
           preview_items: previewItems,
           preview_message: previewMessage,
-          summary: `DRY RUN: Would assign ${selectedCount} of ${totalItems} work item(s) to '${assignTo}'`
+          summary: `DRY RUN: Would assign ${selectedCount} of ${totalItems} work item(s) to '${assignTo}'`,
         }),
-        metadata: { 
+        metadata: {
           source: "bulk-assign-by-query-handle",
           dryRun: true,
-          itemSelector
+          itemSelector,
         },
         errors: [],
-        warnings: []
+        warnings: [],
       };
     }
 
@@ -104,16 +113,16 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
     // Build JSON Patch for assignment
     const assignPatch = [
       {
-        op: 'add',
-        path: '/fields/System.AssignedTo',
-        value: assignTo
-      }
+        op: "add",
+        path: "/fields/System.AssignedTo",
+        value: assignTo,
+      },
     ];
 
     for (const workItemId of selectedWorkItemIds) {
       try {
         const url = `wit/workItems/${workItemId}?api-version=7.1`;
-        
+
         await httpClient.patch(url, assignPatch);
 
         results.push({ workItemId, success: true });
@@ -125,19 +134,19 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.filter(r => !r.success).length;
+    const successCount = results.filter((r) => r.success).length;
+    const failureCount = results.filter((r) => !r.success).length;
 
     // Build assignment summary with item details
     const assignedItems = results
-      .filter(r => r.success)
-      .map(r => {
-        const context = queryData.itemContext.find(item => item.id === r.workItemId);
+      .filter((r) => r.success)
+      .map((r) => {
+        const context = queryData.itemContext.find((item) => item.id === r.workItemId);
         return {
           id: r.workItemId,
           title: context?.title || "Unknown",
           type: context?.type || "Unknown",
-          previousState: context?.state || "Unknown"
+          previousState: context?.state || "Unknown",
         };
       });
 
@@ -145,23 +154,25 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
       assignedTo: assignTo,
       totalInHandle: totalItems,
       selectedForAssignment: selectedCount,
-      selectionCriteria: itemSelector === 'all' ? 'All items' : JSON.stringify(itemSelector),
-      assignedItems: assignedItems.slice(0, 10) // Limit to first 10 for logging
+      selectionCriteria: itemSelector === "all" ? "All items" : JSON.stringify(itemSelector),
+      assignedItems: assignedItems.slice(0, 10), // Limit to first 10 for logging
     };
 
     logger.info(`Assignment details: ${JSON.stringify(assignmentSummary, null, 2)}`);
 
     // Create success message with context
-    const successMsg = itemSelector === 'all'
-      ? `Assigned all ${successCount} work items to '${assignTo}'`
-      : `Assigned ${successCount} selected items to '${assignTo}' (from ${totalItems} total, criteria: ${JSON.stringify(itemSelector)})`;
+    const successMsg =
+      itemSelector === "all"
+        ? `Assigned all ${successCount} work items to '${assignTo}'`
+        : `Assigned ${successCount} selected items to '${assignTo}' (from ${totalItems} total, criteria: ${JSON.stringify(itemSelector)})`;
 
     // Handle partial failures with context
     if (failureCount > 0) {
-      const failureContext = itemSelector === 'all'
-        ? `${failureCount} of ${selectedCount} assignments failed`
-        : `${failureCount} of ${selectedCount} selected items failed (selection: ${JSON.stringify(itemSelector)})`;
-      
+      const failureContext =
+        itemSelector === "all"
+          ? `${failureCount} of ${selectedCount} assignments failed`
+          : `${failureCount} of ${selectedCount} selected items failed (selection: ${JSON.stringify(itemSelector)})`;
+
       logger.warn(failureContext);
     }
 
@@ -177,25 +188,26 @@ export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: un
         failed: failureCount,
         results,
         assigned_items: assignedItems,
-        summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : '')
+        summary: successMsg + (failureCount > 0 ? ` (${failureCount} failed)` : ""),
       }),
       metadata: {
         source: "bulk-assign-by-query-handle",
-        itemSelector
+        itemSelector,
       },
-      errors: failureCount > 0 
-        ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
-      warnings: []
+      errors:
+        failureCount > 0
+          ? results.filter((r) => !r.success).map((r) => `Work item ${r.workItemId}: ${r.error}`)
+          : [],
+      warnings: [],
     };
   } catch (error) {
-    logger.error('Bulk assign by query handle error:', error);
+    logger.error("Bulk assign by query handle error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "bulk-assign-by-query-handle" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

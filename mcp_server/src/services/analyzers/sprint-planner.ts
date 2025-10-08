@@ -1,15 +1,19 @@
-import type { ToolExecutionResult } from '../../types/index.js';
-import type { SprintPlanningAnalyzerArgs, SprintPlanningResult } from '../sampling-types.js';
-import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import { logger } from '../../utils/logger.js';
-import { SamplingClient } from '../../utils/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
-import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
-import { loadConfiguration } from '../../config/config.js';
+import type { ToolExecutionResult } from "../../types/index.js";
+import type { SprintPlanningAnalyzerArgs, SprintPlanningResult } from "../sampling-types.js";
+import type { MCPServer, MCPServerLike } from "../../types/mcp.js";
+import { logger } from "../../utils/logger.js";
+import { SamplingClient } from "../../utils/sampling-client.js";
+import {
+  buildSuccessResponse,
+  buildErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../utils/response-builder.js";
+import { extractJSON, formatForAI } from "../../utils/ai-helpers.js";
+import { loadConfiguration } from "../../config/config.js";
 
 /**
  * Sprint Planning Analyzer - AI-powered sprint planning and work assignment
- * 
+ *
  * This analyzer helps create optimal sprint plans by:
  * - Analyzing team member capacity and historical velocity
  * - Evaluating available work items for sprint assignment
@@ -33,8 +37,8 @@ export class SprintPlanningAnalyzer {
       const config = loadConfiguration();
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
-      const areaPath = args.areaPath || config.azureDevOps.areaPath || '';
-      
+      const areaPath = args.areaPath || config.azureDevOps.areaPath || "";
+
       logger.debug(`Starting sprint planning analysis for iteration: ${args.iterationPath}`);
 
       const analysisInput = {
@@ -50,20 +54,20 @@ export class SprintPlanningAnalyzer {
         consider_skills: args.considerSkills ?? true,
         additional_constraints: args.additionalConstraints || null,
         include_full_analysis: args.includeFullAnalysis ?? false,
-        raw_analysis_on_error: args.rawAnalysisOnError ?? false
+        raw_analysis_on_error: args.rawAnalysisOnError ?? false,
       };
 
       const result = await this.performAnalysis(analysisInput);
-      
-      return buildSuccessResponse(result, { 
-        source: 'sprint-planning-analysis',
+
+      return buildSuccessResponse(result, {
+        source: "sprint-planning-analysis",
         iterationPath: args.iterationPath,
-        teamSize: args.teamMembers.length
+        teamSize: args.teamMembers.length,
       });
     } catch (error) {
-      logger.error('Sprint planning analysis failed:', error);
-      return buildErrorResponse(`Sprint planning analysis failed: ${error}`, { 
-        source: 'sprint-planning-analysis-failed' 
+      logger.error("Sprint planning analysis failed:", error);
+      return buildErrorResponse(`Sprint planning analysis failed: ${error}`, {
+        source: "sprint-planning-analysis-failed",
       });
     }
   }
@@ -71,20 +75,22 @@ export class SprintPlanningAnalyzer {
   private async performAnalysis(analysisInput: any): Promise<SprintPlanningResult> {
     // Timeout wrapper to prevent hanging
     const timeoutMs = 180000; // 3 minutes for comprehensive sprint planning
-    
+
     const aiResultPromise = this.samplingClient.createMessage({
-      systemPromptName: 'sprint-planning-optimizer',
+      systemPromptName: "sprint-planning-optimizer",
       userContent: formatForAI(analysisInput),
       maxTokens: 3000, // Large token count for comprehensive planning
-      temperature: 0.3
+      temperature: 0.3,
     });
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(
-          'Sprint planning analysis exceeded 3 minute timeout. ' +
-          'The analysis may be too complex. Try reducing the team size or candidate items.'
-        ));
+        reject(
+          new Error(
+            "Sprint planning analysis exceeded 3 minute timeout. " +
+              "The analysis may be too complex. Try reducing the team size or candidate items."
+          )
+        );
       }, timeoutMs);
     });
 
@@ -94,14 +100,14 @@ export class SprintPlanningAnalyzer {
 
   private parseResponse(aiResult: any, analysisInput: any): SprintPlanningResult {
     const text = this.samplingClient.extractResponseText(aiResult);
-    
+
     // Try to extract JSON if present
     const json = extractJSON(text);
-    
+
     if (json) {
       return this.buildResultFromJSON(json, analysisInput);
     }
-    
+
     // If no JSON, return the text as a formatted result
     return this.buildResultFromText(text, analysisInput);
   }
@@ -111,21 +117,27 @@ export class SprintPlanningAnalyzer {
    */
   private shouldOmitBalanceMetrics(metrics: any): boolean {
     if (!metrics) return true;
-    
-    const allScoresZero = (
+
+    const allScoresZero =
       (metrics.workloadBalance?.score ?? 0) === 0 &&
       (metrics.skillCoverage?.score ?? 0) === 0 &&
       (metrics.dependencyRisk?.score ?? 0) === 0 &&
-      (metrics.overallBalance?.score ?? 0) === 0
-    );
-    
-    const allAssessmentsEmpty = (
-      (!metrics.workloadBalance?.assessment || metrics.workloadBalance.assessment === "Not available" || metrics.workloadBalance.assessment === "") &&
-      (!metrics.skillCoverage?.assessment || metrics.skillCoverage.assessment === "Not available" || metrics.skillCoverage.assessment === "") &&
-      (!metrics.dependencyRisk?.assessment || metrics.dependencyRisk.assessment === "Not available" || metrics.dependencyRisk.assessment === "") &&
-      (!metrics.overallBalance?.assessment || metrics.overallBalance.assessment === "Not available" || metrics.overallBalance.assessment === "")
-    );
-    
+      (metrics.overallBalance?.score ?? 0) === 0;
+
+    const allAssessmentsEmpty =
+      (!metrics.workloadBalance?.assessment ||
+        metrics.workloadBalance.assessment === "Not available" ||
+        metrics.workloadBalance.assessment === "") &&
+      (!metrics.skillCoverage?.assessment ||
+        metrics.skillCoverage.assessment === "Not available" ||
+        metrics.skillCoverage.assessment === "") &&
+      (!metrics.dependencyRisk?.assessment ||
+        metrics.dependencyRisk.assessment === "Not available" ||
+        metrics.dependencyRisk.assessment === "") &&
+      (!metrics.overallBalance?.assessment ||
+        metrics.overallBalance.assessment === "Not available" ||
+        metrics.overallBalance.assessment === "");
+
     return allScoresZero && allAssessmentsEmpty;
   }
 
@@ -134,12 +146,10 @@ export class SprintPlanningAnalyzer {
    */
   private shouldOmitAlternativePlans(plans: any[]): boolean {
     if (!plans || plans.length === 0) return true;
-    
+
     // Check if all plans are invalid (missing required fields)
-    const allInvalid = plans.every(plan => 
-      !plan.planName || !plan.description
-    );
-    
+    const allInvalid = plans.every((plan) => !plan.planName || !plan.description);
+
     return allInvalid;
   }
 
@@ -155,7 +165,7 @@ export class SprintPlanningAnalyzer {
    */
   private shouldOmitRisks(risks: any): boolean {
     if (!risks) return true;
-    
+
     return (
       (!risks.critical || risks.critical.length === 0) &&
       (!risks.warnings || risks.warnings.length === 0) &&
@@ -176,27 +186,27 @@ export class SprintPlanningAnalyzer {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
         teamSize: analysisInput.team_members.length,
-        totalCapacityHours: analysisInput.sprint_capacity_hours || 
-          (analysisInput.team_members.length * 60), // Default 60 hours/person
+        totalCapacityHours:
+          analysisInput.sprint_capacity_hours || analysisInput.team_members.length * 60, // Default 60 hours/person
         totalCandidateItems: analysisInput.candidate_work_item_ids?.length || 0,
-        healthScore: json.healthScore ?? 75
+        healthScore: json.healthScore ?? 75,
       },
       velocityAnalysis: json.velocityAnalysis ?? {
         historicalVelocity: {
           averagePointsPerSprint: 0,
           trendDirection: "Stable",
           consistency: "Moderate",
-          lastThreeSprints: []
+          lastThreeSprints: [],
         },
         predictedVelocity: {
           estimatedPoints: 0,
           confidenceRange: { min: 0, max: 0 },
-          assumptions: []
-        }
+          assumptions: [],
+        },
       },
       teamAssignments: json.teamAssignments ?? [],
       unassignedItems: json.unassignedItems ?? [],
-      actionableSteps: json.actionableSteps ?? []
+      actionableSteps: json.actionableSteps ?? [],
     };
 
     // Conditionally add fullAnalysisText if requested
@@ -214,7 +224,7 @@ export class SprintPlanningAnalyzer {
     const sprintRisks = json.sprintRisks ?? {
       critical: [],
       warnings: [],
-      recommendations: []
+      recommendations: [],
     };
     if (!this.shouldOmitRisks(sprintRisks)) {
       result.sprintRisks = sprintRisks;
@@ -225,7 +235,7 @@ export class SprintPlanningAnalyzer {
       workloadBalance: { score: 0, assessment: "" },
       skillCoverage: { score: 0, assessment: "" },
       dependencyRisk: { score: 0, assessment: "" },
-      overallBalance: { score: 0, assessment: "" }
+      overallBalance: { score: 0, assessment: "" },
     };
     if (!this.shouldOmitBalanceMetrics(balanceMetrics)) {
       result.balanceMetrics = balanceMetrics;
@@ -252,10 +262,10 @@ export class SprintPlanningAnalyzer {
       sprintSummary: {
         iterationPath: analysisInput.iteration_path,
         teamSize: analysisInput.team_members.length,
-        totalCapacityHours: analysisInput.sprint_capacity_hours || 
-          (analysisInput.team_members.length * 60),
+        totalCapacityHours:
+          analysisInput.sprint_capacity_hours || analysisInput.team_members.length * 60,
         totalCandidateItems: analysisInput.candidate_work_item_ids?.length || 0,
-        healthScore: 50
+        healthScore: 50,
         // confidenceLevel omitted because it would be "Unknown"
       },
       velocityAnalysis: {
@@ -263,33 +273,35 @@ export class SprintPlanningAnalyzer {
           averagePointsPerSprint: 0,
           trendDirection: "Unknown",
           consistency: "Unknown",
-          lastThreeSprints: []
+          lastThreeSprints: [],
         },
         predictedVelocity: {
           estimatedPoints: 0,
           confidenceRange: { min: 0, max: 0 },
-          assumptions: ["Response not in expected JSON format"]
-        }
+          assumptions: ["Response not in expected JSON format"],
+        },
       },
       teamAssignments: [],
       unassignedItems: [],
       // sprintRisks included because parse error is critical information
       sprintRisks: {
-        critical: [{
-          title: "Parse Error",
-          description: "Could not parse AI response into structured format",
-          mitigation: "Review the full analysis text below for insights"
-        }],
+        critical: [
+          {
+            title: "Parse Error",
+            description: "Could not parse AI response into structured format",
+            mitigation: "Review the full analysis text below for insights",
+          },
+        ],
         warnings: [],
-        recommendations: ["Review the full analysis text for planning insights"]
+        recommendations: ["Review the full analysis text for planning insights"],
       },
       // balanceMetrics omitted - all scores would be 0 with "Not available"
       // alternativePlans omitted - would be empty array
       // dependencies omitted - would be empty array
       actionableSteps: [
         "Review the full analysis text for planning insights",
-        "Consider manual sprint planning based on the analysis"
-      ]
+        "Consider manual sprint planning based on the analysis",
+      ],
     };
 
     // Conditionally add fullAnalysisText if requested

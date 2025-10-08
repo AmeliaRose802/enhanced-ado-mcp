@@ -289,6 +289,222 @@ describe('MyFeature', () => {
 });
 ```
 
+## File Organization
+
+Understanding where files belong is critical for maintainability. This section provides clear guidance on file placement decisions.
+
+### Handler Organization (`mcp_server/src/services/handlers/`)
+
+Handlers are organized by functional category. Use this decision tree:
+
+```
+Is it external integration (GitHub, etc.)?
+├─ YES → integration/
+└─ NO ↓
+
+Does it require AI/LLM sampling?
+├─ YES → ai-powered/
+└─ NO ↓
+
+Does it provide rich context packages?
+├─ YES → context/
+└─ NO ↓
+
+Does it execute queries (WIQL/OData)?
+├─ YES → query/
+└─ NO ↓
+
+Does it manage query handle lifecycle?
+├─ YES → query-handles/
+└─ NO ↓
+
+Does it perform bulk operations via handles?
+├─ YES → bulk-operations/
+└─ NO ↓
+
+Does it analyze/validate work items?
+├─ YES → analysis/
+└─ NO ↓
+
+Default → core/
+```
+
+**Handler Categories:**
+- `core/` - Basic CRUD operations, configuration, discovery
+- `query/` - WIQL and OData query execution
+- `query-handles/` - Query handle inspection and validation
+- `bulk-operations/` - Non-AI bulk updates using query handles
+- `ai-powered/` - AI-enhanced operations requiring LLM sampling
+- `analysis/` - Rule-based pattern detection and validation
+- `integration/` - External service integrations (GitHub Copilot, etc.)
+- `context/` - Rich context package operations
+
+**Naming Convention:** `<action>-<subject>.handler.ts`
+- ✅ `create-new-item.handler.ts`
+- ✅ `bulk-assign-by-query-handle.handler.ts`
+- ❌ `createNewItem.handler.ts` (use kebab-case)
+
+See `mcp_server/src/services/handlers/README.md` for detailed category descriptions.
+
+### Service File Organization (`mcp_server/src/services/`)
+
+**When to create a new service:**
+- New external system integration (e.g., `github-service.ts`)
+- Distinct business domain (e.g., `ado-discovery-service.ts`)
+- Complex shared logic used by multiple handlers
+
+**When to extend existing service:**
+- Adding operations to existing domain (e.g., new work item operations → `ado-work-item-service.ts`)
+- New query patterns → `query-handle-service.ts`
+- New sampling capabilities → `sampling-service.ts`
+
+**Service File Naming:** `<domain>-service.ts`
+- ✅ `ado-work-item-service.ts`
+- ✅ `query-handle-service.ts`
+- ❌ `workItemService.ts` (use kebab-case)
+
+**Analyzers Subdirectory:** `mcp_server/src/services/analyzers/`
+- AI-powered analysis classes using LLM sampling
+- Pattern: `<feature>-analyzer.ts`
+- Example: `ai-assignment-analyzer.ts`
+
+### Test File Organization (`mcp_server/test/`)
+
+```
+test/
+├── unit/                    # Fast, isolated tests with mocks
+├── integration/             # End-to-end workflows with real-ish data
+└── setup.ts                 # Jest configuration
+```
+
+**Naming Conventions:**
+- Unit tests: `<feature-name>.test.ts`
+- Integration tests: `<feature>-integration.test.ts`
+- Test helpers: `<helper-name>.test-helper.ts` (if needed)
+
+**Where to place tests:**
+- All tests go in `test/unit/` or `test/integration/`
+- No subdirectories by feature (flat structure)
+- Tests import from handler subdirectories as needed
+
+**What to test:**
+- Unit tests: Individual functions with mocked dependencies
+- Integration tests: Complete tool workflows
+
+See `.github/instructions/tests.instructions.md` for detailed testing patterns.
+
+### Documentation Organization
+
+**Feature Specifications:** `docs/feature_specs/`
+- **REQUIRED** for all new features
+- Naming: `SCREAMING_SNAKE_CASE.md` (e.g., `AI_POWERED_FEATURES.md`)
+- Update `docs/feature_specs/toc.yml` when adding new specs
+- Include: overview, inputs, outputs, examples, errors, testing
+
+**User Guides:** `docs/guides/`
+- How-to guides for specific workflows
+- Naming: `SCREAMING_SNAKE_CASE.md`
+- Update `docs/guides/toc.yml` when adding new guides
+
+**Quick References:** `mcp_server/resources/`
+- Concise, scannable references for AI agents
+- Naming: `kebab-case.md`
+- Focus on practical usage, not implementation details
+- Examples: `wiql-quick-reference.md`, `query-handle-pattern.md`
+
+**Architecture Docs:** `docs/`
+- `ARCHITECTURE.md` - System architecture
+- `CONTRIBUTING.md` - Contribution guidelines
+- `README.md` - Documentation index
+
+**Prompts:** `mcp_server/prompts/`
+- User prompts (multi-turn workflows): root directory with `snake_case.md`
+- System prompts (AI instructions): `system/` subdirectory with `kebab-case.md`
+- Template variables: `{{variableName}}`
+
+### Configuration File Organization
+
+**Configuration Files:**
+- `mcp_server/src/config/config.ts` - Configuration loading logic
+- `mcp_server/src/config/schemas.ts` - Zod validation schemas
+- `mcp_server/src/config/tool-configs.ts` - Tool registry
+
+**When to modify:**
+- New tool parameter → Add to `schemas.ts`
+- New tool → Add to `tool-configs.ts`
+- New config option → Update `config.ts` and schema
+
+**User Configuration:**
+- `mcp_server/.ado-mcp-config.json` - User-specific settings
+- Not committed to repo (in `.gitignore`)
+
+### Decision Tree: "Where Does My File Go?"
+
+```
+What type of file are you creating?
+
+Handler (tool implementation)?
+├─ Use handler decision tree above
+└─ Place in: mcp_server/src/services/handlers/<category>/
+
+Service (business logic)?
+├─ New domain? → Create: mcp_server/src/services/<domain>-service.ts
+└─ Extend existing? → Modify existing service file
+
+Analyzer (AI-powered analysis)?
+└─ Place in: mcp_server/src/services/analyzers/<feature>-analyzer.ts
+
+Test file?
+├─ Unit test? → Place in: mcp_server/test/unit/<feature>.test.ts
+└─ Integration test? → Place in: mcp_server/test/integration/<feature>-integration.test.ts
+
+Documentation?
+├─ Feature spec? → docs/feature_specs/<FEATURE_NAME>.md + update toc.yml
+├─ User guide? → docs/guides/<GUIDE_NAME>.md + update toc.yml
+├─ Quick reference? → mcp_server/resources/<topic>-guide.md
+├─ Architecture? → docs/ARCHITECTURE.md (update existing)
+└─ Contributing? → docs/CONTRIBUTING.md (update existing)
+
+Prompt template?
+├─ User prompt (multi-turn)? → mcp_server/prompts/<workflow_name>.md
+└─ System prompt (AI instructions)? → mcp_server/prompts/system/<feature>.md
+
+Configuration?
+├─ New schema? → mcp_server/src/config/schemas.ts
+├─ New tool? → mcp_server/src/config/tool-configs.ts
+└─ Config loading? → mcp_server/src/config/config.ts
+
+Type definitions?
+└─ Place in: mcp_server/src/types/<domain>.ts
+
+Utility function?
+└─ Place in: mcp_server/src/utils/<utility>.ts
+```
+
+### File Placement Reasoning
+
+**Why handlers are categorized:**
+- Easier to find related code
+- Logical grouping by functionality
+- Clearer dependencies and patterns
+- Simpler onboarding for contributors
+
+**Why tests are flat:**
+- Faster test discovery
+- Simpler import paths
+- No need to mirror source structure
+- Focus on what's tested, not where it lives
+
+**Why documentation is split:**
+- `docs/` - User-facing, essential information
+- `mcp_server/resources/` - Agent-facing, quick references
+- Separation of concerns (users vs. AI agents)
+
+**Why prompts have subdirectories:**
+- System prompts define AI behavior (reusable)
+- User prompts define workflows (top-level)
+- Clear distinction between instruction and orchestration
+
 ## Resources for Agents
 
 Quick reference guides in `mcp_server/resources/`:

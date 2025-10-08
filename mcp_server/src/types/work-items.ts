@@ -1,14 +1,14 @@
 /**
  * Work Item Type Definitions
- * 
+ *
  * Comprehensive type definitions for work item structures, context data,
  * and analysis results used throughout the Enhanced ADO MCP Server.
- * 
+ *
  * These types eliminate the use of 'any' and provide strong type safety
  * for work item operations, query handles, and AI-powered analysis.
  */
 
-import type { ADOWorkItem, ADOWorkItemFields, ADORelation, ADOIdentity } from './ado.js';
+import type { ADOWorkItem, ADOWorkItemFields, ADORelation, ADOIdentity } from "./ado.js";
 
 /**
  * Work Item - Standard Azure DevOps work item structure
@@ -208,15 +208,18 @@ export interface EffortAnalysis {
   average_story_points: number;
   unestimated_count: number;
   unestimated_percentage: number;
-  by_type: Record<string, {
-    count: number;
-    total_points: number;
-    average_points: number;
-  }>;
+  by_type: Record<
+    string,
+    {
+      count: number;
+      total_points: number;
+      average_points: number;
+    }
+  >;
   distribution: {
-    small: number;      // 1-3 points
-    medium: number;     // 5-8 points
-    large: number;      // 13+ points
+    small: number; // 1-3 points
+    medium: number; // 5-8 points
+    large: number; // 13+ points
   };
 }
 
@@ -229,12 +232,15 @@ export interface VelocityAnalysis {
   average_cycle_time_days: number;
   weekly_velocity: number;
   monthly_velocity: number;
-  trend: 'increasing' | 'decreasing' | 'stable';
-  by_person: Record<string, {
-    completed_count: number;
-    story_points: number;
-    average_cycle_time: number;
-  }>;
+  trend: "increasing" | "decreasing" | "stable";
+  by_person: Record<
+    string,
+    {
+      completed_count: number;
+      story_points: number;
+      average_cycle_time: number;
+    }
+  >;
 }
 
 /**
@@ -243,17 +249,23 @@ export interface VelocityAnalysis {
 export interface AssignmentAnalysis {
   total_assigned: number;
   total_unassigned: number;
-  by_person: Record<string, {
-    active_count: number;
-    total_story_points: number;
-    work_types: Record<string, number>;
-    weighted_load: number;
-  }>;
-  capacity_utilization: Record<string, {
-    person: string;
-    load: number;
-    status: 'underutilized' | 'balanced' | 'overloaded';
-  }>;
+  by_person: Record<
+    string,
+    {
+      active_count: number;
+      total_story_points: number;
+      work_types: Record<string, number>;
+      weighted_load: number;
+    }
+  >;
+  capacity_utilization: Record<
+    string,
+    {
+      person: string;
+      load: number;
+      status: "underutilized" | "balanced" | "overloaded";
+    }
+  >;
 }
 
 /**
@@ -292,7 +304,7 @@ export interface CompletionAnalysis {
   not_started_count: number;
   completion_percentage: number;
   estimated_completion_date: string | null;
-  confidence_level: 'low' | 'medium' | 'high';
+  confidence_level: "low" | "medium" | "high";
   remaining_story_points: number;
   weeks_remaining: number;
 }
@@ -314,10 +326,13 @@ export interface WorkloadAnalysis {
   total_active: number;
   by_state: Record<string, number>;
   by_type: Record<string, number>;
-  by_person: Record<string, {
-    active_count: number;
-    wip_status: 'healthy' | 'at-limit' | 'over-limit';
-  }>;
+  by_person: Record<
+    string,
+    {
+      active_count: number;
+      wip_status: "healthy" | "at-limit" | "over-limit";
+    }
+  >;
 }
 
 /**
@@ -331,7 +346,7 @@ export interface AISuitabilityAnalysis {
   concerns: string[];
   recommendation: string;
   estimated_effort?: string;
-  complexity?: 'low' | 'medium' | 'high';
+  complexity?: "low" | "medium" | "high";
 }
 
 /**
@@ -378,8 +393,8 @@ export interface SimpleHierarchyValidationResult {
   issues: Array<{
     workItemId: number;
     title: string;
-    issue_type: 'invalid_parent' | 'orphaned' | 'circular' | 'state_mismatch' | 'type_mismatch';
-    severity: 'critical' | 'warning' | 'info';
+    issue_type: "invalid_parent" | "orphaned" | "circular" | "state_mismatch" | "type_mismatch";
+    severity: "critical" | "warning" | "info";
     description: string;
     recommendation?: string;
   }>;
@@ -396,21 +411,21 @@ export interface SimpleHierarchyValidationResult {
 
 export function isWorkItem(value: unknown): value is WorkItem {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'id' in value &&
-    'fields' in value &&
-    typeof (value as WorkItem).id === 'number'
+    "id" in value &&
+    "fields" in value &&
+    typeof (value as WorkItem).id === "number"
   );
 }
 
 export function isWorkItemContext(value: unknown): value is WorkItemContext {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'title' in value &&
-    'state' in value &&
-    'type' in value
+    "title" in value &&
+    "state" in value &&
+    "type" in value
   );
 }
 
@@ -425,41 +440,41 @@ export function isWorkItemArray(value: unknown): value is WorkItem[] {
 /**
  * Work Item State - Common ADO work item states
  */
-export type WorkItemState = 
-  | 'New' 
-  | 'Active' 
-  | 'Resolved' 
-  | 'Closed' 
-  | 'Removed'
-  | 'To Do'
-  | 'In Progress'
-  | 'Done'
+export type WorkItemState =
+  | "New"
+  | "Active"
+  | "Resolved"
+  | "Closed"
+  | "Removed"
+  | "To Do"
+  | "In Progress"
+  | "Done"
   | string; // Allow custom states
 
 /**
  * Work Item Type - Common ADO work item types
  */
 export type WorkItemType =
-  | 'Epic'
-  | 'Feature'
-  | 'Product Backlog Item'
-  | 'User Story'
-  | 'Task'
-  | 'Bug'
-  | 'Issue'
+  | "Epic"
+  | "Feature"
+  | "Product Backlog Item"
+  | "User Story"
+  | "Task"
+  | "Bug"
+  | "Issue"
   | string; // Allow custom types
 
 /**
  * Assignment Status
  */
-export type AssignmentStatus = 'assigned' | 'unassigned';
+export type AssignmentStatus = "assigned" | "unassigned";
 
 /**
  * Staleness Level
  */
-export type StalenessLevel = 'fresh' | 'aging' | 'stale' | 'very-stale';
+export type StalenessLevel = "fresh" | "aging" | "stale" | "very-stale";
 
 /**
  * Risk Severity
  */
-export type RiskSeverity = 'critical' | 'high' | 'medium' | 'low';
+export type RiskSeverity = "critical" | "high" | "medium" | "low";

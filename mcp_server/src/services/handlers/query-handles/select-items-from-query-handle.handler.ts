@@ -4,12 +4,17 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
-import { buildValidationErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildNotFoundError,
+  buildSuccessResponse,
+  buildErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 interface SelectionAnalysis {
-  selection_type: 'index-based' | 'all' | 'criteria-based';
+  selection_type: "index-based" | "all" | "criteria-based";
   total_items_in_handle: number;
   selected_items_count: number;
   selection_percentage: string;
@@ -21,7 +26,10 @@ interface SelectionAnalysis {
  * Handler for wit-query-handle-select tool
  * Helps users understand what items they can select from a query handle
  */
-export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleSelectItemsFromQueryHandle(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const parsed = config.schema.safeParse(args || {});
     if (!parsed.success) {
@@ -32,14 +40,10 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
 
     const queryData = queryHandleService.getQueryData(queryHandle);
     if (!queryData) {
-      return buildNotFoundError(
-        'query-handle',
-        queryHandle,
-        {
-          source: 'select-items-from-query-handle',
-          hint: 'Query handles expire after 1 hour.'
-        }
-      );
+      return buildNotFoundError("query-handle", queryHandle, {
+        source: "select-items-from-query-handle",
+        hint: "Query handles expire after 1 hour.",
+      });
     }
 
     // Resolve the item selector to get selected IDs
@@ -55,36 +59,41 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
     const selectedCount = selectedWorkItemIds.length;
 
     // Build preview of selected items
-    const previewItems = selectedWorkItemIds.slice(0, Math.min(previewCount, 50)).map((id: number) => {
-      const context = queryData.itemContext.find(item => item.id === id);
-      const workItemContext = queryData.workItemContext?.get(id);
-      
-      return {
-        index: context?.index,
-        id,
-        title: context?.title || "No title",
-        state: context?.state || "Unknown",
-        type: context?.type || "Unknown",
-        days_inactive: context?.daysInactive,
-        assigned_to: workItemContext?.assignedTo || "Unassigned",
-        tags: context?.tags
-      };
-    });
+    const previewItems = selectedWorkItemIds
+      .slice(0, Math.min(previewCount, 50))
+      .map((id: number) => {
+        const context = queryData.itemContext.find((item) => item.id === id);
+        const workItemContext = queryData.workItemContext?.get(id);
+
+        return {
+          index: context?.index,
+          id,
+          title: context?.title || "No title",
+          state: context?.state || "Unknown",
+          type: context?.type || "Unknown",
+          days_inactive: context?.daysInactive,
+          assigned_to: workItemContext?.assignedTo || "Unassigned",
+          tags: context?.tags,
+        };
+      });
 
     // Analyze selection
     const selectionAnalysis: SelectionAnalysis = {
-      selection_type: Array.isArray(itemSelector) ? 'index-based' : 
-                     typeof itemSelector === 'string' ? 'all' : 'criteria-based',
+      selection_type: Array.isArray(itemSelector)
+        ? "index-based"
+        : typeof itemSelector === "string"
+          ? "all"
+          : "criteria-based",
       total_items_in_handle: totalItems,
       selected_items_count: selectedCount,
-      selection_percentage: ((selectedCount / totalItems) * 100).toFixed(1) + '%',
-      showing_preview: `${previewItems.length} of ${selectedCount} selected items`
+      selection_percentage: ((selectedCount / totalItems) * 100).toFixed(1) + "%",
+      showing_preview: `${previewItems.length} of ${selectedCount} selected items`,
     };
 
     // Add criteria analysis if applicable
-    if (typeof itemSelector === 'object' && !Array.isArray(itemSelector)) {
-      const criteriaUsed = Object.keys(itemSelector).filter(key => 
-        itemSelector[key as keyof typeof itemSelector] !== undefined
+    if (typeof itemSelector === "object" && !Array.isArray(itemSelector)) {
+      const criteriaUsed = Object.keys(itemSelector).filter(
+        (key) => itemSelector[key as keyof typeof itemSelector] !== undefined
       );
       selectionAnalysis.criteria_used = criteriaUsed;
     }
@@ -95,22 +104,18 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
         item_selector: itemSelector,
         selection_analysis: selectionAnalysis,
         preview_items: previewItems,
-        selection_summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`
+        selection_summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`,
       },
       { source: "select-items-from-query-handle" }
     );
 
     if (selectedCount === 0) {
-      result.warnings = ['No items matched the selection criteria'];
+      result.warnings = ["No items matched the selection criteria"];
     }
-    
-    return result;
 
+    return result;
   } catch (error) {
-    logger.error('Select items from query handle error:', error);
-    return buildErrorResponse(
-      error as Error,
-      { source: "select-items-from-query-handle" }
-    );
+    logger.error("Select items from query handle error:", error);
+    return buildErrorResponse(error as Error, { source: "select-items-from-query-handle" });
   }
 }

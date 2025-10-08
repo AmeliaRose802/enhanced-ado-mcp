@@ -10,8 +10,10 @@ const mockServer = {
   getClientCapabilities: () => ({ sampling: true }),
   createMessage: async (params: any) => {
     logger.info(`Mock AI call - System Prompt: ${params.systemPrompt.substring(0, 100)}...`);
-    logger.info(`Mock AI call - User Content: ${params.messages[0]?.content?.text?.substring(0, 100)}...`);
-    
+    logger.info(
+      `Mock AI call - User Content: ${params.messages[0]?.content?.text?.substring(0, 100)}...`
+    );
+
     // Simulate AI response based on analysis type
     const mockResponse = {
       content: {
@@ -40,18 +42,20 @@ Implement user authentication using OAuth 2.0 flow with the following steps:
 4. Add protected route guards
 5. Update UI with login state management
 
-ASSIGNMENT RECOMMENDATION: AI-Suitable with clear requirements`
-      }
+ASSIGNMENT RECOMMENDATION: AI-Suitable with clear requirements`,
+      },
     };
-    
+
     return mockResponse;
-  }
+  },
 };
 
-// Mock server without sampling for fallback testing  
+// Mock server without sampling for fallback testing
 const mockServerNoSampling = {
   getClientCapabilities: () => ({}),
-  createMessage: async () => { throw new Error("Sampling not supported"); }
+  createMessage: async () => {
+    throw new Error("Sampling not supported");
+  },
 };
 
 async function testWorkItemIntelligenceAnalyzer() {
@@ -60,14 +64,14 @@ async function testWorkItemIntelligenceAnalyzer() {
   // Test 1: Full analysis with sampling support
   console.log("📊 Test 1: Full AI Analysis with Sampling");
   setServerInstance(mockServer);
-  
+
   try {
     const result1 = await executeTool("wit-ai-intelligence", {
       Title: "Implement user authentication",
       Description: "Add OAuth login functionality to the web application",
-      WorkItemType: "Feature", 
+      WorkItemType: "Feature",
       AnalysisType: "full",
-      ContextInfo: "React frontend with Node.js backend"
+      ContextInfo: "React frontend with Node.js backend",
     });
 
     console.log("✅ Full analysis result:", JSON.stringify(result1, null, 2));
@@ -77,14 +81,14 @@ async function testWorkItemIntelligenceAnalyzer() {
     console.error("❌ Full analysis failed:", error);
   }
 
-  // Test 2: AI readiness analysis  
+  // Test 2: AI readiness analysis
   console.log("\n📋 Test 2: AI Readiness Analysis");
   try {
     const result2 = await executeTool("wit-ai-intelligence", {
-      Title: "Fix login bug", 
+      Title: "Fix login bug",
       Description: "Users can't log in on mobile devices",
       WorkItemType: "Bug",
-      AnalysisType: "ai-readiness"
+      AnalysisType: "ai-readiness",
     });
 
     console.log("✅ AI readiness result:", JSON.stringify(result2.data, null, 2));
@@ -97,7 +101,7 @@ async function testWorkItemIntelligenceAnalyzer() {
   try {
     const result3 = await executeTool("wit-ai-intelligence", {
       Title: "Update docs",
-      AnalysisType: "enhancement"
+      AnalysisType: "enhancement",
     });
 
     console.log("✅ Enhancement result received");
@@ -109,12 +113,12 @@ async function testWorkItemIntelligenceAnalyzer() {
   // Test 4: Fallback without sampling
   console.log("\n🔄 Test 4: Fallback Analysis (No Sampling)");
   setServerInstance(mockServerNoSampling);
-  
+
   try {
     const result4 = await executeTool("wit-ai-intelligence", {
-      Title: "Complex integration task", 
+      Title: "Complex integration task",
       Description: "Integrate payment system with multiple vendors",
-      AnalysisType: "full"
+      AnalysisType: "full",
     });
 
     console.log("✅ Fallback analysis result:", JSON.stringify(result4.data, null, 2));
@@ -127,11 +131,11 @@ async function testWorkItemIntelligenceAnalyzer() {
   // Test 5: Invalid tool name (should fail gracefully)
   console.log("\n❓ Test 5: Invalid Analysis Type");
   setServerInstance(mockServer);
-  
+
   try {
     const result5 = await executeTool("wit-ai-intelligence", {
       Title: "Test item",
-      AnalysisType: "invalid-type" as any
+      AnalysisType: "invalid-type" as any,
     });
 
     console.log("⚠️  Invalid type handled:", result5.success);
@@ -145,25 +149,25 @@ async function testWorkItemIntelligenceAnalyzer() {
 // Test the prompt loading for the new analyzer
 async function testIntelligentAnalyzerPrompt() {
   console.log("📝 Testing Intelligent Work Item Analyzer Prompt");
-  
+
   try {
     const { loadPrompts, getPromptContent } = await import("../services/prompt-service.js");
-    
+
     const prompts = await loadPrompts();
     const analyzerPrompt = prompts.find((p: any) => p.name === "intelligent_work_item_analyzer");
-    
+
     if (analyzerPrompt) {
       console.log("✅ Intelligent analyzer prompt found");
       console.log(`Description: ${analyzerPrompt.description}`);
       console.log(`Arguments: ${Object.keys(analyzerPrompt.arguments || {}).join(", ")}`);
-      
+
       // Test prompt content generation
       const content = await getPromptContent("intelligent_work_item_analyzer", {
         work_item_title: "Test Authentication Feature",
         work_item_description: "Add OAuth 2.0 login",
-        analysis_focus: "ai-readiness"
+        analysis_focus: "ai-readiness",
       });
-      
+
       console.log(`✅ Prompt content generated (${content.length} characters)`);
       console.log(`Sample: ${content.substring(0, 200)}...`);
     } else {

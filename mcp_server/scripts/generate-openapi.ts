@@ -1,30 +1,30 @@
 #!/usr/bin/env tsx
 /**
  * OpenAPI 3.0 Generation Script
- * 
+ *
  * Generates OpenAPI specification from Zod schemas for all MCP tools.
  * This provides automatic API documentation that stays synchronized with code.
- * 
+ *
  * Usage:
  *   npm run generate-openapi
- * 
+ *
  * Output:
  *   docs/api/openapi.json - OpenAPI 3.0 specification
  *   docs/api/schemas/ - Individual JSON schemas for each tool
  */
 
-import { writeFile, mkdir } from 'fs/promises';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { writeFile, mkdir } from "fs/promises";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 // Import tool configs (which includes pre-built inputSchemas)
-import { toolConfigs } from '../src/config/tool-configs.js';
+import { toolConfigs } from "../src/config/tool-configs.js";
 
 // Get project root
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const projectRoot = join(__dirname, '..');
+const projectRoot = join(__dirname, "..");
 
 // Extend Zod with OpenAPI metadata support
 // extendZodWithOpenApi(z); // Not needed since we're using toolConfigs directly
@@ -33,70 +33,135 @@ const projectRoot = join(__dirname, '..');
  * Schema metadata for better documentation - maps schema names to categories
  */
 const schemaCategories: Record<string, { title: string; category: string; aiPowered?: boolean }> = {
-  createNewItemSchema: { title: 'Create Work Item', category: 'Work Item Operations' },
-  assignToCopilotSchema: { title: 'Assign to Copilot', category: 'Copilot Integration' },
-  newCopilotItemSchema: { title: 'Create Copilot Work Item', category: 'Copilot Integration' },
-  extractSecurityLinksSchema: { title: 'Extract Security Links', category: 'Security Analysis' },
-  workItemIntelligenceSchema: { title: 'Work Item Intelligence', category: 'AI-Powered Analysis', aiPowered: true },
-  aiAssignmentAnalyzerSchema: { title: 'AI Assignment Analyzer', category: 'AI-Powered Analysis', aiPowered: true },
-  getConfigurationSchema: { title: 'Get Configuration', category: 'Configuration' },
-  wiqlQuerySchema: { title: 'WIQL Query', category: 'Queries' },
-  odataAnalyticsQuerySchema: { title: 'OData Analytics Query', category: 'Queries' },
-  inspectQueryHandleSchema: { title: 'Inspect Query Handle', category: 'Query Handles' },
-  selectItemsFromQueryHandleSchema: { title: 'Select Items from Query Handle', category: 'Query Handles' },
-  workItemContextPackageSchema: { title: 'Get Work Item Context Package', category: 'Context Retrieval' },
-  workItemsBatchContextSchema: { title: 'Get Work Items Batch Context', category: 'Context Retrieval' },
-  getLastSubstantiveChangeSchema: { title: 'Get Last Substantive Change', category: 'Work Item Operations' },
-  detectPatternsSchema: { title: 'Detect Patterns', category: 'AI-Powered Analysis', aiPowered: true },
-  validateHierarchyFastSchema: { title: 'Validate Hierarchy', category: 'Validation' },
-  bulkCommentByQueryHandleSchema: { title: 'Bulk Add Comments', category: 'Bulk Operations' },
-  bulkUpdateByQueryHandleSchema: { title: 'Bulk Update Work Items', category: 'Bulk Operations' },
-  bulkAssignByQueryHandleSchema: { title: 'Bulk Assign Work Items', category: 'Bulk Operations' },
-  bulkRemoveByQueryHandleSchema: { title: 'Bulk Remove Work Items', category: 'Bulk Operations' },
-  validateQueryHandleSchema: { title: 'Validate Query Handle', category: 'Query Handles' },
-  analyzeByQueryHandleSchema: { title: 'Analyze by Query Handle', category: 'AI-Powered Analysis', aiPowered: true },
-  listQueryHandlesSchema: { title: 'List Query Handles', category: 'Query Handles' },
-  bulkEnhanceDescriptionsByQueryHandleSchema: { title: 'Bulk Enhance Descriptions', category: 'Bulk Operations', aiPowered: true },
-  bulkAssignStoryPointsByQueryHandleSchema: { title: 'Bulk Assign Story Points', category: 'Bulk Operations', aiPowered: true },
-  bulkAddAcceptanceCriteriaByQueryHandleSchema: { title: 'Bulk Add Acceptance Criteria', category: 'Bulk Operations', aiPowered: true },
-  generateWiqlQuerySchema: { title: 'Generate WIQL Query', category: 'AI-Powered Query Generation', aiPowered: true },
-  generateODataQuerySchema: { title: 'Generate OData Query', category: 'AI-Powered Query Generation', aiPowered: true },
-  toolDiscoverySchema: { title: 'Tool Discovery', category: 'Discovery' },
-  personalWorkloadAnalyzerSchema: { title: 'Personal Workload Analyzer', category: 'AI-Powered Analysis', aiPowered: true },
-  sprintPlanningAnalyzerSchema: { title: 'Sprint Planning Analyzer', category: 'AI-Powered Analysis', aiPowered: true }
+  createNewItemSchema: { title: "Create Work Item", category: "Work Item Operations" },
+  assignToCopilotSchema: { title: "Assign to Copilot", category: "Copilot Integration" },
+  newCopilotItemSchema: { title: "Create Copilot Work Item", category: "Copilot Integration" },
+  extractSecurityLinksSchema: { title: "Extract Security Links", category: "Security Analysis" },
+  workItemIntelligenceSchema: {
+    title: "Work Item Intelligence",
+    category: "AI-Powered Analysis",
+    aiPowered: true,
+  },
+  aiAssignmentAnalyzerSchema: {
+    title: "AI Assignment Analyzer",
+    category: "AI-Powered Analysis",
+    aiPowered: true,
+  },
+  getConfigurationSchema: { title: "Get Configuration", category: "Configuration" },
+  wiqlQuerySchema: { title: "WIQL Query", category: "Queries" },
+  odataAnalyticsQuerySchema: { title: "OData Analytics Query", category: "Queries" },
+  inspectQueryHandleSchema: { title: "Inspect Query Handle", category: "Query Handles" },
+  selectItemsFromQueryHandleSchema: {
+    title: "Select Items from Query Handle",
+    category: "Query Handles",
+  },
+  workItemContextPackageSchema: {
+    title: "Get Work Item Context Package",
+    category: "Context Retrieval",
+  },
+  workItemsBatchContextSchema: {
+    title: "Get Work Items Batch Context",
+    category: "Context Retrieval",
+  },
+  getLastSubstantiveChangeSchema: {
+    title: "Get Last Substantive Change",
+    category: "Work Item Operations",
+  },
+  detectPatternsSchema: {
+    title: "Detect Patterns",
+    category: "AI-Powered Analysis",
+    aiPowered: true,
+  },
+  validateHierarchyFastSchema: { title: "Validate Hierarchy", category: "Validation" },
+  bulkCommentByQueryHandleSchema: { title: "Bulk Add Comments", category: "Bulk Operations" },
+  bulkUpdateByQueryHandleSchema: { title: "Bulk Update Work Items", category: "Bulk Operations" },
+  bulkAssignByQueryHandleSchema: { title: "Bulk Assign Work Items", category: "Bulk Operations" },
+  bulkRemoveByQueryHandleSchema: { title: "Bulk Remove Work Items", category: "Bulk Operations" },
+  validateQueryHandleSchema: { title: "Validate Query Handle", category: "Query Handles" },
+  analyzeByQueryHandleSchema: {
+    title: "Analyze by Query Handle",
+    category: "AI-Powered Analysis",
+    aiPowered: true,
+  },
+  listQueryHandlesSchema: { title: "List Query Handles", category: "Query Handles" },
+  bulkEnhanceDescriptionsByQueryHandleSchema: {
+    title: "Bulk Enhance Descriptions",
+    category: "Bulk Operations",
+    aiPowered: true,
+  },
+  bulkAssignStoryPointsByQueryHandleSchema: {
+    title: "Bulk Assign Story Points",
+    category: "Bulk Operations",
+    aiPowered: true,
+  },
+  bulkAddAcceptanceCriteriaByQueryHandleSchema: {
+    title: "Bulk Add Acceptance Criteria",
+    category: "Bulk Operations",
+    aiPowered: true,
+  },
+  generateWiqlQuerySchema: {
+    title: "Generate WIQL Query",
+    category: "AI-Powered Query Generation",
+    aiPowered: true,
+  },
+  generateODataQuerySchema: {
+    title: "Generate OData Query",
+    category: "AI-Powered Query Generation",
+    aiPowered: true,
+  },
+  toolDiscoverySchema: { title: "Tool Discovery", category: "Discovery" },
+  personalWorkloadAnalyzerSchema: {
+    title: "Personal Workload Analyzer",
+    category: "AI-Powered Analysis",
+    aiPowered: true,
+  },
+  sprintPlanningAnalyzerSchema: {
+    title: "Sprint Planning Analyzer",
+    category: "AI-Powered Analysis",
+    aiPowered: true,
+  },
 };
 
 /**
  * Determine category and AI-powered status from tool description
  */
-function getToolMetadata(tool: typeof toolConfigs[0]): { category: string; isAIPowered: boolean } {
+function getToolMetadata(tool: (typeof toolConfigs)[0]): {
+  category: string;
+  isAIPowered: boolean;
+} {
   const desc = tool.description.toLowerCase();
-  const isAIPowered = tool.description.includes('🤖 AI-POWERED');
+  const isAIPowered = tool.description.includes("🤖 AI-POWERED");
 
-  if (desc.includes('query handle') || tool.name.includes('query-handle')) {
-    return { category: 'Query Handles', isAIPowered };
-  } else if (desc.includes('bulk') && (desc.includes('update') || desc.includes('assign') || desc.includes('comment'))) {
-    return { category: 'Bulk Operations', isAIPowered };
-  } else if (isAIPowered && (desc.includes('generate') || desc.includes('wiql') || desc.includes('odata'))) {
-    return { category: 'AI-Powered Query Generation', isAIPowered: true };
-  } else if (isAIPowered || desc.includes('analyz') || desc.includes('intelligence')) {
-    return { category: 'AI-Powered Analysis', isAIPowered: true };
-  } else if (desc.includes('context') || desc.includes('batch')) {
-    return { category: 'Context Retrieval', isAIPowered };
-  } else if (desc.includes('copilot')) {
-    return { category: 'Copilot Integration', isAIPowered };
-  } else if (desc.includes('security')) {
-    return { category: 'Security Analysis', isAIPowered };
-  } else if (desc.includes('configuration') || tool.name.includes('config')) {
-    return { category: 'Configuration', isAIPowered };
-  } else if (desc.includes('discovery') || tool.name.includes('discovery')) {
-    return { category: 'Discovery', isAIPowered };
-  } else if (desc.includes('validate')) {
-    return { category: 'Validation', isAIPowered };
-  } else if (desc.includes('query') || desc.includes('wiql') || desc.includes('odata')) {
-    return { category: 'Queries', isAIPowered };
+  if (desc.includes("query handle") || tool.name.includes("query-handle")) {
+    return { category: "Query Handles", isAIPowered };
+  } else if (
+    desc.includes("bulk") &&
+    (desc.includes("update") || desc.includes("assign") || desc.includes("comment"))
+  ) {
+    return { category: "Bulk Operations", isAIPowered };
+  } else if (
+    isAIPowered &&
+    (desc.includes("generate") || desc.includes("wiql") || desc.includes("odata"))
+  ) {
+    return { category: "AI-Powered Query Generation", isAIPowered: true };
+  } else if (isAIPowered || desc.includes("analyz") || desc.includes("intelligence")) {
+    return { category: "AI-Powered Analysis", isAIPowered: true };
+  } else if (desc.includes("context") || desc.includes("batch")) {
+    return { category: "Context Retrieval", isAIPowered };
+  } else if (desc.includes("copilot")) {
+    return { category: "Copilot Integration", isAIPowered };
+  } else if (desc.includes("security")) {
+    return { category: "Security Analysis", isAIPowered };
+  } else if (desc.includes("configuration") || tool.name.includes("config")) {
+    return { category: "Configuration", isAIPowered };
+  } else if (desc.includes("discovery") || tool.name.includes("discovery")) {
+    return { category: "Discovery", isAIPowered };
+  } else if (desc.includes("validate")) {
+    return { category: "Validation", isAIPowered };
+  } else if (desc.includes("query") || desc.includes("wiql") || desc.includes("odata")) {
+    return { category: "Queries", isAIPowered };
   } else {
-    return { category: 'Work Item Operations', isAIPowered };
+    return { category: "Work Item Operations", isAIPowered };
   }
 }
 
@@ -104,12 +169,11 @@ function getToolMetadata(tool: typeof toolConfigs[0]): { category: string; isAIP
  * Generate complete OpenAPI specification
  */
 function generateOpenAPISpec(): any {
-
   const spec = {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Enhanced ADO MCP Server API',
-      version: '1.5.0',
+      title: "Enhanced ADO MCP Server API",
+      version: "1.5.0",
       description: `
 # Enhanced Azure DevOps MCP Server
 
@@ -161,34 +225,34 @@ Tools automatically use configuration from \`.ado-mcp-config.json\` for:
 Only provide these parameters to override defaults.
       `.trim(),
       contact: {
-        name: 'Amelia Payne',
-        url: 'https://github.com/AmeliaRose802'
+        name: "Amelia Payne",
+        url: "https://github.com/AmeliaRose802",
       },
       license: {
-        name: 'MIT',
-        url: 'https://opensource.org/licenses/MIT'
-      }
+        name: "MIT",
+        url: "https://opensource.org/licenses/MIT",
+      },
     },
     servers: [
       {
-        url: 'mcp://enhanced-ado-mcp',
-        description: 'MCP Server'
-      }
+        url: "mcp://enhanced-ado-mcp",
+        description: "MCP Server",
+      },
     ],
     tags: [
-      { name: 'Work Item Operations', description: 'Basic CRUD operations for work items' },
-      { name: 'AI-Powered Analysis', description: 'Intelligent analysis using LLM sampling' },
-      { name: 'Query Generation', description: 'Natural language to WIQL/OData conversion' },
-      { name: 'Bulk Operations', description: 'Safe bulk updates using query handles' },
-      { name: 'Query Handles', description: 'Query handle management' },
-      { name: 'Context Retrieval', description: 'Comprehensive work item context' },
-      { name: 'Copilot Integration', description: 'GitHub Copilot integration' },
-      { name: 'Security Analysis', description: 'Security findings extraction' },
-      { name: 'Configuration', description: 'Server configuration' },
-      { name: 'Discovery', description: 'Tool and resource discovery' },
-      { name: 'Validation', description: 'Data validation tools' },
-      { name: 'Queries', description: 'WIQL and OData queries' }
-    ]
+      { name: "Work Item Operations", description: "Basic CRUD operations for work items" },
+      { name: "AI-Powered Analysis", description: "Intelligent analysis using LLM sampling" },
+      { name: "Query Generation", description: "Natural language to WIQL/OData conversion" },
+      { name: "Bulk Operations", description: "Safe bulk updates using query handles" },
+      { name: "Query Handles", description: "Query handle management" },
+      { name: "Context Retrieval", description: "Comprehensive work item context" },
+      { name: "Copilot Integration", description: "GitHub Copilot integration" },
+      { name: "Security Analysis", description: "Security findings extraction" },
+      { name: "Configuration", description: "Server configuration" },
+      { name: "Discovery", description: "Tool and resource discovery" },
+      { name: "Validation", description: "Data validation tools" },
+      { name: "Queries", description: "WIQL and OData queries" },
+    ],
   };
 
   // Add paths for each tool from tool-configs
@@ -201,86 +265,86 @@ Only provide these parameters to override defaults.
       post: {
         summary: tool.name,
         description: tool.description,
-        operationId: tool.name.replace(/-/g, '_'),
+        operationId: tool.name.replace(/-/g, "_"),
         tags: [category],
         requestBody: {
           required: true,
           content: {
-            'application/json': {
-              schema: tool.inputSchema
-            }
-          }
+            "application/json": {
+              schema: tool.inputSchema,
+            },
+          },
         },
         responses: {
-          '200': {
-            description: 'Successful operation',
+          "200": {
+            description: "Successful operation",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    success: { type: 'boolean' },
-                    data: { 
-                      type: 'object',
-                      description: 'Result data (structure varies by tool)'
+                    success: { type: "boolean" },
+                    data: {
+                      type: "object",
+                      description: "Result data (structure varies by tool)",
                     },
                     metadata: {
-                      type: 'object',
-                      description: 'Operation metadata'
+                      type: "object",
+                      description: "Operation metadata",
                     },
                     errors: {
-                      type: 'array',
-                      items: { type: 'string' },
-                      description: 'Error messages if any'
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Error messages if any",
                     },
                     warnings: {
-                      type: 'array',
-                      items: { type: 'string' },
-                      description: 'Warning messages if any'
-                    }
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Warning messages if any",
+                    },
                   },
-                  required: ['success', 'errors', 'warnings']
-                }
-              }
-            }
+                  required: ["success", "errors", "warnings"],
+                },
+              },
+            },
           },
-          '400': {
-            description: 'Invalid input parameters',
+          "400": {
+            description: "Invalid input parameters",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    success: { type: 'boolean', enum: [false] },
+                    success: { type: "boolean", enum: [false] },
                     errors: {
-                      type: 'array',
-                      items: { type: 'string' }
-                    }
-                  }
-                }
-              }
-            }
+                      type: "array",
+                      items: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
           },
-          '500': {
-            description: 'Server error',
+          "500": {
+            description: "Server error",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    success: { type: 'boolean', enum: [false] },
+                    success: { type: "boolean", enum: [false] },
                     errors: {
-                      type: 'array',
-                      items: { type: 'string' }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                      type: "array",
+                      items: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
-        'x-ai-powered': isAIPowered
-      }
+        "x-ai-powered": isAIPowered,
+      },
     };
   });
 
@@ -291,14 +355,14 @@ Only provide these parameters to override defaults.
  * Generate individual JSON schemas for each tool's input schema
  */
 async function generateIndividualSchemas(outputDir: string): Promise<void> {
-  const schemasDir = join(outputDir, 'schemas');
+  const schemasDir = join(outputDir, "schemas");
   await mkdir(schemasDir, { recursive: true });
 
   const schemaFiles: string[] = [];
 
   for (const tool of toolConfigs) {
     const { category, isAIPowered } = getToolMetadata(tool);
-    
+
     // Create enhanced schema with metadata
     const enhancedSchema = {
       ...tool.inputSchema,
@@ -306,7 +370,7 @@ async function generateIndividualSchemas(outputDir: string): Promise<void> {
       title: tool.name,
       description: tool.description,
       category,
-      aiPowered: isAIPowered
+      aiPowered: isAIPowered,
     };
 
     const filename = `${tool.name}.json`;
@@ -317,12 +381,19 @@ async function generateIndividualSchemas(outputDir: string): Promise<void> {
   }
 
   // Create index file
-  const indexPath = join(schemasDir, 'index.json');
-  await writeFile(indexPath, JSON.stringify({
-    schemas: schemaFiles,
-    generated: new Date().toISOString(),
-    version: '1.5.0'
-  }, null, 2));
+  const indexPath = join(schemasDir, "index.json");
+  await writeFile(
+    indexPath,
+    JSON.stringify(
+      {
+        schemas: schemaFiles,
+        generated: new Date().toISOString(),
+        version: "1.5.0",
+      },
+      null,
+      2
+    )
+  );
   console.log(`✓ Generated schema index: index.json`);
 }
 
@@ -330,28 +401,28 @@ async function generateIndividualSchemas(outputDir: string): Promise<void> {
  * Main execution
  */
 async function main(): Promise<void> {
-  console.log('🚀 Generating OpenAPI specification...\n');
+  console.log("🚀 Generating OpenAPI specification...\n");
 
   try {
     // Create output directory
-    const outputDir = join(projectRoot, 'docs', 'api');
+    const outputDir = join(projectRoot, "docs", "api");
     await mkdir(outputDir, { recursive: true });
 
     // Generate OpenAPI spec
-    console.log('📝 Generating OpenAPI 3.0 specification...');
+    console.log("📝 Generating OpenAPI 3.0 specification...");
     const spec = generateOpenAPISpec();
 
     // Write OpenAPI spec
-    const openapiPath = join(outputDir, 'openapi.json');
+    const openapiPath = join(outputDir, "openapi.json");
     await writeFile(openapiPath, JSON.stringify(spec, null, 2));
     console.log(`✓ Generated OpenAPI spec: ${openapiPath}\n`);
 
     // Generate individual schemas
-    console.log('📦 Generating individual JSON schemas...');
+    console.log("📦 Generating individual JSON schemas...");
     await generateIndividualSchemas(outputDir);
 
     // Summary
-    console.log('\n✅ OpenAPI generation complete!');
+    console.log("\n✅ OpenAPI generation complete!");
     console.log(`\nGenerated files:`);
     console.log(`  - docs/api/openapi.json (${Object.keys(spec.paths || {}).length} endpoints)`);
     console.log(`  - docs/api/schemas/*.json (${toolConfigs.length} schemas)`);
@@ -360,9 +431,8 @@ async function main(): Promise<void> {
     console.log(`  - Create API documentation`);
     console.log(`  - Validate requests/responses`);
     console.log(`  - Import into tools like Swagger UI, Postman, etc.`);
-
   } catch (error) {
-    console.error('❌ Error generating OpenAPI specification:', error);
+    console.error("❌ Error generating OpenAPI specification:", error);
     process.exit(1);
   }
 }

@@ -4,15 +4,15 @@
  * Uses Node.js native fetch (available since Node 18)
  */
 
-import { getAzureDevOpsToken, clearTokenCache } from './ado-token.js';
-import { logger } from './logger.js';
-import type { ADOErrorResponse } from '../types/ado.js';
+import { getAzureDevOpsToken, clearTokenCache } from "./ado-token.js";
+import { logger } from "./logger.js";
+import type { ADOErrorResponse } from "../types/ado.js";
 
 /**
  * HTTP request options
  */
 export interface HttpRequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   headers?: Record<string, string>;
   body?: unknown;
   timeout?: number;
@@ -40,7 +40,7 @@ export class ADOHttpError extends Error {
     public response?: ADOErrorResponse
   ) {
     super(message);
-    this.name = 'ADOHttpError';
+    this.name = "ADOHttpError";
   }
 }
 
@@ -67,9 +67,9 @@ export class ADOHttpClient {
    */
   async get<T = unknown>(
     endpoint: string,
-    options: Omit<HttpRequestOptions, 'method' | 'body'> = {}
+    options: Omit<HttpRequestOptions, "method" | "body"> = {}
   ): Promise<HttpResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' });
+    return this.request<T>(endpoint, { ...options, method: "GET" });
   }
 
   /**
@@ -78,9 +78,9 @@ export class ADOHttpClient {
   async post<T = unknown>(
     endpoint: string,
     body: unknown,
-    options: Omit<HttpRequestOptions, 'method' | 'body'> = {}
+    options: Omit<HttpRequestOptions, "method" | "body"> = {}
   ): Promise<HttpResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body });
+    return this.request<T>(endpoint, { ...options, method: "POST", body });
   }
 
   /**
@@ -89,9 +89,9 @@ export class ADOHttpClient {
   async patch<T = unknown>(
     endpoint: string,
     body: unknown,
-    options: Omit<HttpRequestOptions, 'method' | 'body'> = {}
+    options: Omit<HttpRequestOptions, "method" | "body"> = {}
   ): Promise<HttpResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'PATCH', body });
+    return this.request<T>(endpoint, { ...options, method: "PATCH", body });
   }
 
   /**
@@ -100,9 +100,9 @@ export class ADOHttpClient {
   async put<T = unknown>(
     endpoint: string,
     body: unknown,
-    options: Omit<HttpRequestOptions, 'method' | 'body'> = {}
+    options: Omit<HttpRequestOptions, "method" | "body"> = {}
   ): Promise<HttpResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'PUT', body });
+    return this.request<T>(endpoint, { ...options, method: "PUT", body });
   }
 
   /**
@@ -110,9 +110,9 @@ export class ADOHttpClient {
    */
   async delete<T = unknown>(
     endpoint: string,
-    options: Omit<HttpRequestOptions, 'method' | 'body'> = {}
+    options: Omit<HttpRequestOptions, "method" | "body"> = {}
   ): Promise<HttpResponse<T>> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+    return this.request<T>(endpoint, { ...options, method: "DELETE" });
   }
 
   /**
@@ -123,22 +123,22 @@ export class ADOHttpClient {
     options: HttpRequestOptions = {}
   ): Promise<HttpResponse<T>> {
     const {
-      method = 'GET',
+      method = "GET",
       headers = {},
       body,
       timeout = this.defaultTimeout,
-      _isRetry = false
+      _isRetry = false,
     } = options;
 
     // Build full URL
-    const url = endpoint.startsWith('http')
+    const url = endpoint.startsWith("http")
       ? endpoint
-      : `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+      : `${this.baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
     // Add api-version if not present
     const urlObj = new URL(url);
-    if (!urlObj.searchParams.has('api-version')) {
-      urlObj.searchParams.set('api-version', '7.1');
+    if (!urlObj.searchParams.has("api-version")) {
+      urlObj.searchParams.set("api-version", "7.1");
     }
 
     // Refresh token if this is not already a retry
@@ -148,33 +148,32 @@ export class ADOHttpClient {
 
     // Build headers
     const requestHeaders: Record<string, string> = {
-      'Authorization': `Bearer ${this.token}`,
-      'Accept': 'application/json',
-      ...headers
+      Authorization: `Bearer ${this.token}`,
+      Accept: "application/json",
+      ...headers,
     };
 
     // Add content-type for requests with body
-    if (body && !requestHeaders['Content-Type']) {
+    if (body && !requestHeaders["Content-Type"]) {
       // Work item operations (create/update) use JSON Patch format for both POST and PATCH
       // JSON Patch documents are arrays of operations
-      const isJsonPatch = Array.isArray(body) || method === 'PATCH' || endpoint.includes('wit/workitems');
-      requestHeaders['Content-Type'] = isJsonPatch
-        ? 'application/json-patch+json'
-        : 'application/json';
+      const isJsonPatch =
+        Array.isArray(body) || method === "PATCH" || endpoint.includes("wit/workitems");
+      requestHeaders["Content-Type"] = isJsonPatch
+        ? "application/json-patch+json"
+        : "application/json";
     }
 
     // Build request options
     const requestOptions: RequestInit = {
       method,
       headers: requestHeaders,
-      signal: AbortSignal.timeout(timeout)
+      signal: AbortSignal.timeout(timeout),
     };
 
     // Add body if present
     if (body) {
-      requestOptions.body = typeof body === 'string'
-        ? body
-        : JSON.stringify(body);
+      requestOptions.body = typeof body === "string" ? body : JSON.stringify(body);
     }
 
     logger.debug(`${method} ${urlObj.toString()}`);
@@ -190,7 +189,7 @@ export class ADOHttpClient {
 
       // Handle 401 Unauthorized - token may have expired
       if (response.status === 401 && !_isRetry) {
-        logger.info('Received 401 Unauthorized, refreshing token and retrying...');
+        logger.info("Received 401 Unauthorized, refreshing token and retrying...");
         // Clear cached token to force fresh retrieval
         clearTokenCache();
         // Retry the request once with fresh token
@@ -226,7 +225,7 @@ export class ADOHttpClient {
         data: responseData,
         status: response.status,
         statusText: response.statusText,
-        headers: responseHeaders
+        headers: responseHeaders,
       };
     } catch (error) {
       if (error instanceof ADOHttpError) {
@@ -234,26 +233,14 @@ export class ADOHttpClient {
       }
 
       if (error instanceof Error) {
-        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
-          throw new ADOHttpError(
-            `Request timed out after ${timeout}ms`,
-            408,
-            'Request Timeout'
-          );
+        if (error.name === "AbortError" || error.name === "TimeoutError") {
+          throw new ADOHttpError(`Request timed out after ${timeout}ms`, 408, "Request Timeout");
         }
 
-        throw new ADOHttpError(
-          `Request failed: ${error.message}`,
-          0,
-          'Network Error'
-        );
+        throw new ADOHttpError(`Request failed: ${error.message}`, 0, "Network Error");
       }
 
-      throw new ADOHttpError(
-        `Unknown request error: ${String(error)}`,
-        0,
-        'Unknown Error'
-      );
+      throw new ADOHttpError(`Unknown request error: ${String(error)}`, 0, "Unknown Error");
     }
   }
 }

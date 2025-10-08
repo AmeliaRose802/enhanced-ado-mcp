@@ -1,6 +1,6 @@
 /**
  * Handler for wit-ai-bulk-story-points tool
- * 
+ *
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  */
 
@@ -8,7 +8,11 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/inde
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -31,17 +35,17 @@ interface EstimationResult {
 
 /**
  * Handler for wit-ai-bulk-story-points tool
- * 
+ *
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  * The AI analyzes work item details including title, description, and acceptance criteria
  * to provide data-driven estimates using standard estimation scales.
- * 
+ *
  * Supports multiple estimation scales:
  * - fibonacci: 1, 2, 3, 5, 8, 13, 21
  * - powers-of-2: 1, 2, 4, 8, 16, 32
  * - linear: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
  * - t-shirt: XS, S, M, L, XL, XXL
- * 
+ *
  * @param config - Tool configuration containing the Zod schema for validation
  * @param args - Arguments object expected to contain:
  *   - queryHandle: string - The query handle ID from a previous WIQL query
@@ -108,7 +112,11 @@ interface EstimationResult {
  * ```
  * @since 1.4.0
  */
-export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unknown, server: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
+export async function handleBulkAssignStoryPoints(
+  config: ToolConfig,
+  args: unknown,
+  server: MCPServer | MCPServerLike
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -120,17 +128,17 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { 
-      queryHandle, 
-      itemSelector, 
-      sampleSize, 
-      pointScale, 
-      onlyUnestimated, 
-      includeCompleted, 
-      dryRun, 
+    const {
+      queryHandle,
+      itemSelector,
+      sampleSize,
+      pointScale,
+      onlyUnestimated,
+      includeCompleted,
+      dryRun,
       maxPreviewItems,
-      organization, 
-      project 
+      organization,
+      project,
     } = parsed.data;
 
     // Check sampling support
@@ -142,24 +150,28 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
     // Retrieve work item IDs from query handle
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
     const queryData = queryHandleService.getQueryData(queryHandle);
-    
+
     if (!selectedWorkItemIds || !queryData) {
       return {
         success: false,
         data: null,
         metadata: { source: "bulk-assign-story-points" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
+        errors: [
+          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        ],
+        warnings: [],
       };
     }
 
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
-    
+
     // Limit to sampleSize
     const itemsToProcess = selectedWorkItemIds.slice(0, sampleSize);
-    
-    logger.info(`Bulk story point assignment: processing ${itemsToProcess.length} of ${selectedCount} selected work items (dry_run: ${dryRun})`);
+
+    logger.info(
+      `Bulk story point assignment: processing ${itemsToProcess.length} of ${selectedCount} selected work items (dry_run: ${dryRun})`
+    );
 
     // Fetch work item details
     const cfg = loadConfiguration();
@@ -175,20 +187,26 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
         const response = await httpClient.get(`wit/workitems/${workItemId}?api-version=7.1`);
         const workItem = response.data as ADOWorkItem;
 
-        const title = workItem.fields['System.Title'] as string;
-        const description = (workItem.fields['System.Description'] as string) || '';
-        const workItemType = workItem.fields['System.WorkItemType'] as string;
-        const state = workItem.fields['System.State'] as string;
-        const acceptanceCriteria = (workItem.fields['Microsoft.VSTS.Common.AcceptanceCriteria'] as string) || '';
-        const currentEffort = workItem.fields['Microsoft.VSTS.Scheduling.Effort'] as number | undefined;
+        const title = workItem.fields["System.Title"] as string;
+        const description = (workItem.fields["System.Description"] as string) || "";
+        const workItemType = workItem.fields["System.WorkItemType"] as string;
+        const state = workItem.fields["System.State"] as string;
+        const acceptanceCriteria =
+          (workItem.fields["Microsoft.VSTS.Common.AcceptanceCriteria"] as string) || "";
+        const currentEffort = workItem.fields["Microsoft.VSTS.Scheduling.Effort"] as
+          | number
+          | undefined;
 
         // Skip completed items (unless includeCompleted is true for historical analysis)
-        if (!includeCompleted && ['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        if (
+          !includeCompleted &&
+          ["Done", "Completed", "Closed", "Resolved", "Removed"].includes(state)
+        ) {
           results.push({
             workItemId,
             title,
             success: false,
-            skipped: `Item is in ${state} state - not estimating completed work (set includeCompleted=true for historical analysis)`
+            skipped: `Item is in ${state} state - not estimating completed work (set includeCompleted=true for historical analysis)`,
           });
           continue;
         }
@@ -199,7 +217,7 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
             workItemId,
             title,
             success: false,
-            skipped: `Item already has effort estimate: ${currentEffort}`
+            skipped: `Item already has effort estimate: ${currentEffort}`,
           });
           continue;
         }
@@ -208,8 +226,8 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
         const userContent = `
 Work Item: ${title}
 Type: ${workItemType}
-Description: ${description || '(empty)'}
-Acceptance Criteria: ${acceptanceCriteria || '(none)'}
+Description: ${description || "(empty)"}
+Acceptance Criteria: ${acceptanceCriteria || "(none)"}
 Point Scale: ${pointScale}
 
 Estimate the story points for this work item using the ${pointScale} scale.
@@ -217,10 +235,10 @@ Estimate the story points for this work item using the ${pointScale} scale.
 
         // Call AI
         const aiResult = await samplingClient.createMessage({
-          systemPromptName: 'story-point-estimator',
+          systemPromptName: "story-point-estimator",
           userContent,
           maxTokens: 300,
-          temperature: 0.3
+          temperature: 0.3,
         });
 
         const responseText = samplingClient.extractResponseText(aiResult);
@@ -231,7 +249,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
             workItemId,
             title,
             success: false,
-            error: 'AI failed to generate story point estimate'
+            error: "AI failed to generate story point estimate",
           });
           continue;
         }
@@ -240,29 +258,32 @@ Estimate the story points for this work item using the ${pointScale} scale.
         if (!dryRun) {
           // For t-shirt sizing, we need to store as string in tags or comments
           // For numeric scales, store in Effort field
-          if (pointScale === 't-shirt') {
+          if (pointScale === "t-shirt") {
             // Store t-shirt size in tags
-            const currentTags = (workItem.fields['System.Tags'] as string) || '';
-            const newTags = currentTags 
-              ? `${currentTags};StoryPoints:${jsonData.storyPoints}` 
+            const currentTags = (workItem.fields["System.Tags"] as string) || "";
+            const newTags = currentTags
+              ? `${currentTags};StoryPoints:${jsonData.storyPoints}`
               : `StoryPoints:${jsonData.storyPoints}`;
-            
+
             const updates = [
               {
-                op: 'add',
-                path: '/fields/System.Tags',
-                value: newTags
-              }
+                op: "add",
+                path: "/fields/System.Tags",
+                value: newTags,
+              },
             ];
             await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
           } else {
             // Store numeric story points in Effort field
             const updates = [
               {
-                op: 'add',
-                path: '/fields/Microsoft.VSTS.Scheduling.Effort',
-                value: typeof jsonData.storyPoints === 'string' ? parseFloat(jsonData.storyPoints) : jsonData.storyPoints
-              }
+                op: "add",
+                path: "/fields/Microsoft.VSTS.Scheduling.Effort",
+                value:
+                  typeof jsonData.storyPoints === "string"
+                    ? parseFloat(jsonData.storyPoints)
+                    : jsonData.storyPoints,
+              },
             ];
             await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
           }
@@ -276,32 +297,32 @@ Estimate the story points for this work item using the ${pointScale} scale.
           confidence: jsonData.confidence,
           complexity: jsonData.complexity,
           estimateReasoning: jsonData.estimateReasoning,
-          suggestDecomposition: jsonData.suggestDecomposition
+          suggestDecomposition: jsonData.suggestDecomposition,
         });
-
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         results.push({
           workItemId,
-          title: 'Unknown',
+          title: "Unknown",
           success: false,
-          error: errorMsg
+          error: errorMsg,
         });
         logger.error(`Failed to estimate story points for work item ${workItemId}:`, error);
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const skippedCount = results.filter(r => r.skipped).length;
-    const failureCount = results.filter(r => !r.success && !r.skipped).length;
-    const needsDecomposition = results.filter(r => r.suggestDecomposition).length;
+    const successCount = results.filter((r) => r.success).length;
+    const skippedCount = results.filter((r) => r.skipped).length;
+    const failureCount = results.filter((r) => !r.success && !r.skipped).length;
+    const needsDecomposition = results.filter((r) => r.suggestDecomposition).length;
 
     // Apply preview limit for dry-run mode
-    const previewLimit = dryRun ? (maxPreviewItems || 5) : results.length;
+    const previewLimit = dryRun ? maxPreviewItems || 5 : results.length;
     const displayResults = results.slice(0, previewLimit);
-    const previewMessage = dryRun && results.length > previewLimit 
-      ? `Showing ${previewLimit} of ${results.length} items...` 
-      : undefined;
+    const previewMessage =
+      dryRun && results.length > previewLimit
+        ? `Showing ${previewLimit} of ${results.length} items...`
+        : undefined;
 
     return {
       success: failureCount === 0,
@@ -318,45 +339,48 @@ Estimate the story points for this work item using the ${pointScale} scale.
         skipped: skippedCount,
         failed: failureCount,
         needs_decomposition: needsDecomposition,
-        results: displayResults.map(r => ({
+        results: displayResults.map((r) => ({
           work_item_id: r.workItemId,
           title: r.title,
-          status: r.success ? 'estimated' : r.skipped ? 'skipped' : 'failed',
+          status: r.success ? "estimated" : r.skipped ? "skipped" : "failed",
           story_points: r.storyPoints,
           confidence: r.confidence,
           complexity: r.complexity,
           reasoning: r.estimateReasoning,
           suggest_decomposition: r.suggestDecomposition,
           error: r.error,
-          skip_reason: r.skipped
+          skip_reason: r.skipped,
         })),
         preview_message: previewMessage,
-        summary: dryRun 
+        summary: dryRun
           ? `DRY RUN: Generated ${successCount} story point estimates (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`
-          : `Successfully estimated ${successCount} story points (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`
+          : `Successfully estimated ${successCount} story points (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`,
       }),
       metadata: {
         source: "bulk-assign-story-points",
         itemSelector,
         pointScale,
-        dryRun
+        dryRun,
       },
-      errors: failureCount > 0 
-        ? results.filter(r => r.error).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
+      errors:
+        failureCount > 0
+          ? results.filter((r) => r.error).map((r) => `Work item ${r.workItemId}: ${r.error}`)
+          : [],
       warnings: [
         ...(skippedCount > 0 ? [`${skippedCount} items skipped`] : []),
-        ...(needsDecomposition > 0 ? [`${needsDecomposition} items recommended for decomposition (too large)`] : [])
-      ]
+        ...(needsDecomposition > 0
+          ? [`${needsDecomposition} items recommended for decomposition (too large)`]
+          : []),
+      ],
     };
   } catch (error) {
-    logger.error('Bulk assign story points error:', error);
+    logger.error("Bulk assign story points error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "bulk-assign-story-points" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

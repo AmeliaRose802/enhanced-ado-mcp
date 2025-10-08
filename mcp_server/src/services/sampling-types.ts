@@ -88,7 +88,7 @@ export interface AnalysisResult {
   missingElements: string[];
   strengths: string[];
   improvementAreas: string[];
-  rawAnalysis?: RawAnalysisData;  // Full JSON response from AI for intelligent agent interpretation
+  rawAnalysis?: RawAnalysisData; // Full JSON response from AI for intelligent agent interpretation
 }
 
 export interface AIAssignmentResult {
@@ -171,7 +171,12 @@ export interface ParentingSuggestion {
 }
 
 export interface HierarchyValidationIssue {
-  issueType: "misparented" | "orphaned" | "incorrect_level" | "circular_dependency" | "type_mismatch";
+  issueType:
+    | "misparented"
+    | "orphaned"
+    | "incorrect_level"
+    | "circular_dependency"
+    | "type_mismatch";
   severity: "low" | "medium" | "high" | "critical";
   description: string;
   recommendations: string[];
@@ -245,31 +250,31 @@ export interface PersonalWorkloadAnalysisResult {
   };
   detailedAnalysis: {
     workloadBalance: { score: number; assessment: string; recommendation: string };
-    workVariety: { 
-      score: number; 
-      workTypeDistribution: Record<string, { count: number; percentage: number }>; 
-      specializationRisk: "Low" | "Medium" | "High"; 
-      recommendation: string 
+    workVariety: {
+      score: number;
+      workTypeDistribution: Record<string, { count: number; percentage: number }>;
+      specializationRisk: "Low" | "Medium" | "High";
+      recommendation: string;
     };
-    codingBalance: { 
-      score: number; 
-      codingPercentage: number; 
-      nonCodingPercentage: number; 
-      assessment: string; 
-      recommendation: string 
+    codingBalance: {
+      score: number;
+      codingPercentage: number;
+      nonCodingPercentage: number;
+      assessment: string;
+      recommendation: string;
     };
-    complexityGrowth: { 
-      score: number; 
-      trend: "Increasing" | "Stable" | "Decreasing"; 
-      challengeLevel: "Appropriate" | "Under-challenged" | "Overwhelmed"; 
-      recommendation: string 
+    complexityGrowth: {
+      score: number;
+      trend: "Increasing" | "Stable" | "Decreasing";
+      challengeLevel: "Appropriate" | "Under-challenged" | "Overwhelmed";
+      recommendation: string;
     };
-    temporalHealth: { 
-      score: number; 
-      afterHoursFrequency: string; 
-      continuousWorkPattern: string; 
-      assessment: string; 
-      recommendation: string 
+    temporalHealth: {
+      score: number;
+      afterHoursFrequency: string;
+      continuousWorkPattern: string;
+      assessment: string;
+      recommendation: string;
     };
     growthTrajectory: { score: number; assessment: string };
   };

@@ -30,7 +30,7 @@ export interface ParsedPrompt {
  * Follows JSON Schema Draft 7 specification
  */
 export interface JSONSchemaProperty {
-  type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
+  type?: "string" | "number" | "integer" | "boolean" | "object" | "array" | "null";
   description?: string;
   enum?: unknown[];
   default?: unknown;
@@ -52,7 +52,7 @@ export interface JSONSchemaProperty {
 }
 
 export interface JSONSchema {
-  type: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+  type: "object" | "array" | "string" | "number" | "integer" | "boolean" | "null";
   properties?: Record<string, JSONSchemaProperty>;
   required?: string[];
   additionalProperties?: boolean | JSONSchemaProperty;
@@ -84,10 +84,7 @@ export type JSONPrimitive = string | number | boolean | null;
  * JSON-serializable value types
  * Represents any valid JSON structure
  */
-export type JSONValue = 
-  | JSONPrimitive
-  | JSONValue[]
-  | { [key: string]: JSONValue };
+export type JSONValue = JSONPrimitive | JSONValue[] | { [key: string]: JSONValue };
 
 /**
  * Tool execution result data
@@ -132,9 +129,9 @@ export interface ToolExecutionResult {
 }
 
 // Export all types from submodules
-export * from './ado.js';
-export * from './mcp.js';
-export * from './work-items.js';
-export * from './error-categories.js';
-export * from './analysis.js';
-export * from './queries.js';
+export * from "./ado.js";
+export * from "./mcp.js";
+export * from "./work-items.js";
+export * from "./error-categories.js";
+export * from "./analysis.js";
+export * from "./queries.js";

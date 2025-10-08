@@ -1,11 +1,11 @@
 /**
  * Azure DevOps Token Utility
- * 
+ *
  * Centralized token management for Azure DevOps API access
  */
 
-import { execSync } from 'child_process';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../config/config.js';
+import { execSync } from "child_process";
+import { AZURE_DEVOPS_RESOURCE_ID } from "../config/config.js";
 
 // Token cache to avoid repeated CLI calls
 interface TokenCache {
@@ -31,19 +31,21 @@ export function getAzureDevOpsToken(): string {
     // Use --only-show-errors to suppress browser prompts and warnings
     const result = execSync(
       `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv --only-show-errors`,
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+      { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }
     );
     const token = result.trim();
-    
+
     // Cache token for 55 minutes (tokens typically valid for 1 hour)
     tokenCache = {
       token,
-      expiresAt: now + (55 * 60 * 1000) // 55 minutes
+      expiresAt: now + 55 * 60 * 1000, // 55 minutes
     };
-    
+
     return token;
   } catch (err) {
-    throw new Error('Failed to get Azure DevOps token. Ensure you are logged in with az login (non-interactive)');
+    throw new Error(
+      "Failed to get Azure DevOps token. Ensure you are logged in with az login (non-interactive)"
+    );
   }
 }
 

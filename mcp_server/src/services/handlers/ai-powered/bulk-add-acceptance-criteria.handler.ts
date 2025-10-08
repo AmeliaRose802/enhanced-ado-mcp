@@ -1,6 +1,6 @@
 /**
  * Handler for wit-ai-bulk-acceptance-criteria tool
- * 
+ *
  * Uses AI to generate acceptance criteria for multiple work items.
  */
 
@@ -8,7 +8,11 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/inde
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -30,16 +34,16 @@ interface CriteriaResult {
 
 /**
  * Handler for wit-ai-bulk-acceptance-criteria tool
- * 
+ *
  * Uses AI to generate acceptance criteria for multiple work items identified by a query handle.
  * The AI generates testable, specific criteria in the requested format (Gherkin, checklist, or user story).
- * 
+ *
  * This handler processes work items in batches, generating acceptance criteria that are:
  * - Specific and testable
  * - Cover happy paths, edge cases, and error conditions
  * - Include performance/security considerations when relevant
  * - Avoid vague terms like "works well"
- * 
+ *
  * @param config - Tool configuration containing the Zod schema for validation
  * @param args - Arguments object expected to contain:
  *   - queryHandle: string - The query handle ID from a previous WIQL query
@@ -100,7 +104,11 @@ interface CriteriaResult {
  * ```
  * @since 1.4.0
  */
-export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: unknown, server: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
+export async function handleBulkAddAcceptanceCriteria(
+  config: ToolConfig,
+  args: unknown,
+  server: MCPServer | MCPServerLike
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -112,18 +120,18 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { 
-      queryHandle, 
-      itemSelector, 
-      sampleSize, 
-      criteriaFormat, 
-      minCriteria, 
-      maxCriteria, 
-      preserveExisting, 
-      dryRun, 
+    const {
+      queryHandle,
+      itemSelector,
+      sampleSize,
+      criteriaFormat,
+      minCriteria,
+      maxCriteria,
+      preserveExisting,
+      dryRun,
       maxPreviewItems,
-      organization, 
-      project 
+      organization,
+      project,
     } = parsed.data;
 
     // Check sampling support
@@ -135,24 +143,28 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
     // Retrieve work item IDs from query handle
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);
     const queryData = queryHandleService.getQueryData(queryHandle);
-    
+
     if (!selectedWorkItemIds || !queryData) {
       return {
         success: false,
         data: null,
         metadata: { source: "bulk-add-acceptance-criteria" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
+        errors: [
+          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+        ],
+        warnings: [],
       };
     }
 
     const totalItems = queryData.workItemIds.length;
     const selectedCount = selectedWorkItemIds.length;
-    
+
     // Limit to sampleSize
     const itemsToProcess = selectedWorkItemIds.slice(0, sampleSize);
-    
-    logger.info(`Bulk acceptance criteria generation: processing ${itemsToProcess.length} of ${selectedCount} selected work items (dry_run: ${dryRun})`);
+
+    logger.info(
+      `Bulk acceptance criteria generation: processing ${itemsToProcess.length} of ${selectedCount} selected work items (dry_run: ${dryRun})`
+    );
 
     // Fetch work item details
     const cfg = loadConfiguration();
@@ -168,19 +180,20 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
         const response = await httpClient.get(`wit/workitems/${workItemId}?api-version=7.1`);
         const workItem = response.data as ADOWorkItem;
 
-        const title = workItem.fields['System.Title'] as string;
-        const description = (workItem.fields['System.Description'] as string) || '';
-        const workItemType = workItem.fields['System.WorkItemType'] as string;
-        const state = workItem.fields['System.State'] as string;
-        const currentCriteria = (workItem.fields['Microsoft.VSTS.Common.AcceptanceCriteria'] as string) || '';
+        const title = workItem.fields["System.Title"] as string;
+        const description = (workItem.fields["System.Description"] as string) || "";
+        const workItemType = workItem.fields["System.WorkItemType"] as string;
+        const state = workItem.fields["System.State"] as string;
+        const currentCriteria =
+          (workItem.fields["Microsoft.VSTS.Common.AcceptanceCriteria"] as string) || "";
 
         // Skip completed items
-        if (['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        if (["Done", "Completed", "Closed", "Resolved", "Removed"].includes(state)) {
           results.push({
             workItemId,
             title,
             success: false,
-            skipped: `Item is in ${state} state - not processing completed work`
+            skipped: `Item is in ${state} state - not processing completed work`,
           });
           continue;
         }
@@ -189,23 +202,23 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
         const userContent = `
 Work Item: ${title}
 Type: ${workItemType}
-Description: ${description || '(empty)'}
-Current Acceptance Criteria: ${currentCriteria || '(none)'}
+Description: ${description || "(empty)"}
+Current Acceptance Criteria: ${currentCriteria || "(none)"}
 Criteria Format: ${criteriaFormat}
 Min Criteria: ${minCriteria}
 Max Criteria: ${maxCriteria}
 Preserve Existing: ${preserveExisting}
 
 Generate ${minCriteria}-${maxCriteria} acceptance criteria in ${criteriaFormat} format.
-${preserveExisting && currentCriteria ? 'Add to existing criteria without duplicating.' : 'Create new acceptance criteria.'}
+${preserveExisting && currentCriteria ? "Add to existing criteria without duplicating." : "Create new acceptance criteria."}
 `;
 
         // Call AI
         const aiResult = await samplingClient.createMessage({
-          systemPromptName: 'acceptance-criteria-generator',
+          systemPromptName: "acceptance-criteria-generator",
           userContent,
           maxTokens: 500,
-          temperature: 0.4
+          temperature: 0.4,
         });
 
         const responseText = samplingClient.extractResponseText(aiResult);
@@ -216,33 +229,37 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
             workItemId,
             title,
             success: false,
-            error: 'AI failed to generate acceptance criteria'
+            error: "AI failed to generate acceptance criteria",
           });
           continue;
         }
 
         // Format criteria based on format
         let formattedCriteria: string;
-        if (criteriaFormat === 'gherkin') {
-          formattedCriteria = jsonData.acceptanceCriteria.join('\n\n');
-        } else if (criteriaFormat === 'checklist') {
-          formattedCriteria = jsonData.acceptanceCriteria.map((c: string) => `- [ ] ${c}`).join('\n');
-        } else { // user-story
-          formattedCriteria = jsonData.acceptanceCriteria.join('\n\n');
+        if (criteriaFormat === "gherkin") {
+          formattedCriteria = jsonData.acceptanceCriteria.join("\n\n");
+        } else if (criteriaFormat === "checklist") {
+          formattedCriteria = jsonData.acceptanceCriteria
+            .map((c: string) => `- [ ] ${c}`)
+            .join("\n");
+        } else {
+          // user-story
+          formattedCriteria = jsonData.acceptanceCriteria.join("\n\n");
         }
 
-        const finalCriteria = preserveExisting && currentCriteria 
-          ? `${currentCriteria}\n\n---\n\n${formattedCriteria}`
-          : formattedCriteria;
+        const finalCriteria =
+          preserveExisting && currentCriteria
+            ? `${currentCriteria}\n\n---\n\n${formattedCriteria}`
+            : formattedCriteria;
 
         // Update work item (unless dry run)
         if (!dryRun) {
           const updates = [
             {
-              op: 'add',
-              path: '/fields/Microsoft.VSTS.Common.AcceptanceCriteria',
-              value: finalCriteria
-            }
+              op: "add",
+              path: "/fields/Microsoft.VSTS.Common.AcceptanceCriteria",
+              value: finalCriteria,
+            },
           ];
 
           await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
@@ -255,32 +272,32 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
           acceptanceCriteria: jsonData.acceptanceCriteria,
           criteriaFormat: jsonData.criteriaFormat,
           confidence: jsonData.confidence,
-          insufficientInfo: jsonData.insufficientInfo
+          insufficientInfo: jsonData.insufficientInfo,
         });
-
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
         results.push({
           workItemId,
-          title: 'Unknown',
+          title: "Unknown",
           success: false,
-          error: errorMsg
+          error: errorMsg,
         });
         logger.error(`Failed to add acceptance criteria for work item ${workItemId}:`, error);
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const skippedCount = results.filter(r => r.skipped).length;
-    const failureCount = results.filter(r => !r.success && !r.skipped).length;
-    const lowConfidence = results.filter(r => r.insufficientInfo).length;
+    const successCount = results.filter((r) => r.success).length;
+    const skippedCount = results.filter((r) => r.skipped).length;
+    const failureCount = results.filter((r) => !r.success && !r.skipped).length;
+    const lowConfidence = results.filter((r) => r.insufficientInfo).length;
 
     // Apply preview limit for dry-run mode
-    const previewLimit = dryRun ? (maxPreviewItems || 5) : results.length;
+    const previewLimit = dryRun ? maxPreviewItems || 5 : results.length;
     const displayResults = results.slice(0, previewLimit);
-    const previewMessage = dryRun && results.length > previewLimit 
-      ? `Showing ${previewLimit} of ${results.length} items...` 
-      : undefined;
+    const previewMessage =
+      dryRun && results.length > previewLimit
+        ? `Showing ${previewLimit} of ${results.length} items...`
+        : undefined;
 
     return {
       success: failureCount === 0,
@@ -299,45 +316,48 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
         skipped: skippedCount,
         failed: failureCount,
         low_confidence: lowConfidence,
-        results: displayResults.map(r => ({
+        results: displayResults.map((r) => ({
           work_item_id: r.workItemId,
           title: r.title,
-          status: r.success ? 'criteria_added' : r.skipped ? 'skipped' : 'failed',
+          status: r.success ? "criteria_added" : r.skipped ? "skipped" : "failed",
           acceptance_criteria: dryRun ? r.acceptanceCriteria : undefined,
           criteria_count: r.acceptanceCriteria?.length,
           format: r.criteriaFormat,
           confidence: r.confidence,
           insufficient_info: r.insufficientInfo,
           error: r.error,
-          skip_reason: r.skipped
+          skip_reason: r.skipped,
         })),
         preview_message: previewMessage,
-        summary: dryRun 
+        summary: dryRun
           ? `DRY RUN: Generated acceptance criteria for ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`
-          : `Successfully added acceptance criteria to ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`
+          : `Successfully added acceptance criteria to ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`,
       }),
       metadata: {
         source: "bulk-add-acceptance-criteria",
         itemSelector,
         criteriaFormat,
-        dryRun
+        dryRun,
       },
-      errors: failureCount > 0 
-        ? results.filter(r => r.error).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
+      errors:
+        failureCount > 0
+          ? results.filter((r) => r.error).map((r) => `Work item ${r.workItemId}: ${r.error}`)
+          : [],
       warnings: [
         ...(skippedCount > 0 ? [`${skippedCount} items skipped`] : []),
-        ...(lowConfidence > 0 ? [`${lowConfidence} items had insufficient information for high-quality criteria`] : [])
-      ]
+        ...(lowConfidence > 0
+          ? [`${lowConfidence} items had insufficient information for high-quality criteria`]
+          : []),
+      ],
     };
   } catch (error) {
-    logger.error('Bulk add acceptance criteria error:', error);
+    logger.error("Bulk add acceptance criteria error:", error);
     return {
       success: false,
       data: null,
       metadata: { source: "bulk-add-acceptance-criteria" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

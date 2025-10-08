@@ -2,14 +2,18 @@
  * Work Item Intelligence Analyzer
  */
 
-import type { ToolExecutionResult } from '../../types/index.js';
-import type { WorkItemIntelligenceArgs, AnalysisResult } from '../sampling-types.js';
-import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import { logger } from '../../utils/logger.js';
-import { SamplingClient } from '../../utils/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
-import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
-import { executeTool } from '../tool-service.js';
+import type { ToolExecutionResult } from "../../types/index.js";
+import type { WorkItemIntelligenceArgs, AnalysisResult } from "../sampling-types.js";
+import type { MCPServer, MCPServerLike } from "../../types/mcp.js";
+import { logger } from "../../utils/logger.js";
+import { SamplingClient } from "../../utils/sampling-client.js";
+import {
+  buildSuccessResponse,
+  buildErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../utils/response-builder.js";
+import { extractJSON, formatForAI } from "../../utils/ai-helpers.js";
+import { executeTool } from "../tool-service.js";
 
 export class WorkItemIntelligenceAnalyzer {
   private samplingClient: SamplingClient;
@@ -37,18 +41,19 @@ export class WorkItemIntelligenceAnalyzer {
         }
       }
 
-      return buildSuccessResponse(analysisResult, { 
-        source: 'ai-sampling', 
-        analysisType: args.AnalysisType 
+      return buildSuccessResponse(analysisResult, {
+        source: "ai-sampling",
+        analysisType: args.AnalysisType,
       });
-
     } catch (error) {
-      return buildErrorResponse(`AI sampling analysis failed: ${error}`, { source: 'ai-sampling-failed' });
+      return buildErrorResponse(`AI sampling analysis failed: ${error}`, {
+        source: "ai-sampling-failed",
+      });
     }
   }
 
   private async performAnalysis(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
-    const analysisType = args.AnalysisType || 'full';
+    const analysisType = args.AnalysisType || "full";
     const systemPromptName = `${analysisType}-analyzer`;
     const userContent = formatForAI(args);
 
@@ -58,15 +63,17 @@ export class WorkItemIntelligenceAnalyzer {
       systemPromptName,
       userContent,
       maxTokens: this.getMaxTokens(analysisType),
-      temperature: this.getTemperature(analysisType)
+      temperature: this.getTemperature(analysisType),
     });
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(
-          `Work item intelligence analysis (${analysisType}) exceeded 90 second timeout. ` +
-          'The AI model may be overloaded. Try again in a moment or use a simpler AnalysisType.'
-        ));
+        reject(
+          new Error(
+            `Work item intelligence analysis (${analysisType}) exceeded 90 second timeout. ` +
+              "The AI model may be overloaded. Try again in a moment or use a simpler AnalysisType."
+          )
+        );
       }, timeoutMs);
     });
 
@@ -77,52 +84,67 @@ export class WorkItemIntelligenceAnalyzer {
 
   private getMaxTokens(analysisType: string): number {
     const tokens: Record<string, number> = {
-      'completeness': 300,
-      'ai-readiness': 250,
-      'enhancement': 400,
-      'categorization': 200,
-      'full': 500
+      completeness: 300,
+      "ai-readiness": 250,
+      enhancement: 400,
+      categorization: 200,
+      full: 500,
     };
     return tokens[analysisType] || 500;
   }
 
   private getTemperature(analysisType: string): number {
     const temps: Record<string, number> = {
-      'completeness': 0.3,
-      'ai-readiness': 0.2,
-      'enhancement': 0.5,
-      'categorization': 0.4,
-      'full': 0.4
+      completeness: 0.3,
+      "ai-readiness": 0.2,
+      enhancement: 0.5,
+      categorization: 0.4,
+      full: 0.4,
     };
     return temps[analysisType] || 0.3;
   }
 
   private parseAnalysisResponse(aiResult: any, analysisType: string): AnalysisResult {
     const responseText = this.samplingClient.extractResponseText(aiResult);
-    logger.debug(`Parsing AI response for ${analysisType}:`, responseText.substring(0, 200) + '...');
+    logger.debug(
+      `Parsing AI response for ${analysisType}:`,
+      responseText.substring(0, 200) + "..."
+    );
     const jsonData = extractJSON(responseText);
-    
+
     // If we successfully parsed JSON, use it directly with minimal processing
     if (jsonData) {
       return {
         completenessScore: jsonData.overallScore || jsonData.completeness?.overallScore || 5,
         aiReadinessScore: jsonData.aiReadiness?.overallScore || jsonData.overallScore || 5,
         category: jsonData.category || jsonData.categorization?.category || "General",
-        priority: jsonData.priority || jsonData.suggestedPriority || jsonData.categorization?.priority || "Medium",
-        complexity: jsonData.complexity || jsonData.suggestedComplexity || jsonData.categorization?.complexity || "Medium",
-        assignmentSuggestion: jsonData.decision || jsonData.assignment || jsonData.categorization?.assignment,
+        priority:
+          jsonData.priority ||
+          jsonData.suggestedPriority ||
+          jsonData.categorization?.priority ||
+          "Medium",
+        complexity:
+          jsonData.complexity ||
+          jsonData.suggestedComplexity ||
+          jsonData.categorization?.complexity ||
+          "Medium",
+        assignmentSuggestion:
+          jsonData.decision || jsonData.assignment || jsonData.categorization?.assignment,
         recommendations: jsonData.recommendations || jsonData.suggestions || [],
         missingElements: jsonData.missing || jsonData.missingInfo || [],
         strengths: jsonData.strengths || [],
         improvementAreas: [],
-        rawAnalysis: jsonData  // Include full JSON for intelligent agent to interpret
+        rawAnalysis: jsonData, // Include full JSON for intelligent agent to interpret
       };
     }
-    
-    throw new Error('Failed to parse AI response as JSON');
+
+    throw new Error("Failed to parse AI response as JSON");
   }
 
-  private async createEnhancedWorkItem(args: WorkItemIntelligenceArgs, analysis: AnalysisResult): Promise<string> {
+  private async createEnhancedWorkItem(
+    args: WorkItemIntelligenceArgs,
+    analysis: AnalysisResult
+  ): Promise<string> {
     if (!analysis.enhancedDescription) {
       throw new Error("No enhanced description available");
     }
@@ -134,17 +156,17 @@ export class WorkItemIntelligenceAnalyzer {
       ParentWorkItemId: args.ParentWorkItemId,
       Organization: args.Organization,
       Project: args.Project,
-      Tags: "AI-Enhanced,Intelligence-Analyzed"
+      Tags: "AI-Enhanced,Intelligence-Analyzed",
     };
 
     const result = await executeTool("wit-create-new-item", createArgs);
-    
+
     if (!result.success) {
-      throw new Error(`Failed to create work item: ${result.errors?.join(', ')}`);
+      throw new Error(`Failed to create work item: ${result.errors?.join(", ")}`);
     }
 
     // Type guard for work item result
-    const workItemId = (result.data as { id?: number })?.id || 'unknown';
+    const workItemId = (result.data as { id?: number })?.id || "unknown";
     return `Work item created successfully (ID: ${workItemId})`;
   }
 }

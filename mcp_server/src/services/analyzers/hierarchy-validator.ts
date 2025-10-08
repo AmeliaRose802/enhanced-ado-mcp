@@ -1,25 +1,29 @@
 /**
  * Hierarchy Validator Analyzer
- * 
+ *
  * Analyzes Azure DevOps work item hierarchies to identify parenting issues,
  * orphaned items, and incorrect relationships.
  */
 
-import type { ToolExecutionResult } from '../../types/index.js';
-import type { 
-  HierarchyValidatorArgs, 
+import type { ToolExecutionResult } from "../../types/index.js";
+import type {
+  HierarchyValidatorArgs,
   HierarchyValidationResult,
-  WorkItemHierarchyInfo
-} from '../sampling-types.js';
-import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/ado.js';
-import { logger } from '../../utils/logger.js';
-import { getRequiredConfig } from '../../config/config.js';
-import { escapeAreaPath } from '../../utils/work-item-parser.js';
-import { SamplingClient } from '../../utils/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
-import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
-import { createADOHttpClient } from '../../utils/ado-http-client.js';
+  WorkItemHierarchyInfo,
+} from "../sampling-types.js";
+import type { MCPServer, MCPServerLike } from "../../types/mcp.js";
+import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from "../../types/ado.js";
+import { logger } from "../../utils/logger.js";
+import { getRequiredConfig } from "../../config/config.js";
+import { escapeAreaPath } from "../../utils/work-item-parser.js";
+import { SamplingClient } from "../../utils/sampling-client.js";
+import {
+  buildSuccessResponse,
+  buildErrorResponse,
+  buildSamplingUnavailableResponse,
+} from "../../utils/response-builder.js";
+import { extractJSON, formatForAI } from "../../utils/ai-helpers.js";
+import { createADOHttpClient } from "../../utils/ado-http-client.js";
 
 export class HierarchyValidatorAnalyzer {
   private samplingClient: SamplingClient;
@@ -32,7 +36,7 @@ export class HierarchyValidatorAnalyzer {
    * Main entry point for hierarchy validation
    */
   async analyze(args: HierarchyValidatorArgs): Promise<ToolExecutionResult> {
-    logger.debug('Starting hierarchy validation analysis');
+    logger.debug("Starting hierarchy validation analysis");
 
     if (!this.samplingClient.hasSamplingSupport()) {
       return buildSamplingUnavailableResponse();
@@ -44,27 +48,31 @@ export class HierarchyValidatorAnalyzer {
       const mergedArgs: HierarchyValidatorArgs = {
         ...args,
         Organization: args.Organization || config.organization,
-        Project: args.Project || config.project
+        Project: args.Project || config.project,
       };
 
       // Fetch work items from Azure DevOps
       const workItems = await this.fetchWorkItems(mergedArgs);
-      
+
       if (workItems.length === 0) {
-        return buildErrorResponse('No work items found to analyze. Please check WorkItemIds or AreaPath parameters.');
+        return buildErrorResponse(
+          "No work items found to analyze. Please check WorkItemIds or AreaPath parameters."
+        );
       }
 
       // Perform AI-powered hierarchy analysis
       const validationResult = await this.performAnalysis(workItems, mergedArgs);
 
-      return buildSuccessResponse(validationResult, { 
-        source: 'ai-sampling', 
-        analysisType: 'hierarchy-validation',
-        itemsAnalyzed: workItems.length
+      return buildSuccessResponse(validationResult, {
+        source: "ai-sampling",
+        analysisType: "hierarchy-validation",
+        itemsAnalyzed: workItems.length,
       });
-
     } catch (error) {
-      return buildErrorResponse(`Hierarchy validation failed: ${error instanceof Error ? error.message : String(error)}`, { source: 'ai-sampling-failed' });
+      return buildErrorResponse(
+        `Hierarchy validation failed: ${error instanceof Error ? error.message : String(error)}`,
+        { source: "ai-sampling-failed" }
+      );
     }
   }
 
@@ -72,7 +80,17 @@ export class HierarchyValidatorAnalyzer {
    * Fetch work items from Azure DevOps REST API
    */
   private async fetchWorkItems(args: HierarchyValidatorArgs): Promise<WorkItemHierarchyInfo[]> {
-    const { WorkItemIds, AreaPath, Organization, Project, IncludeChildAreas, MaxItemsToAnalyze, FilterByWorkItemType, ExcludeStates, AnalysisDepth } = args;
+    const {
+      WorkItemIds,
+      AreaPath,
+      Organization,
+      Project,
+      IncludeChildAreas,
+      MaxItemsToAnalyze,
+      FilterByWorkItemType,
+      ExcludeStates,
+      AnalysisDepth,
+    } = args;
 
     try {
       let workItemIds: number[] = [];
@@ -80,17 +98,24 @@ export class HierarchyValidatorAnalyzer {
       // If specific IDs provided, use them and optionally fetch their children
       if (WorkItemIds && WorkItemIds.length > 0) {
         workItemIds = [...WorkItemIds];
-        
+
         // For deep analysis or when analyzing hierarchy, fetch descendants recursively
-        if (AnalysisDepth === 'deep' || WorkItemIds.length === 1) {
-          logger.debug(`Fetching descendants for provided work item IDs: ${WorkItemIds.join(', ')}`);
-          const descendantIds = await this.fetchDescendantsRecursively(Organization!, Project!, WorkItemIds, MaxItemsToAnalyze);
+        if (AnalysisDepth === "deep" || WorkItemIds.length === 1) {
+          logger.debug(
+            `Fetching descendants for provided work item IDs: ${WorkItemIds.join(", ")}`
+          );
+          const descendantIds = await this.fetchDescendantsRecursively(
+            Organization!,
+            Project!,
+            WorkItemIds,
+            MaxItemsToAnalyze
+          );
           workItemIds = [...workItemIds, ...descendantIds];
           logger.debug(`Total work items including descendants: ${workItemIds.length}`);
         }
-        
+
         workItemIds = workItemIds.slice(0, MaxItemsToAnalyze || 50);
-      } 
+      }
       // Otherwise, query by area path
       else if (AreaPath) {
         workItemIds = await this.queryWorkItemsByAreaPath(
@@ -103,7 +128,7 @@ export class HierarchyValidatorAnalyzer {
           ExcludeStates
         );
       } else {
-        throw new Error('Either WorkItemIds or AreaPath must be provided');
+        throw new Error("Either WorkItemIds or AreaPath must be provided");
       }
 
       if (workItemIds.length === 0) {
@@ -112,10 +137,11 @@ export class HierarchyValidatorAnalyzer {
 
       // Fetch detailed work item information
       return await this.fetchWorkItemDetails(Organization!, Project!, workItemIds);
-
     } catch (error) {
-      logger.error('Failed to fetch work items from Azure DevOps', error);
-      throw new Error(`Failed to fetch work items: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error("Failed to fetch work items from Azure DevOps", error);
+      throw new Error(
+        `Failed to fetch work items: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -131,15 +157,15 @@ export class HierarchyValidatorAnalyzer {
     try {
       const httpClient = createADOHttpClient(organization, project);
       const allChildIds: Set<number> = new Set();
-      
+
       // Query children for each parent
       for (const parentId of parentIds) {
         const query = `SELECT [System.Id] FROM WorkItemLinks WHERE ([Source].[System.Id] = ${parentId}) AND ([System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward') ORDER BY [System.Id] MODE (MustContain)`;
-        
+
         const wiqlBody = { query };
 
         // Execute WIQL query using HTTP client
-        const response = await httpClient.post<ADOWiqlResult>('wit/wiql?api-version=7.1', wiqlBody);
+        const response = await httpClient.post<ADOWiqlResult>("wit/wiql?api-version=7.1", wiqlBody);
         const wiqlResult = response.data;
 
         // Check for API errors
@@ -154,7 +180,7 @@ export class HierarchyValidatorAnalyzer {
             allChildIds.add(relation.target.id);
           }
         });
-        
+
         // Stop if we've reached the max
         if (maxItems && allChildIds.size >= maxItems) {
           break;
@@ -164,9 +190,8 @@ export class HierarchyValidatorAnalyzer {
       const childIds = Array.from(allChildIds);
       logger.debug(`Found ${childIds.length} child work items`);
       return childIds.slice(0, maxItems);
-
     } catch (error) {
-      logger.warn('Failed to fetch child work items, continuing with parent items only', error);
+      logger.warn("Failed to fetch child work items, continuing with parent items only", error);
       return [];
     }
   }
@@ -188,7 +213,7 @@ export class HierarchyValidatorAnalyzer {
 
     while (queue.length > 0 && (!maxItems || allDescendants.size < maxItems)) {
       const currentId = queue.shift()!;
-      
+
       // Skip if already visited (prevent infinite loops in case of circular refs)
       if (visited.has(currentId)) {
         continue;
@@ -197,12 +222,12 @@ export class HierarchyValidatorAnalyzer {
 
       // Fetch immediate children for this work item
       const children = await this.fetchChildWorkItems(organization, project, [currentId], maxItems);
-      
+
       for (const childId of children) {
         if (!allDescendants.has(childId) && !parentIds.includes(childId)) {
           allDescendants.add(childId);
           queue.push(childId); // Add to queue to fetch its children
-          
+
           // Stop if we've reached max items
           if (maxItems && allDescendants.size >= maxItems) {
             break;
@@ -230,27 +255,29 @@ export class HierarchyValidatorAnalyzer {
   ): Promise<number[]> {
     try {
       const httpClient = createADOHttpClient(organization, project);
-      
+
       // Build WIQL query (escape area path for WIQL)
       const escapedAreaPath = escapeAreaPath(areaPath);
-      const areaClause = includeChildAreas 
-        ? `[System.AreaPath] UNDER '${escapedAreaPath}'` 
+      const areaClause = includeChildAreas
+        ? `[System.AreaPath] UNDER '${escapedAreaPath}'`
         : `[System.AreaPath] = '${escapedAreaPath}'`;
-      
-      const typeFilter = filterByType && filterByType.length > 0
-        ? ` AND [System.WorkItemType] IN (${filterByType.map(t => `'${t}'`).join(',')})`
-        : '';
-      
-      const stateFilter = excludeStates && excludeStates.length > 0
-        ? ` AND [System.State] NOT IN (${excludeStates.map(s => `'${s}'`).join(',')})`
-        : '';
+
+      const typeFilter =
+        filterByType && filterByType.length > 0
+          ? ` AND [System.WorkItemType] IN (${filterByType.map((t) => `'${t}'`).join(",")})`
+          : "";
+
+      const stateFilter =
+        excludeStates && excludeStates.length > 0
+          ? ` AND [System.State] NOT IN (${excludeStates.map((s) => `'${s}'`).join(",")})`
+          : "";
 
       const query = `SELECT [System.Id] FROM WorkItems WHERE ${areaClause}${typeFilter}${stateFilter} ORDER BY [System.Id] DESC`;
 
       const wiqlBody = { query };
 
       // Execute WIQL query using HTTP client
-      const response = await httpClient.post<ADOWiqlResult>('wit/wiql?api-version=7.1', wiqlBody);
+      const response = await httpClient.post<ADOWiqlResult>("wit/wiql?api-version=7.1", wiqlBody);
       const wiqlResult = response.data;
 
       // Check for valid response
@@ -261,10 +288,11 @@ export class HierarchyValidatorAnalyzer {
 
       const ids = wiqlResult.workItems.map((wi) => wi.id);
       return ids.slice(0, maxItems || 50);
-
     } catch (error) {
-      logger.error('WIQL query failed', error);
-      throw new Error(`Failed to query work items: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error("WIQL query failed", error);
+      throw new Error(
+        `Failed to query work items: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -278,8 +306,8 @@ export class HierarchyValidatorAnalyzer {
   ): Promise<WorkItemHierarchyInfo[]> {
     try {
       const httpClient = createADOHttpClient(organization, project);
-      const ids = workItemIds.join(',');
-      
+      const ids = workItemIds.join(",");
+
       // Note: Cannot use fields parameter with $expand=relations, so we get all fields
       const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
         `wit/workitems?ids=${ids}&$expand=relations&api-version=7.1`
@@ -288,44 +316,45 @@ export class HierarchyValidatorAnalyzer {
 
       // Check for valid response
       if (!result.value) {
-        logger.warn(`Work items API returned no value array. IDs: ${workItemIds.join(',')}`);
+        logger.warn(`Work items API returned no value array. IDs: ${workItemIds.join(",")}`);
         return [];
       }
 
       // Build a map of work item IDs to titles for parent lookups
       const idToTitleMap = new Map<number, string>();
       result.value.forEach((wi) => {
-        idToTitleMap.set(wi.id, wi.fields['System.Title']);
+        idToTitleMap.set(wi.id, wi.fields["System.Title"]);
       });
 
       return result.value.map((wi) => {
         // Find parent relationship
-        const parentRelation = wi.relations?.find((rel) => 
-          rel.rel === 'System.LinkTypes.Hierarchy-Reverse'
+        const parentRelation = wi.relations?.find(
+          (rel) => rel.rel === "System.LinkTypes.Hierarchy-Reverse"
         );
-        
-        const parentId = parentRelation 
-          ? parseInt(parentRelation.url.split('/').pop() || '0')
+
+        const parentId = parentRelation
+          ? parseInt(parentRelation.url.split("/").pop() || "0")
           : undefined;
 
         const parentTitle = parentId ? idToTitleMap.get(parentId) : undefined;
 
         return {
           id: wi.id,
-          title: wi.fields['System.Title'] || '',
-          type: wi.fields['System.WorkItemType'] || '',
-          state: wi.fields['System.State'] || '',
+          title: wi.fields["System.Title"] || "",
+          type: wi.fields["System.WorkItemType"] || "",
+          state: wi.fields["System.State"] || "",
           currentParentId: parentId,
           currentParentTitle: parentTitle,
-          areaPath: wi.fields['System.AreaPath'] || '',
-          assignedTo: wi.fields['System.AssignedTo']?.displayName,
-          description: wi.fields['System.Description']
+          areaPath: wi.fields["System.AreaPath"] || "",
+          assignedTo: wi.fields["System.AssignedTo"]?.displayName,
+          description: wi.fields["System.Description"],
         };
       });
-
     } catch (error) {
-      logger.error('Failed to fetch work item details', error);
-      throw new Error(`Failed to fetch work item details: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error("Failed to fetch work item details", error);
+      throw new Error(
+        `Failed to fetch work item details: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -333,12 +362,12 @@ export class HierarchyValidatorAnalyzer {
    * Perform AI-powered hierarchy analysis
    */
   private async performAnalysis(
-    workItems: WorkItemHierarchyInfo[], 
+    workItems: WorkItemHierarchyInfo[],
     args: HierarchyValidatorArgs
   ): Promise<HierarchyValidationResult> {
     logger.debug(`Analyzing ${workItems.length} work items for hierarchy issues`);
 
-    const systemPromptName = 'hierarchy-validator';
+    const systemPromptName = "hierarchy-validator";
     const userContent = formatForAI({ workItems, ...args });
 
     // Add timeout wrapper to prevent hanging - use shorter timeout for better UX
@@ -346,16 +375,18 @@ export class HierarchyValidatorAnalyzer {
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName,
       userContent,
-      maxTokens: 1500,  // Reduced from 2000 for better sampling efficiency
-      temperature: 0.3
+      maxTokens: 1500, // Reduced from 2000 for better sampling efficiency
+      temperature: 0.3,
     });
 
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(
-          `Hierarchy validation exceeded 60 second timeout while analyzing ${workItems.length} items. ` +
-          'Try reducing MaxItemsToAnalyze or use validate-hierarchy-fast for large datasets.'
-        ));
+        reject(
+          new Error(
+            `Hierarchy validation exceeded 60 second timeout while analyzing ${workItems.length} items. ` +
+              "Try reducing MaxItemsToAnalyze or use validate-hierarchy-fast for large datasets."
+          )
+        );
       }, timeoutMs);
     });
 
@@ -376,8 +407,8 @@ export class HierarchyValidatorAnalyzer {
     const responseText = this.samplingClient.extractResponseText(aiResult);
     const parsed = extractJSON(responseText);
     if (!parsed) {
-      logger.error('Failed to parse hierarchy validation response', { responseText });
-      throw new Error('Failed to parse AI response as JSON');
+      logger.error("Failed to parse hierarchy validation response", { responseText });
+      throw new Error("Failed to parse AI response as JSON");
     }
 
     // Validate and normalize the response
@@ -398,8 +429,8 @@ export class HierarchyValidatorAnalyzer {
       analysisContext: {
         analyzedItemCount: parsed.analysisContext?.analyzedItemCount || workItems.length,
         areaPath: parsed.analysisContext?.areaPath || args.AreaPath,
-        analysisDepth: parsed.analysisContext?.analysisDepth || args.AnalysisDepth || 'shallow',
-        timestamp: parsed.analysisContext?.timestamp || now
+        analysisDepth: parsed.analysisContext?.analysisDepth || args.AnalysisDepth || "shallow",
+        timestamp: parsed.analysisContext?.timestamp || now,
       },
       workItemsAnalyzed: workItems,
       issuesFound: (parsed.issuesFound || []).map((issue: any) => ({
@@ -408,43 +439,53 @@ export class HierarchyValidatorAnalyzer {
         issues: (issue.issues || []).map((i: any) => ({
           issueType: this.normalizeIssueType(i.issueType),
           severity: this.normalizeSeverity(i.severity),
-          description: i.description || 'No description provided',
-          recommendations: i.recommendations || []
+          description: i.description || "No description provided",
+          recommendations: i.recommendations || [],
         })),
         parentingSuggestions: (issue.parentingSuggestions || []).map((s: any) => ({
           suggestedParentId: s.suggestedParentId,
           suggestedParentTitle: s.suggestedParentTitle || `Work Item ${s.suggestedParentId}`,
-          suggestedParentType: s.suggestedParentType || 'Unknown',
+          suggestedParentType: s.suggestedParentType || "Unknown",
           confidence: s.confidence || 0.5,
-          reasoning: s.reasoning || 'No reasoning provided',
+          reasoning: s.reasoning || "No reasoning provided",
           benefits: s.benefits || [],
-          potentialIssues: s.potentialIssues || []
-        }))
+          potentialIssues: s.potentialIssues || [],
+        })),
       })),
       healthySummary: {
         totalAnalyzed: parsed.healthySummary?.totalAnalyzed || workItems.length,
         itemsWithIssues: parsed.healthySummary?.itemsWithIssues || 0,
         itemsWellParented: parsed.healthySummary?.itemsWellParented || workItems.length,
         orphanedItems: parsed.healthySummary?.orphanedItems || 0,
-        incorrectlyParented: parsed.healthySummary?.incorrectlyParented || 0
+        incorrectlyParented: parsed.healthySummary?.incorrectlyParented || 0,
       },
       recommendations: {
         highPriorityActions: parsed.recommendations?.highPriorityActions || [],
         improvementSuggestions: parsed.recommendations?.improvementSuggestions || [],
-        bestPractices: parsed.recommendations?.bestPractices || []
-      }
+        bestPractices: parsed.recommendations?.bestPractices || [],
+      },
     };
   }
 
   /**
    * Normalize issue type to valid enum value
    */
-  private normalizeIssueType(type: string): "misparented" | "orphaned" | "incorrect_level" | "circular_dependency" | "type_mismatch" {
-    const normalized = type?.toLowerCase().replace(/[_\s-]/g, '_');
-    if (['misparented', 'orphaned', 'incorrect_level', 'circular_dependency', 'type_mismatch'].includes(normalized)) {
+  private normalizeIssueType(
+    type: string
+  ): "misparented" | "orphaned" | "incorrect_level" | "circular_dependency" | "type_mismatch" {
+    const normalized = type?.toLowerCase().replace(/[_\s-]/g, "_");
+    if (
+      [
+        "misparented",
+        "orphaned",
+        "incorrect_level",
+        "circular_dependency",
+        "type_mismatch",
+      ].includes(normalized)
+    ) {
       return normalized as any;
     }
-    return 'misparented';
+    return "misparented";
   }
 
   /**
@@ -452,9 +493,9 @@ export class HierarchyValidatorAnalyzer {
    */
   private normalizeSeverity(severity: string): "low" | "medium" | "high" | "critical" {
     const normalized = severity?.toLowerCase();
-    if (['low', 'medium', 'high', 'critical'].includes(normalized)) {
+    if (["low", "medium", "high", "critical"].includes(normalized)) {
       return normalized as any;
     }
-    return 'medium';
+    return "medium";
   }
 }

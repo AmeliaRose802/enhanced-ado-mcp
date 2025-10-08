@@ -12,7 +12,10 @@ import { z } from "zod";
 
 type ExtractSecurityLinksInput = z.infer<typeof extractSecurityLinksSchema>;
 
-export async function handleExtractSecurityLinks(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleExtractSecurityLinks(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     // Parse and validate input
     const parsed = config.schema.safeParse(args || {});
@@ -22,27 +25,27 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: unkno
         data: null,
         errors: [parsed.error.message],
         warnings: [],
-        metadata: { timestamp: new Date().toISOString() }
+        metadata: { timestamp: new Date().toISOString() },
       };
     }
 
     const input = parsed.data as ExtractSecurityLinksInput;
-    
+
     // Get configuration with auto-fill
     const requiredConfig = getRequiredConfig();
-    
+
     const extractArgs = {
       workItemId: input.workItemId,
       organization: input.organization || requiredConfig.organization,
       project: input.project || requiredConfig.project,
-      scanType: input.scanType || 'All',
-      includeWorkItemDetails: input.includeWorkItemDetails || false
+      scanType: input.scanType || "All",
+      includeWorkItemDetails: input.includeWorkItemDetails || false,
     };
 
     logger.debug(`Extracting security links from work item ${extractArgs.workItemId}`);
-    
+
     const result = await extractSecurityInstructionLinks(extractArgs);
-    
+
     return {
       success: true,
       data: asToolData(result),
@@ -50,17 +53,17 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: unkno
       warnings: [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-analyze-security'
-      }
+        tool: "wit-analyze-security",
+      },
     };
   } catch (error) {
-    logger.error('Failed to extract security links', error);
+    logger.error("Failed to extract security links", error);
     return {
       success: false,
       data: null,
       errors: [error instanceof Error ? error.message : String(error)],
       warnings: [],
-      metadata: { timestamp: new Date().toISOString() }
+      metadata: { timestamp: new Date().toISOString() },
     };
   }
 }

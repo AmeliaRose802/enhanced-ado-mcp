@@ -5,10 +5,16 @@
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { createWorkItem } from "../../ado-work-item-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 
-export async function handleCreateNewItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleCreateNewItem(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -21,21 +27,21 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
     }
 
     logger.debug(`Creating work item with REST API: ${parsed.data.title}`);
-    
+
     const result = await createWorkItem(parsed.data);
-    
+
     return {
       success: true,
       data: asToolData({
-        work_item: result
+        work_item: result,
       }),
-      metadata: { 
+      metadata: {
         source: "rest-api",
         workItemId: result.id,
-        parentLinked: result.parent_linked
+        parentLinked: result.parent_linked,
       },
       errors: [],
-      warnings: []
+      warnings: [],
     };
   } catch (error) {
     return {
@@ -43,7 +49,7 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
       data: null,
       metadata: { source: "rest-api" },
       errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
+      warnings: [],
     };
   }
 }

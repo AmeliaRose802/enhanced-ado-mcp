@@ -72,7 +72,7 @@ export interface MCPToolParams {
  */
 export interface MCPToolResult {
   content: Array<{
-    type: 'text' | 'image' | 'resource';
+    type: "text" | "image" | "resource";
     text?: string;
     data?: string;
     mimeType?: string;

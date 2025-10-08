@@ -1,11 +1,11 @@
 /**
  * Query and Analytics Type Definitions
- * 
+ *
  * Type definitions for WIQL queries, OData analytics, and query-related operations.
  * Consolidates query-related types from handlers into a centralized location.
  */
 
-import type { MCPServer } from './mcp.js';
+import type { MCPServer } from "./mcp.js";
 
 /**
  * MCP Server Instance type for sampling operations
@@ -23,7 +23,14 @@ export type MCPServerInstance = MCPServer;
  * OData Analytics Query Arguments
  */
 export interface ODataAnalyticsArgs {
-  queryType: "workItemCount" | "groupByState" | "groupByType" | "groupByAssignee" | "velocityMetrics" | "cycleTimeMetrics" | "customQuery";
+  queryType:
+    | "workItemCount"
+    | "groupByState"
+    | "groupByType"
+    | "groupByAssignee"
+    | "velocityMetrics"
+    | "cycleTimeMetrics"
+    | "customQuery";
   organization: string;
   project: string;
   filters?: Record<string, string | number | boolean>;
@@ -149,7 +156,7 @@ export interface BatchContextArgs {
   includeParentOutsideSet?: boolean;
   includeChildrenOutsideSet?: boolean;
   maxOutsideReferences?: number;
-  returnFormat?: 'graph' | 'array';
+  returnFormat?: "graph" | "array";
   maxDepth?: number;
 }
 

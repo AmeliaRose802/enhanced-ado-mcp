@@ -1,17 +1,25 @@
 /**
  * Handler for wit-query-handle-list tool
- * 
+ *
  * Lists all active query handles to help users track and manage them.
  * Makes handles feel like persistent, manageable resources.
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import {
+  buildValidationErrorResponse,
+  buildAzureCliErrorResponse,
+  buildSuccessResponse,
+  buildErrorResponse,
+} from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
-export async function handleListQueryHandles(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleListQueryHandles(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -25,14 +33,16 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
 
     const { includeExpired, top, skip } = parsed.data;
 
-    logger.info(`Listing query handles (top: ${top}, skip: ${skip}, includeExpired: ${includeExpired})`);
+    logger.info(
+      `Listing query handles (top: ${top}, skip: ${skip}, includeExpired: ${includeExpired})`
+    );
 
     // Get stats from the service
     const stats = queryHandleService.getStats();
-    
+
     // Get paginated handles with their details
     const result = queryHandleService.getAllHandles(includeExpired, top, skip);
-    
+
     const now = new Date();
     const responseData = {
       total_handles: stats.totalHandles,
@@ -45,41 +55,40 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
         handle_lifetime: "1 hour (default)",
         cleanup_frequency: "Every 5 minutes",
         max_recommended: "Keep under 10 active handles for performance",
-        usage_tip: "Use wit-query-handle-validate to check specific handle status"
-      }
+        usage_tip: "Use wit-query-handle-validate to check specific handle status",
+      },
     };
 
     const warnings: string[] = [];
-    
+
     if (stats.totalHandles === 0) {
-      warnings.push("No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles.");
+      warnings.push(
+        "No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles."
+      );
     }
-    
+
     if (stats.expiredHandles > 0) {
       warnings.push(`${stats.expiredHandles} expired handles will be cleaned up automatically.`);
     }
-    
+
     if (stats.activeHandles > 10) {
-      warnings.push(`High number of active handles (${stats.activeHandles}). Consider cleaning up unused handles.`);
+      warnings.push(
+        `High number of active handles (${stats.activeHandles}). Consider cleaning up unused handles.`
+      );
     }
 
     if (result.pagination.hasMore) {
-      warnings.push(`Showing ${result.pagination.returned} of ${result.pagination.total} handles. Use skip=${result.pagination.nextSkip} to get the next page.`);
+      warnings.push(
+        `Showing ${result.pagination.returned} of ${result.pagination.total} handles. Use skip=${result.pagination.nextSkip} to get the next page.`
+      );
     }
 
     // Build response with warnings if any
-    const response = buildSuccessResponse(
-      responseData,
-      { source: "list-query-handles" }
-    );
+    const response = buildSuccessResponse(responseData, { source: "list-query-handles" });
     response.warnings = warnings;
     return response;
-
   } catch (error) {
     logger.error(`Error in handleListQueryHandles: ${error}`);
-    return buildErrorResponse(
-      error as Error,
-      { source: "list-query-handles" }
-    );
+    return buildErrorResponse(error as Error, { source: "list-query-handles" });
   }
 }
