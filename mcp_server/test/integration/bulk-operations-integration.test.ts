@@ -186,7 +186,7 @@ describe('Bulk Operations Integration Tests', () => {
       });
 
       expect(moveResult.success).toBe(true);
-      expect((moveResult.data as any).successful).toBeGreaterThan(0);
+      expect((moveResult.data as any).items_succeeded).toBeGreaterThan(0);
 
       // 4. Transition items to Active
       const transitionConfig = {

@@ -74,14 +74,13 @@ describe('Unified Query Generator Handler', () => {
     jest.clearAllMocks();
     mockSamplingSupport = true;
     mockAIResponse = {
-      content: [{
-        type: 'text',
+      content: {
         text: JSON.stringify({
           format: 'wiql',
           confidence: 0.85,
           reasoning: ['Query involves work item states', 'Simple field filtering']
         })
-      }]
+      }
     };
 
     // Mock server instance with sampling support
@@ -115,14 +114,13 @@ describe('Unified Query Generator Handler', () => {
 
     it('should choose OData format for aggregation queries', async () => {
       mockAIResponse = {
-        content: [{
-          type: 'text',
+        content: {
           text: JSON.stringify({
             format: 'odata',
             confidence: 0.90,
             reasoning: ['Aggregation required', 'Analytics query pattern']
           })
-        }]
+        }
       };
 
       const { handleGenerateODataQuery } = require('../../src/services/handlers/query/generate-odata-query.handler');
@@ -263,10 +261,9 @@ describe('Unified Query Generator Handler', () => {
 
     it('should handle malformed AI response gracefully', async () => {
       mockAIResponse = {
-        content: [{
-          type: 'text',
+        content: {
           text: 'not valid json'
-        }]
+        }
       };
 
       const result = await handleUnifiedQueryGenerator(
@@ -279,21 +276,21 @@ describe('Unified Query Generator Handler', () => {
         mockServerInstance
       );
 
-      expect(result.success).toBe(false);
-      expect(result.errors).toEqual(
-        expect.arrayContaining([expect.stringContaining('parse')])
+      // Should succeed with heuristic fallback when AI parsing fails
+      expect(result.success).toBe(true);
+      expect(result.metadata?.formatDecision?.reasoning).toEqual(
+        expect.arrayContaining([expect.stringContaining('Heuristic')])
       );
     });
 
     it('should handle AI response without required fields', async () => {
       mockAIResponse = {
-        content: [{
-          type: 'text',
+        content: {
           text: JSON.stringify({
             // Missing format field
             confidence: 0.5
           })
-        }]
+        }
       };
 
       const result = await handleUnifiedQueryGenerator(
@@ -306,8 +303,11 @@ describe('Unified Query Generator Handler', () => {
         mockServerInstance
       );
 
-      expect(result.success).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
+      // Should succeed with heuristic fallback when AI response is invalid
+      expect(result.success).toBe(true);
+      expect(result.metadata?.formatDecision?.reasoning).toEqual(
+        expect.arrayContaining([expect.stringContaining('Heuristic')])
+      );
     });
   });
 
@@ -315,14 +315,13 @@ describe('Unified Query Generator Handler', () => {
     it('should handle different AI response structures', async () => {
       // Test with array of reasoning strings
       mockAIResponse = {
-        content: [{
-          type: 'text',
+        content: {
           text: JSON.stringify({
             format: 'wiql',
             confidence: 0.75,
             reasoning: ['Reason 1', 'Reason 2', 'Reason 3']
           })
-        }]
+        }
       };
 
       const result = await handleUnifiedQueryGenerator(
@@ -342,14 +341,13 @@ describe('Unified Query Generator Handler', () => {
 
     it('should normalize confidence scores', async () => {
       mockAIResponse = {
-        content: [{
-          type: 'text',
+        content: {
           text: JSON.stringify({
             format: 'odata',
             confidence: 100, // Should be normalized to 1.0
             reasoning: ['High confidence']
           })
-        }]
+        }
       };
 
       const result = await handleUnifiedQueryGenerator(

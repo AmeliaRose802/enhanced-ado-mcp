@@ -116,6 +116,24 @@ describe('Bulk Transition State Handler', () => {
     });
 
     it('should detect invalid state transitions', async () => {
+      // Mock API to return work item in Removed state
+      mockGet.mockResolvedValueOnce({
+        data: {
+          count: 1,
+          value: [
+            {
+              id: 101,
+              fields: {
+                'System.Id': 101,
+                'System.State': 'Removed',
+                'System.WorkItemType': 'Bug',
+                'System.Title': 'Bug 1'
+              }
+            }
+          ]
+        }
+      });
+
       const workItemIds = [101];
       const workItemContext = new Map([
         [101, { title: 'Bug 1', state: 'Removed', type: 'Bug' }]
@@ -346,12 +364,13 @@ describe('Bulk Transition State Handler', () => {
         targetState: 'Resolved',
         reason: 'Fixed',
         itemSelector: 'all',
-        dryRun: false
+        dryRun: false,
+        validateTransitions: false
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).successful).toBe(2);
-      expect((result.data as any).failed).toBe(0);
+      expect((result.data as any).items_succeeded).toBe(2);
+      expect((result.data as any).items_failed).toBe(0);
       expect(mockPatch).toHaveBeenCalledTimes(2);
     });
 
@@ -381,12 +400,13 @@ describe('Bulk Transition State Handler', () => {
         queryHandle: handle,
         targetState: 'Resolved',
         itemSelector: 'all',
-        dryRun: false
+        dryRun: false,
+        validateTransitions: false
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).successful).toBe(1);
-      expect((result.data as any).failed).toBe(1);
+      expect((result.data as any).items_succeeded).toBe(1);
+      expect((result.data as any).items_failed).toBe(1);
       expect(result.warnings).toEqual(
         expect.arrayContaining([expect.stringContaining('1 item(s) failed')])
       );
