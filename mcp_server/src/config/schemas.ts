@@ -775,6 +775,9 @@ export const validateQueryHandleSchema = z.object({
   /** Query handle to validate */
   queryHandle: z.string().min(1, "Query handle is required"),
   
+  /** Include sample work items in the response */
+  includeSampleItems: z.boolean().optional().default(false),
+  
   /** Organization name (defaults to config value) */
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   
