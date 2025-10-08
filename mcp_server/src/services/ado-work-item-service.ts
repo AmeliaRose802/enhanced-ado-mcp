@@ -703,7 +703,7 @@ interface WiqlWorkItemResult {
   createdDate?: string;
   changedDate?: string;
   url: string;
-  additionalFields?: Record<string, any>;  // Only fields explicitly requested via IncludeFields
+  additionalFields?: Record<string, unknown>;  // Only fields explicitly requested via IncludeFields
   lastSubstantiveChangeDate?: string;  // Computed: date of last substantive change (filters automated updates)
   daysInactive?: number;  // Computed: days since last substantive change
   computedMetrics?: {  // Additional computed metrics
@@ -832,7 +832,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: ADOWorkItem) => {
       // Extract additional fields not already in the top-level structure
       // Filter out redundant and verbose fields to save context window space
-      const additionalFields: Record<string, any> = {};
+      const additionalFields: Record<string, unknown> = {};
       const extractedFields = new Set([
         'System.Id',
         'System.Title',

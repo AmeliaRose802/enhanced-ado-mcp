@@ -4,7 +4,7 @@
 
 import { logger } from './logger.js';
 import { loadSystemPrompt } from './prompt-loader.js';
-import type { MCPServer } from '../types/mcp.js';
+import type { MCPServer, MCPServerLike } from '../types/mcp.js';
 
 export interface ModelPreferences {
   hints?: Array<{ name: string }>;
@@ -33,12 +33,18 @@ export interface SamplingResponse {
 
 /**
  * Check if the server supports sampling capabilities (standalone function)
- * @param server The MCP server instance
+ * @param server The MCP server instance or mock
  * @returns true if sampling is supported, false otherwise
  */
-export function checkSamplingSupport(server: MCPServer): boolean {
+export function checkSamplingSupport(server: MCPServer | MCPServerLike | null): boolean {
   if (!server) {
     logger.debug('No server instance available for sampling');
+    return false;
+  }
+  
+  // Type guard: check if getClientCapabilities exists
+  if (typeof server.getClientCapabilities !== 'function') {
+    logger.debug('Server instance does not have getClientCapabilities method');
     return false;
   }
   
@@ -76,7 +82,7 @@ export function getDefaultModelPreferences(): ModelPreferences {
 }
 
 export class SamplingClient {
-  constructor(private server: MCPServer) {}
+  constructor(private server: MCPServer | MCPServerLike) {}
 
   hasSamplingSupport(): boolean {
     return checkSamplingSupport(this.server);
@@ -99,7 +105,9 @@ export class SamplingClient {
       modelPreferences: request.modelPreferences || getDefaultModelPreferences()
     };
     
-    return await this.server.createMessage(samplingParams) as SamplingResponse;
+    // Type assertion needed since MCPServerLike is less specific than MCPServer
+    // but we've already validated the server has createMessage in checkSamplingSupport
+    return await (this.server as MCPServer).createMessage(samplingParams) as SamplingResponse;
   }
 
   extractResponseText(aiResult: SamplingResponse): string {

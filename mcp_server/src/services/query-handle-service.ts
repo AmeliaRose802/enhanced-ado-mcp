@@ -15,6 +15,23 @@ import { logger } from '../utils/logger.js';
  * - Automatic cleanup of expired handles
  */
 
+/**
+ * Work item context data with extensible fields
+ */
+interface WorkItemContextData {
+  title?: string;
+  state?: string;
+  type?: string;
+  lastSubstantiveChangeDate?: string;
+  daysInactive?: number;
+  createdDate?: string;
+  changedDate?: string;
+  assignedTo?: string;
+  areaPath?: string;
+  tags?: string | string[];
+  [key: string]: unknown; // For additional fields - using unknown for type safety
+}
+
 interface QueryHandleData {
   workItemIds: number[];
   query: string;
@@ -26,18 +43,7 @@ interface QueryHandleData {
     queryType?: string;
   };
   // Enhanced storage for work item context data
-  workItemContext?: Map<number, {
-    title?: string;
-    state?: string;
-    type?: string;
-    lastSubstantiveChangeDate?: string;
-    daysInactive?: number;
-    createdDate?: string;
-    changedDate?: string;
-    assignedTo?: string;
-    areaPath?: string;
-    [key: string]: any; // For additional fields
-  }>;
+  workItemContext?: Map<number, WorkItemContextData>;
   // NEW: Rich item context for selection
   itemContext: ItemContext[];
   // NEW: Selection metadata
@@ -214,7 +220,7 @@ class QueryHandleService {
    * @param workItemId Work item ID to get context for
    * @returns Work item context or null if not found
    */
-  getWorkItemContext(handle: string, workItemId: number): any {
+  getWorkItemContext(handle: string, workItemId: number): WorkItemContextData | null {
     const data = this.getQueryData(handle);
     if (!data?.workItemContext) {
       return null;
@@ -654,4 +660,4 @@ class QueryHandleService {
 
 // Export singleton instance
 export const queryHandleService = new QueryHandleService();
-export { QueryHandleData, SelectionCriteria, ItemContext };
+export { QueryHandleData, SelectionCriteria, ItemContext, WorkItemContextData };
