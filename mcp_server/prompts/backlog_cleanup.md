@@ -51,29 +51,31 @@ Identify and report (without mutating):
 
 ## Tool Usage (Sequence)
 
-### Step 1: Generate WIQL Query
+### Step 1: Generate WIQL Query with Query Handle
 
-Call `wit-generate-wiql-query` with:
+Call `wit-generate-wiql-query` with `returnQueryHandle: true`:
 ```json
 {
   "description": "Get all active work items (Tasks, PBIs, Bugs) not in terminal states under {{area_path}}",
-  "workItemTypes": ["Task", "Product Backlog Item", "Bug"],
-  "excludeStates": ["Done", "Completed", "Closed", "Resolved", "Removed"],
-  "stalenessThresholdDays": {{stalenessThresholdDays}}
+  "organization": "{{organization}}",
+  "project": "{{project}}",
+  "returnQueryHandle": true
 }
 ```
 
-### Step 2: Execute WIQL Query with Full Details
+**Key Details:**
+- The tool will generate an appropriate WIQL query based on the description
+- Returns both the generated query text AND a query handle
+- The query handle is ready to use immediately with other tools
 
-Call the WIQL query tool with:
+### Step 2: Get Work Items Using Query Handle
+
+Use the query handle returned from Step 1 to retrieve work items with `ado_get_work_items_by_query_handle`:
 ```json
 {
-  "wiqlQuery": "<generated_query>",
+  "queryHandle": "<handle_from_step_1>",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "returnQueryHandle": true,
-  "maxResults": 1000,
-  "includeSubstantiveChange": true,
   "includeFields": [
     "System.Id",
     "System.WorkItemType",
@@ -88,11 +90,16 @@ Call the WIQL query tool with:
     "Microsoft.VSTS.Scheduling.StoryPoints",
     "Microsoft.VSTS.Common.AcceptanceCriteria",
     "Microsoft.VSTS.Common.Priority"
-  ]
+  ],
+  "includeSubstantiveChange": true
 }
 ```
 
-**Note**: This single call retrieves both the work items AND their full field details, eliminating the need for a separate `ado_get_work_items` call.
+**Benefits:**
+- Query handle prevents ID hallucination
+- Ensures query matches items correctly
+- Provides last substantive change data automatically
+- Single handle can be reused for bulk operations
 
 ### Step 3: Analyze and Categorize
 
@@ -100,55 +107,44 @@ Calculate `daysInactive` for each item based on last substantive change (returne
 
 **IMPORTANT**: Never call mutation tools (`ado_update_work_item`, `ado_add_comment`, etc.) in this prompt.
 
-## Core Query Template
+## Query Generation Guidelines
 
-Use this exact WIQL query structure:
+When calling `wit-generate-wiql-query`, provide clear natural language descriptions:
 
-```sql
-SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State]
-FROM WorkItems
-WHERE [System.TeamProject] = '{{project}}'
-  AND [System.AreaPath] UNDER '{{area_path}}'
-  AND [System.WorkItemType] IN ('Task', 'Product Backlog Item', 'Bug')
-  AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')
-ORDER BY [System.CreatedDate] DESC
-```
+### Standard Analysis Query
 
-Full query parameters:
 ```json
 {
-  "wiqlQuery": "<query_above>",
+  "description": "Find all Tasks, Product Backlog Items, and Bugs that are not in Done, Completed, Closed, Resolved, or Removed states under the team's area path",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "returnQueryHandle": true,
-  "maxResults": 1000,
-  "includeSubstantiveChange": true,
-  "includeFields": [
-    "System.Id",
-    "System.WorkItemType",
-    "System.Title",
-    "System.State",
-    "System.AssignedTo",
-    "System.IterationPath",
-    "System.CreatedDate",
-    "System.ChangedDate",
-    "System.CreatedBy",
-    "System.Description",
-    "Microsoft.VSTS.Scheduling.StoryPoints",
-    "Microsoft.VSTS.Common.AcceptanceCriteria",
-    "Microsoft.VSTS.Common.Priority"
-  ]
+  "returnQueryHandle": true
 }
 ```
 
 ### Query Optimization Strategy
 
 **Fast Scan** (recommended for regular checks):
-Add date filter: `AND [System.ChangedDate] >= @Today - {{stalenessThresholdDays}}`
+```json
+{
+  "description": "Find all active Tasks, PBIs, and Bugs (not Done/Closed/Completed) that were changed in the last {{stalenessThresholdDays}} days under {{area_path}}",
+  "organization": "{{organization}}",
+  "project": "{{project}}",
+  "returnQueryHandle": true
+}
+```
 
 **Comprehensive Scan** (recommended monthly):
-No date filter—captures items that were auto-updated but remain substantively stale.
-Compare results to identify the delta.
+```json
+{
+  "description": "Find all active Tasks, PBIs, and Bugs (not in terminal states) under {{area_path}}, include all items regardless of age",
+  "organization": "{{organization}}",
+  "project": "{{project}}",
+  "returnQueryHandle": true
+}
+```
+
+Compare results from both approaches to identify items that appear active (auto-updated) but are substantively stale.
 
 ## Report Structure (Markdown Only)
 
@@ -376,11 +372,11 @@ Your output MUST include:
 
 **BEGIN ANALYSIS NOW:**
 
-1. Generate and execute the core WIQL query using the template above
-2. Retrieve full work item details with all required fields
+1. Call `wit-generate-wiql-query` with a clear natural language description and `returnQueryHandle: true`
+2. Use the returned query handle to call `ado_get_work_items_by_query_handle` with all required fields
 3. Calculate `daysInactive` from last substantive change for each item
 4. Categorize items according to the heuristics defined
 5. Generate tables for each category (sorted by severity/days inactive)
 6. Output the complete markdown report per the structure above
-7. Provide prioritized remediation recommendations with exact payload examples
+7. Provide prioritized remediation recommendations with exact payload examples (use the query handle from step 1)
 
