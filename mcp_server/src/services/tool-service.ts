@@ -21,6 +21,7 @@ import { handleValidateQueryHandle } from './handlers/query-handles/validate-que
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
 import { handleInspectQueryHandle } from './handlers/query-handles/inspect-query-handle.handler.js';
 import { handleSelectItemsFromQueryHandle } from './handlers/query-handles/select-items-from-query-handle.handler.js';
+import { handleQueryHandleInfo } from './handlers/query-handles/query-handle-info-handler.js';
 
 // Bulk operation handlers
 import { handleBulkCommentByQueryHandle } from './handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
@@ -232,6 +233,10 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   if (name === 'wit-query-handle-select') {
     return await handleSelectItemsFromQueryHandle(config, args);
+  }
+
+  if (name === 'wit-query-handle-info') {
+    return await handleQueryHandleInfo(config, args);
   }
 
   // Bulk intelligent enhancement tools (AI-powered)
