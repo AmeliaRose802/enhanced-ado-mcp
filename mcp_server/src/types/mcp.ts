@@ -12,6 +12,17 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 export type MCPServer = Server<any, any>;
 
 /**
+ * MCPServer-like object for testing purposes
+ * Defines minimal interface required for sampling operations
+ */
+export interface MCPServerLike {
+  createMessage?: (params: unknown) => Promise<unknown>;
+  getClientCapabilities?: () => { sampling?: unknown } | undefined;
+  // Allow additional properties for test mocks
+  [key: string]: unknown;
+}
+
+/**
  * MCP Transport
  */
 export interface MCPTransport {

@@ -4,6 +4,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -20,10 +21,10 @@ interface GenerateWiqlQueryArgs {
   testQuery?: boolean;
   areaPath?: string;
   iterationPath?: string;
-  serverInstance?: any; // Server instance for sampling
+  serverInstance?: MCPServer | MCPServerLike; // Server instance for sampling
 }
 
-export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown, serverInstance: any): Promise<ToolExecutionResult> {
+export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown, serverInstance: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
