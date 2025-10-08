@@ -58,9 +58,12 @@ export interface GenerateWiqlQueryArgs {
   description: string;
   organization: string;
   project: string;
+  maxIterations?: number;
+  includeExamples?: boolean;
+  testQuery?: boolean;
   areaPath?: string;
   iterationPath?: string;
-  includeExplanation?: boolean;
+  serverInstance?: any; // Server instance for sampling
 }
 
 /**
@@ -70,9 +73,15 @@ export interface GenerateODataQueryArgs {
   description: string;
   organization: string;
   project: string;
+  maxIterations?: number;
+  includeExamples?: boolean;
+  testQuery?: boolean;
   areaPath?: string;
   iterationPath?: string;
-  includeExplanation?: boolean;
+  returnQueryHandle?: boolean;
+  maxResults?: number;
+  includeFields?: string[];
+  serverInstance?: any; // Server instance for sampling
 }
 
 /**
@@ -89,9 +98,20 @@ export interface ContextPackageArgs {
   organization?: string;
   project?: string;
   includeHistory?: boolean;
-  includeRelations?: boolean;
+  maxHistoryRevisions?: number;
   includeComments?: boolean;
-  historyDepth?: number;
+  includeRelations?: boolean;
+  includeChildren?: boolean;
+  includeParent?: boolean;
+  includeLinkedPRsAndCommits?: boolean;
+  includeExtendedFields?: boolean;
+  includeHtml?: boolean;
+  includeHtmlFields?: boolean;
+  stripHtmlFormatting?: boolean;
+  maxChildDepth?: number;
+  maxRelatedItems?: number;
+  includeAttachments?: boolean;
+  includeTags?: boolean;
 }
 
 /**
@@ -101,8 +121,19 @@ export interface BatchContextArgs {
   workItemIds: number[];
   organization?: string;
   project?: string;
-  includeContext?: boolean;
   includeRelations?: boolean;
+  includeFields?: string[];
+  includeExtendedFields?: boolean;
+  includeTags?: boolean;
+  includeStateCounts?: boolean;
+  includeStoryPointAggregation?: boolean;
+  includeRiskScoring?: boolean;
+  includeAIAssignmentHeuristic?: boolean;
+  includeParentOutsideSet?: boolean;
+  includeChildrenOutsideSet?: boolean;
+  maxOutsideReferences?: number;
+  returnFormat?: 'graph' | 'array';
+  maxDepth?: number;
 }
 
 /**
@@ -111,8 +142,9 @@ export interface BatchContextArgs {
 export interface BulkAddCommentsArgs {
   items: CommentItem[];
   template?: string;
-  organization?: string;
-  project?: string;
+  templateVariables?: Record<string, string>;
+  organization: string;
+  project: string;
 }
 
 export interface CommentItem {

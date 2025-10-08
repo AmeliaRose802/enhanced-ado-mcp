@@ -3,25 +3,13 @@
  * Generates WIQL queries from natural language using AI sampling with iterative validation
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, GenerateWiqlQueryArgs } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { extractWiqlQuery, cleanWiqlQuery } from "../../../utils/wiql-helpers.js";
-
-interface GenerateWiqlQueryArgs {
-  description: string;
-  organization: string;
-  project: string;
-  maxIterations?: number;
-  includeExamples?: boolean;
-  testQuery?: boolean;
-  areaPath?: string;
-  iterationPath?: string;
-  serverInstance?: any; // Server instance for sampling
-}
 
 export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown, serverInstance: any): Promise<ToolExecutionResult> {
   try {

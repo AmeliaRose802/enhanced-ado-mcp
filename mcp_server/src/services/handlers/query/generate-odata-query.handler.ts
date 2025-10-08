@@ -3,7 +3,7 @@
  * Generates OData Analytics queries from natural language using AI sampling with iterative validation
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, GenerateODataQueryArgs } from "../../../types/index.js";
 import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
@@ -11,21 +11,6 @@ import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 import { queryHandleService } from "../../query-handle-service.js";
-
-interface GenerateODataQueryArgs {
-  description: string;
-  organization: string;
-  project: string;
-  maxIterations?: number;
-  includeExamples?: boolean;
-  testQuery?: boolean;
-  areaPath?: string;
-  iterationPath?: string;
-  returnQueryHandle?: boolean;
-  maxResults?: number;
-  includeFields?: string[];
-  serverInstance?: any; // Server instance for sampling
-}
 
 export async function handleGenerateODataQuery(config: ToolConfig, args: unknown, serverInstance: any): Promise<ToolExecutionResult> {
   try {

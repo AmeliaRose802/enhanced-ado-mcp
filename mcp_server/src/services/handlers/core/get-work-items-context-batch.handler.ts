@@ -3,6 +3,7 @@ import { loadConfiguration } from '../../../config/config.js';
 import { logger } from '../../../utils/logger.js';
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
 import type { ADOApiResponse, ADOWorkItem } from '../../../types/ado.js';
+import type { BatchContextArgs } from '../../../types/queries.js';
 
 interface GraphNode {
   id: number;
@@ -75,25 +76,7 @@ interface Aggregates {
   aiAssignmentCandidates?: number[];
 }
 
-interface BatchArgs {
-  workItemIds: number[];
-  organization?: string;
-  project?: string;
-  includeRelations?: boolean;
-  includeFields?: string[];
-  includeExtendedFields?: boolean;
-  includeTags?: boolean;
-  includeStateCounts?: boolean;
-  includeStoryPointAggregation?: boolean;
-  includeRiskScoring?: boolean;
-  includeAIAssignmentHeuristic?: boolean;
-  includeParentOutsideSet?: boolean;
-  includeChildrenOutsideSet?: boolean;
-  maxOutsideReferences?: number;
-  returnFormat?: 'graph' | 'array';
-}
-
-export async function handleGetWorkItemsContextBatch(args: BatchArgs) {
+export async function handleGetWorkItemsContextBatch(args: BatchContextArgs) {
   const cfg = loadConfiguration();
   const {
     workItemIds,

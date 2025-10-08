@@ -3,24 +3,12 @@
  * Allows adding comments to multiple work items efficiently
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, BulkAddCommentsArgs, CommentItem } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { logger } from "../../../utils/logger.js";
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 
-interface CommentItem {
-  workItemId: number;
-  comment: string;
-}
-
-interface BulkAddCommentsArgs {
-  items: CommentItem[];
-  template?: string;
-  templateVariables?: Record<string, string>;
-  organization: string;
-  project: string;
-}
 
 interface CommentResult {
   workItemId: number;
