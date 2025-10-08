@@ -126,7 +126,7 @@ Use `wit-query-wiql` with `returnQueryHandle: true`:
 
 **Preview Selection:**
 ```json
-// Use this tool to see what items will be selected
+// Use wit-select-items-from-query-handle to see what items will be selected
 {
   "queryHandle": "qh_a1b2c3d4e5f6",
   "itemSelector": { "states": ["New"] },
@@ -351,11 +351,11 @@ All tools support `dryRun: true` for safe preview:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-query-handle-select` | **NEW**: Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
-| `wit-bulk-comment` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
-| `wit-bulk-update` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
-| `wit-bulk-assign` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
-| `wit-bulk-remove` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
+| `wit-select-items-from-query-handle` | **NEW**: Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
+| `wit-bulk-comment-by-query-handle` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
+| `wit-bulk-update-by-query-handle` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
+| `wit-bulk-assign-by-query-handle` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
+| `wit-bulk-remove-by-query-handle` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
 
 ## 📋 Best Practices
 
