@@ -28,7 +28,7 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 │    ├─► Config Service                                  │     │
 │    ├─► Prompt Service                                  │     │
 │    ├─► Sampling Service (AI Features)                  │     │
-│    ├─► ADO Work Item Service                           │     │
+│    ├─► ADO Work Item Service ──► WorkItemRepository    │     │
 │    └─► ADO Discovery Service                           │     │
 │                                                              │
 └──────────────────────┬───────────────────────────────────────┘
@@ -93,7 +93,9 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 
 #### ADO Work Item Service (`ado-work-item-service.ts`)
 
-**Purpose:** Azure DevOps REST API operations
+**Purpose:** Azure DevOps business logic for work items
+
+**Architecture:** Uses `WorkItemRepository` for all data access operations
 
 **Key Operations:**
 - Create work items with parent relationships
@@ -102,7 +104,7 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 - Extract security links
 - Manage work item lifecycle
 
-**Authentication:** Azure CLI token-based
+**Authentication:** Azure CLI token-based (handled by repository layer)
 
 #### ADO Discovery Service (`ado-discovery-service.ts`)
 
@@ -137,7 +139,32 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 - System vs. user prompt distinction
 - Metadata parsing
 
-### 5. Handlers Layer (`services/handlers/`)
+### 5. Repository Layer (`repositories/`)
+
+**Purpose:** Encapsulate all Azure DevOps API data access
+
+**Components:**
+- `work-item.repository.ts` - Work item CRUD and query operations
+
+**Key Methods:**
+- `getById(id, fields?)` - Fetch single work item
+- `getBatch(ids, fields?)` - Fetch multiple work items
+- `create(type, fields)` - Create new work item
+- `update(id, fields)` - Update work item
+- `delete(id, hardDelete?)` - Delete work item
+- `linkToParent(id, parentId)` - Create parent link
+- `linkToBranch(...)` - Create branch artifact link
+- `getRevisions(id, top?)` - Get revision history
+- `executeWiql(query)` - Execute WIQL query
+- `getRepository(nameOrId)` - Get repository info
+
+**Architecture Benefits:**
+- Services contain only business logic
+- All API calls centralized in repository
+- Easier testing with mocked repositories
+- Consistent error handling for API calls
+
+### 6. Handlers Layer (`services/handlers/`)
 
 **Purpose:** Thin wrappers for tool implementations
 
@@ -170,7 +197,7 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 6. Return ToolExecutionResult
 ```
 
-### 6. Analyzers (`services/analyzers/`)
+### 7. Analyzers (`services/analyzers/`)
 
 **Purpose:** Complex AI-powered analysis implementations
 
@@ -199,7 +226,7 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
    ↓
 5. Service performs business logic
    ↓
-6. External API calls (Azure DevOps)
+6. Repository handles data access (Azure DevOps API)
    ↓
 7. Response formatted as ToolExecutionResult
    ↓
@@ -265,6 +292,38 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 - Consistent interface
 - Error handling in one place
 - Easy to mock for testing
+
+### 5. Repository Pattern (Data Access)
+
+**Why:** Separate data access logic from business logic
+
+**Implementation:**
+- `WorkItemRepository` class encapsulates all ADO API calls
+- Service layer uses repository methods, never direct HTTP clients
+- Repository handles API endpoints, authentication headers, and response parsing
+
+**Benefits:**
+- Clean separation between data access and business logic
+- Single source of truth for API calls
+- Easier to test services (mock repository instead of HTTP client)
+- Centralized error handling for API calls
+- Better maintainability and readability
+
+**Example:**
+```typescript
+// Service layer (business logic)
+const repository = createWorkItemRepository(organization, project);
+const workItem = await repository.getById(workItemId);
+const revisions = await repository.getRevisions(workItemId, 10);
+
+// Repository layer (data access)
+class WorkItemRepository {
+  async getById(id: number): Promise<ADOWorkItem> {
+    const response = await this.httpClient.get(`wit/workitems/${id}`);
+    return response.data;
+  }
+}
+```
 
 ## Authentication & Security
 
