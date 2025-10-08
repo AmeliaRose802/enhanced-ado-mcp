@@ -5,12 +5,14 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
+import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { extractWiqlQuery, cleanWiqlQuery } from "../../../utils/wiql-helpers.js";
+import { queryHandleService } from "../../query-handle-service.js";
 
 interface GenerateWiqlQueryArgs {
   description: string;
@@ -21,6 +23,9 @@ interface GenerateWiqlQueryArgs {
   testQuery?: boolean;
   areaPath?: string;
   iterationPath?: string;
+  returnQueryHandle?: boolean;
+  maxResults?: number;
+  includeFields?: string[];
   serverInstance?: MCPServer | MCPServerLike; // Server instance for sampling
 }
 
@@ -49,7 +54,10 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       includeExamples = true,
       testQuery = true,
       areaPath,
-      iterationPath
+      iterationPath,
+      returnQueryHandle = false,
+      maxResults = 200,
+      includeFields
     } = parsed.data as GenerateWiqlQueryArgs;
 
     logger.info(`Generating WIQL query from description: "${description}"`);
@@ -128,6 +136,171 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
         isValid = true;
         logger.info(`Query generated (validation skipped as requested)`);
         break;
+      }
+    }
+
+    // If returnQueryHandle is true and query is valid, execute it and create handle
+    if (returnQueryHandle && isValid && currentQuery) {
+      try {
+        logger.info(`Executing query to create handle with maxResults=${maxResults}`);
+        
+        // Execute the query with full results
+        const queryResult = await queryWorkItemsByWiql({
+          wiqlQuery: currentQuery,
+          organization,
+          project,
+          top: maxResults,
+          includeFields: includeFields || ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.CreatedDate', 'System.ChangedDate', 'System.AssignedTo', 'System.AreaPath', 'System.IterationPath', 'System.Tags']
+        });
+
+        // Only create handle if we have results
+        if (queryResult.workItems && queryResult.workItems.length > 0) {
+          const workItemIds = queryResult.workItems.map((wi: any) => wi.id);
+          
+          // Build work item context map
+          const workItemContext = new Map<number, WorkItemContext>();
+          for (const wi of queryResult.workItems) {
+            // Get tags from System.Tags field (stored as semicolon-separated string)
+            const tagsValue = wi.additionalFields?.['System.Tags'];
+            const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
+            
+            workItemContext.set(wi.id, {
+              title: wi.title,
+              state: wi.state,
+              type: wi.type,
+              createdDate: wi.createdDate,
+              assignedTo: wi.assignedTo,
+              areaPath: wi.areaPath,
+              iterationPath: wi.iterationPath,
+              changedDate: wi.changedDate,
+              tags: tagsString,
+              ...(wi.additionalFields && wi.additionalFields)
+            });
+          }
+
+          // Build analysis metadata
+          const analysisMetadata = {
+            generatedFromDescription: description,
+            analysisTimestamp: new Date().toISOString(),
+            resultCount: queryResult.count,
+            totalCount: queryResult.totalCount
+          };
+          
+          const handle = queryHandleService.storeQuery(
+            workItemIds,
+            currentQuery,
+            {
+              project,
+              queryType: 'wiql-generated'
+            },
+            60 * 60 * 1000, // 1 hour TTL
+            workItemContext,
+            analysisMetadata
+          );
+
+          logger.info(`Query handle created: ${handle} (${workItemIds.length} work items)`);
+
+          return {
+            success: true,
+            data: {
+              query_handle: handle,
+              query: currentQuery,
+              work_items: queryResult.workItems,
+              work_item_count: workItemIds.length,
+              total_count: queryResult.totalCount,
+              isValidated: testQuery && isValid,
+              summary: `Query handle created for ${workItemIds.length} work item(s). Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`,
+              next_steps: [
+                "Review the work_items array to see what will be affected",
+                "Use wit-bulk-comment-by-query-handle to add comments to all items",
+                "Use wit-bulk-update-by-query-handle to update fields on all items",
+                "Use wit-bulk-assign-by-query-handle to assign all items to a user",
+                "Use wit-bulk-remove-by-query-handle to remove all items",
+                "Always use dryRun: true first to preview changes before applying them"
+              ],
+              expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+              ...((queryResult.totalCount > queryResult.top) && {
+                pagination: {
+                  skip: queryResult.skip,
+                  top: queryResult.top,
+                  totalCount: queryResult.totalCount,
+                  hasMore: queryResult.hasMore,
+                  ...(queryResult.hasMore && { nextSkip: queryResult.skip + queryResult.top })
+                }
+              })
+            },
+            metadata: {
+              source: "ai-sampling-wiql-generator",
+              validated: isValid,
+              iterationCount: iterations.length,
+              queryHandleMode: true,
+              handle,
+              count: workItemIds.length,
+              totalCount: queryResult.totalCount,
+              ...(cumulativeUsage && { usage: cumulativeUsage })
+            },
+            errors: [],
+            warnings: [
+              ...(queryResult.hasMore
+                ? [`Query returned ${queryResult.totalCount} total results. Handle contains first ${workItemIds.length} items. Use pagination if you need all results.`]
+                : []),
+              ...(queryResult.totalCount > 1000 ? [`⚠️ Query returned ${queryResult.totalCount} results - consider adding more specific filters`] : [])
+            ]
+          };
+        } else {
+          // Query returned no results - return query-only response
+          logger.warn(`Query returned 0 results, skipping handle creation`);
+          return {
+            success: true,
+            data: {
+              query: currentQuery,
+              isValidated: testQuery && isValid,
+              resultCount: 0,
+              sampleResults: [],
+              summary: `Successfully generated WIQL query (found 0 matching work items)`
+            },
+            metadata: {
+              source: "ai-sampling-wiql-generator",
+              validated: isValid,
+              iterationCount: iterations.length,
+              ...(cumulativeUsage && { usage: cumulativeUsage })
+            },
+            errors: [],
+            warnings: [
+              "⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"
+            ]
+          };
+        }
+      } catch (handleError) {
+        // If handle creation fails, fallback to query-only response
+        logger.error('Failed to create query handle:', handleError);
+        return {
+          success: true,
+          data: {
+            query: currentQuery,
+            isValidated: testQuery && isValid,
+            ...(testResults && {
+              resultCount: testResults.resultCount,
+              sampleResults: testResults.sampleResults
+            }),
+            summary: isValid
+              ? `Successfully generated WIQL query${testResults ? ` (found ${testResults.resultCount} matching work items)` : ''}`
+              : `Failed to generate valid query. Last error: ${lastError}`
+          },
+          metadata: {
+            source: "ai-sampling-wiql-generator",
+            validated: isValid,
+            iterationCount: iterations.length,
+            ...(cumulativeUsage && { usage: cumulativeUsage })
+          },
+          errors: [],
+          warnings: [
+            `Failed to create query handle: ${handleError instanceof Error ? handleError.message : String(handleError)}`,
+            ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : []),
+            ...(testResults && testResults.resultCount === 0 ? ["⚠️ Query is valid but returned 0 results - you may need to adjust the criteria"] : []),
+            ...(testResults && testResults.resultCount > 1000 ? [`⚠️ Query returned ${testResults.resultCount} results - consider adding more specific filters`] : [])
+          ]
+        };
       }
     }
 
