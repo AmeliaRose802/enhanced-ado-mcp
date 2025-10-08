@@ -103,9 +103,13 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
           cumulativeUsage = { ...usage };
         } else {
           // Sum up token counts if present
-          if (usage.inputTokens) cumulativeUsage.inputTokens = (cumulativeUsage.inputTokens || 0) + usage.inputTokens;
-          if (usage.outputTokens) cumulativeUsage.outputTokens = (cumulativeUsage.outputTokens || 0) + usage.outputTokens;
-          if (usage.totalTokens) cumulativeUsage.totalTokens = (cumulativeUsage.totalTokens || 0) + usage.totalTokens;
+          const inputTokens = usage.inputTokens as number | undefined;
+          const outputTokens = usage.outputTokens as number | undefined;
+          const totalTokens = usage.totalTokens as number | undefined;
+          
+          if (inputTokens) cumulativeUsage.inputTokens = ((cumulativeUsage.inputTokens as number) || 0) + inputTokens;
+          if (outputTokens) cumulativeUsage.outputTokens = ((cumulativeUsage.outputTokens as number) || 0) + outputTokens;
+          if (totalTokens) cumulativeUsage.totalTokens = ((cumulativeUsage.totalTokens as number) || 0) + totalTokens;
         }
       }
 
@@ -211,13 +215,14 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         // Build work item context map for query handle
         const workItemContext = new Map<number, WorkItemContext>();
         for (const wi of workItems) {
-          const id = wi.WorkItemId || wi.workItemId || wi.id;
-          const tags = wi.Tags || wi.tags || '';
+          const wiRecord = wi as Record<string, unknown>;
+          const id = (wiRecord.WorkItemId || wiRecord.workItemId || wiRecord.id) as number;
+          const tags = (wiRecord.Tags || wiRecord.tags || '') as string;
           
           workItemContext.set(id, {
-            title: wi.Title || wi.title || '',
-            state: wi.State || wi.state || '',
-            type: wi.WorkItemType || wi.workItemType || wi.type || '',
+            title: (wiRecord.Title || wiRecord.title || '') as string,
+            state: (wiRecord.State || wiRecord.state || '') as string,
+            type: (wiRecord.WorkItemType || wiRecord.workItemType || wiRecord.type || '') as string,
             createdDate: wi.CreatedDate || wi.createdDate,
             assignedTo: wi.AssignedTo ? (wi.AssignedTo.UserName || wi.AssignedTo) : undefined,
             areaPath: wi.AreaPath || wi.areaPath,

@@ -295,7 +295,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
     } else {
       // Full: Complete details (respects includeTitles and includeConfidence params)
       formattedResults = displayResults.map(r => {
-        const result: any = {
+        const result: Record<string, unknown> = {
           work_item_id: r.workItemId,
           status: r.success ? 'enhanced' : r.skipped ? 'skipped' : 'failed'
         };

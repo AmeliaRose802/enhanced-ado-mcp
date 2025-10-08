@@ -3,10 +3,14 @@
  * Extracts instruction links from security scan work items
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
 import { extractSecurityInstructionLinks } from "../../ado-work-item-service.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { logger } from "../../../utils/logger.js";
+import { extractSecurityLinksSchema } from "../../../config/schemas.js";
+import { z } from "zod";
+
+type ExtractSecurityLinksInput = z.infer<typeof extractSecurityLinksSchema>;
 
 export async function handleExtractSecurityLinks(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -22,7 +26,7 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: unkno
       };
     }
 
-    const input = parsed.data as any;
+    const input = parsed.data as ExtractSecurityLinksInput;
     
     // Get configuration with auto-fill
     const requiredConfig = getRequiredConfig();

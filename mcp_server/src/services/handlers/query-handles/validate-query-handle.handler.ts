@@ -5,7 +5,7 @@
  * Useful for checking if a handle is still valid before using it in bulk operations.
  */
 
-import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildErrorResponse } from "../../../utils/response-builder.js";

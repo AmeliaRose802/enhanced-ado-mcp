@@ -3,7 +3,7 @@
  * Allows inspection of query handle contents including staleness data
  */
 
-import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
 import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
