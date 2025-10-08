@@ -103,32 +103,31 @@ Key sections:
 
 ### 2. AI Assignment Analyzer (`wit-ai-assignment`)
 
-**Purpose:** Detailed analysis of work item suitability for AI agent assignment
+**Purpose:** Detailed analysis of work item suitability for AI agent assignment with automatic context retrieval
 
 #### Capabilities
 
-- **Suitability Scoring**: 0-100 confidence score
-- **Detailed Reasoning**: Explain why suitable/unsuitable
-- **Risk Assessment**: Identify potential issues
-- **Recommendation**: Clear yes/no with conditions
-- **Alternative Suggestions**: What needs to change
+- **Auto-Fetch Work Item**: Automatically retrieves complete work item details from Azure DevOps
+- **Relationship Context**: Includes parent, children, and related work items in analysis
+- **Suitability Scoring**: 0-100 confidence score with risk assessment
+- **Detailed Reasoning**: Explain why suitable/unsuitable with specific factors
+- **Risk Assessment**: Identify potential issues and complexity
+- **Recommendation**: AI_FIT, HUMAN_FIT, or HYBRID with guardrails
 
 #### Input Parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `Title` | string | ✅ | Work item title |
-| `Description` | string | ❌ | Work item description |
-| `WorkItemType` | string | ❌ | Type of work item |
-| `AcceptanceCriteria` | string | ❌ | Acceptance criteria |
-| `Priority` | string | ❌ | Priority level |
-| `Labels` | string | ❌ | Comma-separated labels |
-| `EstimatedFiles` | string | ❌ | Estimated files affected |
-| `TechnicalContext` | string | ❌ | Tech stack, frameworks |
-| `ExternalDependencies` | string | ❌ | Dependencies/approvals |
-| `TimeConstraints` | string | ❌ | Deadlines |
-| `RiskFactors` | string | ❌ | Known risks |
-| `TestingRequirements` | string | ❌ | Testing needs |
+| `workItemId` | number | ✅ | Azure DevOps work item ID to analyze |
+| `organization` | string | ❌ | Organization (defaults to config) |
+| `project` | string | ❌ | Project (defaults to config) |
+| `outputFormat` | string | ❌ | Output format: "detailed" or "json" (default: "detailed") |
+
+**Note:** The tool automatically fetches and includes:
+- Basic fields: Title, description, acceptance criteria, state, priority, tags
+- Assignment info: Current assignee, area path, iteration
+- **Relationships**: Parent work item, child work items, related links
+- No manual context specification required!
 
 #### Output Structure
 
@@ -136,30 +135,50 @@ Key sections:
 {
   success: boolean;
   data: {
-    suitable_for_ai: boolean;
-    confidence_score: number;     // 0-100
-    recommendation: "assign" | "do-not-assign" | "assign-with-conditions";
-    reasoning: {
-      strengths: string[];
-      weaknesses: string[];
-      risk_factors: string[];
-      mitigation_strategies: string[];
+    decision: "AI_FIT" | "HUMAN_FIT" | "HYBRID";
+    confidence: number;           // 0.0-1.0
+    riskScore: number;           // 0-100
+    primaryReasons: string[];    // Key factors in decision
+    missingInfo: string[];       // What information is missing
+    recommendedNextSteps: string[];  // Actions to take
+    estimatedScope: {
+      files: {
+        min: number;
+        max: number;
+      };
+      complexity: "trivial" | "low" | "medium" | "high";
     };
-    analysis: {
-      scope_clarity: number;      // 0-100
-      technical_complexity: number;
-      required_context: number;
-      independence: number;
-      testability: number;
-    };
-    suggestions: {
-      before_assignment: string[];
-      monitoring_points: string[];
-      fallback_plan: string;
+    guardrails: {
+      testsRequired: boolean;
+      featureFlagOrToggle: boolean;
+      touchSensitiveAreas: boolean;
+      needsCodeReviewFromOwner: boolean;
     };
   };
+  errors: string[];
+  warnings: string[];
 }
 ```
+
+#### Auto-Populated Context
+
+The analyzer automatically enriches the AI prompt with:
+
+**Basic Work Item Fields:**
+- ID, Type, Title, State, Priority
+- Description, Acceptance Criteria
+- Area Path, Iteration Path, Tags
+- Current Assignee
+
+**Relationship Context (New!):**
+- **Parent Work Item**: ID, title, type, state (if exists)
+- **Child Work Items**: List of IDs, titles, types, states
+- **Related Links**: Types of related work items (Predecessor, Successor, etc.)
+
+This relationship context helps the AI make better decisions by understanding:
+- Whether this is part of a larger feature (has parent)
+- Whether it has dependencies (children/related items)
+- The overall scope and complexity based on work item hierarchy
 
 #### Suitability Criteria
 
@@ -338,12 +357,27 @@ await executeTool('wit-ai-intelligence', {
 ### Example 2: Check AI Assignment Suitability
 
 ```typescript
+// Simple usage - just provide work item ID
 await executeTool('wit-ai-assignment', {
-  Title: "Fix login button styling",
-  Description: "Button is misaligned on mobile",
-  WorkItemType: "Bug",
-  TechnicalContext: "React, CSS"
+  workItemId: 12345
 });
+
+// With custom organization/project
+await executeTool('wit-ai-assignment', {
+  workItemId: 12345,
+  organization: "my-org",
+  project: "my-project",
+  outputFormat: "detailed"  // or "json"
+});
+
+// The tool automatically fetches:
+// - Work item details (title, description, acceptance criteria)
+// - Current state, priority, tags, area/iteration paths
+// - Parent work item (if exists)
+// - Child work items (if any)
+// - Related work item links
+// All context is passed to AI for comprehensive analysis
+```
 ```
 
 ### Example 3: Decompose Large Feature

@@ -15,6 +15,11 @@ You are a senior AI assignment specialist evaluating work items for GitHub Copil
 - **Tags:** {{TAGS}}
 - **Assigned To:** {{ASSIGNED_TO}}
 
+**RELATIONSHIPS:**
+- **Parent:** {{PARENT_WORK_ITEM}}
+- **Children:** {{CHILD_WORK_ITEMS}} (Count: {{CHILD_COUNT}})
+- **Related Links:** {{RELATED_LINKS}}
+
 **EFFICIENCY GUIDELINES:**
 - Be concise: Keep reasons and recommendations brief (1-2 sentences each)
 - Focus on essentials: Only include critical information
