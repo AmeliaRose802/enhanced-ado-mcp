@@ -2,6 +2,12 @@
  * Type definitions for sampling service
  */
 
+/**
+ * Raw analysis data from AI - can be any JSON structure
+ * Use unknown for type safety; consumers should validate the structure
+ */
+export type RawAnalysisData = unknown;
+
 export interface WorkItemIntelligenceArgs {
   Title: string;
   Description?: string;
@@ -82,7 +88,7 @@ export interface AnalysisResult {
   missingElements: string[];
   strengths: string[];
   improvementAreas: string[];
-  rawAnalysis?: any;  // Full JSON response from AI for intelligent agent interpretation
+  rawAnalysis?: RawAnalysisData;  // Full JSON response from AI for intelligent agent interpretation
 }
 
 export interface AIAssignmentResult {

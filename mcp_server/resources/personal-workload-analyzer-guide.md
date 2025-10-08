@@ -244,7 +244,7 @@ Uses VS Code language model sampling for:
 After analysis, you might:
 - Use `wit-bulk-assign-by-query-handle` to rebalance workload
 - Use `wit-create-new-item` to create skill development tasks
-- Use `wit-bulk-add-comments` to document discussion points on items
+- Use `wit-bulk-comment-by-query-handle` to document discussion points on items
 - Use `wit-assign-to-copilot` for AI-suitable work to free capacity
 
 ## Example Scenarios

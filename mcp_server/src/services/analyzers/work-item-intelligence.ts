@@ -4,6 +4,7 @@
 
 import type { ToolExecutionResult } from '../../types/index.js';
 import type { WorkItemIntelligenceArgs, AnalysisResult } from '../sampling-types.js';
+import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
@@ -13,7 +14,7 @@ import { executeTool } from '../tool-service.js';
 export class WorkItemIntelligenceAnalyzer {
   private samplingClient: SamplingClient;
 
-  constructor(server: any) {
+  constructor(server: MCPServer | MCPServerLike) {
     this.samplingClient = new SamplingClient(server);
   }
 

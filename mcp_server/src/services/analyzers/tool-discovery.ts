@@ -6,6 +6,7 @@
  */
 
 import type { ToolExecutionResult } from '../../types/index.js';
+import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { toolConfigs } from '../../config/tool-configs.js';
@@ -37,7 +38,7 @@ interface ToolDiscoveryResult {
 export class ToolDiscoveryAnalyzer {
   private samplingClient: SamplingClient;
 
-  constructor(server: any) {
+  constructor(server: MCPServer | MCPServerLike) {
     this.samplingClient = new SamplingClient(server);
   }
 

@@ -1063,6 +1063,25 @@ npm run build
 npm test
 ```
 
+### Code Quality and Pre-commit Hooks
+
+This repository uses **Husky** to enforce code quality standards before commits. The pre-commit hook automatically checks:
+
+- **Formatting** - All TypeScript files must follow Prettier formatting rules
+- **Linting** - ESLint checks for code quality issues
+
+When you commit changes, only your **staged TypeScript files** are checked for efficiency.
+
+**To fix issues before committing:**
+```bash
+cd mcp_server
+npm run format        # Auto-fix formatting issues
+npm run lint:fix      # Auto-fix linting issues
+npm run format:check  # Check without changing files
+```
+
+📖 **For detailed information**, see [`HUSKY_SETUP.md`](HUSKY_SETUP.md)
+
 ### Available Scripts
 
 ```bash
@@ -1074,6 +1093,8 @@ npm run test:unit      # Run unit tests only
 npm run test:coverage  # Run tests with coverage
 npm run lint           # Check code style
 npm run lint:fix       # Fix code style issues
+npm run format         # Auto-format TypeScript files
+npm run format:check   # Check formatting without changes
 npm run generate-openapi  # Generate OpenAPI/JSON Schema documentation
 npm run generate-docs     # Alias for generate-openapi
 ```

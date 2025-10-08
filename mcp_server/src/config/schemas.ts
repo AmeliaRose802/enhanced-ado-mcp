@@ -551,7 +551,10 @@ export const generateWiqlQuerySchema = z.object({
   iterationPath: z.string().optional().default(() => cfg().azureDevOps.iterationPath || '').describe("Default iteration path to use in queries (optional context)"),
   maxIterations: z.number().int("maxIterations must be an integer").min(1, "maxIterations must be at least 1").max(5, "maxIterations cannot exceed 5 attempts").optional().default(3).describe("Maximum iterations to try generating a valid query (default 3)"),
   includeExamples: z.boolean().optional().default(true).describe("Include example queries in the prompt for better results (default true)"),
-  testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)")
+  testQuery: z.boolean().optional().default(true).describe("Test the generated query by executing it (default true)"),
+  returnQueryHandle: z.boolean().optional().default(false).describe("Execute the query and return a query handle for safe bulk operations (prevents ID hallucination)"),
+  maxResults: z.number().int().min(1).max(1000).optional().default(200).describe("Maximum number of work items to fetch when returnQueryHandle is true (default 200)"),
+  includeFields: z.array(z.string()).optional().describe("Additional fields to include when returnQueryHandle is true (defaults to basic fields)")
 });
 
 /**
@@ -671,6 +674,214 @@ export const sprintPlanningAnalyzerSchema = z.object({
   organization: z.string().optional().default(() => cfg().azureDevOps.organization),
   project: z.string().optional().default(() => cfg().azureDevOps.project),
   areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Area path to filter work items (uses configured default if not provided)")
+});
+
+/**
+ * Schema for getting full context packages by query handle
+ * Retrieves comprehensive context packages for all work items identified by a query handle
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   queryHandle: "qh_c1b1b9a3...",
+ *   includeHistory: true,
+ *   maxHistoryRevisions: 5
+ * }
+ * ```
+ * 
+ * @remarks
+ * Combines query handle safety with deep context retrieval.
+ * Useful for analyzing multiple work items with full details before taking action.
+ */
+export const getContextPackagesByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  itemSelector: itemSelectorSchema,
+  includeHistory: z.boolean().optional().default(false).describe("Include recent change history for each work item (disabled by default to save context)"),
+  maxHistoryRevisions: z.number().int("maxHistoryRevisions must be an integer").min(1, "maxHistoryRevisions must be at least 1").max(50, "maxHistoryRevisions cannot exceed 50 revisions").optional().default(5).describe("Maximum number of recent history revisions to include when history is enabled (default 5)"),
+  includeComments: z.boolean().optional().default(true).describe("Include work item comments/discussion"),
+  includeRelations: z.boolean().optional().default(true).describe("Include related links (parent, children, related, attachments, commits, PRs)"),
+  includeChildren: z.boolean().optional().default(true).describe("Include all child hierarchy (one level) if item is a Feature/Epic"),
+  includeParent: z.boolean().optional().default(true).describe("Include parent work item details if present"),
+  includeExtendedFields: z.boolean().optional().default(false).describe("Include extended field set beyond defaults (all system fields + common custom)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(10).describe("Maximum number of items to include in response (default 10)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
+ * Schema for bulk state transition by query handle
+ * Safely transition work items to a new state using query handle
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   queryHandle: "qh_c1b1b9a3...",
+ *   targetState: "Resolved",
+ *   reason: "Fixed",
+ *   comment: "Resolved as part of Sprint 10 cleanup"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Common operation for closing bugs, moving tasks to done, etc.
+ * Validates state transitions are allowed before applying.
+ */
+export const bulkTransitionStateByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  targetState: z.string().min(1, "Target state cannot be empty. Examples: 'Active', 'Resolved', 'Closed', 'Done'").describe("Target state to transition work items to (e.g., 'Resolved', 'Closed', 'Done')"),
+  reason: z.string().optional().describe("Reason for state transition (e.g., 'Fixed', 'Completed', 'Duplicate'). Required for some state transitions."),
+  comment: z.string().optional().describe("Optional comment to add when transitioning state"),
+  itemSelector: itemSelectorSchema,
+  validateTransitions: z.boolean().optional().default(true).describe("Validate that state transitions are allowed before applying (default true)"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
+ * Schema for bulk iteration/sprint move by query handle
+ * Safely move work items to a different iteration without JSON Patch complexity
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   queryHandle: "qh_c1b1b9a3...",
+ *   targetIterationPath: "Project\\Sprint 11",
+ *   comment: "Moved to Sprint 11 due to capacity constraints"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Common operation for sprint rescheduling and backlog grooming.
+ * Simpler than using bulk-update with JSON Patch for iteration changes.
+ */
+export const bulkMoveToIterationByQueryHandleSchema = z.object({
+  queryHandle: z.string().describe("Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  targetIterationPath: z.string().min(1, "Target iteration path cannot be empty. Example: 'Project\\\\Sprint 11'").describe("Target iteration/sprint path (e.g., 'Project\\\\Sprint 11')"),
+  comment: z.string().optional().describe("Optional comment to add when moving to new iteration"),
+  itemSelector: itemSelectorSchema,
+  updateChildItems: z.boolean().optional().default(false).describe("Also update child work items to the same iteration (default false)"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(5).describe("Maximum number of items to include in dry-run preview (default 5)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
+ * Schema for cloning/duplicating a work item
+ * Creates a copy of an existing work item with optional modifications
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   sourceWorkItemId: 12345,
+ *   title: "Copy of original work item",
+ *   targetAreaPath: "Project\\Team B",
+ *   targetIterationPath: "Project\\Sprint 11",
+ *   includeChildren: true
+ * }
+ * ```
+ * 
+ * @remarks
+ * Useful for template-based creation, environment cloning, or replicating work across teams.
+ * Can optionally clone child work items and preserve relationships.
+ */
+export const cloneWorkItemSchema = z.object({
+  sourceWorkItemId: z.number().int("Source work item ID must be an integer. Example: 12345").positive("Source work item ID must be positive. Example: 12345").describe("Work item ID to clone/duplicate"),
+  title: z.string().optional().describe("Override title for cloned work item (if not provided, uses '[Clone] {original title}')"),
+  targetAreaPath: z.string().optional().describe("Area path for cloned work item (defaults to source area path)"),
+  targetIterationPath: z.string().optional().describe("Iteration path for cloned work item (defaults to source iteration path)"),
+  targetProject: z.string().optional().describe("Target project for cloned work item (defaults to source project, enables cross-project cloning)"),
+  assignTo: z.string().optional().describe("Assign cloned work item to specific user (defaults to unassigned)"),
+  includeDescription: z.boolean().optional().default(true).describe("Include description from source work item (default true)"),
+  includeAcceptanceCriteria: z.boolean().optional().default(true).describe("Include acceptance criteria from source work item (default true)"),
+  includeTags: z.boolean().optional().default(true).describe("Include tags from source work item (default true)"),
+  includeAttachments: z.boolean().optional().default(false).describe("Clone attachments to new work item (default false, can be slow)"),
+  includeChildren: z.boolean().optional().default(false).describe("Also clone child work items and preserve parent-child relationships (default false)"),
+  linkToSource: z.boolean().optional().default(true).describe("Create a 'Related' link back to source work item (default true)"),
+  comment: z.string().optional().describe("Add a comment to the cloned work item explaining the cloning"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
+ * Schema for linking work items between two query handles
+ * Creates relationships between work items identified by two different query handles
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   sourceQueryHandle: "qh_abc123...",
+ *   targetQueryHandle: "qh_def456...",
+ *   linkType: "Related",
+ *   comment: "Linking related features for Sprint 11"
+ * }
+ * ```
+ * 
+ * @remarks
+ * Useful for bulk relationship creation between query results.
+ * Common scenarios: linking features to epics, tasks to bugs, blocking relationships.
+ */
+export const linkWorkItemsByQueryHandlesSchema = z.object({
+  sourceQueryHandle: z.string().describe("Source query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  targetQueryHandle: z.string().describe("Target query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true"),
+  linkType: z.enum([
+    "Related",
+    "Parent",
+    "Child",
+    "Predecessor",
+    "Successor",
+    "Affects",
+    "Affected By"
+  ], {
+    errorMap: () => ({ message: "linkType must be one of: Related, Parent, Child, Predecessor, Successor, Affects, Affected By" })
+  }).describe("Type of relationship to create between source and target work items"),
+  sourceItemSelector: itemSelectorSchema.optional().default("all").describe("Select specific source items (default: all)"),
+  targetItemSelector: itemSelectorSchema.optional().default("all").describe("Select specific target items (default: all)"),
+  linkStrategy: z.enum([
+    "one-to-one",
+    "one-to-many",
+    "many-to-one",
+    "many-to-many"
+  ], {
+    errorMap: () => ({ message: "linkStrategy must be one of: one-to-one, one-to-many, many-to-one, many-to-many" })
+  }).optional().default("one-to-one").describe("How to link items: one-to-one (pair by index), one-to-many (each source to all targets), many-to-one (all sources to each target), many-to-many (all sources to all targets)"),
+  comment: z.string().optional().describe("Optional comment to add to all linked work items"),
+  skipExistingLinks: z.boolean().optional().default(true).describe("Skip creating links that already exist (default true)"),
+  dryRun: z.boolean().optional().default(true).describe("Preview operation without making changes (default: true for safety)"),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(10).describe("Maximum number of link operations to preview in dry-run (default 10)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
+ * Schema for backlog cleanup with configurable staleness threshold
+ * Analyzes backlog for stale, incomplete, or problematic work items
+ * 
+ * @example
+ * ```typescript
+ * {
+ *   areaPath: "Project\\Team A",
+ *   stalenessThresholdDays: 180,
+ *   includeQualityChecks: true
+ * }
+ * ```
+ * 
+ * @remarks
+ * Identifies dead items, missing descriptions/criteria, unassigned items, etc.
+ * Uses configurable staleness threshold instead of hardcoded 180 days.
+ */
+export const backlogCleanupAnalyzerSchema = z.object({
+  areaPath: z.string().optional().default(() => cfg().azureDevOps.areaPath || '').describe("Area path to analyze for backlog cleanup (uses configured default if not provided)"),
+  stalenessThresholdDays: z.number().int("stalenessThresholdDays must be an integer").min(1, "stalenessThresholdDays must be at least 1").max(730, "stalenessThresholdDays cannot exceed 730 days (2 years)").optional().default(180).describe("Number of days without substantive change to consider a work item stale (default 180)"),
+  includeSubAreas: z.boolean().optional().default(true).describe("Include child area paths in analysis (default true)"),
+  includeQualityChecks: z.boolean().optional().default(true).describe("Check for missing descriptions, acceptance criteria, story points (default true)"),
+  includeMetadataChecks: z.boolean().optional().default(true).describe("Check for unassigned items, missing iterations, missing priorities (default true)"),
+  maxResults: z.number().int().min(1).max(2000).optional().default(500).describe("Maximum number of work items to analyze (default 500)"),
+  returnQueryHandle: z.boolean().optional().default(true).describe("Return query handle for identified issues to enable bulk remediation (default true)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
 });
 
 

@@ -3,6 +3,7 @@
  */
 
 import type { ToolExecutionResult } from '../types/index.js';
+import type { MCPServer, MCPServerLike } from '../types/mcp.js';
 import type { 
   WorkItemIntelligenceArgs,
   AIAssignmentAnalyzerArgs,
@@ -23,7 +24,7 @@ export class SamplingService {
   private sprintPlanningAnalyzer: SprintPlanningAnalyzer;
   private toolDiscoveryAnalyzer: ToolDiscoveryAnalyzer;
   
-  constructor(private server: any) {
+  constructor(private server: MCPServer | MCPServerLike) {
     this.workItemAnalyzer = new WorkItemIntelligenceAnalyzer(server);
     this.aiAssignmentAnalyzer = new AIAssignmentAnalyzer(server);
     this.personalWorkloadAnalyzer = new PersonalWorkloadAnalyzer(server);
