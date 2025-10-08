@@ -430,9 +430,9 @@ User: "Update the first 3 unassigned PBIs"
 
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
-  "IncludeFields": ["System.Title", "System.State"],
-  "MaxResults": 200
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "includeFields": ["System.Title", "System.State"],
+  "maxResults": 200
 }
 ```
 
@@ -491,9 +491,9 @@ User: "Update the first 3 unassigned PBIs"
 
 ```json
 {
-  "Title": "Fix login issue",
-  "WorkItemType": "Bug",
-  "AreaPath": "MyProject\\Backend",
+  "title": "Fix login issue",
+  "workItemType": "Bug",
+  "areaPath": "MyProject\\Backend",
   "AssignedTo": "john@example.com"
 }
 ```
@@ -505,9 +505,9 @@ User: "Update the first 3 unassigned PBIs"
 
 ```json
 {
-  "Title": "Implement user authentication",
-  "WorkItemType": "Task",
-  "RepositoryId": "abc-123"
+  "title": "Implement user authentication",
+  "workItemType": "Task",
+  "repositoryId": "abc-123"
 }
 ```
 
@@ -519,7 +519,7 @@ User: "Update the first 3 unassigned PBIs"
 ```json
 {
   "WorkItemId": 12345,
-  "RepositoryId": "abc-123"
+  "repositoryId": "abc-123"
 }
 ```
 
