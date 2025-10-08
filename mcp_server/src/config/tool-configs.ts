@@ -28,6 +28,7 @@ import {
   bulkAddAcceptanceCriteriaByQueryHandleSchema,
   generateWiqlQuerySchema,
   generateODataQuerySchema,
+  unifiedQueryGeneratorSchema,
   toolDiscoverySchema,
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
@@ -933,6 +934,27 @@ export const toolConfigs: ToolConfig[] = [
     }
   },
   {
+    name: "wit-generate-query",
+    description: "🤖 AI-POWERED UNIFIED QUERY GENERATOR: Intelligently generates either WIQL or OData queries based on your request. Analyzes query characteristics and automatically selects the optimal format (WIQL for hierarchies and lists, OData for analytics and aggregations). Includes iterative validation and can return query handles for safe bulk operations. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
+    script: "",
+    schema: unifiedQueryGeneratorSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        description: { type: "string", description: "Natural language description of query (e.g., 'Find all active bugs' or 'Count work items by state')" },
+        maxIterations: { type: "number", description: "Maximum attempts to generate valid query (1-5, default 3)" },
+        includeExamples: { type: "boolean", description: "Include example patterns in prompt (default true)" },
+        testQuery: { type: "boolean", description: "Test query by executing it (default true)" },
+        returnQueryHandle: { type: "boolean", description: "Execute query and return handle for bulk operations (prevents ID hallucination, default true)" },
+        maxResults: { type: "number", description: "Maximum work items to fetch when returnQueryHandle=true (1-1000, default 200)" },
+        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include when returnQueryHandle=true" },
+        areaPath: { type: "string", description: "Override default area path from config (automatically scopes queries to configured area)" },
+        iterationPath: { type: "string", description: "Override default iteration path from config" }
+      },
+      required: ["description"]
+    }
+  },
+  {
     name: "wit-discover-tools",
     description: "🤖 AI-POWERED TOOL DISCOVERY: Find the right tools for your task using natural language. Analyzes your intent and recommends the most appropriate tools from the MCP server with confidence scores, usage examples, and workflow guidance. Perfect when you're not sure which tool to use.",
     script: "",
@@ -1006,6 +1028,7 @@ export const AI_POWERED_TOOLS = [
   'wit-bulk-add-acceptance-criteria-by-query-handle',
   'wit-generate-wiql-query',
   'wit-generate-odata-query',
+  'wit-generate-query',
   'wit-discover-tools'
 ];
 

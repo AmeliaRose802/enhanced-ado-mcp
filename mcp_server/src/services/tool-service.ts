@@ -14,6 +14,7 @@ import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
 import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
 import { handleGenerateWiqlQuery } from './handlers/query/generate-wiql-query.handler.js';
 import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.handler.js';
+import { handleUnifiedQueryGenerator } from './handlers/query/unified-query-generator.js';
 
 // Query handle handlers
 import { handleValidateQueryHandle } from './handlers/query-handles/validate-query-handle.handler.js';
@@ -269,6 +270,14 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
       throw new Error("Server instance not available for sampling");
     }
     return await handleGenerateODataQuery(config, args, serverInstance);
+  }
+
+  // AI-powered unified query generator (intelligently chooses WIQL or OData)
+  if (name === 'wit-generate-query') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleUnifiedQueryGenerator(config, args, serverInstance);
   }
 
   // All tools should be handled by the cases above
