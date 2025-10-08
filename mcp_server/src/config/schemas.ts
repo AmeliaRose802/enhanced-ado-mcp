@@ -469,6 +469,36 @@ export const selectItemsFromQueryHandleSchema = z.object({
 });
 
 /**
+ * Unified query handle info schema - combines validate, inspect, and select functionality
+ * Default behavior matches inspect (basic query handle information)
+ * When detailed=true, includes validation and selection analysis capabilities
+ */
+export const queryHandleInfoSchema = z.object({
+  queryHandle: z.string().describe("Query handle to get information about (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"),
+  detailed: z.boolean().optional().default(false).describe("Include detailed validation data and selection analysis (default false for concise output)"),
+  includePreview: z.boolean().optional().default(true).describe("Include preview of first 10 work items with their context data"),
+  includeStats: z.boolean().optional().default(true).describe("Include staleness statistics and analysis metadata"),
+  includeExamples: z.boolean().optional().default(false).describe("Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)"),
+  // Optional parameters for item selection analysis (only used when detailed=true and itemSelector provided)
+  itemSelector: z.union([
+    z.literal("all"),
+    z.array(z.number()).max(100),
+    z.object({
+      states: z.array(z.string()).optional(),
+      titleContains: z.array(z.string()).optional(),
+      tags: z.array(z.string()).optional(),
+      daysInactiveMin: z.number().optional(),
+      daysInactiveMax: z.number().optional()
+    })
+  ]).optional().describe("Optional: When provided with detailed=true, also shows selection analysis for these items"),
+  previewCount: z.number().int().optional().default(10).describe("Number of items to preview in selection analysis (when itemSelector provided)"),
+  // Optional parameters for detailed validation (only used when detailed=true)
+  includeSampleItems: z.boolean().optional().default(false).describe("Fetch and include sample work items from ADO API when detailed=true (first 5 with titles and states)"),
+  organization: z.string().optional().default(() => cfg().azureDevOps.organization),
+  project: z.string().optional().default(() => cfg().azureDevOps.project)
+});
+
+/**
  * Schema for bulk intelligent description enhancement
  * Uses AI to generate improved descriptions for work items identified by query handle
  */
