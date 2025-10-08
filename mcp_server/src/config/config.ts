@@ -22,6 +22,28 @@ export const AZURE_DEVOPS_RESOURCE_ID = '499b84ac-1321-427f-aa17-267ca6975798';
 // TypeScript Interfaces
 // ============================================================================
 
+/**
+ * CLI arguments structure from yargs
+ * Represents the parsed command-line arguments passed to the server
+ * 
+ * Note: yargs includes additional properties (_: for positional args, $0: for script name, 
+ * and both kebab-case and camelCase versions of options). These are allowed via index signature.
+ */
+export interface CLIArguments {
+  /** Azure DevOps organization name (required positional argument) */
+  organization: string;
+  /** Azure DevOps project name (required positional argument) */
+  project: string;
+  /** Optional area path override (from --area-path or -a flag) */
+  areaPath?: string;
+  /** Optional GitHub Copilot user GUID (from --copilot-guid or -g flag) */
+  copilotGuid?: string;
+  /** Enable verbose logging (from --verbose or -v flag, default: false) */
+  verbose?: boolean;
+  /** Allow additional yargs properties like _, $0, kebab-case versions, etc. */
+  [key: string]: unknown;
+}
+
 export interface AzureDevOpsConfig {
   organization: string;
   project: string;
@@ -85,7 +107,7 @@ export type MCPServerConfigSchema = z.infer<typeof mcpServerConfigSchema>;
 // ============================================================================
 
 let cachedConfig: MCPServerConfig | null = null;
-let cliArgs: any = null;
+let cliArgs: CLIArguments | null = null;
 
 function formatConfigError(stage: string, details: string): Error {
   return new Error(`config:${stage}: ${details}`);
@@ -138,7 +160,7 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
   return cfg;
 }
 
-export function updateConfigFromCLI(args: any): void {
+export function updateConfigFromCLI(args: CLIArguments): void {
   cliArgs = args;
 }
 
