@@ -173,6 +173,46 @@ This PR has been created for GitHub Copilot coding agent to implement.
     Write-Host "PR #$prNumber : $prUrl" -ForegroundColor Cyan
     Write-Host ""
     
+    # Auto-approve any workflow runs that need approval
+    Write-Host "🔍 Checking for workflow runs needing approval..." -ForegroundColor Cyan
+    Start-Sleep -Seconds 5  # Give GitHub a moment to create workflow runs
+    
+    try {
+        # Get the PR head commit SHA
+        $prDetailsJson = gh api "/repos/$Owner/$Repo/pulls/$prNumber" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            $prDetails = $prDetailsJson | ConvertFrom-Json
+            $headSha = $prDetails.head.sha
+            
+            if ($headSha) {
+                # Get workflow runs for this commit
+                $workflowRunsJson = gh api "/repos/$Owner/$Repo/actions/runs?head_sha=$headSha" 2>$null
+                if ($LASTEXITCODE -eq 0) {
+                    $workflowRuns = ($workflowRunsJson | ConvertFrom-Json).workflow_runs
+                    
+                    foreach ($run in $workflowRuns) {
+                        if ($run.status -eq 'action_required' -or $run.status -eq 'waiting') {
+                            Write-Host "  🔓 Approving workflow run #$($run.id)..." -ForegroundColor Yellow
+                            
+                            $approveResult = gh api --method POST "/repos/$Owner/$Repo/actions/runs/$($run.id)/approve" 2>&1
+                            
+                            if ($LASTEXITCODE -eq 0) {
+                                Write-Host "  ✅ Workflow run approved" -ForegroundColor Green
+                            } else {
+                                Write-Host "  ⚠️  Could not auto-approve workflow. May need manual approval." -ForegroundColor Yellow
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    } catch {
+        Write-Verbose "Workflow approval check failed: $_"
+        Write-Host "  ℹ️  Workflow runs will be checked during monitoring" -ForegroundColor Gray
+    }
+    
+    Write-Host ""
+    
     # Provide instructions for Copilot assignment
     Write-Host "📋 NEXT STEPS:" -ForegroundColor Yellow
     Write-Host "1. Open PR in browser: $prUrl" -ForegroundColor White

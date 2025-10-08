@@ -456,18 +456,71 @@ gh auth status
 3. Manually assign GitHub Copilot as reviewer
 4. Or use GitHub Copilot chat: `@github assign copilot to pull AmeliaRose802/enhanced-ado-mcp#123`
 
+### Workflow Runs Need Approval
+
+**Problem:** CI checks show "Waiting for approval" or never start
+
+**Solution:**
+The monitoring script now automatically approves workflow runs for Copilot PRs. If you see this:
+```powershell
+# The Watch script will auto-approve, but you can also manually approve:
+gh api --method POST "/repos/AmeliaRose802/enhanced-ado-mcp/actions/runs/<RUN_ID>/approve"
+```
+
+The `Assign-To-Copilot.ps1` script also attempts to approve workflows immediately after PR creation.
+
+### Copilot Quota Errors
+
+**Problem:** Copilot encounters rate limit or quota errors
+
+**Solution:**
+The monitoring script now detects quota errors automatically and:
+1. Tracks the error detection time
+2. Waits 15 minutes for quota reset
+3. Posts a retry comment to Copilot automatically
+4. Continues monitoring
+
+You'll see output like:
+```
+⚠️  Quota/rate limit error detected
+⏳ Waiting for quota reset... (7.3/15 min)
+🔄 Quota wait time elapsed (15+ min), posting retry comment
+✅ Posted retry comment to PR #123
+```
+
+**Manual intervention:** If quota errors persist, consider:
+- Breaking the task into smaller pieces
+- Checking GitHub Copilot quota limits for your account
+- Retrying after a longer wait period
+
 ### CI Checks Failing
 
 **Problem:** Watch script shows CI failures
 
 **Solution:**
+The monitoring script now automatically posts a comment to Copilot asking to **fix the tests** (not bypass them). 
+
+The comment will ask Copilot to:
+1. Review test failure logs
+2. Identify root cause
+3. Fix the code to make tests pass
+4. Push fixes to the PR
+
+**What you'll see:**
+```
+⚠️  Detected 2 failed check(s)
+✅ Posted test failure fix request to PR #123
+```
+
+**Manual check:**
 ```powershell
 # View CI logs
 gh pr checks 123 --repo AmeliaRose802/enhanced-ado-mcp
 
 # Or visit PR URL to see detailed errors
-# Fix issues and push to PR branch, or close and recreate
 ```
+
+**Important:** Never bypass or skip failing tests. Always fix the root cause.
 
 ### Merge Conflicts
 
