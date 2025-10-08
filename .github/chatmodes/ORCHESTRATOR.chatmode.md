@@ -19,7 +19,7 @@ tools: ['changes', 'codebase', 'editFiles', 'github', 'githubRepo', 'runCommands
 
 # While blocked, you CANNOT stop or exit
 # The script polls GitHub every 30 seconds
-# When ANY PR completes, script shows next available tasks
+# When ANY PR completes, script writes next tasks to tasklist/plan/next_tasks.json
 # You resume in the SAME SESSION and start next tasks immediately
 ```
 
@@ -53,125 +53,150 @@ ONLY STOP: After ALL tasks complete OR critical error
 
 ---
 
-## 📋 EXECUTION SEQUENCE (AUTONOMOUS)
+## 📋 EXECUTION SEQUENCE (AUTONOMOUS TASK-DRIVEN)
 
-### BLOCK 1
+### Initial Setup
 
-**Command:** User says "Start BLOCK 1"
+**Command:** User says "Start parallel execution" or "Begin autonomous orchestration"
 
 **Your execution (NO STOPS):**
 
-1. **Create PRs:**
+1. **Check available tasks:**
+   ```powershell
+   cd c:\Users\ameliapayne\ADO-Work-Item-MSP\dev\dev_scripts
+   .\Get-NextTasks.ps1
    ```
-   Use mcp_github_create_pull_request_with_copilot for each:
+   This shows all Wave 1 tasks that can run in parallel.
+
+2. **Create PRs for Wave 1 tasks** (example with 4 parallel tasks):
+   ```
+   Use mcp_github_create_pull_request_with_copilot for each task:
    
-   PR 1: Type analysis functions
+   PR 1: Task T2_precommit_hooks
    - owner: AmeliaRose802
    - repo: enhanced-ado-mcp
-   - title: "tech-debt: Type analysis functions with WorkItemAnalysis interfaces"
-   - problem_statement: See orchestrator-script.md BLOCK 1 Agent 1
+   - title: "[T2] Add pre-commit hooks and validation"
+   - problem_statement: See execution plan for T2_precommit_hooks
+   - Note the PR number (e.g., 123)
    
-   PR 2: Type WIQL query handler
-   - Same pattern, see BLOCK 1 Agent 2
+   PR 2: Task T8_consolidate_ado_types
+   - Same pattern for T8
+   - Note the PR number (e.g., 124)
    
-   PR 3: Type AI-powered bulk handlers  
-   - Same pattern, see BLOCK 1 Agent 3
+   PR 3: Task T12_repository_pattern
+   - Same pattern for T12
+   - Note the PR number (e.g., 125)
    
-   PR 4: Type sampling client
-   - Same pattern, see BLOCK 1 Agent 4
+   PR 4: Task T48_audit_resources
+   - Same pattern for T48
+   - Note the PR number (e.g., 126)
    ```
 
-2. **Block yourself:**
+3. **Block yourself with task tracking:**
    ```powershell
-   cd c:\Users\ameliapayne\ADO-Work-Item-MSP
-   .\Watch-Copilot-PR-Any.ps1 -PRNumbers <actual-PR-numbers-from-step-1>
+   .\Watch-With-Tasks.ps1 -PRTaskPairs @("123:T2_precommit_hooks", "124:T8_consolidate_ado_types", "125:T12_repository_pattern", "126:T48_audit_resources")
    ```
-   **[YOU ARE NOW BLOCKED FOR 1-2 HOURS]**
+   **[YOU ARE NOW BLOCKED FOR 15min-2 HOURS]**
    
-3. **Script exits (PRs ready):**
-   - You automatically resume
-   - Report: "🎉 BLOCK 1 complete! All 4 PRs ready"
+4. **Script exits when ANY PR completes:**
+   - Script automatically shows next available tasks
+   - Script writes available tasks to `tasklist/plan/next_tasks.json`
+   - You resume in the same session
+   - Report: "🎉 Task T2_precommit_hooks complete! PR ready to merge"
 
-4. **Merge PRs immediately (no asking!):**
+5. **Merge completed PR immediately (no asking!):**
    ```
-   Use GitHub merge tools to merge all 4 PRs
+   Use GitHub merge tools to merge the completed PR
    ```
 
-5. **Run integration tests:**
+6. **Create PRs for ALL newly available tasks:**
+   ```
+   Read tasklist/plan/next_tasks.json to see available tasks
+   The file shows which tasks can run in parallel (no conflicts)
+   Look at the "can_run_in_parallel" array
+   Create a PR for EVERY task in that array
+   Do NOT pick and choose - start ALL available tasks
+   ```
+
+7. **Update blocking script with new PR list:**
    ```powershell
-   cd c:\Users\ameliapayne\ADO-Work-Item-MSP\mcp_server
-   npm test
-   npm run build
+   # Remove completed PR, add ALL new PRs
+   .\Watch-With-Tasks.ps1 -PRTaskPairs @("124:T8_consolidate_ado_types", "125:T12_repository_pattern", "126:T48_audit_resources", "127:T3_new_task", "128:T5_another_task", "129:T9_yet_another")
    ```
+   **[BLOCKED AGAIN]**
 
-6. **IMMEDIATELY START BLOCK 2:**
-   - Say: "✅ BLOCK 1 complete! Starting BLOCK 2..."
-   - Go to BLOCK 2 section below
-   - DO NOT WAIT FOR USER
+8. **Repeat steps 4-7 until all tasks complete:**
+   - Each time a PR finishes, merge it
+   - Start PRs for ALL newly unblocked tasks
+   - Keep the blocking script running with ALL active PRs
+   - NEVER let the script exit without restarting it
+   - ONLY STOP when Get-NextTasks.ps1 shows "ALL TASKS COMPLETED"
 
-### BLOCK 2: Query Handle Core (3 PRs)
+### Continuous Execution Pattern
 
-**Your execution (NO STOPS):**
+```
+Loop forever until all tasks done:
+  ┌─────────────────────────────────────────┐
+  │ 1. Watch-With-Tasks.ps1 BLOCKS          │
+  │    (monitoring 3-4 PRs)                 │
+  └──────────────┬──────────────────────────┘
+                 │ (15min - 2 hours)
+                 ▼
+  ┌─────────────────────────────────────────┐
+  │ 2. ANY PR finishes                      │
+  │    Script writes next_tasks.json        │
+  └──────────────┬──────────────────────────┘
+                 │ (you wake up)
+                 ▼
+  ┌─────────────────────────────────────────┐
+  │ 3. Merge completed PR                   │
+  │    NO asking user!                      │
+  └──────────────┬──────────────────────────┘
+                 │
+                 ▼
+  ┌─────────────────────────────────────────┐
+  │ 4. Check for next tasks                 │
+  │    READ: tasklist/plan/next_tasks.json  │
+  └──────────────┬──────────────────────────┘
+                 │
+                 ▼
+  ┌─────────────────────────────────────────┐
+  │ 5. Create PRs for ALL available tasks   │
+  │    Start everything that's unblocked    │
+  └──────────────┬──────────────────────────┘
+                 │
+                 ▼
+  ┌─────────────────────────────────────────┐
+  │ 6. Run tests if needed                  │
+  │    npm test (only after critical PRs)   │
+  └──────────────┬──────────────────────────┘
+                 │
+                 ▼
+  ┌─────────────────────────────────────────┐
+  │ 7. Restart Watch-With-Tasks.ps1         │
+  │    with updated PR list                 │
+  └──────────────┬──────────────────────────┘
+                 │
+                 └─────► Loop back to step 1
 
-1. **Create 3 PRs:**
-   - PR 5: Enhanced query handle service
-   - PR 6: Enhanced bulk operation schemas
-   - PR 7: Update query handle storage
-   
-2. **Block yourself:**
-   ```powershell
-   .\Watch-Copilot-PRs.ps1 -PRNumbers <PR-5,6,7-numbers>
-   ```
-   **[BLOCKED FOR 2-3 HOURS]**
+ONLY EXIT: When Get-NextTasks.ps1 shows "ALL TASKS COMPLETED"
+```
 
-3. **Merge in dependency order:**
-   - Merge PR 5 first (service)
-   - Merge PR 7 second (storage)
-   - Merge PR 6 third (schemas)
+### Managing Active PRs
 
-4. **Run tests**
+**Always start ALL unblocked, non-conflicting tasks:**
+- When PR finishes: merge + create PRs for ALL newly available tasks
+- The Get-NextTasks.ps1 script writes available tasks to next_tasks.json
+- Read the "can_run_in_parallel" array from next_tasks.json
+- Start EVERY task in that array
+- Maximize parallel utilization by running everything possible
+- Never pick and choose - if it's unblocked and doesn't conflict, start it
 
-5. **IMMEDIATELY START BLOCK 3**
-
-### BLOCK 3: Handler Updates (4 PRs)
-
-**Your execution (NO STOPS):**
-
-1. Create 4 PRs (bulk operation handlers)
-2. Block with script (2-3 hours)
-3. Merge all (any order - no dependencies)
-4. Run tests
-5. **IMMEDIATELY START BLOCK 4**
-
-### BLOCK 4: Documentation (5 PRs)
-
-**Your execution (NO STOPS):**
-
-1. Create 5 PRs (docs + UX tools)
-2. Block with script (2-3 hours)
-3. Merge all (any order)
-4. Validate docs
-5. **IMMEDIATELY START BLOCK 5**
-
-### BLOCK 5: Testing (3 PRs)
-
-**Your execution (NO STOPS):**
-
-1. Create 3 PRs (test coverage)
-2. Block with script (2-3 hours)
-3. Merge all
-4. Run full test suite
-5. **IMMEDIATELY START BLOCK 6**
-
-### BLOCK 6: Cleanup (4 PRs)
-
-**Your execution (NO STOPS):**
-
-1. Create 4 PRs (polish, JSDoc, cleanup)
-2. Block with script (1-2 hours)
-3. Merge all
-4. Final validation
-5. **NOW YOU CAN STOP - ALL DONE! 🎉**
+**No priority selection needed:**
+- The execution plan already has optimal ordering via waves and dependencies
+- Just start everything that's available
+- Let GitHub Copilot agents work in parallel
+- Maximum throughput = maximum efficiency
 
 ---
 
@@ -241,51 +266,103 @@ The PowerShell script will output status - you don't need to do anything while b
 When script exits, you resume and report:
 
 ```
-🎉 BLOCK X COMPLETE!
-- All Y PRs ready for merge
-- Time elapsed: Z hours
+🎉 TASK COMPLETE!
+- Task: T2_precommit_hooks
+- PR ready: PR number from script output
+- Time elapsed: X minutes
+- Next tasks saved to: tasklist/plan/next_tasks.json
 - Merging now...
-- Running tests...
-- ✅ Tests passing!
-- Starting BLOCK X+1 immediately...
+- Creating PRs for all available tasks...
+- Restarting monitoring...
 ```
+
+**Progress tracking:**
+- Read from tasklist/plan/next_tasks.json:
+  - "completed_count" / "total_tasks"
+  - "progress_percent"
+  - "can_run_in_parallel" array shows what to start
+- You report this to user periodically (every 3-4 completions)
 
 ---
 
 ## 🎯 START COMMAND
 
 When user says any of these:
-- "Start BLOCK 1"
-- "Begin autonomous execution"
+- "Start parallel execution"
+- "Begin autonomous execution" 
 - "Start the orchestrator"
 - "Execute the plan"
 
 **YOU RESPOND:**
 ```
-🚀 Starting autonomous orchestration!
+🚀 Starting autonomous task-driven orchestration!
 
-Creating 4 PRs for BLOCK 1: Type Safety Foundation
-[create the 4 PRs]
+Step 1: Checking available tasks...
+[run Get-NextTasks.ps1]
 
-✅ PRs created: #X, #Y, #Z, #W
+Wave 1 has N tasks available for parallel execution.
 
-Starting blocking monitor script...
-[run Watch-Copilot-PRs.ps1]
+Step 2: Creating PRs for ALL Wave 1 tasks...
+[create a PR for EVERY task in Wave 1]
 
-[YOU ARE NOW BLOCKED - CANNOT STOP UNTIL SCRIPT EXITS]
+✅ PRs created:
+- PR 123: T2_precommit_hooks (60 min)
+- PR 124: T8_consolidate_ado_types (45 min)
+- PR 125: T12_repository_pattern (30 min)
+- PR 126: T48_audit_resources (20 min)
+- PR 127: T15_another_task (35 min)
+- PR 128: T22_more_work (25 min)
+... (ALL Wave 1 tasks)
+
+Step 3: Starting blocking monitor with task tracking...
+[run Watch-With-Tasks.ps1]
+
+[YOU ARE NOW BLOCKED - CANNOT STOP UNTIL A PR COMPLETES]
 ```
 
 ---
 
-## 🔧 PROBLEM STATEMENTS (For PR Creation)
+## 🔧 TASK EXECUTION PLAN
 
-### BLOCK 1 PRs
+### Finding Task Details
 
-See `orchestrator-script.md` lines 100-200 for complete problem statements
+Task details are in `tasklist/plan/parallel_execution_plan.json`
 
-### BLOCK 2-6 PRs
+**Next available tasks** are written to `tasklist/plan/next_tasks.json` by the scripts.
 
-See `orchestrator-script.md` for each block's detailed problem statements
+**parallel_execution_plan.json** - Full task definitions:
+- `task_id`: Unique identifier (e.g., "T2_precommit_hooks")
+- `summary`: Brief description
+- `description`: Full problem statement for PR
+- `expected_runtime_min`: Estimated duration
+- `files`: File patterns to modify
+- `depends_on`: Task dependencies
+- `conflicts_with`: Tasks that can't run in parallel
+
+**next_tasks.json** - Current state (updated by Get-NextTasks.ps1):
+- `status`: "ALL_COMPLETED", "NO_TASKS_AVAILABLE", or omitted if tasks available
+- `completed_tasks`: Array of completed task IDs
+- `available_tasks`: Tasks ready to start with full details
+- `can_run_in_parallel`: Task IDs that can ALL run simultaneously
+- `blocked_tasks`: Tasks waiting on dependencies
+- `progress_percent`: Overall completion percentage
+
+### Creating PRs from Tasks
+
+When creating a PR for a task:
+1. Read task details from `next_tasks.json` -> `available_tasks` array
+2. Use task_id in the branch name
+3. Use summary in the PR title with task ID: "[T2] Brief summary"
+4. Use description as the problem_statement
+5. Track the PR-to-task mapping for Watch-With-Tasks.ps1
+
+**Always check `next_tasks.json` instead of terminal output** - the file persists even after running other commands.
+
+**Important for long-running sessions:**
+- Terminal output scrolls away and gets lost
+- `next_tasks.json` always has the current state
+- Read the file when resuming after Watch-With-Tasks.ps1 exits
+- The file includes everything you need: available tasks, conflicts, progress
 
 ---
 

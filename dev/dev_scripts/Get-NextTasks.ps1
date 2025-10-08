@@ -61,6 +61,7 @@ if ($CompletedTasks.Count -gt 0) {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent (Split-Path -Parent $scriptDir)
 $planFile = Join-Path $repoRoot "tasklist\plan\parallel_execution_plan.json"
+$outputFile = Join-Path $repoRoot "tasklist\plan\next_tasks.json"
 
 if (-not (Test-Path $planFile)) {
     Write-Error "Execution plan not found at: $planFile"
@@ -136,6 +137,11 @@ if ($allCompletedTasks.Count -eq 0) {
     
     Write-Host "`n💡 TIP: All Wave 1 tasks can run in parallel!" -ForegroundColor Yellow
     Write-Host "   Run multiple tasks simultaneously for maximum efficiency.`n"
+    
+    # Write to file for agent reference
+    $wave1Output | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+    Write-Host "📁 Next tasks written to: $outputFile`n" -ForegroundColor DarkGray
+    
     exit 0
 }
 
@@ -202,6 +208,21 @@ if ($availableTasks.Count -eq 0) {
         Write-Host "`n🎉 " -NoNewline -ForegroundColor Green
         Write-Host "ALL TASKS COMPLETED!" -ForegroundColor Green
         Write-Host "`nCongratulations! The entire task list has been finished.`n"
+        
+        # Write completion status to file
+        $totalTasks = $allTasks.Count
+        $completedData = @{
+            timestamp = (Get-Date -Format "o")
+            status = "ALL_COMPLETED"
+            completed_tasks = $allCompletedTasks
+            total_tasks = $totalTasks
+            completed_count = $totalTasks
+            progress_percent = 100
+            available_tasks = @()
+            can_run_in_parallel = @()
+        }
+        $completedData | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+        Write-Host "📁 Completion status written to: $outputFile`n" -ForegroundColor DarkGray
     }
     else {
         Write-Host "`n⏳ " -NoNewline -ForegroundColor Yellow
@@ -228,6 +249,38 @@ if ($availableTasks.Count -eq 0) {
             Write-Host "- blocks $($blocker.Value) task(s)" -ForegroundColor DarkGray
             Write-Host "    $($blockerTask.Summary)" -ForegroundColor Gray
         }
+        
+        # Write blocked status to file
+        $totalTasks = $allTasks.Count
+        $completedCount = $allCompletedTasks.Count
+        $progressPercent = [math]::Round(($completedCount / $totalTasks) * 100, 1)
+        
+        $blockedData = @{
+            timestamp = (Get-Date -Format "o")
+            status = "NO_TASKS_AVAILABLE"
+            completed_tasks = $allCompletedTasks
+            total_tasks = $totalTasks
+            completed_count = $completedCount
+            progress_percent = $progressPercent
+            available_tasks = @()
+            can_run_in_parallel = @()
+            blocked_tasks = $blockedTasks | ForEach-Object {
+                @{
+                    TaskId = $_.TaskId
+                    Summary = $_.Summary
+                    MissingDeps = $_.MissingDeps
+                    Wave = $_.Wave
+                }
+            }
+            top_blockers = $topBlockers | ForEach-Object {
+                @{
+                    TaskId = $_.Key
+                    BlocksCount = $_.Value
+                }
+            }
+        }
+        $blockedData | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+        Write-Host "`n📁 Status written to: $outputFile`n" -ForegroundColor DarkGray
     }
 }
 else {
@@ -333,6 +386,44 @@ else {
         }
         Write-Host ""
     }
+    
+    # Write detailed output to file for agent reference
+    $totalTasks = $allTasks.Count
+    $completedCount = $allCompletedTasks.Count
+    $progressPercent = [math]::Round(($completedCount / $totalTasks) * 100, 1)
+    
+    $outputData = @{
+        timestamp = (Get-Date -Format "o")
+        completed_tasks = $allCompletedTasks
+        available_tasks = $availableTasks | ForEach-Object {
+            @{
+                TaskId = $_.TaskId
+                Summary = $_.Summary
+                Description = $_.Description
+                RuntimeMin = $_.RuntimeMin
+                Wave = $_.Wave
+                ConflictsWith = $_.ConflictsWith
+                Files = $_.Files
+            }
+        }
+        total_tasks = $totalTasks
+        completed_count = $completedCount
+        progress_percent = $progressPercent
+        can_run_in_parallel = $canRunInParallel
+        blocked_tasks = $blockedTasks | ForEach-Object {
+            @{
+                TaskId = $_.TaskId
+                Summary = $_.Summary
+                MissingDeps = $_.MissingDeps
+                Wave = $_.Wave
+            }
+        }
+    }
+    
+    $outputData | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
+    Write-Host "📁 Next tasks written to: " -NoNewline -ForegroundColor DarkGray
+    Write-Host "$outputFile" -ForegroundColor Cyan
+    Write-Host ""
 }
 
 # Show blocked tasks if requested
