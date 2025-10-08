@@ -8,6 +8,7 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 
 interface WorkItemFromQuery {
   id: number;
@@ -46,12 +47,12 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-      throw new Error(azValidation.error || "Azure CLI validation failed");
+      return buildAzureCliErrorResponse(azValidation);
     }
 
     const parsed = config.schema.safeParse(args || {});
     if (!parsed.success) {
-      throw new Error(`Validation error: ${parsed.error.message}`);
+      return buildValidationErrorResponse(parsed.error, 'detect-patterns');
     }
 
     const {
@@ -93,7 +94,10 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
       });
       workItems = result.workItems;
     } else {
-      throw new Error('Either workItemIds or areaPath must be provided');
+      return buildErrorResponse(
+        'Either workItemIds or areaPath must be provided',
+        { source: 'detect-patterns' }
+      );
     }
 
     const matches: PatternMatch[] = [];
@@ -295,26 +299,18 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
       };
     }
 
-    return {
-      success: true,
-      data: responseData,
-      metadata: {
+    return buildSuccessResponse(
+      responseData,
+      {
         source: "detect-patterns",
-        itemsAnalyzed: workItems.length,
-        matchCount: matches.length,
-        format: format
-      },
-      errors: [],
-      warnings: []
-    };
+        matchCount: matches.length
+      }
+    );
   } catch (error) {
     logger.error('Detect patterns error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "detect-patterns" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: "detect-patterns" }
+    );
   }
 }

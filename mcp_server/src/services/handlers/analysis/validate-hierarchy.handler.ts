@@ -9,6 +9,7 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 
 interface ValidateHierarchyArgs {
   workItemIds?: number[];
@@ -112,12 +113,12 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-      throw new Error(azValidation.error || "Azure CLI validation failed");
+      return buildAzureCliErrorResponse(azValidation);
     }
 
     const parsed = config.schema.safeParse(args || {});
     if (!parsed.success) {
-      throw new Error(`Validation error: ${parsed.error.message}`);
+      return buildValidationErrorResponse(parsed.error, 'validate-hierarchy');
     }
 
     const {
@@ -157,7 +158,10 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       });
       workItems = result.workItems;
     } else {
-      throw new Error('Either workItemIds or areaPath must be provided');
+      return buildErrorResponse(
+        'Either workItemIds or areaPath must be provided',
+        { source: 'validate-hierarchy' }
+      );
     }
 
     logger.debug(`Analyzing ${workItems.length} work items for hierarchy violations`);
@@ -289,9 +293,8 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       warning: violations.filter(v => v.severity === 'warning')
     };
 
-    return {
-      success: true,
-      data: asToolData({
+    return buildSuccessResponse(
+      {
         summary: {
           totalItemsAnalyzed: workItems.length,
           totalViolations: violations.length,
@@ -312,24 +315,18 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
           validChildTypes: VALID_CHILD_TYPES,
           stateHierarchy: STATE_HIERARCHY
         }
-      }),
-      metadata: {
-        source: "validate-hierarchy",
-        itemsAnalyzed: workItems.length,
-        violationCount: violations.length
       },
-      errors: [],
-      warnings: violations.length > 0 ? [`Found ${violations.length} hierarchy violations`] : []
-    };
+      { 
+        source: "validate-hierarchy",
+        violationCount: violations.length
+      }
+    );
   } catch (error) {
     logger.error('Validate hierarchy error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "validate-hierarchy" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: "validate-hierarchy" }
+    );
   }
 }
 

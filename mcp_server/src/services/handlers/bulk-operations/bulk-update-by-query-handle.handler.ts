@@ -7,7 +7,7 @@
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -32,13 +32,14 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
     const queryData = queryHandleService.getQueryData(queryHandle);
     
     if (!selectedWorkItemIds || !queryData) {
-      return {
-        success: false,
-        data: null,
-        metadata: { source: "bulk-update-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
-        warnings: []
-      };
+      return buildNotFoundError(
+        'query-handle',
+        queryHandle,
+        {
+          source: "bulk-update-by-query-handle",
+          hint: 'Query handles expire after 1 hour.'
+        }
+      );
     }
 
     // Show selection information
@@ -95,9 +96,8 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
         ? `Showing ${previewLimit} of ${selectedCount} items...` 
         : undefined;
 
-      return {
-        success: true,
-        data: asToolData({
+      return buildSuccessResponse(
+        {
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -108,15 +108,12 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
           preview_items: previewItems,
           preview_message: previewMessage,
           summary
-        }),
-        metadata: { 
-          source: "bulk-update-by-query-handle",
-          dryRun: true,
-          itemSelector
         },
-        errors: [],
-        warnings: []
-      };
+        { 
+          source: "bulk-update-by-query-handle",
+          dryRun: true
+        }
+      );
     }
 
     // Execute bulk update operation
@@ -163,35 +160,36 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
       ? `${summary} (${failureCount} failed)` 
       : summary;
 
-    return {
-      success: failureCount === 0,
-      data: asToolData({
-        query_handle: queryHandle,
-        total_items_in_handle: totalItems,
-        selected_items: selectedCount,
-        item_selector: itemSelector,
-        successful: successCount,
-        failed: failureCount,
-        results,
-        summary: fullSummary
-      }),
-      metadata: {
-        source: "bulk-update-by-query-handle",
-        itemSelector
-      },
-      errors: failureCount > 0 
-        ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
-        : [],
-      warnings: []
+    const responseData = {
+      query_handle: queryHandle,
+      total_items_in_handle: totalItems,
+      selected_items: selectedCount,
+      item_selector: itemSelector,
+      successful: successCount,
+      failed: failureCount,
+      results,
+      summary: fullSummary
     };
+
+    if (failureCount > 0) {
+      return {
+        success: false,
+        data: responseData,
+        metadata: { source: "bulk-update-by-query-handle" },
+        errors: results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`),
+        warnings: []
+      };
+    }
+
+    return buildSuccessResponse(
+      responseData,
+      { source: "bulk-update-by-query-handle" }
+    );
   } catch (error) {
     logger.error('Bulk update by query handle error:', error);
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "bulk-update-by-query-handle" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(
+      error as Error,
+      { source: "bulk-update-by-query-handle" }
+    );
   }
 }
