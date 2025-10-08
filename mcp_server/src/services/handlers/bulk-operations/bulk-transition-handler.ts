@@ -308,7 +308,6 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
       try {
         const workItem = workItems.find(item => item.id === workItemId);
         const currentState = workItem?.fields['System.State'] || 'Unknown';
-        const workItemType = workItem?.fields['System.WorkItemType'] || 'Unknown';
 
         // Skip if already in target state
         if (currentState === targetState) {
