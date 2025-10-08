@@ -79,11 +79,12 @@ describe('Validate Query Handle Handler', () => {
 
     expect(result.success).toBe(true);
     expect(result.data).toBeDefined();
-    expect(result.data.valid).toBe(true);
-    expect(result.data.item_count).toBe(2);
-    expect(result.data.query_handle).toBe(handle);
-    expect(result.data.original_query).toBe(query);
-    expect(result.data.time_remaining_minutes).toBeGreaterThan(0);
+    const data = result.data as any;
+    expect(data.valid).toBe(true);
+    expect(data.item_count).toBe(2);
+    expect(data.query_handle).toBe(handle);
+    expect(data.original_query).toBe(query);
+    expect(data.time_remaining_minutes).toBeGreaterThan(0);
   });
 
   it('should return error for non-existent query handle', async () => {
@@ -126,7 +127,8 @@ describe('Validate Query Handle Handler', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.data.metadata).toEqual(metadata);
+    const data = result.data as any;
+    expect(data.metadata).toEqual(metadata);
   });
 
   it('should include sample items when requested', async () => {
@@ -142,8 +144,9 @@ describe('Validate Query Handle Handler', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.data.sample_items).toBeDefined();
-    expect(Array.isArray(result.data.sample_items)).toBe(true);
+    const data = result.data as any;
+    expect(data.sample_items).toBeDefined();
+    expect(Array.isArray(data.sample_items)).toBe(true);
   });
 
   it('should limit sample items to 5', async () => {
@@ -159,6 +162,7 @@ describe('Validate Query Handle Handler', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.data.sample_note).toContain('Showing first 5 of 8 items');
+    const data = result.data as any;
+    expect(data.sample_note).toContain('Showing first 5 of 8 items');
   });
 });
