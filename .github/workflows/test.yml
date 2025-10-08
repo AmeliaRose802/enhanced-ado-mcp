@@ -22,6 +22,21 @@ jobs:
         working-directory: ./mcp_server
         run: npm run lint
       
+      - name: Check code formatting
+        working-directory: ./mcp_server
+        run: |
+          npm run format:check || {
+            echo ""
+            echo "❌ Code formatting issues detected!"
+            echo ""
+            echo "💡 To fix formatting issues, run:"
+            echo "   cd mcp_server && npm run format"
+            echo ""
+            echo "This will auto-format all TypeScript files to match our Prettier configuration."
+            echo ""
+            exit 1
+          }
+      
       - name: Run tests
         working-directory: ./mcp_server
         run: npm test
