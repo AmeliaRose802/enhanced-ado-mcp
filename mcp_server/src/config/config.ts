@@ -40,6 +40,8 @@ export interface CLIArguments {
   copilotGuid?: string;
   /** Enable verbose logging (from --verbose or -v flag, default: false) */
   verbose?: boolean;
+  /** Allow browser auto-launch for authentication (from --auto-launch-browser flag, default: false) */
+  autoLaunchBrowser?: boolean;
   /** Allow additional yargs properties like _, $0, kebab-case versions, etc. */
   [key: string]: unknown;
 }
@@ -68,6 +70,7 @@ export interface MCPServerConfig {
   gitRepository: GitRepositoryConfig;
   gitHubCopilot: GitHubCopilotConfig;
   verboseLogging: boolean;
+  autoLaunchBrowser: boolean;
 }
 
 // ============================================================================
@@ -100,6 +103,7 @@ export const mcpServerConfigSchema = z.object({
   gitRepository: gitRepositoryConfigSchema,
   gitHubCopilot: gitHubCopilotConfigSchema,
   verboseLogging: z.boolean().default(false),
+  autoLaunchBrowser: z.boolean().default(false),
 });
 
 export type MCPServerConfigSchema = z.infer<typeof mcpServerConfigSchema>;
@@ -140,6 +144,7 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       ...(cliArgs.copilotGuid && { defaultGuid: cliArgs.copilotGuid }),
     },
     verboseLogging: cliArgs.verbose || false,
+    autoLaunchBrowser: cliArgs.autoLaunchBrowser || false,
   };
 
   // Validate and apply schema defaults
