@@ -3,6 +3,7 @@ import { buildSuccessResponse, buildNotFoundError, buildErrorResponse } from '..
 import { loadConfiguration } from '../../../config/config.js';
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
 import type { ADOWorkItem, ADOApiResponse } from '../../../types/ado.js';
+import type { ContextPackageArgs } from '../../../types/queries.js';
 
 interface CleanedFields {
   [key: string]: string | number | boolean | undefined;
@@ -71,27 +72,6 @@ function cleanFields(fields: Record<string, unknown>): CleanedFields {
   }
   
   return cleaned;
-}
-
-interface ContextPackageArgs {
-  workItemId: number;
-  organization?: string;
-  project?: string;
-  includeHistory?: boolean;
-  maxHistoryRevisions?: number;
-  includeComments?: boolean;
-  includeRelations?: boolean;
-  includeChildren?: boolean;
-  includeParent?: boolean;
-  includeLinkedPRsAndCommits?: boolean;
-  includeExtendedFields?: boolean;
-  includeHtml?: boolean;
-  includeHtmlFields?: boolean;
-  stripHtmlFormatting?: boolean;
-  maxChildDepth?: number;
-  maxRelatedItems?: number;
-  includeAttachments?: boolean;
-  includeTags?: boolean;
 }
 
 // Basic HTML to markdown/text simplifier (lightweight; not full fidelity)

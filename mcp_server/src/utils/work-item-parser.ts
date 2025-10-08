@@ -2,7 +2,7 @@
  * Work item data parsing utilities
  */
 
-import type { WorkItemHierarchyInfo } from '../services/sampling-types.js';
+import type { WorkItemHierarchyInfo } from '../types/analysis.js';
 
 /**
  * Escape area path for use in WIQL and OData queries
