@@ -7,19 +7,126 @@ import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableRespo
 import { extractJSON } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
-import type { ADOWorkItem } from '../../types/ado.js';
+import type { ADOWorkItem, ADOApiResponse } from '../../types/ado.js';
 
 /**
- * Get work item details from Azure DevOps
+ * Work item with enriched relationship context
  */
-async function getWorkItem(
+interface EnrichedWorkItem {
+  workItem: ADOWorkItem;
+  parent?: {
+    id: number;
+    title: string;
+    type: string;
+    state: string;
+  } | null;
+  children: Array<{
+    id: number;
+    title: string;
+    type: string;
+    state: string;
+  }>;
+  relatedLinks: Array<{
+    type: string;
+    url: string;
+  }>;
+}
+
+/**
+ * Get work item details from Azure DevOps with relationships
+ */
+async function getWorkItemWithContext(
   organization: string,
   project: string,
   workItemId: number
-): Promise<ADOWorkItem> {
+): Promise<EnrichedWorkItem> {
   const httpClient = createADOHttpClient(organization, project);
-  const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}`);
-  return response.data;
+  
+  // Fetch work item with all relationships expanded
+  const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}?$expand=all`);
+  const workItem = response.data;
+  
+  let parent: EnrichedWorkItem['parent'] = null;
+  const children: EnrichedWorkItem['children'] = [];
+  const relatedLinks: EnrichedWorkItem['relatedLinks'] = [];
+  
+  // Process relationships if they exist
+  if (workItem.relations) {
+    const parentIds: number[] = [];
+    const childIds: number[] = [];
+    
+    for (const rel of workItem.relations) {
+      const relType = rel.rel || '';
+      
+      if (relType === 'System.LinkTypes.Hierarchy-Reverse') {
+        // This is a parent link
+        const parentId = parseInt(rel.url.split('/').pop() || '0', 10);
+        if (parentId > 0) {
+          parentIds.push(parentId);
+        }
+      } else if (relType === 'System.LinkTypes.Hierarchy-Forward') {
+        // This is a child link
+        const childId = parseInt(rel.url.split('/').pop() || '0', 10);
+        if (childId > 0) {
+          childIds.push(childId);
+        }
+      } else if (relType.startsWith('System.LinkTypes')) {
+        // Other related links (Related, Predecessor, Successor, etc.)
+        relatedLinks.push({
+          type: relType.replace('System.LinkTypes.', ''),
+          url: rel.url
+        });
+      }
+    }
+    
+    // Fetch parent details if exists
+    if (parentIds.length > 0) {
+      try {
+        const parentResponse = await httpClient.get<ADOWorkItem>(
+          `wit/workitems/${parentIds[0]}?fields=System.Id,System.Title,System.WorkItemType,System.State`
+        );
+        const parentItem = parentResponse.data;
+        parent = {
+          id: parentItem.id,
+          title: parentItem.fields?.['System.Title'] || '',
+          type: parentItem.fields?.['System.WorkItemType'] || '',
+          state: parentItem.fields?.['System.State'] || ''
+        };
+      } catch (error) {
+        logger.warn(`Failed to fetch parent work item ${parentIds[0]}:`, error);
+      }
+    }
+    
+    // Fetch children details in batch
+    if (childIds.length > 0) {
+      try {
+        const childIdsParam = childIds.join(',');
+        const childrenResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+          `wit/workitems?ids=${childIdsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State`
+        );
+        
+        if (childrenResponse.data?.value) {
+          for (const childItem of childrenResponse.data.value) {
+            children.push({
+              id: childItem.id,
+              title: childItem.fields?.['System.Title'] || '',
+              type: childItem.fields?.['System.WorkItemType'] || '',
+              state: childItem.fields?.['System.State'] || ''
+            });
+          }
+        }
+      } catch (error) {
+        logger.warn(`Failed to fetch children work items:`, error);
+      }
+    }
+  }
+  
+  return {
+    workItem,
+    parent,
+    children,
+    relatedLinks
+  };
 }
 
 export class AIAssignmentAnalyzer {
@@ -35,14 +142,15 @@ export class AIAssignmentAnalyzer {
     }
 
     try {
-      // First, fetch the work item details from Azure DevOps
+      // First, fetch the work item details from Azure DevOps with full context
       const config = loadConfiguration();
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
       
-      logger.debug(`Fetching work item ${args.workItemId} for AI assignment analysis`);
+      logger.debug(`Fetching work item ${args.workItemId} with relationship context for AI assignment analysis`);
       
-      const workItem = await getWorkItem(org, project, args.workItemId);
+      const enrichedWorkItem = await getWorkItemWithContext(org, project, args.workItemId);
+      const workItem = enrichedWorkItem.workItem;
       
       if (!workItem || !workItem.fields) {
         return buildErrorResponse(`Work item ${args.workItemId} not found`, { source: 'work-item-not-found' });
@@ -58,6 +166,25 @@ export class AIAssignmentAnalyzer {
         );
       }
 
+      // Format parent information
+      const parentInfo = enrichedWorkItem.parent 
+        ? `${enrichedWorkItem.parent.id}: ${enrichedWorkItem.parent.title} (${enrichedWorkItem.parent.type}, ${enrichedWorkItem.parent.state})`
+        : 'None';
+
+      // Format children information
+      const childrenInfo = enrichedWorkItem.children.length > 0
+        ? enrichedWorkItem.children
+            .map(child => `${child.id}: ${child.title} (${child.type}, ${child.state})`)
+            .join('; ')
+        : 'None';
+
+      // Format related links information
+      const relatedLinksInfo = enrichedWorkItem.relatedLinks.length > 0
+        ? enrichedWorkItem.relatedLinks
+            .map(link => link.type)
+            .join(', ')
+        : 'None';
+
       // Extract relevant fields for analysis
       const analysisInput = {
         work_item_id: args.workItemId,
@@ -71,6 +198,10 @@ export class AIAssignmentAnalyzer {
         tags: workItem.fields['System.Tags'] || '',
         area_path: workItem.fields['System.AreaPath'] || '',
         iteration_path: workItem.fields['System.IterationPath'] || '',
+        parent: parentInfo,
+        children: childrenInfo,
+        children_count: enrichedWorkItem.children.length,
+        related_links: relatedLinksInfo,
         output_format: args.outputFormat || 'detailed'
       };
 
@@ -94,7 +225,11 @@ export class AIAssignmentAnalyzer {
       AREA_PATH: analysisInput.area_path || 'Not specified',
       ITERATION_PATH: analysisInput.iteration_path || 'Not specified',
       TAGS: analysisInput.tags || 'None',
-      ASSIGNED_TO: analysisInput.assigned_to || 'Unassigned'
+      ASSIGNED_TO: analysisInput.assigned_to || 'Unassigned',
+      PARENT_WORK_ITEM: analysisInput.parent || 'None',
+      CHILD_WORK_ITEMS: analysisInput.children || 'None',
+      CHILD_COUNT: String(analysisInput.children_count || 0),
+      RELATED_LINKS: analysisInput.related_links || 'None'
     };
 
     // Add timeout wrapper to prevent hanging
