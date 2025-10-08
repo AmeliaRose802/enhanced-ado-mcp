@@ -1,5 +1,5 @@
 /**
- * Tests for wit-list-query-handles pagination functionality
+ * Tests for wit-query-handle-list pagination functionality
  */
 
 import { queryHandleService } from '../services/query-handle-service.js';
@@ -129,11 +129,11 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleListQueryHandles(config, {});
@@ -154,11 +154,11 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleListQueryHandles(config, { top: 25, skip: 25 });
@@ -177,11 +177,11 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleListQueryHandles(config, {});
@@ -199,11 +199,11 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleListQueryHandles(config, { top: 20 });
@@ -219,11 +219,11 @@ describe('List Query Handles Pagination', () => {
       }
 
       const config = {
-        name: 'wit-list-query-handles',
+        name: 'wit-query-handle-list',
         schema: listQueryHandlesSchema,
         description: 'Test',
         script: '',
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleListQueryHandles(config, {});

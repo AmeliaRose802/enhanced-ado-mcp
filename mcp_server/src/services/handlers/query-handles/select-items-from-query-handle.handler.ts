@@ -1,15 +1,15 @@
 /**
- * Handler for wit-select-items-from-query-handle tool
+ * Handler for wit-query-handle-select tool
  * Helps users understand what items they can select from a query handle
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { buildValidationErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 /**
- * Handler for wit-select-items-from-query-handle tool
+ * Handler for wit-query-handle-select tool
  * Helps users understand what items they can select from a query handle
  */
 export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
@@ -84,13 +84,13 @@ export async function handleSelectItemsFromQueryHandle(config: ToolConfig, args:
 
     return {
       success: true,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         item_selector: itemSelector,
         selection_analysis: selectionAnalysis,
         preview_items: previewItems,
         selection_summary: `Selected ${selectedCount} items out of ${totalItems} total items using ${selectionAnalysis.selection_type} selection`
-      },
+      }),
       metadata: {
         source: "select-items-from-query-handle",
         queryHandle,

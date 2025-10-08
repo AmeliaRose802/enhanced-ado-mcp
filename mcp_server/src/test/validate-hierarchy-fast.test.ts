@@ -1,5 +1,5 @@
 /**
- * Tests for wit-validate-hierarchy-fast tool validation rules
+ * Tests for wit-analyze-hierarchy tool validation rules
  */
 
 describe('Hierarchy Validation Rules', () => {

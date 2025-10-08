@@ -17,8 +17,8 @@ async function testConfigurationTools() {
 
   try {
     // Test 1: Get configuration
-    console.log('1️⃣  Testing wit-get-configuration...');
-    const configResult = await executeTool('wit-get-configuration', { Section: 'all' });
+    console.log('1️⃣  Testing wit-get-config...');
+    const configResult = await executeTool('wit-get-config', { Section: 'all' });
     console.log('✅ Configuration tool result:', {
       success: configResult.success,
       hasData: !!configResult.data,
@@ -29,8 +29,8 @@ async function testConfigurationTools() {
     console.log();
 
     // Test 2: Get Azure DevOps section only
-    console.log('2️⃣  Testing wit-get-configuration with azureDevOps section...');
-    const adoConfigResult = await executeTool('wit-get-configuration', { 
+    console.log('2️⃣  Testing wit-get-config with azureDevOps section...');
+    const adoConfigResult = await executeTool('wit-get-config', { 
       Section: 'azureDevOps', 
       IncludeSensitive: true 
     });

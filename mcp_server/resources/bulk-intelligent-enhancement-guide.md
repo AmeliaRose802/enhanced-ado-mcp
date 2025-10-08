@@ -6,7 +6,7 @@ Three AI-powered tools for enhancing work items in bulk using query handles. All
 
 ## Tools
 
-### 1. wit-bulk-enhance-descriptions-by-query-handle
+### 1. wit-ai-bulk-enhance-descriptions
 **Purpose**: Generate AI-enhanced descriptions for work items
 
 **Key Parameters**:
@@ -26,13 +26,13 @@ Three AI-powered tools for enhancing work items in bulk using query handles. All
 **Example**:
 ```typescript
 // First, get items with missing descriptions
-const queryResult = await wit-get-work-items-by-query-wiql({
+const queryResult = await wit-query-wiql({
   wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.Description] = ''",
   returnQueryHandle: true
 });
 
 // Enhance descriptions (dry run first)
-const enhanceResult = await wit-bulk-enhance-descriptions-by-query-handle({
+const enhanceResult = await wit-ai-bulk-enhance-descriptions({
   queryHandle: queryResult.query_handle,
   itemSelector: 'all',
   sampleSize: 20,
@@ -42,7 +42,7 @@ const enhanceResult = await wit-bulk-enhance-descriptions-by-query-handle({
 });
 
 // Apply changes
-const finalResult = await wit-bulk-enhance-descriptions-by-query-handle({
+const finalResult = await wit-ai-bulk-enhance-descriptions({
   queryHandle: queryResult.query_handle,
   // ... same parameters
   dryRun: false  // Actually update
@@ -51,7 +51,7 @@ const finalResult = await wit-bulk-enhance-descriptions-by-query-handle({
 
 ---
 
-### 2. wit-bulk-assign-story-points-by-query-handle
+### 2. wit-ai-bulk-story-points
 **Purpose**: AI-powered story point estimation for work items
 
 **Key Parameters**:
@@ -83,7 +83,7 @@ const finalResult = await wit-bulk-enhance-descriptions-by-query-handle({
 **Example**:
 ```typescript
 // Get unestimated Product Backlog Items
-const queryResult = await wit-get-work-items-by-query-wiql({
+const queryResult = await wit-query-wiql({
   wiql: `SELECT [System.Id] FROM WorkItems 
          WHERE [System.WorkItemType] = 'Product Backlog Item' 
          AND [Microsoft.VSTS.Scheduling.Effort] = ''`,
@@ -91,7 +91,7 @@ const queryResult = await wit-get-work-items-by-query-wiql({
 });
 
 // Estimate using fibonacci scale (dry run)
-const estimateResult = await wit-bulk-assign-story-points-by-query-handle({
+const estimateResult = await wit-ai-bulk-story-points({
   queryHandle: queryResult.query_handle,
   itemSelector: 'all',
   pointScale: 'fibonacci',
@@ -100,7 +100,7 @@ const estimateResult = await wit-bulk-assign-story-points-by-query-handle({
 });
 
 // Review results, then apply
-const finalResult = await wit-bulk-assign-story-points-by-query-handle({
+const finalResult = await wit-ai-bulk-story-points({
   queryHandle: queryResult.query_handle,
   pointScale: 'fibonacci',
   onlyUnestimated: true,
@@ -110,7 +110,7 @@ const finalResult = await wit-bulk-assign-story-points-by-query-handle({
 
 ---
 
-### 3. wit-bulk-add-acceptance-criteria-by-query-handle
+### 3. wit-ai-bulk-acceptance-criteria
 **Purpose**: Generate testable acceptance criteria for work items
 
 **Key Parameters**:
@@ -155,7 +155,7 @@ So that I can correct my input before submitting
 **Example**:
 ```typescript
 // Find items missing acceptance criteria
-const queryResult = await wit-get-work-items-by-query-wiql({
+const queryResult = await wit-query-wiql({
   wiql: `SELECT [System.Id] FROM WorkItems 
          WHERE [System.WorkItemType] = 'User Story' 
          AND [Microsoft.VSTS.Common.AcceptanceCriteria] = ''`,
@@ -163,7 +163,7 @@ const queryResult = await wit-get-work-items-by-query-wiql({
 });
 
 // Generate criteria (dry run)
-const criteriaResult = await wit-bulk-add-acceptance-criteria-by-query-handle({
+const criteriaResult = await wit-ai-bulk-acceptance-criteria({
   queryHandle: queryResult.query_handle,
   itemSelector: 'all',
   criteriaFormat: 'gherkin',
@@ -174,7 +174,7 @@ const criteriaResult = await wit-bulk-add-acceptance-criteria-by-query-handle({
 });
 
 // Apply criteria
-const finalResult = await wit-bulk-add-acceptance-criteria-by-query-handle({
+const finalResult = await wit-ai-bulk-acceptance-criteria({
   queryHandle: queryResult.query_handle,
   criteriaFormat: 'gherkin',
   minCriteria: 3,
@@ -192,27 +192,27 @@ Enhance work items in stages with validation at each step:
 
 ```typescript
 // 1. Get items needing enhancement
-const items = await wit-get-work-items-by-query-wiql({
+const items = await wit-query-wiql({
   wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
   returnQueryHandle: true
 });
 
 // 2. Enhance descriptions first
-await wit-bulk-enhance-descriptions-by-query-handle({
+await wit-ai-bulk-enhance-descriptions({
   queryHandle: items.query_handle,
   enhancementStyle: 'detailed',
   dryRun: false
 });
 
 // 3. Add acceptance criteria
-await wit-bulk-add-acceptance-criteria-by-query-handle({
+await wit-ai-bulk-acceptance-criteria({
   queryHandle: items.query_handle,
   criteriaFormat: 'gherkin',
   dryRun: false
 });
 
 // 4. Estimate story points
-await wit-bulk-assign-story-points-by-query-handle({
+await wit-ai-bulk-story-points({
   queryHandle: items.query_handle,
   pointScale: 'fibonacci',
   dryRun: false
@@ -223,14 +223,14 @@ await wit-bulk-assign-story-points-by-query-handle({
 Use itemSelector to target specific items:
 
 ```typescript
-const items = await wit-get-work-items-by-query-wiql({
+const items = await wit-query-wiql({
   wiql: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] = 'MyProject\\Backend'",
   returnQueryHandle: true,
   includeSubstantiveChange: true
 });
 
 // Only enhance high-priority incomplete items
-await wit-bulk-enhance-descriptions-by-query-handle({
+await wit-ai-bulk-enhance-descriptions({
   queryHandle: items.query_handle,
   itemSelector: {
     states: ['New', 'Active'],
@@ -246,7 +246,7 @@ Always use dry run first to preview AI-generated content:
 
 ```typescript
 // Step 1: Dry run
-const preview = await wit-bulk-enhance-descriptions-by-query-handle({
+const preview = await wit-ai-bulk-enhance-descriptions({
   queryHandle: handle,
   dryRun: true
 });
@@ -255,7 +255,7 @@ const preview = await wit-bulk-enhance-descriptions-by-query-handle({
 console.log(preview.results);
 
 // Step 3: Apply if satisfied
-const final = await wit-bulk-enhance-descriptions-by-query-handle({
+const final = await wit-ai-bulk-enhance-descriptions({
   queryHandle: handle,
   dryRun: false
 });

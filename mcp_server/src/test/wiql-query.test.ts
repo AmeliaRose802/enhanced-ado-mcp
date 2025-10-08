@@ -5,22 +5,36 @@
 import { executeTool } from "../services/tool-service.js";
 import { logger } from "../utils/logger.js";
 
+// Type guard for result data
+type WiqlResultData = {
+  count?: number;
+  query?: string;
+  work_items?: Array<{ id: number; title: string; [key: string]: unknown }>;
+  pagination?: { total?: number; [key: string]: unknown };
+  [key: string]: unknown;
+};
+
+function asWiqlData(data: unknown): WiqlResultData {
+  return data as WiqlResultData;
+}
+
 async function testBasicWiqlQuery() {
   console.log("\n🧪 Testing basic WIQL query...");
   
   try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
     });
     
     if (result.success) {
       console.log("✅ Basic WIQL query succeeded");
-      console.log(`   Work Items Found: ${result.data?.count}`);
-      console.log(`   Query: ${result.data?.query}`);
+      const data = asWiqlData(result.data);
+      console.log(`   Work Items Found: ${data.count}`);
+      console.log(`   Query: ${data.query}`);
       console.log(`   Source: ${result.metadata?.source}`);
       
-      if (result.data?.work_items && result.data.work_items.length > 0) {
-        console.log(`   First Item: #${result.data.work_items[0].id} - ${result.data.work_items[0].title}`);
+      if (data.work_items && data.work_items.length > 0) {
+        console.log(`   First Item: #${data.work_items[0].id} - ${data.work_items[0].title}`);
       }
     } else {
       console.log("❌ Basic WIQL query failed");
@@ -40,7 +54,7 @@ async function testPagination() {
   
   try {
     // Get first page with top=5
-    const page1 = await executeTool("wit-get-work-items-by-query-wiql", {
+    const page1 = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 5,
       skip: 0
@@ -59,7 +73,7 @@ async function testPagination() {
     
     if (page1.data?.pagination?.hasMore) {
       // Get second page
-      const page2 = await executeTool("wit-get-work-items-by-query-wiql", {
+      const page2 = await executeTool("wit-query-wiql", {
         wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
         top: 5,
         skip: 5
@@ -103,7 +117,7 @@ async function testConditionalPagination() {
   try {
     // Test 1: Query with single result (totalCount <= top) - should omit pagination
     console.log("\n  Test 1: Single-page result without includePaginationDetails");
-    const singlePageResult = await executeTool("wit-get-work-items-by-query-wiql", {
+    const singlePageResult = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 200,
       skip: 0,
@@ -141,7 +155,7 @@ async function testConditionalPagination() {
     
     // Test 2: Query with includePaginationDetails=true - should always include pagination
     console.log("\n  Test 2: Result with includePaginationDetails=true");
-    const forcedPaginationResult = await executeTool("wit-get-work-items-by-query-wiql", {
+    const forcedPaginationResult = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 200,
       skip: 0,
@@ -168,7 +182,7 @@ async function testConditionalPagination() {
     
     // Test 3: Query with multi-page results - should include pagination
     console.log("\n  Test 3: Multi-page result (top=5)");
-    const multiPageResult = await executeTool("wit-get-work-items-by-query-wiql", {
+    const multiPageResult = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 5,
       skip: 0,

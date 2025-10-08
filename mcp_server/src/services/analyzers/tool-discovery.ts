@@ -5,7 +5,7 @@
  * Uses AI sampling to understand user intent and recommend the best tools.
  */
 
-import type { ToolExecutionResult } from '../../types/index.js';
+import { ToolExecutionResult, asToolData } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
@@ -33,6 +33,7 @@ interface ToolDiscoveryResult {
   recommendations: ToolRecommendation[];
   alternativeApproaches?: string[];
   warnings?: string[];
+  [key: string]: unknown; // Allow additional properties
 }
 
 export class ToolDiscoveryAnalyzer {
@@ -52,11 +53,11 @@ export class ToolDiscoveryAnalyzer {
           success: false,
           errors: ['AI sampling not available - tool discovery requires VS Code language model access'],
           warnings: ['Falling back to keyword-based matching'],
-          data: {
+          data: asToolData({
             originalIntent: args.intent,
             recommendations: this.fallbackRecommendations(args.intent),
             warnings: ['AI sampling not available - using basic keyword matching']
-          },
+          }),
           metadata: { intent: args.intent, fallbackMode: true }
         };
       }
@@ -102,7 +103,7 @@ export class ToolDiscoveryAnalyzer {
 
       return {
         success: true,
-        data: result,
+        data: asToolData(result),
         metadata: {
           intent: args.intent,
           toolsAnalyzed: availableTools.length,
@@ -238,7 +239,7 @@ ${JSON.stringify(toolList, null, 2)}
     // Simple keyword-based fallback
     if (lowerIntent.includes('create') || lowerIntent.includes('new')) {
       recommendations.push({
-        toolName: 'wit-create-new-item',
+        toolName: 'wit-create-item',
         confidence: 60,
         reasoning: 'Keyword match: intent contains "create" or "new"',
         requiredParameters: ['title'],
@@ -248,7 +249,7 @@ ${JSON.stringify(toolList, null, 2)}
 
     if (lowerIntent.includes('query') || lowerIntent.includes('search') || lowerIntent.includes('find')) {
       recommendations.push({
-        toolName: 'wit-get-work-items-by-query-wiql',
+        toolName: 'wit-query-wiql',
         confidence: 60,
         reasoning: 'Keyword match: intent contains query/search/find terms',
         requiredParameters: ['wiqlQuery'],
@@ -258,7 +259,7 @@ ${JSON.stringify(toolList, null, 2)}
 
     if (lowerIntent.includes('bulk') || lowerIntent.includes('multiple')) {
       recommendations.push({
-        toolName: 'wit-bulk-update-by-query-handle',
+        toolName: 'wit-bulk-update',
         confidence: 50,
         reasoning: 'Keyword match: intent suggests bulk operations',
         requiredParameters: ['queryHandle', 'updates'],
@@ -268,7 +269,7 @@ ${JSON.stringify(toolList, null, 2)}
 
     if (recommendations.length === 0) {
       recommendations.push({
-        toolName: 'wit-get-configuration',
+        toolName: 'wit-get-config',
         confidence: 30,
         reasoning: 'No clear match found - suggesting configuration tool to explore available options',
         requiredParameters: [],

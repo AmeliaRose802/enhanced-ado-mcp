@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `wit-generate-wiql-query` tool automatically uses the configured area path from your server configuration. You don't need to specify it in every tool call.
+The `wit-ai-generate-wiql` tool automatically uses the configured area path from your server configuration. You don't need to specify it in every tool call.
 
 ## How It Works
 

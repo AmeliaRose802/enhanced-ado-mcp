@@ -160,8 +160,8 @@ Based on typical work item analysis tasks:
 
 All AI-powered tools now use model preferences:
 
-1. ✅ `wit-intelligence-analyzer` - Work item quality analysis
-2. ✅ `wit-ai-assignment-analyzer` - AI suitability scoring
+1. ✅ `wit-ai-intelligence` - Work item quality analysis
+2. ✅ `wit-ai-assignment` - AI suitability scoring
 
 ## User Experience
 

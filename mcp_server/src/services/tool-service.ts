@@ -1,4 +1,4 @@
-import type { ToolExecutionResult } from "../types/index.js";
+import { ToolExecutionResult, asToolData } from "../types/index.js";
 import type { MCPServer, MCPServerLike } from "../types/mcp.js";
 import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
 import { logger } from "../utils/logger.js";
@@ -80,12 +80,12 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Get configuration information
-  if (name === 'wit-get-configuration') {
+  if (name === 'wit-get-config') {
     return await handleGetConfiguration(args);
   }
 
   // AI-powered intelligence analysis (uses sampling if available)
-  if (name === 'wit-intelligence-analyzer') {
+  if (name === 'wit-ai-intelligence') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -95,7 +95,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Enhanced AI assignment analysis (uses sampling if available)
-  if (name === 'wit-ai-assignment-analyzer') {
+  if (name === 'wit-ai-assignment') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -105,7 +105,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Personal workload analysis (uses sampling if available)
-  if (name === 'wit-personal-workload-analyzer') {
+  if (name === 'wit-ai-workload') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -115,7 +115,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Sprint planning analysis (uses sampling if available)
-  if (name === 'wit-sprint-planning-analyzer') {
+  if (name === 'wit-ai-sprint-planning') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -125,7 +125,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered tool discovery (uses sampling if available)
-  if (name === 'wit-discover-tools') {
+  if (name === 'wit-ai-discover-tools') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -135,37 +135,37 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Create work item using REST API (TypeScript implementation)
-  if (name === 'wit-create-new-item') {
+  if (name === 'wit-create-item') {
     return await handleCreateNewItem(config, args);
   }
 
   // Query work items using WIQL (Work Item Query Language)
-  if (name === 'wit-get-work-items-by-query-wiql') {
+  if (name === 'wit-query-wiql') {
     return await handleWiqlQuery(config, args);
   }
 
   // Query Analytics using OData for aggregations and metrics
-  if (name === 'wit-query-analytics-odata') {
+  if (name === 'wit-query-odata') {
     return await handleODataAnalytics(config, args);
   }
 
   // Full context package (single work item)
-  if (name === 'wit-get-work-item-context-package') {
+  if (name === 'wit-get-context') {
     return await handleGetWorkItemContextPackage(args as Parameters<typeof handleGetWorkItemContextPackage>[0]);
   }
 
   // Batch context package (graph of work items)
-  if (name === 'wit-get-work-items-context-batch') {
+  if (name === 'wit-get-context-batch') {
     return await handleGetWorkItemsContextBatch(args as Parameters<typeof handleGetWorkItemsContextBatch>[0]);
   }
 
   // Get last substantive change for a work item
-  if (name === 'wit-get-last-substantive-change') {
+  if (name === 'wit-get-last-change') {
     const { getLastSubstantiveChange } = await import('./handlers/analysis/get-last-substantive-change.handler.js');
     const result = await getLastSubstantiveChange(args as Parameters<typeof getLastSubstantiveChange>[0]);
     return { 
       success: true, 
-      data: result, 
+      data: asToolData(result), 
       metadata: { tool: name },
       errors: [],
       warnings: []
@@ -173,83 +173,83 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Assign work item to GitHub Copilot with branch link
-  if (name === 'wit-assign-to-copilot') {
+  if (name === 'wit-assign-copilot') {
     return await handleAssignToCopilot(config, args);
   }
 
   // Create work item and immediately assign to GitHub Copilot
-  if (name === 'wit-new-copilot-item') {
+  if (name === 'wit-create-copilot-item') {
     return await handleNewCopilotItem(config, args);
   }
 
   // Extract security instruction links from work item
-  if (name === 'wit-extract-security-links') {
+  if (name === 'wit-analyze-security') {
     return await handleExtractSecurityLinks(config, args);
   }
 
   // Detect common patterns and issues
-  if (name === 'wit-detect-patterns') {
+  if (name === 'wit-analyze-patterns') {
     return await handleDetectPatterns(config, args);
   }
 
   // Fast hierarchy validation (types and states)
-  if (name === 'wit-validate-hierarchy' || name === 'wit-validate-hierarchy-fast') {
+  if (name === 'wit-analyze-hierarchy') {
     return await handleValidateHierarchy(config, args);
   }
 
   // Bulk operations using query handles (eliminates ID hallucination)
-  if (name === 'wit-bulk-comment-by-query-handle') {
+  if (name === 'wit-bulk-comment') {
     return await handleBulkCommentByQueryHandle(config, args);
   }
 
-  if (name === 'wit-bulk-update-by-query-handle') {
+  if (name === 'wit-bulk-update') {
     return await handleBulkUpdateByQueryHandle(config, args);
   }
 
-  if (name === 'wit-bulk-assign-by-query-handle') {
+  if (name === 'wit-bulk-assign') {
     return await handleBulkAssignByQueryHandle(config, args);
   }
 
-  if (name === 'wit-bulk-remove-by-query-handle') {
+  if (name === 'wit-bulk-remove') {
     return await handleBulkRemoveByQueryHandle(config, args);
   }
 
-  if (name === 'wit-validate-query-handle') {
+  if (name === 'wit-query-handle-validate') {
     return await handleValidateQueryHandle(config, args);
   }
 
-  if (name === 'wit-analyze-by-query-handle') {
+  if (name === 'wit-analyze-items') {
     return await handleAnalyzeByQueryHandle(config, args);
   }
 
-  if (name === 'wit-list-query-handles') {
+  if (name === 'wit-query-handle-list') {
     return await handleListQueryHandles(config, args);
   }
 
-  if (name === 'wit-inspect-query-handle') {
+  if (name === 'wit-query-handle-inspect') {
     return await handleInspectQueryHandle(config, args);
   }
 
-  if (name === 'wit-select-items-from-query-handle') {
+  if (name === 'wit-query-handle-select') {
     return await handleSelectItemsFromQueryHandle(config, args);
   }
 
   // Bulk intelligent enhancement tools (AI-powered)
-  if (name === 'wit-bulk-enhance-descriptions-by-query-handle') {
+  if (name === 'wit-ai-bulk-enhance-descriptions') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkEnhanceDescriptions(config, args, serverInstance);
   }
 
-  if (name === 'wit-bulk-assign-story-points-by-query-handle') {
+  if (name === 'wit-ai-bulk-story-points') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkAssignStoryPoints(config, args, serverInstance);
   }
 
-  if (name === 'wit-bulk-add-acceptance-criteria-by-query-handle') {
+  if (name === 'wit-ai-bulk-acceptance-criteria') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -257,7 +257,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered WIQL query generator
-  if (name === 'wit-generate-wiql-query') {
+  if (name === 'wit-ai-generate-wiql') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -265,7 +265,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // AI-powered OData query generator
-  if (name === 'wit-generate-odata-query') {
+  if (name === 'wit-ai-generate-odata') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }

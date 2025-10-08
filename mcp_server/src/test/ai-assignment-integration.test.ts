@@ -1,7 +1,8 @@
 /**
- * Integration test for wit-ai-assignment-analyzer tool
+ * Integration test for wit-ai-assignment tool
  */
 import { executeTool, setServerInstance } from '../services/tool-service.js';
+import type { AIAssignmentResult } from '../types/analysis.js';
 
 // Mock server for testing
 const mockServer = {
@@ -36,7 +37,7 @@ GUARDRAILS:
 };
 
 async function testToolIntegration() {
-  console.log('🧪 Testing wit-ai-assignment-analyzer integration...');
+  console.log('🧪 Testing wit-ai-assignment integration...');
   
   // Set up the mock server instance
   setServerInstance(mockServer);
@@ -55,16 +56,17 @@ async function testToolIntegration() {
   };
 
   try {
-    const result = await executeTool('wit-ai-assignment-analyzer', testArgs);
+    const result = await executeTool('wit-ai-assignment', testArgs);
     
     console.log('✅ Tool integration test passed!');
     console.log('📊 Success:', result.success);
     console.log('📝 Data keys:', Object.keys(result.data || {}));
     
     if (result.success && result.data) {
-      console.log(`   Decision: ${result.data.decision}`);
-      console.log(`   Confidence: ${result.data.confidence}`);
-      console.log(`   Risk Score: ${result.data.riskScore}`);
+      const data = result.data as AIAssignmentResult;
+      console.log(`   Decision: ${data.decision}`);
+      console.log(`   Confidence: ${data.confidence}`);
+      console.log(`   Risk Score: ${data.riskScore}`);
     }
     
     return result;

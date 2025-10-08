@@ -28,11 +28,11 @@ jest.mock('../config/config.js', () => ({
 
 describe('Select Items From Query Handle Handler', () => {
   const mockConfig = {
-    name: 'wit-select-items-from-query-handle',
+    name: 'wit-query-handle-select',
     description: 'Test',
     script: '',
     schema: selectItemsFromQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

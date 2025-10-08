@@ -53,7 +53,7 @@ Identify and report (without mutating):
 
 ### Step 1: Generate WIQL Query with Query Handle
 
-Call `wit-generate-wiql-query` with `returnQueryHandle: true`:
+Call `wit-ai-generate-wiql` with `returnQueryHandle: true`:
 ```json
 {
   "description": "Get all active work items (Tasks, PBIs, Bugs) not in terminal states under {{area_path}}",
@@ -109,7 +109,7 @@ Calculate `daysInactive` for each item based on last substantive change (returne
 
 ## Query Generation Guidelines
 
-When calling `wit-generate-wiql-query`, provide clear natural language descriptions:
+When calling `wit-ai-generate-wiql`, provide clear natural language descriptions:
 
 ### Standard Analysis Query
 
@@ -372,7 +372,7 @@ Your output MUST include:
 
 **BEGIN ANALYSIS NOW:**
 
-1. Call `wit-generate-wiql-query` with a clear natural language description and `returnQueryHandle: true`
+1. Call `wit-ai-generate-wiql` with a clear natural language description and `returnQueryHandle: true`
 2. Use the returned query handle to call `ado_get_work_items_by_query_handle` with all required fields
 3. Calculate `daysInactive` from last substantive change for each item
 4. Categorize items according to the heuristics defined

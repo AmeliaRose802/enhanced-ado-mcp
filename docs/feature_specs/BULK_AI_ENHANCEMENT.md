@@ -10,9 +10,9 @@
 
 The Enhanced ADO MCP Server provides AI-powered bulk enhancement tools that use VS Code sampling to intelligently improve work items at scale:
 
-1. **wit-bulk-enhance-descriptions-by-query-handle** - Generate improved descriptions
-2. **wit-bulk-assign-story-points-by-query-handle** - Estimate effort with AI
-3. **wit-bulk-add-acceptance-criteria-by-query-handle** - Generate acceptance criteria
+1. **wit-ai-bulk-enhance-descriptions** - Generate improved descriptions
+2. **wit-ai-bulk-story-points** - Estimate effort with AI
+3. **wit-ai-bulk-acceptance-criteria** - Generate acceptance criteria
 
 These tools combine the safety of the query handle pattern with AI-powered content generation for efficient work item improvement.
 
@@ -28,14 +28,14 @@ Enable intelligent bulk work item enhancement with:
 
 ## Tools
 
-### 1. wit-bulk-enhance-descriptions-by-query-handle
+### 1. wit-ai-bulk-enhance-descriptions
 
 Use AI to generate improved descriptions for multiple work items.
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 
 **Optional:**
 - `itemSelector` - Selection criteria (see Query Handle Operations):
@@ -155,14 +155,14 @@ Replaces descriptions for 5 New/Active items with concise AI-generated content.
 ```
 Appends technical details to first 3 items, returns full generated text.
 
-### 2. wit-bulk-assign-story-points-by-query-handle
+### 2. wit-ai-bulk-story-points
 
 Use AI to estimate story points based on complexity analysis.
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 
 **Optional:**
 - `itemSelector` - Selection criteria
@@ -252,14 +252,14 @@ Use AI to estimate story points based on complexity analysis.
 ```
 Assigns T-shirt sizes (XS-XL) to 20 items.
 
-### 3. wit-bulk-add-acceptance-criteria-by-query-handle
+### 3. wit-ai-bulk-acceptance-criteria
 
 Use AI to generate acceptance criteria in multiple formats.
 
 #### Input Parameters
 
 **Required:**
-- `queryHandle` (string) - Query handle from wit-get-work-items-by-query-wiql
+- `queryHandle` (string) - Query handle from wit-query-wiql
 
 **Optional:**
 - `itemSelector` - Selection criteria
@@ -427,7 +427,7 @@ Requires VS Code Language Model API access. Uses defaults from `.ado-mcp-config.
 
 # Test description enhancement
 {
-  "tool": "wit-bulk-enhance-descriptions-by-query-handle",
+  "tool": "wit-ai-bulk-enhance-descriptions",
   "arguments": {
     "queryHandle": "qh_test...",
     "sampleSize": 3,

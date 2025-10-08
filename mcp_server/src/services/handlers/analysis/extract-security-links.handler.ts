@@ -1,9 +1,9 @@
 /**
- * Handler for wit-extract-security-links tool
+ * Handler for wit-analyze-security tool
  * Extracts instruction links from security scan work items
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { extractSecurityInstructionLinks } from "../../ado-work-item-service.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { logger } from "../../../utils/logger.js";
@@ -41,12 +41,12 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: unkno
     
     return {
       success: true,
-      data: result,
+      data: asToolData(result),
       errors: [],
       warnings: [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-extract-security-links'
+        tool: 'wit-analyze-security'
       }
     };
   } catch (error) {

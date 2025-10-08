@@ -3,7 +3,7 @@
  * Allows adding comments to multiple work items efficiently
  */
 
-import type { ToolConfig, ToolExecutionResult, BulkAddCommentsArgs, CommentItem } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData, BulkAddCommentsArgs, CommentItem } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { logger } from "../../../utils/logger.js";
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
@@ -49,7 +49,7 @@ async function addComment(
 export async function handleBulkAddComments(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
     // ⚠️ DEPRECATION WARNING: Manual ID input increases hallucination risk
-    logger.warn('⚠️ DEPRECATION: wit-bulk-add-comments accepts manual IDs which increases hallucination risk. Consider using wit-bulk-comment-by-query-handle with a query handle from wit-get-work-items-by-query-wiql instead.');
+    logger.warn('⚠️ DEPRECATION: wit-bulk-add-comments accepts manual IDs which increases hallucination risk. Consider using wit-bulk-comment with a query handle from wit-query-wiql instead.');
     
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -107,7 +107,7 @@ export async function handleBulkAddComments(config: ToolConfig, args: unknown): 
 
     return {
       success: successCount > 0,
-      data: {
+      data: asToolData({
         summary: {
           total: items.length,
           succeeded: successCount,
@@ -115,7 +115,7 @@ export async function handleBulkAddComments(config: ToolConfig, args: unknown): 
         },
         results: results,
         message: `Bulk comment addition complete. ${successCount} succeeded, ${failureCount} failed.`
-      },
+      }),
       metadata: { 
         source: "bulk-add-comments"
       },

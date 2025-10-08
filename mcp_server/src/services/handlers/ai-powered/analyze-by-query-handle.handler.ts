@@ -1,11 +1,11 @@
 /**
- * Handler for wit-analyze-by-query-handle tool
+ * Handler for wit-analyze-items tool
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { ADOWorkItem, ADOApiResponse } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
@@ -92,7 +92,7 @@ interface WorkItemAnalysis {
 }
 
 /**
- * Handler for wit-analyze-by-query-handle tool
+ * Handler for wit-analyze-items tool
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
@@ -265,7 +265,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
 
       return {
         success: true,
-        data: analysis,
+        data: asToolData(analysis),
         metadata: { source: "analyze-by-query-handle" },
         errors: [],
         warnings: workItemIds.length === 0 ? ["No work items found in query handle"] : []

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **WIQL Query Generator** (`wit-generate-wiql-query`) is an AI-powered tool that converts natural language descriptions into valid WIQL (Work Item Query Language) queries. It uses iterative refinement with automatic validation to ensure the generated queries work correctly.
+The **WIQL Query Generator** (`wit-ai-generate-wiql`) is an AI-powered tool that converts natural language descriptions into valid WIQL (Work Item Query Language) queries. It uses iterative refinement with automatic validation to ensure the generated queries work correctly.
 
 ## Why Use This Tool?
 
@@ -157,8 +157,8 @@ ORDER BY [System.WorkItemType], [System.Priority]
     "summary": "Query handle created for 42 work item(s). Use the handle with bulk operation tools...",
     "next_steps": [
       "Review the work_items array to see what will be affected",
-      "Use wit-bulk-comment-by-query-handle to add comments to all items",
-      "Use wit-bulk-update-by-query-handle to update fields on all items",
+      "Use wit-bulk-comment to add comments to all items",
+      "Use wit-bulk-update to update fields on all items",
       "Always use dryRun: true first to preview changes"
     ],
     "expires_at": "2025-01-20T11:00:00Z"
@@ -260,7 +260,7 @@ Returns just the query text with validation results.
 
 ### Step 2a: Use Generated Query Directly
 Copy the validated query from response and use it with:
-- `wit-get-work-items-by-query-wiql` - Execute the query
+- `wit-query-wiql` - Execute the query
 - Save to documentation for reuse
 - Modify and refine as needed
 
@@ -284,10 +284,10 @@ Returns query handle immediately for bulk operations - **this is the recommended
 ```
 
 Then use query handle with:
-- `wit-bulk-comment-by-query-handle` - Add comments
-- `wit-bulk-update-by-query-handle` - Update fields
-- `wit-bulk-assign-by-query-handle` - Reassign items
-- `wit-bulk-remove-by-query-handle` - Delete items
+- `wit-bulk-comment` - Add comments
+- `wit-bulk-update` - Update fields
+- `wit-bulk-assign` - Reassign items
+- `wit-bulk-remove` - Delete items
 
 ## Tips for Better Results
 

@@ -1,10 +1,10 @@
 /**
- * Handler for wit-bulk-add-acceptance-criteria-by-query-handle tool
+ * Handler for wit-ai-bulk-acceptance-criteria tool
  * 
  * Uses AI to generate acceptance criteria for multiple work items.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
@@ -29,7 +29,7 @@ interface CriteriaResult {
 }
 
 /**
- * Handler for wit-bulk-add-acceptance-criteria-by-query-handle tool
+ * Handler for wit-ai-bulk-acceptance-criteria tool
  * 
  * Uses AI to generate acceptance criteria for multiple work items identified by a query handle.
  * The AI generates testable, specific criteria in the requested format (Gherkin, checklist, or user story).
@@ -284,7 +284,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
@@ -315,7 +315,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
         summary: dryRun 
           ? `DRY RUN: Generated acceptance criteria for ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`
           : `Successfully added acceptance criteria to ${successCount} items (${skippedCount} skipped, ${failureCount} failed, ${lowConfidence} low confidence)`
-      },
+      }),
       metadata: {
         source: "bulk-add-acceptance-criteria",
         itemSelector,

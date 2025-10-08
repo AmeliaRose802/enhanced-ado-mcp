@@ -158,7 +158,7 @@ Agent: Uses pattern immediately
 ### 2. Agent Chooses Wrong Tool
 **Without Resources:**
 ```
-Agent: Uses wit-get-work-items-by-query-wiql for counts
+Agent: Uses wit-query-wiql for counts
 → Fetches 1000 items unnecessarily
 → Wastes tokens and time
 ```
@@ -167,7 +167,7 @@ Agent: Uses wit-get-work-items-by-query-wiql for counts
 ```
 Agent: Reads ado://docs/tool-selection-guide
 Agent: Sees "Use OData for counts/aggregations"
-Agent: Uses wit-query-analytics-odata instead
+Agent: Uses wit-query-odata instead
 → Efficient server-side aggregation
 ```
 

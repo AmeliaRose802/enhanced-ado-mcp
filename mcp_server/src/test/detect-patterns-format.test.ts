@@ -70,11 +70,11 @@ jest.mock('../utils/work-item-parser.js', () => ({
 
 describe('Detect Patterns - Format Options', () => {
   const config: ToolConfig = {
-    name: 'wit-detect-patterns',
+    name: 'wit-analyze-patterns',
     description: 'Test',
     script: 'test.ps1',
     schema: detectPatternsSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   const baseArgs = {

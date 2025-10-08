@@ -62,7 +62,7 @@ async function testWorkItemIntelligenceAnalyzer() {
   setServerInstance(mockServer);
   
   try {
-    const result1 = await executeTool("wit-intelligence-analyzer", {
+    const result1 = await executeTool("wit-ai-intelligence", {
       Title: "Implement user authentication",
       Description: "Add OAuth login functionality to the web application",
       WorkItemType: "Feature", 
@@ -80,7 +80,7 @@ async function testWorkItemIntelligenceAnalyzer() {
   // Test 2: AI readiness analysis  
   console.log("\n📋 Test 2: AI Readiness Analysis");
   try {
-    const result2 = await executeTool("wit-intelligence-analyzer", {
+    const result2 = await executeTool("wit-ai-intelligence", {
       Title: "Fix login bug", 
       Description: "Users can't log in on mobile devices",
       WorkItemType: "Bug",
@@ -95,7 +95,7 @@ async function testWorkItemIntelligenceAnalyzer() {
   // Test 3: Enhancement with minimal input
   console.log("\n🚀 Test 3: Enhancement Analysis");
   try {
-    const result3 = await executeTool("wit-intelligence-analyzer", {
+    const result3 = await executeTool("wit-ai-intelligence", {
       Title: "Update docs",
       AnalysisType: "enhancement"
     });
@@ -111,7 +111,7 @@ async function testWorkItemIntelligenceAnalyzer() {
   setServerInstance(mockServerNoSampling);
   
   try {
-    const result4 = await executeTool("wit-intelligence-analyzer", {
+    const result4 = await executeTool("wit-ai-intelligence", {
       Title: "Complex integration task", 
       Description: "Integrate payment system with multiple vendors",
       AnalysisType: "full"
@@ -129,7 +129,7 @@ async function testWorkItemIntelligenceAnalyzer() {
   setServerInstance(mockServer);
   
   try {
-    const result5 = await executeTool("wit-intelligence-analyzer", {
+    const result5 = await executeTool("wit-ai-intelligence", {
       Title: "Test item",
       AnalysisType: "invalid-type" as any
     });

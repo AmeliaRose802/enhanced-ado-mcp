@@ -16,7 +16,7 @@ This specification describes the AI-powered work item analysis features that lev
 
 ## Features
 
-### 1. Work Item Intelligence Analyzer (`wit-intelligence-analyzer`)
+### 1. Work Item Intelligence Analyzer (`wit-ai-intelligence`)
 
 **Purpose:** Comprehensive AI-powered analysis of work item quality and completeness
 
@@ -101,7 +101,7 @@ Key sections:
 
 ---
 
-### 2. AI Assignment Analyzer (`wit-ai-assignment-analyzer`)
+### 2. AI Assignment Analyzer (`wit-ai-assignment`)
 
 **Purpose:** Detailed analysis of work item suitability for AI agent assignment
 
@@ -328,7 +328,7 @@ if (!serverInstance) {
 ### Example 1: Analyze Work Item Quality
 
 ```typescript
-await executeTool('wit-intelligence-analyzer', {
+await executeTool('wit-ai-intelligence', {
   Title: "Implement user authentication",
   Description: "Add login functionality",
   AnalysisType: "full"
@@ -338,7 +338,7 @@ await executeTool('wit-intelligence-analyzer', {
 ### Example 2: Check AI Assignment Suitability
 
 ```typescript
-await executeTool('wit-ai-assignment-analyzer', {
+await executeTool('wit-ai-assignment', {
   Title: "Fix login button styling",
   Description: "Button is misaligned on mobile",
   WorkItemType: "Bug",

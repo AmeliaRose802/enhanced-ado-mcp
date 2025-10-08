@@ -1,11 +1,11 @@
 /**
- * Handler for wit-bulk-enhance-descriptions-by-query-handle tool
+ * Handler for wit-ai-bulk-enhance-descriptions tool
  * 
  * Uses AI to generate improved descriptions for multiple work items.
  * Processes items in batches using intelligent sampling.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
@@ -29,7 +29,7 @@ interface EnhancementResult {
 }
 
 /**
- * Handler for wit-bulk-enhance-descriptions-by-query-handle tool
+ * Handler for wit-ai-bulk-enhance-descriptions tool
  * 
  * Uses AI to generate improved descriptions for multiple work items.
  * The AI analyzes existing content (title, tags, current description) and generates
@@ -334,7 +334,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
@@ -352,7 +352,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} enhanced descriptions (${skippedCount} skipped, ${failureCount} failed)`
           : `Successfully enhanced ${successCount} descriptions (${skippedCount} skipped, ${failureCount} failed)`
-      },
+      }),
       metadata: {
         source: "bulk-enhance-descriptions",
         itemSelector,

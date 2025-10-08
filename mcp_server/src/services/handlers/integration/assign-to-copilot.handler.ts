@@ -1,5 +1,5 @@
 /**
- * Handler for wit-assign-to-copilot tool
+ * Handler for wit-assign-copilot tool
  * Assigns an existing work item to GitHub Copilot and adds branch link
  */
 
@@ -57,7 +57,7 @@ export async function handleAssignToCopilot(config: ToolConfig, args: unknown): 
       warnings: result.warnings || [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-assign-to-copilot'
+        tool: 'wit-assign-copilot'
       }
     };
   } catch (error) {

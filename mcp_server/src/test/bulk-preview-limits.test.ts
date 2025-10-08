@@ -69,11 +69,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -107,11 +107,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-remove-by-query-handle',
+        name: 'wit-bulk-remove',
         description: 'Test tool',
         script: '',
         schema: bulkRemoveByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkRemoveByQueryHandle(config, {
@@ -145,11 +145,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-update-by-query-handle',
+        name: 'wit-bulk-update',
         description: 'Test tool',
         script: '',
         schema: bulkUpdateByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkUpdateByQueryHandle(config, {
@@ -183,11 +183,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-comment-by-query-handle',
+        name: 'wit-bulk-comment',
         description: 'Test tool',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkCommentByQueryHandle(config, {
@@ -223,11 +223,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -262,11 +262,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -301,11 +301,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -342,11 +342,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -380,11 +380,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -418,11 +418,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -458,11 +458,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -503,11 +503,11 @@ describe('Bulk Operations Preview Limits', () => {
       );
 
       const config: ToolConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {

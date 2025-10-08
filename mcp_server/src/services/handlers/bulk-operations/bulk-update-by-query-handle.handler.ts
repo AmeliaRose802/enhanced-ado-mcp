@@ -1,11 +1,11 @@
 /**
- * Handler for wit-bulk-update-by-query-handle tool
+ * Handler for wit-bulk-update tool
  * 
  * Updates multiple work items identified by a query handle using JSON Patch operations.
  * This eliminates ID hallucination risk by using the stored query results.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -97,7 +97,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
 
       return {
         success: true,
-        data: {
+        data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
           total_items_in_handle: totalItems,
@@ -108,7 +108,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
           preview_items: previewItems,
           preview_message: previewMessage,
           summary
-        },
+        }),
         metadata: { 
           source: "bulk-update-by-query-handle",
           dryRun: true,
@@ -165,7 +165,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
@@ -174,7 +174,7 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
         failed: failureCount,
         results,
         summary: fullSummary
-      },
+      }),
       metadata: {
         source: "bulk-update-by-query-handle",
         itemSelector

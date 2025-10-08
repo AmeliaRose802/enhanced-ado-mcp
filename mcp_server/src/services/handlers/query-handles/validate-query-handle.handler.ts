@@ -1,5 +1,5 @@
 /**
- * Handler for wit-validate-query-handle tool
+ * Handler for wit-query-handle-validate tool
  * 
  * Validates a query handle and returns metadata about the stored query results.
  * Useful for checking if a handle is still valid before using it in bulk operations.

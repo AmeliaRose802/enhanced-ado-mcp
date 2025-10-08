@@ -1,5 +1,6 @@
 import { SamplingService } from '../services/sampling-service.js';
 import { AIAssignmentAnalyzerArgs } from '../services/sampling-service.js';
+import type { AIAssignmentResult } from '../types/analysis.js';
 
 /**
  * Test the new AI Assignment Analyzer tool
@@ -56,12 +57,13 @@ The task involves fixing a specific bug with clear reproduction steps and accept
     
     console.log('✅ AI Assignment Analysis completed successfully!');
     console.log('📊 Result:');
-    console.log(`   Decision: ${result.data.decision}`);
-    console.log(`   Confidence: ${result.data.confidence}`);
-    console.log(`   Risk Score: ${result.data.riskScore}`);
-    console.log(`   Files Estimate: ${result.data.estimatedScope.files.min}-${result.data.estimatedScope.files.max}`);
-    console.log(`   Complexity: ${result.data.estimatedScope.complexity}`);
-    console.log(`   Strategy: ${result.data.assignmentStrategy}`);
+    const data = result.data as AIAssignmentResult;
+    console.log(`   Decision: ${data.decision}`);
+    console.log(`   Confidence: ${data.confidence}`);
+    console.log(`   Risk Score: ${data.riskScore}`);
+    console.log(`   Files Estimate: ${data.estimatedScope.files.min}-${data.estimatedScope.files.max}`);
+    console.log(`   Complexity: ${data.estimatedScope.complexity}`);
+    console.log(`   Strategy: ${data.assignmentStrategy}`);
     
     return result;
   } catch (error) {

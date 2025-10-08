@@ -43,11 +43,11 @@ global.fetch = jest.fn();
 
 describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
   const mockConfig = {
-    name: 'wit-query-analytics-odata',
+    name: 'wit-query-odata',
     description: 'Test',
     script: '',
     schema: odataAnalyticsQuerySchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

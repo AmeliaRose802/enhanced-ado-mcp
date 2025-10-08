@@ -123,11 +123,11 @@ describe('Selection Integration Tests', () => {
       
       // 2. Inspect handle (validate preview functionality)
       const mockInspectConfig = {
-        name: 'wit-inspect-query-handle',
+        name: 'wit-query-handle-inspect',
         description: 'Test',
         script: '',
         schema: inspectQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const inspectResult = await handleInspectQueryHandle(mockInspectConfig, { 
@@ -140,11 +140,11 @@ describe('Selection Integration Tests', () => {
       
       // 3. Preview selection (critical bugs only)
       const mockSelectConfig = {
-        name: 'wit-select-items-from-query-handle',
+        name: 'wit-query-handle-select',
         description: 'Test',
         script: '',
         schema: selectItemsFromQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const previewResult = await handleSelectItemsFromQueryHandle(mockSelectConfig, {
@@ -160,11 +160,11 @@ describe('Selection Integration Tests', () => {
       
       // 4. Execute bulk comment with same selector (dry run)
       const mockCommentConfig = {
-        name: 'wit-bulk-comment-by-query-handle',
+        name: 'wit-bulk-comment',
         description: 'Test',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const commentResult = await handleBulkCommentByQueryHandle(mockCommentConfig, {
@@ -191,11 +191,11 @@ describe('Selection Integration Tests', () => {
       
       // Update that item (dry run)
       const mockUpdateConfig = {
-        name: 'wit-bulk-update-by-query-handle',
+        name: 'wit-bulk-update',
         description: 'Test',
         script: '',
         schema: bulkUpdateByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const updateResult = await handleBulkUpdateByQueryHandle(mockUpdateConfig, {
@@ -228,11 +228,11 @@ describe('Selection Integration Tests', () => {
       
       // Assign those items (dry run)
       const mockAssignConfig = {
-        name: 'wit-bulk-assign-by-query-handle',
+        name: 'wit-bulk-assign',
         description: 'Test',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const assignResult = await handleBulkAssignByQueryHandle(mockAssignConfig, {
@@ -278,11 +278,11 @@ describe('Selection Integration Tests', () => {
       
       // Bulk comment those items (dry run)
       const mockCommentConfig = {
-        name: 'wit-bulk-comment-by-query-handle',
+        name: 'wit-bulk-comment',
         description: 'Test',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const commentResult = await handleBulkCommentByQueryHandle(mockCommentConfig, {
@@ -326,11 +326,11 @@ describe('Selection Integration Tests', () => {
       
       // Comment on stale items (dry run)
       const mockCommentConfig = {
-        name: 'wit-bulk-comment-by-query-handle',
+        name: 'wit-bulk-comment',
         description: 'Test',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkCommentByQueryHandle(mockCommentConfig, {
@@ -366,11 +366,11 @@ describe('Selection Integration Tests', () => {
         const queryHandle = createTestQueryHandle(5);
         
         const mockCommentConfig = {
-          name: 'wit-bulk-comment-by-query-handle',
+          name: 'wit-bulk-comment',
           description: 'Test',
           script: '',
           schema: bulkCommentByQueryHandleSchema,
-          inputSchema: {}
+          inputSchema: { type: 'object' as const }
         };
 
         const result = await handleBulkCommentByQueryHandle(mockCommentConfig, {

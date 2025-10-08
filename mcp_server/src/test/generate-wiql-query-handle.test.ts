@@ -54,11 +54,11 @@ const mockQueryWorkItemsByWiql = queryWorkItemsByWiql as jest.MockedFunction<typ
 
 describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
   const mockConfig = {
-    name: 'wit-generate-wiql-query',
+    name: 'wit-ai-generate-wiql',
     description: 'Test',
     script: '',
     schema: generateWiqlQuerySchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   const mockServerInstance = {

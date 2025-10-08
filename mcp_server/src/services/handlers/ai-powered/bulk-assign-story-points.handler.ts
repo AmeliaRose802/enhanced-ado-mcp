@@ -1,10 +1,10 @@
 /**
- * Handler for wit-bulk-assign-story-points-by-query-handle tool
+ * Handler for wit-ai-bulk-story-points tool
  * 
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
@@ -30,7 +30,7 @@ interface EstimationResult {
 }
 
 /**
- * Handler for wit-bulk-assign-story-points-by-query-handle tool
+ * Handler for wit-ai-bulk-story-points tool
  * 
  * Uses AI to estimate story points for multiple work items based on complexity and scope.
  * The AI analyzes work item details including title, description, and acceptance criteria
@@ -305,7 +305,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
 
     return {
       success: failureCount === 0,
-      data: {
+      data: asToolData({
         query_handle: queryHandle,
         total_items_in_handle: totalItems,
         selected_items: selectedCount,
@@ -334,7 +334,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
         summary: dryRun 
           ? `DRY RUN: Generated ${successCount} story point estimates (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`
           : `Successfully estimated ${successCount} story points (${skippedCount} skipped, ${failureCount} failed, ${needsDecomposition} need decomposition)`
-      },
+      }),
       metadata: {
         source: "bulk-assign-story-points",
         itemSelector,
