@@ -192,7 +192,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Fast hierarchy validation (types and states)
-  if (name === 'wit-validate-hierarchy-fast') {
+  if (name === 'wit-validate-hierarchy' || name === 'wit-validate-hierarchy-fast') {
     return await handleValidateHierarchy(config, args);
   }
 
