@@ -54,7 +54,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       testQuery = true,
       areaPath,
       iterationPath,
-      returnQueryHandle = false,
+      returnQueryHandle = true,
       maxResults = 200,
       includeFields = []
     } = parsed.data as GenerateODataQueryArgs;
