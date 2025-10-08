@@ -69,7 +69,7 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
     jest.clearAllMocks();
   });
 
-  describe('when returnQueryHandle is false (default)', () => {
+  describe('when returnQueryHandle is false (opt-out)', () => {
     it('should return only the generated query without creating a handle', async () => {
       // Mock AI response
       mockSamplingClient.createMessage.mockResolvedValueOnce({
@@ -105,7 +105,67 @@ describe('Generate OData Query Handler - returnQueryHandle parameter', () => {
     });
   });
 
-  describe('when returnQueryHandle is true', () => {
+  describe('when returnQueryHandle is true (default)', () => {
+    it('should create a query handle by default when returnQueryHandle is not specified', async () => {
+      // Mock AI response
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
+        content: [{ type: 'text', text: '$filter=State eq \'Active\'' }],
+        usage: { inputTokens: 100, outputTokens: 50 }
+      });
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('$filter=State eq \'Active\'');
+
+      // Mock query validation (first call)
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          value: [{ WorkItemId: 789, Title: 'Default Test' }],
+          '@odata.count': 1
+        })
+      });
+
+      // Mock query execution for handle creation (second call)
+      const mockWorkItems = [
+        {
+          WorkItemId: 789,
+          Title: 'Test Item (Default)',
+          State: 'Active',
+          WorkItemType: 'Task',
+          CreatedDate: '2025-01-01',
+          ChangedDate: '2025-01-02',
+          AreaPath: 'Test\\Area',
+          IterationPath: 'Sprint 1',
+          Tags: 'test'
+        }
+      ];
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          value: mockWorkItems,
+          '@odata.count': 1
+        })
+      });
+
+      const result = await handleGenerateODataQuery(
+        mockConfig,
+        {
+          description: 'Find all active work items',
+          organization: 'test-org',
+          project: 'test-project'
+          // returnQueryHandle not specified - should default to true
+        },
+        mockServerInstance
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.data.query_handle).toBeDefined();
+      expect(result.data.query_handle).toMatch(/^qh_/);
+      expect(result.data.work_items).toBeDefined();
+      expect(result.data.work_items).toHaveLength(1);
+      expect(result.data.work_item_count).toBe(1);
+      expect(result.metadata.queryHandleMode).toBe(true);
+    });
+
     it('should create a query handle and return work items', async () => {
       // Mock AI response
       mockSamplingClient.createMessage.mockResolvedValueOnce({
