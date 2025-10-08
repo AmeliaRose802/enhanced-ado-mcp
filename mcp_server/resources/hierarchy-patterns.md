@@ -57,18 +57,18 @@ async function buildHierarchy(parentId) {
 ### Step 1: Get Root Items
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
-  "IncludeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
-  "MaxResults": 100
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
+  "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
+  "maxResults": 100
 }
 ```
 
 ### Step 2: For Each Root, Get Children
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = ${rootId}",
-  "IncludeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
-  "MaxResults": 200
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = ${rootId}",
+  "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
+  "maxResults": 200
 }
 ```
 
@@ -174,7 +174,7 @@ MODE (Recursive)
 ### 1. Always Include Essential Fields
 ```json
 {
-  "IncludeFields": [
+  "includeFields": [
     "System.Title",
     "System.State",
     "System.WorkItemType",

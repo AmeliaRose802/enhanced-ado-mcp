@@ -98,6 +98,24 @@ const resourceDefinitions: MCPResource[] = [
     mimeType: "text/markdown"
   },
   {
+    uri: "ado://docs/bulk-intelligent-enhancement-guide",
+    name: "Bulk Intelligent Enhancement Guide",
+    description: "AI-powered bulk enhancement tools for work items. Includes bulk description enhancement, story point estimation, and acceptance criteria generation with complete workflow patterns and safety features.",
+    mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/handle-first-analysis-guide",
+    name: "Handle-First Analysis Workflows Guide",
+    description: "Query handle patterns for safe analysis workflows. Provides explicit handle-first patterns for common analysis scenarios to prevent ID hallucination with complete workflow examples.",
+    mimeType: "text/markdown"
+  },
+  {
+    uri: "ado://docs/tool-discovery-guide",
+    name: "Tool Discovery Guide",
+    description: "AI-powered tool discovery for finding the right tools using natural language. Includes confidence scoring, workflow recommendations, and usage examples for discovering MCP server capabilities.",
+    mimeType: "text/markdown"
+  },
+  {
     uri: "ado://docs/wiql-generator-guide",
     name: "WIQL Generator Guide - AI-Powered Query Creation",
     description: "Guide to generating WIQL queries from natural language using AI. Includes examples, patterns, and best practices for query generation.",
@@ -148,6 +166,9 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     "ado://docs/common-workflows": "common-workflows.md",
     "ado://docs/tool-selection-guide": "tool-selection-guide.md",
     "ado://docs/query-handle-pattern": "query-handle-pattern.md",
+    "ado://docs/bulk-intelligent-enhancement-guide": "bulk-intelligent-enhancement-guide.md",
+    "ado://docs/handle-first-analysis-guide": "handle-first-analysis-guide.md",
+    "ado://docs/tool-discovery-guide": "tool-discovery-guide.md",
     "ado://docs/wiql-generator-guide": "wiql-generator-guide.md",
     "ado://docs/personal-workload-analyzer-guide": "personal-workload-analyzer-guide.md",
     "ado://docs/sprint-planning-guide": "sprint-planning-guide.md",

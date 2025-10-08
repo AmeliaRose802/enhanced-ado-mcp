@@ -273,8 +273,12 @@ resources/
 ├── tool-selection-guide.md
 ├── query-handle-pattern.md
 ├── bulk-intelligent-enhancement-guide.md
-├── tool-limitations.md
-└── ... (other guides)
+├── handle-first-analysis-guide.md
+├── tool-discovery-guide.md
+├── wiql-generator-guide.md
+├── personal-workload-analyzer-guide.md
+├── sprint-planning-guide.md
+└── tool-limitations.md
 ```
 
 ## Benefits for AI Agents

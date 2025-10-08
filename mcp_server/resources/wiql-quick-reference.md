@@ -167,14 +167,14 @@ ORDER BY [System.Priority], [System.WorkItemType]
 
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
-  "IncludeFields": [
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
+  "includeFields": [
     "System.Title",
     "System.State", 
     "System.WorkItemType",
     "System.Parent"
   ],
-  "MaxResults": 200
+  "maxResults": 200
 }
 ```
 
@@ -185,16 +185,16 @@ Filter results by last **meaningful** change (excludes automated updates like it
 ### Find Stale Items (Inactive 6+ Months)
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "FilterByDaysInactiveMin": 180,
-  "MaxResults": 500
+  "maxResults": 500
 }
 ```
 
 ### Find Recently Active Items (Last 30 Days)
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "FilterByDaysInactiveMax": 30
 }
 ```
@@ -202,7 +202,7 @@ Filter results by last **meaningful** change (excludes automated updates like it
 ### Filter by Specific Date
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "FilterBySubstantiveChangeAfter": "2024-10-01T00:00:00Z",
   "FilterBySubstantiveChangeBefore": "2024-12-31T23:59:59Z"
 }
@@ -231,7 +231,7 @@ Find incomplete work items that need documentation or refinement:
 ### Find Items Missing Description
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
   "FilterByMissingDescription": true
 }
 ```
@@ -239,7 +239,7 @@ Find incomplete work items that need documentation or refinement:
 ### Find Items Missing Acceptance Criteria
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature')",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature')",
   "FilterByMissingAcceptanceCriteria": true
 }
 ```
@@ -247,7 +247,7 @@ Find incomplete work items that need documentation or refinement:
 ### Find Items Missing Both
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "FilterByMissingDescription": true,
   "FilterByMissingAcceptanceCriteria": true
 }
@@ -267,7 +267,7 @@ Find incomplete work items that need documentation or refinement:
 **Combine with staleness filters:**
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "FilterByMissingDescription": true,
   "FilterByDaysInactiveMin": 90
 }
@@ -279,7 +279,7 @@ Use `skip` and `top` parameters for pagination:
 
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "top": 50,
   "skip": 0
 }
@@ -292,7 +292,7 @@ Use `skip` and `top` parameters for pagination:
 **Example: Get page 2:**
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "top": 50,
   "skip": 50
 }
@@ -304,7 +304,7 @@ Use `skip` and `top` parameters for pagination:
 
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   "top": 10,
   "fetchFullPackages": true
 }
@@ -334,7 +334,7 @@ When `fetchFullPackages: true`, each work item includes:
 
 ```json
 {
-  "WiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.Priority] = 1 AND [System.State] = 'Active'",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.Priority] = 1 AND [System.State] = 'Active'",
   "top": 20,
   "fetchFullPackages": true,
   "returnQueryHandle": true

@@ -273,7 +273,7 @@ itemSelector: {
 
 1. **Query** - Get work items with WIQL:
    ```
-   wit-query-wiql with returnQueryHandle: true
+   wit-get-work-items-by-query-wiql with returnQueryHandle: true
    Result: queryHandle "qh_abc123"
    ```
 
@@ -304,7 +304,7 @@ itemSelector: {
 ❌ **DO NOT extract IDs manually:**
 ```
 // WRONG - causes hallucination
-queryResult = wit-query-wiql(...)
+queryResult = wit-get-work-items-by-query-wiql(...)
 manualIds = [123, 456, 789]  // AI might hallucinate these
 wit-bulk-comment(workItemIds: manualIds, ...)
 ```
@@ -312,7 +312,7 @@ wit-bulk-comment(workItemIds: manualIds, ...)
 ✅ **DO use query handles:**
 ```
 // CORRECT - validated selection
-queryHandle = wit-query-wiql(returnQueryHandle: true)
+queryHandle = wit-get-work-items-by-query-wiql(returnQueryHandle: true)
 wit-bulk-comment-by-query-handle(queryHandle, itemSelector: "all")
 ```
 
