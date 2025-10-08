@@ -87,6 +87,27 @@ export const ErrorCode = {
 export type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode];
 
 /**
+ * Error context data
+ * Contains debugging information about the operation that failed
+ */
+export interface ErrorContext {
+  /** Operation being performed */
+  operation?: string;
+  /** Work item ID if applicable */
+  workItemId?: number;
+  /** Organization name */
+  organization?: string;
+  /** Project name */
+  project?: string;
+  /** Query handle if applicable */
+  queryHandle?: string;
+  /** Tool name */
+  tool?: string;
+  /** Additional context fields */
+  [key: string]: string | number | boolean | undefined | null;
+}
+
+/**
  * Metadata for categorized errors
  */
 export interface ErrorMetadata {
@@ -100,7 +121,7 @@ export interface ErrorMetadata {
   originalError?: string;
   
   /** Additional context for debugging */
-  context?: Record<string, any>;
+  context?: ErrorContext;
   
   /** Timestamp when error occurred */
   timestamp?: string;
@@ -129,7 +150,7 @@ export interface CategorizedError {
 export function createErrorMetadata(
   category: ErrorCategory,
   code?: ErrorCodeType,
-  context?: Record<string, any>
+  context?: ErrorContext
 ): ErrorMetadata {
   return {
     category,

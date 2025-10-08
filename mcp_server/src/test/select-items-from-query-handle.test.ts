@@ -32,7 +32,7 @@ describe('Select Items From Query Handle Handler', () => {
     description: 'Test',
     script: '',
     schema: selectItemsFromQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

@@ -37,7 +37,7 @@ describe('Bulk Assign By Query Handle Handler', () => {
     description: 'Test tool',
     script: '',
     schema: bulkAssignByQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

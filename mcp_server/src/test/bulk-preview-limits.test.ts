@@ -73,7 +73,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -111,7 +111,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkRemoveByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkRemoveByQueryHandle(config, {
@@ -149,7 +149,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkUpdateByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkUpdateByQueryHandle(config, {
@@ -187,7 +187,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkCommentByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkCommentByQueryHandle(config, {
@@ -227,7 +227,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -266,7 +266,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -305,7 +305,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -346,7 +346,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -384,7 +384,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -422,7 +422,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -462,7 +462,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {
@@ -507,7 +507,7 @@ describe('Bulk Operations Preview Limits', () => {
         description: 'Test tool',
         script: '',
         schema: bulkAssignByQueryHandleSchema,
-        inputSchema: {}
+        inputSchema: { type: 'object' as const }
       };
 
       const result = await handleBulkAssignByQueryHandle(config, {

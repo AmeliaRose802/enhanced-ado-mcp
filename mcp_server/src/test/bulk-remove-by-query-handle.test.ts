@@ -46,7 +46,7 @@ const mockConfig = {
   description: 'Test config',
   script: '',
   schema: bulkRemoveByQueryHandleSchema,
-  inputSchema: {}
+  inputSchema: { type: 'object' as const }
 };
 
 describe('Bulk Remove By Query Handle Handler', () => {

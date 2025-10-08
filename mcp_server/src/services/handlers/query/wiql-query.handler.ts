@@ -60,8 +60,10 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
             includeTags: true
           });
           
-          if (packageResult.success && packageResult.data?.contextPackage) {
-            return packageResult.data.contextPackage;
+          // Type guard for context package result
+          const data = packageResult.data as { contextPackage?: unknown } | undefined;
+          if (packageResult.success && data?.contextPackage) {
+            return data.contextPackage;
           } else {
             logger.warn(`Failed to fetch context package for work item ${wi.id}`);
             return null;

@@ -37,7 +37,7 @@ describe('Bulk Comment By Query Handle Handler', () => {
     description: 'Test tool',
     script: '',
     schema: bulkCommentByQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

@@ -58,7 +58,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
     description: 'Test',
     script: '',
     schema: generateWiqlQuerySchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   const mockServerInstance = {

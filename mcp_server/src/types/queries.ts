@@ -5,6 +5,14 @@
  * Consolidates query-related types from handlers into a centralized location.
  */
 
+import type { MCPServer } from './mcp.js';
+
+/**
+ * MCP Server Instance type for sampling operations
+ * Used when handlers need to call sampling APIs
+ */
+export type MCPServerInstance = MCPServer;
+
 /**
  * =============================================================================
  * ODATA ANALYTICS
@@ -38,11 +46,20 @@ export interface ODataAnalyticsArgs {
 /**
  * OData Response Structure
  */
+export interface ODataResponseValue {
+  WorkItemId?: number;
+  Title?: string;
+  State?: string;
+  WorkItemType?: string;
+  Count?: number;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 export interface ODataResponse {
   "@odata.context"?: string;
   "@odata.count"?: number;
   "@odata.nextLink"?: string;
-  value: any[];
+  value: ODataResponseValue[];
 }
 
 /**
@@ -63,7 +80,7 @@ export interface GenerateWiqlQueryArgs {
   testQuery?: boolean;
   areaPath?: string;
   iterationPath?: string;
-  serverInstance?: any; // Server instance for sampling
+  serverInstance?: MCPServerInstance; // Server instance for sampling
 }
 
 /**
@@ -81,7 +98,7 @@ export interface GenerateODataQueryArgs {
   returnQueryHandle?: boolean;
   maxResults?: number;
   includeFields?: string[];
-  serverInstance?: any; // Server instance for sampling
+  serverInstance?: MCPServerInstance; // Server instance for sampling
 }
 
 /**

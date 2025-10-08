@@ -25,20 +25,85 @@ export interface ParsedPrompt {
   content: string;
 }
 
+/**
+ * JSON Schema types for tool input validation
+ * Follows JSON Schema Draft 7 specification
+ */
+export interface JSONSchemaProperty {
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'object' | 'array' | 'null';
+  description?: string;
+  enum?: unknown[];
+  default?: unknown;
+  items?: JSONSchemaProperty;
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean | JSONSchemaProperty;
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  format?: string;
+  $ref?: string;
+  oneOf?: JSONSchemaProperty[];
+  anyOf?: JSONSchemaProperty[];
+  allOf?: JSONSchemaProperty[];
+  [key: string]: unknown; // Allow additional JSON Schema keywords
+}
+
+export interface JSONSchema {
+  type: 'object' | 'array' | 'string' | 'number' | 'integer' | 'boolean' | 'null';
+  properties?: Record<string, JSONSchemaProperty>;
+  required?: string[];
+  additionalProperties?: boolean | JSONSchemaProperty;
+  items?: JSONSchemaProperty;
+  description?: string;
+  title?: string;
+  $schema?: string;
+  definitions?: Record<string, JSONSchemaProperty>;
+  oneOf?: JSONSchemaProperty[];
+  anyOf?: JSONSchemaProperty[];
+  allOf?: JSONSchemaProperty[];
+  [key: string]: unknown; // Allow additional JSON Schema keywords
+}
+
 export interface ToolConfig {
   name: string;
   description: string;
   script: string; // underlying PowerShell script file
   schema: z.ZodTypeAny; // zod schema for validation
-  inputSchema: any; // JSON schema exposed to MCP clients
+  inputSchema: JSONSchema; // JSON schema exposed to MCP clients
+}
+
+/**
+ * Tool execution result data
+ * Uses unknown for maximum flexibility - consumers should validate structure
+ * This preserves existing behavior where tools return various data shapes
+ */
+export type ToolExecutionData = unknown;
+
+/**
+ * Metadata for tool execution results
+ */
+export interface ToolExecutionMetadata extends Record<string, unknown> {
+  timestamp?: string;
+  duration?: number;
+  tool?: string;
+  organization?: string;
+  project?: string;
 }
 
 export interface ToolExecutionResult {
   success: boolean;
-  data?: any;
-  metadata: Record<string, any>;
+  data?: ToolExecutionData;
+  metadata: ToolExecutionMetadata;
   errors: string[];
   warnings: string[];
+  raw?: {
+    stdout?: string;
+    stderr?: string;
+    exitCode?: number;
+  };
 }
 
 // Export all types from submodules

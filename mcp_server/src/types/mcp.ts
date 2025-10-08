@@ -4,12 +4,14 @@
  */
 
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import type { Request, Notification, Result } from "@modelcontextprotocol/sdk/types.js";
 
 /**
  * MCP Server instance type from the SDK
- * Using 'any' for generics is intentional - the SDK Server has complex generic types
+ * Uses default generic types from the SDK for maximum compatibility
+ * Request, Notification, and Result are the base types from the SDK
  */
-export type MCPServer = Server<any, any>;
+export type MCPServer = Server<Request, Notification, Result>;
 
 /**
  * MCPServer-like object for testing purposes

@@ -89,7 +89,7 @@ describe('Handle-Based Analysis Tools', () => {
       description: 'Test',
       script: '',
       schema: analyzeByQueryHandleSchema,
-      inputSchema: {}
+      inputSchema: { type: 'object' as const }
     };
 
     it('should analyze work items using query handle', async () => {
@@ -205,7 +205,7 @@ describe('Handle-Based Analysis Tools', () => {
       description: 'Test',
       script: '',
       schema: listQueryHandlesSchema,
-      inputSchema: {}
+      inputSchema: { type: 'object' as const }
     };
 
     it('should list query handle statistics', async () => {

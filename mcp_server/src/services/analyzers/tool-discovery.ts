@@ -33,6 +33,7 @@ interface ToolDiscoveryResult {
   recommendations: ToolRecommendation[];
   alternativeApproaches?: string[];
   warnings?: string[];
+  [key: string]: unknown; // Allow additional properties
 }
 
 export class ToolDiscoveryAnalyzer {

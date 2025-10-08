@@ -47,7 +47,7 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
     description: 'Test',
     script: '',
     schema: odataAnalyticsQuerySchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   beforeEach(() => {

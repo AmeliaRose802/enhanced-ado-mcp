@@ -78,7 +78,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
     description: 'Test tool',
     script: '',
     schema: bulkEnhanceDescriptionsByQueryHandleSchema,
-    inputSchema: {}
+    inputSchema: { type: 'object' as const }
   };
 
   const mockServer = {} as MCPServer;
