@@ -1,5 +1,6 @@
 import type { ToolExecutionResult } from '../../types/index.js';
-import type { PersonalWorkloadAnalyzerArgs, PersonalWorkloadAnalysisResult } from '../../types/analysis.js';
+import type { PersonalWorkloadAnalyzerArgs, PersonalWorkloadAnalysisResult } from '../sampling-types.js';
+import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
@@ -9,7 +10,7 @@ import { loadConfiguration } from '../../config/config.js';
 export class PersonalWorkloadAnalyzer {
   private samplingClient: SamplingClient;
 
-  constructor(server: any) {
+  constructor(server: MCPServer | MCPServerLike) {
     this.samplingClient = new SamplingClient(server);
   }
 

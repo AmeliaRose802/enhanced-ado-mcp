@@ -38,14 +38,14 @@ Essential OData query patterns for metrics and aggregations.
   }
 }
 ```
-**Returns:** `[{"WorkItemType": "Task", "Count": 45}, ...]`
+**Returns:** `[{"workItemType": "Task", "Count": 45}, ...]`
 
 ### 3. Count by State
 ```json
 {
   "queryType": "groupByState",
   "filters": {
-    "WorkItemType": "Bug"
+    "workItemType": "Bug"
   }
 }
 ```
@@ -99,7 +99,7 @@ Essential OData query patterns for metrics and aggregations.
   "queryType": "cycleTimeMetrics",
   "computeCycleTime": true,
   "filters": {
-    "WorkItemType": "Product Backlog Item"
+    "workItemType": "Product Backlog Item"
   }
 }
 ```
@@ -190,7 +190,7 @@ Essential OData query patterns for metrics and aggregations.
 {
   "queryType": "groupByState",
   "filters": {
-    "WorkItemType": "Bug"
+    "workItemType": "Bug"
   }
 }
 ```
@@ -235,7 +235,7 @@ Essential OData query patterns for metrics and aggregations.
 {
   "filters": {
     "State": "Active",
-    "WorkItemType": "Task",
+    "workItemType": "Task",
     "Priority": 1,
     "Severity": "2 - High"
   },

@@ -14,6 +14,10 @@
 .PARAMETER CompletedTasks
     Array of task IDs that have been completed (e.g., @("T2_precommit_hooks", "T8_consolidate_ado_types"))
 
+.PARAMETER InProgressTasks
+    Array of task IDs that are currently in progress (e.g., @("T5_error_handling", "T7_data_validation"))
+    Tasks that conflict with in-progress tasks will be excluded from available tasks
+
 .PARAMETER ShowAll
     Show all remaining tasks, not just immediately available ones
 
@@ -29,6 +33,10 @@
     Shows what tasks can be started after completing multiple tasks
 
 .EXAMPLE
+    .\Get-NextTasks.ps1 -CompletedTask "T2_precommit_hooks" -InProgressTasks @("T5_error_handling")
+    Shows available tasks while avoiding conflicts with T5_error_handling that is currently running
+
+.EXAMPLE
     .\Get-NextTasks.ps1 -CompletedTask "T2_precommit_hooks" -ShowAll
     Shows all remaining tasks with their status
 #>
@@ -39,6 +47,9 @@ param(
     
     [Parameter(Mandatory=$false)]
     [string[]]$CompletedTasks = @(),
+    
+    [Parameter(Mandatory=$false)]
+    [string[]]$InProgressTasks = @(),
     
     [Parameter(Mandatory=$false)]
     [switch]$ShowAll,
@@ -97,26 +108,29 @@ if ($allCompletedTasks.Count -eq 0) {
     
     $wave1Tasks = $allTasks | Where-Object { $_.Wave -eq 1 }
     
-    if ($Format -eq "Json") {
-        $wave1Output = @{
-            timestamp = (Get-Date -Format "o")
-            completed_tasks = @()
-            available_tasks = $wave1Tasks | ForEach-Object {
-                @{
-                    TaskId = $_.TaskId
-                    Summary = $_.Summary
-                    Description = $_.Description
-                    RuntimeMin = $_.RuntimeMin
-                    Wave = $_.Wave
-                    ConflictsWith = $_.ConflictsWith
-                    Files = $_.Files
-                }
+    # Build output data for file (always do this regardless of format)
+    $wave1Output = @{
+        timestamp = (Get-Date -Format "o")
+        completed_tasks = @()
+        in_progress_tasks = $InProgressTasks
+        available_tasks = $wave1Tasks | ForEach-Object {
+            @{
+                TaskId = $_.TaskId
+                Summary = $_.Summary
+                Description = $_.Description
+                RuntimeMin = $_.RuntimeMin
+                Wave = $_.Wave
+                ConflictsWith = $_.ConflictsWith
+                Files = $_.Files
             }
-            total_tasks = $allTasks.Count
-            completed_count = 0
-            progress_percent = 0
-            can_run_in_parallel = $wave1Tasks.TaskId
         }
+        total_tasks = $allTasks.Count
+        completed_count = 0
+        progress_percent = 0
+        can_run_in_parallel = $wave1Tasks.TaskId
+    }
+    
+    if ($Format -eq "Json") {
         $wave1Output | ConvertTo-Json -Depth 10
     }
     elseif ($Format -eq "List") {
@@ -149,8 +163,22 @@ if ($allCompletedTasks.Count -eq 0) {
 foreach ($taskId in $allCompletedTasks) {
     if (-not ($allTasks | Where-Object { $_.TaskId -eq $taskId })) {
         Write-Error "Task not found: $taskId"
-        Write-Host "`nAvailable tasks:"
+        Write-Host "\nAvailable tasks:"
         $allTasks | Select-Object TaskId, Summary | Format-Table -AutoSize
+        exit 1
+    }
+}
+
+# Validate in-progress tasks exist and are not completed
+foreach ($taskId in $InProgressTasks) {
+    if (-not ($allTasks | Where-Object { $_.TaskId -eq $taskId })) {
+        Write-Error "In-progress task not found: $taskId"
+        Write-Host "\nAvailable tasks:"
+        $allTasks | Select-Object TaskId, Summary | Format-Table -AutoSize
+        exit 1
+    }
+    if ($allCompletedTasks -contains $taskId) {
+        Write-Error "Task $taskId is marked as both completed and in-progress"
         exit 1
     }
 }
@@ -158,11 +186,16 @@ foreach ($taskId in $allCompletedTasks) {
 # Calculate which tasks are now available
 $availableTasks = @()
 $blockedTasks = @()
-$stillRunningTasks = @()
+$conflictBlockedTasks = @()
 
 foreach ($task in $allTasks) {
     # Skip if already completed
     if ($allCompletedTasks -contains $task.TaskId) {
+        continue
+    }
+    
+    # Skip if currently in progress
+    if ($InProgressTasks -contains $task.TaskId) {
         continue
     }
     
@@ -176,7 +209,33 @@ foreach ($task in $allTasks) {
         }
     }
     
-    if ($dependenciesMet) {
+    # Check if task conflicts with any in-progress tasks
+    $hasConflictWithInProgress = $false
+    $conflictingInProgress = @()
+    foreach ($inProgressId in $InProgressTasks) {
+        if ($task.ConflictsWith -contains $inProgressId) {
+            $hasConflictWithInProgress = $true
+            $conflictingInProgress += $inProgressId
+        }
+        # Also check if the in-progress task conflicts with this task
+        $inProgressTask = $allTasks | Where-Object { $_.TaskId -eq $inProgressId }
+        if ($inProgressTask -and $inProgressTask.ConflictsWith -contains $task.TaskId) {
+            $hasConflictWithInProgress = $true
+            if ($conflictingInProgress -notcontains $inProgressId) {
+                $conflictingInProgress += $inProgressId
+            }
+        }
+    }
+    
+    if ($hasConflictWithInProgress) {
+        $conflictBlockedTasks += [PSCustomObject]@{
+            TaskId = $task.TaskId
+            Summary = $task.Summary
+            ConflictsWith = $conflictingInProgress
+            Wave = $task.Wave
+        }
+    }
+    elseif ($dependenciesMet) {
         $availableTasks += [PSCustomObject]@{
             TaskId = $task.TaskId
             Summary = $task.Summary
@@ -198,16 +257,23 @@ foreach ($task in $allTasks) {
 }
 
 # Display results
-Write-Host "`n✅ " -NoNewline -ForegroundColor Green
+Write-Host "\n✅ " -NoNewline -ForegroundColor Green
 Write-Host "COMPLETED: " -NoNewline -ForegroundColor Cyan
 Write-Host ($allCompletedTasks -join ", ") -ForegroundColor White
+
+if ($InProgressTasks.Count -gt 0) {
+    Write-Host "🔄 " -NoNewline -ForegroundColor Yellow
+    Write-Host "IN PROGRESS: " -NoNewline -ForegroundColor Yellow
+    Write-Host ($InProgressTasks -join ", ") -ForegroundColor White
+}
+
 Write-Host ("=" * 80) -ForegroundColor DarkGray
 
 if ($availableTasks.Count -eq 0) {
-    if ($blockedTasks.Count -eq 0) {
-        Write-Host "`n🎉 " -NoNewline -ForegroundColor Green
+    if ($blockedTasks.Count -eq 0 -and $conflictBlockedTasks.Count -eq 0) {
+        Write-Host "\n🎉 " -NoNewline -ForegroundColor Green
         Write-Host "ALL TASKS COMPLETED!" -ForegroundColor Green
-        Write-Host "`nCongratulations! The entire task list has been finished.`n"
+        Write-Host "\nCongratulations! The entire task list has been finished.\n"
         
         # Write completion status to file
         $totalTasks = $allTasks.Count
@@ -215,6 +281,7 @@ if ($availableTasks.Count -eq 0) {
             timestamp = (Get-Date -Format "o")
             status = "ALL_COMPLETED"
             completed_tasks = $allCompletedTasks
+            in_progress_tasks = $InProgressTasks
             total_tasks = $totalTasks
             completed_count = $totalTasks
             progress_percent = 100
@@ -225,10 +292,26 @@ if ($availableTasks.Count -eq 0) {
         Write-Host "📁 Completion status written to: $outputFile`n" -ForegroundColor DarkGray
     }
     else {
-        Write-Host "`n⏳ " -NoNewline -ForegroundColor Yellow
+        Write-Host "\n⏳ " -NoNewline -ForegroundColor Yellow
         Write-Host "NO TASKS AVAILABLE" -ForegroundColor Yellow
-        Write-Host "`nAll available tasks are blocked by dependencies."
-        Write-Host "Complete one of the following to unblock more tasks:`n"
+        
+        if ($conflictBlockedTasks.Count -gt 0) {
+            Write-Host "\n⚠️  $($conflictBlockedTasks.Count) task(s) blocked by conflicts with in-progress tasks:"
+            foreach ($conflictTask in $conflictBlockedTasks) {
+                Write-Host "  • $($conflictTask.TaskId) " -NoNewline -ForegroundColor DarkYellow
+                Write-Host "- conflicts with: " -NoNewline -ForegroundColor DarkGray
+                Write-Host ($conflictTask.ConflictsWith -join ", ") -ForegroundColor Yellow
+            }
+            Write-Host ""
+        }
+        
+        if ($blockedTasks.Count -gt 0) {
+            Write-Host "All other tasks are blocked by dependencies."
+            Write-Host "Complete one of the following to unblock more tasks:\n"
+        }
+        else {
+            Write-Host "Wait for in-progress tasks to complete to unlock conflicting tasks.\n"
+        }
         
         # Find tasks that would unblock the most
         $depCounts = @{}
@@ -259,6 +342,7 @@ if ($availableTasks.Count -eq 0) {
             timestamp = (Get-Date -Format "o")
             status = "NO_TASKS_AVAILABLE"
             completed_tasks = $allCompletedTasks
+            in_progress_tasks = $InProgressTasks
             total_tasks = $totalTasks
             completed_count = $completedCount
             progress_percent = $progressPercent
@@ -269,6 +353,14 @@ if ($availableTasks.Count -eq 0) {
                     TaskId = $_.TaskId
                     Summary = $_.Summary
                     MissingDeps = $_.MissingDeps
+                    Wave = $_.Wave
+                }
+            }
+            conflict_blocked_tasks = $conflictBlockedTasks | ForEach-Object {
+                @{
+                    TaskId = $_.TaskId
+                    Summary = $_.Summary
+                    ConflictsWith = $_.ConflictsWith
                     Wave = $_.Wave
                 }
             }
@@ -288,34 +380,41 @@ else {
     Write-Host "AVAILABLE TASKS ($($availableTasks.Count) ready to start)" -ForegroundColor Cyan
     Write-Host ""
     
+    # Calculate progress (needed for all output formats and file writing)
+    $totalTasks = $allTasks.Count
+    $completedCount = $allCompletedTasks.Count
+    $progressPercent = [math]::Round(($completedCount / $totalTasks) * 100, 1)
+    
+    # Calculate parallelizable tasks (needed for all output formats and file writing)
+    $canRunInParallel = @()
+    foreach ($task in $availableTasks) {
+        $hasConflict = $false
+        foreach ($other in $availableTasks) {
+            if ($task.TaskId -ne $other.TaskId -and 
+                ($task.ConflictsWith -contains $other.TaskId)) {
+                $hasConflict = $true
+                break
+            }
+        }
+        if (-not $hasConflict) {
+            $canRunInParallel += $task.TaskId
+        }
+    }
+    
     if ($Format -eq "Json") {
         $output = @{
             timestamp = (Get-Date -Format "o")
             completed_tasks = $allCompletedTasks
+            in_progress_tasks = $InProgressTasks
             available_tasks = $availableTasks
             total_tasks = $totalTasks
             completed_count = $completedCount
             progress_percent = $progressPercent
-            can_run_in_parallel = @()
-        }
-        
-        # Calculate parallelizable tasks
-        foreach ($task in $availableTasks) {
-            $hasConflict = $false
-            foreach ($other in $availableTasks) {
-                if ($task.TaskId -ne $other.TaskId -and 
-                    ($task.ConflictsWith -contains $other.TaskId)) {
-                    $hasConflict = $true
-                    break
-                }
-            }
-            if (-not $hasConflict) {
-                $output.can_run_in_parallel += $task.TaskId
-            }
+            can_run_in_parallel = $canRunInParallel
+            conflict_blocked_tasks = $conflictBlockedTasks
         }
         
         $output | ConvertTo-Json -Depth 10
-        exit 0
     }
     elseif ($Format -eq "List") {
         foreach ($task in ($availableTasks | Sort-Object Wave, RuntimeMin)) {
@@ -351,21 +450,6 @@ else {
     }
     
     # Show parallelization hints
-    $canRunInParallel = @()
-    foreach ($task in $availableTasks) {
-        $hasConflict = $false
-        foreach ($other in $availableTasks) {
-            if ($task.TaskId -ne $other.TaskId -and 
-                ($task.ConflictsWith -contains $other.TaskId)) {
-                $hasConflict = $true
-                break
-            }
-        }
-        if (-not $hasConflict) {
-            $canRunInParallel += $task.TaskId
-        }
-    }
-    
     if ($canRunInParallel.Count -gt 1) {
         Write-Host "💡 " -NoNewline -ForegroundColor Yellow
         Write-Host "PARALLELIZATION TIP:" -ForegroundColor Yellow
@@ -388,13 +472,10 @@ else {
     }
     
     # Write detailed output to file for agent reference
-    $totalTasks = $allTasks.Count
-    $completedCount = $allCompletedTasks.Count
-    $progressPercent = [math]::Round(($completedCount / $totalTasks) * 100, 1)
-    
     $outputData = @{
         timestamp = (Get-Date -Format "o")
         completed_tasks = $allCompletedTasks
+        in_progress_tasks = $InProgressTasks
         available_tasks = $availableTasks | ForEach-Object {
             @{
                 TaskId = $_.TaskId
@@ -418,6 +499,14 @@ else {
                 Wave = $_.Wave
             }
         }
+        conflict_blocked_tasks = $conflictBlockedTasks | ForEach-Object {
+            @{
+                TaskId = $_.TaskId
+                Summary = $_.Summary
+                ConflictsWith = $_.ConflictsWith
+                Wave = $_.Wave
+            }
+        }
     }
     
     $outputData | ConvertTo-Json -Depth 10 | Out-File -FilePath $outputFile -Encoding utf8
@@ -427,17 +516,32 @@ else {
 }
 
 # Show blocked tasks if requested
-if ($ShowAll -and $blockedTasks.Count -gt 0) {
-    Write-Host "`n🔒 " -NoNewline -ForegroundColor DarkYellow
-    Write-Host "BLOCKED TASKS ($($blockedTasks.Count) waiting on dependencies)" -ForegroundColor DarkYellow
-    Write-Host ""
-    
-    foreach ($blocked in ($blockedTasks | Sort-Object Wave)) {
-        Write-Host "   $($blocked.TaskId) " -NoNewline -ForegroundColor DarkGray
-        Write-Host "- waiting for: " -NoNewline -ForegroundColor DarkGray
-        Write-Host ($blocked.MissingDeps -join ", ") -ForegroundColor DarkRed
+if ($ShowAll) {
+    if ($conflictBlockedTasks.Count -gt 0) {
+        Write-Host "\n⚠️  " -NoNewline -ForegroundColor Yellow
+        Write-Host "CONFLICT-BLOCKED TASKS ($($conflictBlockedTasks.Count) waiting on in-progress)" -ForegroundColor Yellow
+        Write-Host ""
+        
+        foreach ($blocked in ($conflictBlockedTasks | Sort-Object Wave)) {
+            Write-Host "   $($blocked.TaskId) " -NoNewline -ForegroundColor DarkYellow
+            Write-Host "- conflicts with: " -NoNewline -ForegroundColor DarkGray
+            Write-Host ($blocked.ConflictsWith -join ", ") -ForegroundColor Yellow
+        }
+        Write-Host ""
     }
-    Write-Host ""
+    
+    if ($blockedTasks.Count -gt 0) {
+        Write-Host "\n🔒 " -NoNewline -ForegroundColor DarkYellow
+        Write-Host "BLOCKED TASKS ($($blockedTasks.Count) waiting on dependencies)" -ForegroundColor DarkYellow
+        Write-Host ""
+        
+        foreach ($blocked in ($blockedTasks | Sort-Object Wave)) {
+            Write-Host "   $($blocked.TaskId) " -NoNewline -ForegroundColor DarkGray
+            Write-Host "- waiting for: " -NoNewline -ForegroundColor DarkGray
+            Write-Host ($blocked.MissingDeps -join ", ") -ForegroundColor DarkRed
+        }
+        Write-Host ""
+    }
 }
 
 # Show progress

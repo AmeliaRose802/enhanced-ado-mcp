@@ -7,14 +7,9 @@
 import { logger } from '../utils/logger.js';
 import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
 
-import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult } from '../types/ado.js';
+import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult, ADOFieldOperation } from '../types/ado.js';
 import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
-
-interface WorkItemField {
-  op: string;
-  path: string;
-  value: unknown;
-}
+import { createWorkItemRepository } from '../repositories/work-item.repository.js';
 
 interface CreateWorkItemArgs {
   title: string;
@@ -85,8 +80,8 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     inheritParentPaths = true
   } = args;
 
-  // Create HTTP client
-  const httpClient = createADOHttpClient(organization, project);
+  // Create repository
+  const repository = createWorkItemRepository(organization, project);
   
   // Resolve @me assignment
   const resolvedAssignedTo = resolveAssignedTo(assignedTo);
@@ -97,8 +92,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   
   if (parentWorkItemId && inheritParentPaths) {
     try {
-      const parentResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${parentWorkItemId}`);
-      const parentData = parentResponse.data;
+      const parentData = await repository.getById(parentWorkItemId);
       
       if (parentData.fields) {
         if (!effectiveAreaPath && parentData.fields['System.AreaPath']) {
@@ -114,7 +108,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   }
   
   // Build JSON Patch document for work item creation
-  const fields: WorkItemField[] = [
+  const fields: ADOFieldOperation[] = [
     { op: 'add', path: '/fields/System.Title', value: title }
   ];
   
@@ -146,15 +140,8 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   
   let workItem: ADOWorkItem;
   try {
-    // Create work item via HTTP client
-    // URL-encode the work item type to handle types with spaces like "Product Backlog Item"
-    const encodedWorkItemType = encodeURIComponent(workItemType);
-    const response = await httpClient.post<ADOWorkItem>(
-      `wit/workitems/$${encodedWorkItemType}`,
-      fields
-    );
-    
-    workItem = response.data;
+    // Create work item via repository
+    workItem = await repository.create(workItemType, fields);
     
     if (!workItem.id) {
       throw new Error(`Failed to create work item: ${JSON.stringify(workItem)}`);
@@ -173,21 +160,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   let parentLinked = false;
   if (parentWorkItemId) {
     try {
-      const linkFields = [
-        {
-          op: 'add',
-          path: '/relations/-',
-          value: {
-            rel: 'System.LinkTypes.Hierarchy-Reverse',
-            url: `https://dev.azure.com/${organization}/${project}/_apis/wit/workItems/${parentWorkItemId}`,
-            attributes: {
-              comment: 'Parent link'
-            }
-          }
-        }
-      ];
-      
-      await httpClient.patch(`wit/workitems/${workItem.id}`, linkFields);
+      await repository.linkToParent(workItem.id, parentWorkItemId);
       parentLinked = true;
       
       logger.debug(`Linked work item ${workItem.id} to parent ${parentWorkItemId}`);
@@ -234,7 +207,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
     gitHubCopilotGuid
   } = args;
 
-  const httpClient = createADOHttpClient(organization, project);
+  const workItemRepository = createWorkItemRepository(organization, project);
   const warnings: string[] = [];
   
   // Get repository information
@@ -242,30 +215,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   let projectId: string;
   
   try {
-    let repoInfo: ADORepository;
-    
-    try {
-      const response = await httpClient.get<ADORepository>(`git/repositories/${repository}`);
-      repoInfo = response.data;
-    } catch (error) {
-      // Repository not found by exact match, try listing all repos
-      const listResponse = await httpClient.get<ADOApiResponse<ADORepository[]>>('git/repositories');
-      const reposList = listResponse.data;
-      
-      const repo = reposList.value?.find((r: ADORepository) => 
-        r.name === repository || 
-        r.id === repository || 
-        r.name.toLowerCase() === repository.toLowerCase()
-      );
-      
-      if (!repo) {
-        const availableRepos = reposList.value?.map((r: ADORepository) => r.name).join(', ') || 'none';
-        throw new Error(`Repository '${repository}' not found. Available: ${availableRepos}`);
-      }
-      
-      repoInfo = repo;
-    }
-    
+    const repoInfo = await workItemRepository.getRepository(repository);
     repositoryId = repoInfo.id;
     projectId = repoInfo.project.id;
   } catch (error) {
@@ -275,23 +225,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   // Create branch artifact link
   let branchLinkCreated = false;
   try {
-    const vstfsUrl = `vstfs:///Git/Ref/${projectId}%2F${repositoryId}%2FGB${branch}`;
-    const linkFields = [
-      {
-        op: 'add',
-        path: '/relations/-',
-        value: {
-          rel: 'ArtifactLink',
-          url: vstfsUrl,
-          attributes: {
-            name: 'Branch',
-            comment: `GitHub Copilot branch link: ${repository}/${branch}`
-          }
-        }
-      }
-    ];
-    
-    await httpClient.patch(`wit/workitems/${workItemId}`, linkFields);
+    await workItemRepository.linkToBranch(workItemId, projectId, repositoryId, branch, repository);
     branchLinkCreated = true;
     
     logger.debug(`Created branch artifact link for work item ${workItemId}`);
@@ -309,13 +243,13 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   try {
     const assignFields = [
       {
-        op: 'add',
+        op: 'add' as const,
         path: '/fields/System.AssignedTo',
         value: gitHubCopilotGuid
       }
     ];
     
-    await httpClient.patch(`wit/workitems/${workItemId}`, assignFields);
+    await workItemRepository.update(workItemId, assignFields);
     
     logger.debug(`Assigned work item ${workItemId} to GitHub Copilot`);
   } catch (error) {
@@ -353,14 +287,10 @@ export async function deleteWorkItem(args: DeleteWorkItemArgs): Promise<{
     HardDelete = false
   } = args;
 
-  const httpClient = createADOHttpClient(Organization, Project);
+  const repository = createWorkItemRepository(Organization, Project);
   
   try {
-    const endpoint = HardDelete 
-      ? `wit/workitems/${WorkItemId}?destroy=true`
-      : `wit/workitems/${WorkItemId}`;
-    
-    await httpClient.delete(endpoint);
+    await repository.delete(WorkItemId, HardDelete);
     
     logger.debug(`Deleted work item ${WorkItemId} (hard delete: ${HardDelete})`);
     
@@ -410,13 +340,12 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
     includeWorkItemDetails = false
   } = args;
 
-  const httpClient = createADOHttpClient(organization, project);
+  const repository = createWorkItemRepository(organization, project);
   
   // Get work item details
   let workItem: ADOWorkItem;
   try {
-    const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}`);
-    workItem = response.data;
+    workItem = await repository.getById(workItemId);
   } catch (error) {
     throw new Error(`Work item ${workItemId} not found`);
   }
@@ -703,7 +632,7 @@ interface WiqlWorkItemResult {
   createdDate?: string;
   changedDate?: string;
   url: string;
-  additionalFields?: Record<string, any>;  // Only fields explicitly requested via IncludeFields
+  additionalFields?: Record<string, unknown>;  // Only fields explicitly requested via IncludeFields
   lastSubstantiveChangeDate?: string;  // Computed: date of last substantive change (filters automated updates)
   daysInactive?: number;  // Computed: days since last substantive change
   computedMetrics?: {  // Additional computed metrics
@@ -753,17 +682,15 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   // Use 'top' if provided, otherwise use 'maxResults'
   const pageSize = top ?? maxResults;
 
-  // Get authentication token
-  const httpClient = createADOHttpClient(organization, project);
+  // Get repository
+  const repository = createWorkItemRepository(organization, project);
+  const httpClient = createADOHttpClient(organization, project); // Keep for calculateSubstantiveChange
   
   try {
     // Execute WIQL query
-    const wiqlBody = { query: wiqlQuery };
-    
     logger.debug(`Executing WIQL query: ${wiqlQuery}`);
     
-    const wiqlResponse = await httpClient.post<ADOWiqlResult>('wit/wiql', wiqlBody);
-    const wiqlResult = wiqlResponse.data;
+    const wiqlResult = await repository.executeWiql(wiqlQuery);
 
     if (!wiqlResult.workItems || wiqlResult.workItems.length === 0) {
       return {
@@ -816,23 +743,18 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
 
     // Combine default fields with user-requested fields
     const allFields = [...new Set([...defaultFields, ...includeFields])];
-    const fieldsParam = allFields.join(',');
 
-    const ids = workItemIds.join(',');
-    const detailsResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
-      `wit/workitems?ids=${ids}&fields=${encodeURIComponent(fieldsParam)}`
-    );
-    const detailsResult = detailsResponse.data;
+    const detailsResult = await repository.getBatch(workItemIds, allFields);
 
-    if (!detailsResult.value) {
+    if (!detailsResult) {
       throw new Error('Failed to fetch work item details');
     }
 
     // Map work items to result format
-    const workItems: WiqlWorkItemResult[] = detailsResult.value.map((wi: ADOWorkItem) => {
+    const workItems: WiqlWorkItemResult[] = detailsResult.map((wi: ADOWorkItem) => {
       // Extract additional fields not already in the top-level structure
       // Filter out redundant and verbose fields to save context window space
-      const additionalFields: Record<string, any> = {};
+      const additionalFields: Record<string, unknown> = {};
       const extractedFields = new Set([
         'System.Id',
         'System.Title',

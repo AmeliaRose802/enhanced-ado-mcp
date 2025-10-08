@@ -5,7 +5,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import type { MCPServer } from "../../../types/mcp.js";
+import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from "../../../types/ado.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
@@ -108,7 +108,7 @@ interface EstimationResult {
  * ```
  * @since 1.4.0
  */
-export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unknown, server: MCPServer): Promise<ToolExecutionResult> {
+export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unknown, server: MCPServer | MCPServerLike): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
