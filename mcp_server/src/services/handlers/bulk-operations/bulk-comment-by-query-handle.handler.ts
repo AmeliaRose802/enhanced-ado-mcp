@@ -6,7 +6,6 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
-import type { WorkItemContext } from "../../../types/work-items.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -47,7 +46,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     const selectedCount = selectedWorkItemIds.length;
 
     // Function to substitute template variables in comments
-    const substituteTemplate = (template: string, workItemId: number, context?: WorkItemContext): string => {
+    const substituteTemplate = (template: string, workItemId: number, context?: Record<string, unknown>): string => {
       if (!context || !queryData.workItemContext) {
         return template;
       }
@@ -61,28 +60,28 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
       
       // Substitute staleness data if available
       if (workItemContext.daysInactive !== undefined) {
-        result = result.replace(/\{daysInactive\}/g, workItemContext.daysInactive.toString());
+        result = result.replace(/\{daysInactive\}/g, String(workItemContext.daysInactive));
       }
       
       if (workItemContext.lastSubstantiveChangeDate) {
-        result = result.replace(/\{lastSubstantiveChangeDate\}/g, workItemContext.lastSubstantiveChangeDate);
+        result = result.replace(/\{lastSubstantiveChangeDate\}/g, String(workItemContext.lastSubstantiveChangeDate));
       }
 
       // Substitute other context data
       if (workItemContext.title) {
-        result = result.replace(/\{title\}/g, workItemContext.title);
+        result = result.replace(/\{title\}/g, String(workItemContext.title));
       }
       
       if (workItemContext.state) {
-        result = result.replace(/\{state\}/g, workItemContext.state);
+        result = result.replace(/\{state\}/g, String(workItemContext.state));
       }
       
       if (workItemContext.type) {
-        result = result.replace(/\{type\}/g, workItemContext.type);
+        result = result.replace(/\{type\}/g, String(workItemContext.type));
       }
       
       if (workItemContext.assignedTo) {
-        result = result.replace(/\{assignedTo\}/g, workItemContext.assignedTo);
+        result = result.replace(/\{assignedTo\}/g, String(workItemContext.assignedTo));
       }
 
       // Add work item ID itself

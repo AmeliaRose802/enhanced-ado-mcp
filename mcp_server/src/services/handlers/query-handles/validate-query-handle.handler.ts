@@ -118,7 +118,7 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
 
     return {
       success: true,
-      data: result,
+      data: result as unknown as ToolExecutionData,
       metadata: { source: "validate-query-handle" },
       errors: [],
       warnings: []

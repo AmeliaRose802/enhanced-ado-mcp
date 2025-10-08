@@ -63,7 +63,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
         staleness_coverage: queryData.analysisMetadata.successCount ? 
           ((queryData.analysisMetadata.successCount / queryData.workItemIds.length) * 100).toFixed(1) + '%' : 
           'N/A'
-      };
+      } as JSONValue;
 
       // Note: Verbose staleness statistics have been removed to reduce token usage.
       // Individual work items in the preview still contain last_activity (as last_substantive_change)
@@ -173,7 +173,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
         selectionExamples.push(`{daysInactiveMin: 7} - selects ${staleCount} stale item${staleCount !== 1 ? 's' : ''}`);
       }
 
-      response.itemPreview = previewItems;
+      response.itemPreview = previewItems as unknown as JSONValue;
       
       response.selectionHints = [
         `Use index 0 to select the first item`,
@@ -200,8 +200,8 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
       // Add legacy preview format for backward compatibility
       response.preview = {
         showing: `First ${previewItems.length} of ${queryData.workItemIds.length} items`,
-        items: previewItems
-      };
+        items: previewItems as unknown as JSONValue
+      } as JSONValue;
 
       // Add legacy selection_info for backward compatibility
       response.selection_info = {
@@ -243,7 +243,7 @@ export async function handleInspectQueryHandle(config: ToolConfig, args: unknown
 
     return {
       success: true,
-      data: response,
+      data: response as unknown as ToolExecutionData,
       metadata: { 
         source: "query-handle-service",
         handle: queryHandle,

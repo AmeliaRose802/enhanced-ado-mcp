@@ -39,7 +39,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     let fullPackages: WorkItemContextPackage[] | undefined = undefined;
     if (parsed.data.fetchFullPackages) {
       logger.info(`Fetching full context packages for ${result.workItems.length} work items...`);
-      const packagePromises = result.workItems.map(async (wi: any) => {
+      const packagePromises = result.workItems.map(async (wi) => {
         try {
           const packageResult = await handleGetWorkItemContextPackage({
             workItemId: wi.id,
@@ -75,13 +75,13 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       });
       
       const packages = await Promise.all(packagePromises);
-      fullPackages = packages.filter((p: any): p is NonNullable<typeof p> => p !== null);
+      fullPackages = packages.filter((p): p is WorkItemContextPackage => p !== null);
       logger.info(`Successfully fetched ${fullPackages?.length ?? 0} of ${result.workItems.length} context packages`);
     }
 
     // If returnQueryHandle is true, store results and return handle along with work items
     if (parsed.data.returnQueryHandle) {
-      const workItemIds = result.workItems.map((wi: any) => wi.id);
+      const workItemIds = result.workItems.map((wi) => wi.id);
       
       // Build work item context map if we have work items data
       const workItemContext = new Map<number, WorkItemContext>();
@@ -111,8 +111,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         includeSubstantiveChange: parsed.data.includeSubstantiveChange || false,
         stalenessThresholdDays: parsed.data.staleThresholdDays,
         analysisTimestamp: new Date().toISOString(),
-        successCount: result.workItems.filter((wi: any) => wi.lastSubstantiveChangeDate !== undefined).length,
-        failureCount: result.workItems.length - result.workItems.filter((wi: any) => wi.lastSubstantiveChangeDate !== undefined).length
+        successCount: result.workItems.filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length,
+        failureCount: result.workItems.length - result.workItems.filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length
       };
       
       const handle = queryHandleService.storeQuery(

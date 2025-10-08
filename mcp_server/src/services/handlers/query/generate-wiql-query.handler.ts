@@ -68,12 +68,12 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       logger.debug(`Using iteration path for query context: ${iterationPath}`);
     }
 
-    const iterations: any[] = [];
+    const iterations: Array<Record<string, unknown>> = [];
     let currentQuery: string | null = null;
     let lastError: string | null = null;
     let isValid = false;
-    let testResults: any = null;
-    let cumulativeUsage: any = null;
+    let testResults: Record<string, unknown> | null = null;
+    let cumulativeUsage: Record<string, unknown> | null = null;
 
     // Iterative generation and validation
     for (let attempt = 1; attempt <= maxIterations; attempt++) {
@@ -155,7 +155,7 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
 
         // Only create handle if we have results
         if (queryResult.workItems && queryResult.workItems.length > 0) {
-          const workItemIds = queryResult.workItems.map((wi: any) => wi.id);
+          const workItemIds = queryResult.workItems.map((wi) => wi.id);
           
           // Build work item context map
           const workItemContext = new Map<number, WorkItemContext>();
@@ -356,7 +356,7 @@ async function generateQueryWithAI(
   iterationPath: string | undefined,
   includeExamples: boolean,
   feedback?: { previousQuery: string | null; error: string | null }
-): Promise<{ query: string; usage?: any }> {
+): Promise<{ query: string; usage?: Record<string, unknown> }> {
   
   // Build variables for the system prompt
   const variables: Record<string, string> = {
@@ -387,7 +387,7 @@ async function generateQueryWithAI(
   }
 
   // Extract usage information from aiResult if present
-  const usage = (aiResult as any).usage;
+  const usage = (aiResult as Record<string, unknown>).usage as Record<string, unknown> | undefined;
 
   return {
     query: cleanWiqlQuery(query),
@@ -402,7 +402,7 @@ async function testWiqlQuery(
   query: string,
   organization: string,
   project: string
-): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: any[] }> {
+): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: Array<Record<string, unknown>> }> {
   try {
     // Execute with a limit to avoid large result sets during testing
     const result = await queryWorkItemsByWiql({
@@ -416,7 +416,7 @@ async function testWiqlQuery(
     return {
       success: true,
       resultCount: result.totalCount || result.count,
-      sampleResults: result.workItems.slice(0, 5).map((wi: any) => ({
+      sampleResults: result.workItems.slice(0, 5).map((wi) => ({
         id: wi.id,
         title: wi.title,
         type: wi.type,

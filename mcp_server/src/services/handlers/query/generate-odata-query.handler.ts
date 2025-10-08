@@ -67,12 +67,12 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       logger.debug(`Using iteration path for query context: ${iterationPath}`);
     }
 
-    const iterations: any[] = [];
+    const iterations: Array<Record<string, unknown>> = [];
     let currentQuery: string | null = null;
     let lastError: string | null = null;
     let isValid = false;
-    let testResults: any = null;
-    let cumulativeUsage: any = null;
+    let testResults: Record<string, unknown> | null = null;
+    let cumulativeUsage: Record<string, unknown> | null = null;
 
     // Iterative generation and validation
     for (let attempt = 1; attempt <= maxIterations; attempt++) {
@@ -203,7 +203,10 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         }
         
         // Extract work item IDs from OData results
-        const workItemIds = workItems.map((wi: any) => wi.WorkItemId || wi.workItemId || wi.id);
+        const workItemIds = workItems.map((wi) => {
+          const wiRecord = wi as Record<string, unknown>;
+          return (wiRecord.WorkItemId || wiRecord.workItemId || wiRecord.id) as number;
+        });
         
         // Build work item context map for query handle
         const workItemContext = new Map<number, WorkItemContext>();
@@ -357,7 +360,7 @@ async function generateQueryWithAI(
   iterationPath: string | undefined,
   includeExamples: boolean,
   feedback?: { previousQuery: string | null; error: string | null }
-): Promise<{ query: string; usage?: any }> {
+): Promise<{ query: string; usage?: Record<string, unknown> }> {
   
   // Build variables for the system prompt
   const variables: Record<string, string> = {
@@ -389,7 +392,7 @@ async function generateQueryWithAI(
   }
 
   // Extract usage information from aiResult if present
-  const usage = (aiResult as any).usage;
+  const usage = (aiResult as Record<string, unknown>).usage as Record<string, unknown> | undefined;
 
   return {
     query: cleanODataQuery(query),
@@ -439,7 +442,7 @@ async function testODataQuery(
   query: string,
   organization: string,
   project: string
-): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: any[] }> {
+): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: Array<Record<string, unknown>> }> {
   try {
     const token = await getAzureDevOpsToken();
     const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
