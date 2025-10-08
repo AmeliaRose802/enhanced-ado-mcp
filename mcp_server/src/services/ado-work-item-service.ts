@@ -8,8 +8,8 @@ import { logger } from '../utils/logger.js';
 import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
 
 import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult, ADOFieldOperation } from '../types/ado.js';
-import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
-import { createWorkItemRepository } from '../repositories/work-item.repository.js';
+import { ADOHttpError } from '../utils/ado-http-client.js';
+import { createWorkItemRepository, WorkItemRepository } from '../repositories/work-item.repository.js';
 
 interface CreateWorkItemArgs {
   title: string;
@@ -575,20 +575,15 @@ function isSubstantiveChange(
 async function calculateSubstantiveChange(
   workItemId: number,
   createdDate: string,
-  Organization: string,
-  Project: string,
   historyCount: number,
-  httpClient: ADOHttpClient
+  repository: WorkItemRepository
 ): Promise<{
   lastSubstantiveChangeDate: string;
   daysInactive: number;
 }> {
   try {
-    // Get revision history
-    const response = await httpClient.get<ADOApiResponse<ADOWorkItemRevision[]>>(
-      `wit/workItems/${workItemId}/revisions?$top=${historyCount}`
-    );
-    const revisions = response.data.value || [];
+    // Get revision history using repository
+    const revisions = await repository.getRevisions(workItemId, historyCount);
 
     // Sort revisions by rev number descending (newest first)
     revisions.sort((a: ADOWorkItemRevision, b: ADOWorkItemRevision) => b.rev - a.rev);
@@ -684,7 +679,6 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
 
   // Get repository
   const repository = createWorkItemRepository(organization, project);
-  const httpClient = createADOHttpClient(organization, project); // Keep for calculateSubstantiveChange
   
   try {
     // Execute WIQL query
@@ -843,10 +837,8 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
             const result = await calculateSubstantiveChange(
               workItem.id,
               workItem.createdDate!,
-              organization,
-              project,
               substantiveChangeHistoryCount,
-              httpClient
+              repository
             );
             successCount++;
             return { id: workItem.id, ...result };
