@@ -242,24 +242,70 @@ Query Azure DevOps Analytics using OData for efficient aggregations, metrics, an
 - `testQuery` (boolean) - Test query by executing it (default true)
 - `areaPath` (string) - Override default area path (auto-scopes queries)
 - `iterationPath` (string) - Override default iteration path
+- `returnQueryHandle` (boolean) - Execute query and return query handle for bulk operations (default false)
+- `maxResults` (number) - Max work items when returnQueryHandle=true (1-1000, default 200)
+- `includeFields` (string[]) - Additional fields to include when returnQueryHandle=true
 
 #### Output Format
 
-**Success Response:**
+**Success Response (without query handle):**
 ```json
 {
   "success": true,
   "data": {
-    "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.CreatedDate] >= @Today - 7",
-    "description": "all active bugs created in the last week",
-    "iterations": 1,
+    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.CreatedDate] >= @Today - 7",
+    "isValidated": true,
+    "resultCount": 12,
+    "sampleResults": [
+      { "id": 12345, "title": "Login fails...", "type": "Bug", "state": "Active" }
+    ],
+    "summary": "Successfully generated WIQL query (found 12 matching work items)"
+  },
+  "metadata": {
+    "source": "ai-sampling-wiql-generator",
     "validated": true,
-    "testResults": {
-      "workItemCount": 12,
-      "sampleItems": [
-        { "id": 12345, "title": "Login fails..." }
-      ]
+    "iterationCount": 1,
+    "usage": {
+      "inputTokens": 150,
+      "outputTokens": 50,
+      "totalTokens": 200
     }
+  },
+  "errors": [],
+  "warnings": []
+}
+```
+
+**Success Response (with query handle):**
+```json
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_abc123...",
+    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+    "work_item_count": 42,
+    "work_items": [
+      { "id": 12345, "title": "Test Item", "type": "Task", "state": "Active", "url": "..." }
+    ],
+    "isValidated": true,
+    "summary": "Query handle created for 42 work item(s). Use the handle with bulk operation tools...",
+    "next_steps": [
+      "Review the work_items array to see what will be affected",
+      "Use wit-bulk-comment-by-query-handle to add comments to all items",
+      "Use wit-bulk-update-by-query-handle to update fields on all items",
+      "Use wit-bulk-assign-by-query-handle to assign all items to a user",
+      "Use wit-bulk-remove-by-query-handle to remove all items",
+      "Always use dryRun: true first to preview changes before applying them"
+    ],
+    "expires_at": "2025-01-20T11:00:00Z"
+  },
+  "metadata": {
+    "source": "ai-sampling-wiql-generator",
+    "validated": true,
+    "iterationCount": 1,
+    "queryHandleMode": true,
+    "handle": "qh_abc123...",
+    "count": 42
   },
   "errors": [],
   "warnings": []
@@ -268,13 +314,23 @@ Query Azure DevOps Analytics using OData for efficient aggregations, metrics, an
 
 #### Examples
 
-**Example: Natural Language Query**
+**Example 1: Generate Query Only (default behavior)**
 ```json
 {
   "description": "all active bugs created in the last week"
 }
 ```
 Generates and tests WIQL query: `SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.CreatedDate] >= @Today - 7`
+
+**Example 2: Generate Query and Create Handle for Bulk Operations**
+```json
+{
+  "description": "all unassigned tasks in my area",
+  "returnQueryHandle": true,
+  "maxResults": 100
+}
+```
+Returns query handle along with work items for safe bulk operations.
 
 ### 4. wit-generate-odata-query
 
