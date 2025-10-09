@@ -5,6 +5,7 @@
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { WorkItemContext, WorkItemContextPackage } from '../../../types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
@@ -23,28 +24,36 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       return buildValidationErrorResponse(parsed.error);
     }
 
-    logger.debug(`Executing WIQL query: ${parsed.data.wiqlQuery}`);
-    if (parsed.data.includeSubstantiveChange) {
-      logger.debug(`Substantive change analysis enabled (history depth: ${parsed.data.substantiveChangeHistoryCount || 50})`);
+    // Get default configuration values for organization/project
+    const requiredConfig = getRequiredConfig();
+    const queryArgs = {
+      ...parsed.data,
+      organization: parsed.data.organization || requiredConfig.organization,
+      project: parsed.data.project || requiredConfig.project
+    };
+
+    logger.debug(`Executing WIQL query: ${queryArgs.wiqlQuery}`);
+    if (queryArgs.includeSubstantiveChange) {
+      logger.debug(`Substantive change analysis enabled (history depth: ${queryArgs.substantiveChangeHistoryCount || 50})`);
     }
-    if (parsed.data.fetchFullPackages) {
+    if (queryArgs.fetchFullPackages) {
       logger.debug(`Full context packages will be fetched for each work item`);
     }
     
-    const result = await queryWorkItemsByWiql(parsed.data);
+    const result = await queryWorkItemsByWiql(queryArgs);
     
-    const pageSize = parsed.data.top ?? parsed.data.maxResults ?? 200;
+    const pageSize = queryArgs.top ?? queryArgs.maxResults ?? 200;
 
     // If fetchFullPackages is enabled, fetch full context packages for each work item
     let fullPackages: WorkItemContextPackage[] | undefined = undefined;
-    if (parsed.data.fetchFullPackages) {
+    if (queryArgs.fetchFullPackages) {
       logger.info(`Fetching full context packages for ${result.workItems.length} work items...`);
       const packagePromises = result.workItems.map(async (wi) => {
         try {
           const packageResult = await handleGetWorkItemContextPackage({
             workItemId: wi.id,
-            organization: parsed.data.organization,
-            project: parsed.data.project,
+            organization: queryArgs.organization,
+            project: queryArgs.project,
             includeHistory: true,
             maxHistoryRevisions: 10,
             includeComments: true,
@@ -80,7 +89,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     }
 
     // If returnQueryHandle is true, store results and return handle along with work items
-    if (parsed.data.returnQueryHandle) {
+    if (queryArgs.returnQueryHandle) {
       const workItemIds = result.workItems.map((wi) => wi.id);
       
       // Build work item context map if we have work items data
@@ -108,8 +117,8 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
 
       // Build analysis metadata
       const analysisMetadata = {
-        includeSubstantiveChange: parsed.data.includeSubstantiveChange || false,
-        stalenessThresholdDays: parsed.data.staleThresholdDays,
+        includeSubstantiveChange: queryArgs.includeSubstantiveChange || false,
+        stalenessThresholdDays: queryArgs.staleThresholdDays,
         analysisTimestamp: new Date().toISOString(),
         successCount: result.workItems.filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length,
         failureCount: result.workItems.length - result.workItems.filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length
@@ -117,9 +126,9 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
       
       const handle = queryHandleService.storeQuery(
         workItemIds,
-        parsed.data.wiqlQuery,
+        queryArgs.wiqlQuery,
         {
-          project: parsed.data.project,
+          project: queryArgs.project,
           queryType: 'wiql'
         },
         60 * 60 * 1000, // 1 hour TTL
@@ -151,7 +160,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
             "Always use dryRun: true first to preview changes before applying them"
           ],
           expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-          ...((result.totalCount > result.top || parsed.data.includePaginationDetails) && {
+          ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
             pagination: {
               skip: result.skip,
               top: result.top,
@@ -160,7 +169,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
               ...(result.hasMore && { nextSkip: result.skip + result.top })
             }
           }),
-          ...(parsed.data.includeSubstantiveChange && { 
+          ...(queryArgs.includeSubstantiveChange && { 
             substantiveChangeIncluded: true 
           }),
           ...(fullPackages && {
@@ -174,7 +183,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
           handle,
           count: workItemIds.length,
           totalCount: result.totalCount,
-          substantiveChangeAnalysis: parsed.data.includeSubstantiveChange || false,
+          substantiveChangeAnalysis: queryArgs.includeSubstantiveChange || false,
           fullPackagesFetched: !!fullPackages
         },
         errors: [],
@@ -185,7 +194,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
           ...(fullPackages && fullPackages.length < result.workItems.length
             ? [`Successfully fetched ${fullPackages.length} of ${result.workItems.length} full context packages. Some packages may have failed to load.`]
             : []),
-          ...(parsed.data.fetchFullPackages && workItemIds.length > 50
+          ...(queryArgs.fetchFullPackages && workItemIds.length > 50
             ? [`⚠️ Fetching full packages for ${workItemIds.length} items made ${workItemIds.length * 2} API calls. Consider using pagination or filtering for smaller result sets.`]
             : [])
         ]
@@ -203,7 +212,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         summary: fullPackages
           ? `Found ${result.count} work item(s) with full context packages matching the query (showing ${result.skip + 1}-${result.skip + result.count} of ${result.totalCount} total)`
           : `Found ${result.count} work item(s) matching the query (showing ${result.skip + 1}-${result.skip + result.count} of ${result.totalCount} total)`,
-        ...((result.totalCount > result.top || parsed.data.includePaginationDetails) && {
+        ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
           pagination: {
             skip: result.skip,
             top: result.top,
@@ -215,7 +224,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
             })
           }
         }),
-        ...(parsed.data.includeSubstantiveChange && { 
+        ...(queryArgs.includeSubstantiveChange && { 
           substantiveChangeIncluded: true 
         }),
         ...(fullPackages && {
@@ -231,7 +240,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         top: result.top,
         hasMore: result.hasMore,
         maxResults: pageSize,
-        substantiveChangeAnalysis: parsed.data.includeSubstantiveChange || false,
+        substantiveChangeAnalysis: queryArgs.includeSubstantiveChange || false,
         fullPackagesFetched: !!fullPackages
       },
       errors: [],
@@ -242,7 +251,7 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
         ...(fullPackages && fullPackages.length < result.workItems.length
           ? [`Successfully fetched ${fullPackages.length} of ${result.workItems.length} full context packages. Some packages may have failed to load.`]
           : []),
-        ...(parsed.data.fetchFullPackages && result.count > 50
+        ...(queryArgs.fetchFullPackages && result.count > 50
           ? [`⚠️ Fetching full packages for ${result.count} items made ${result.count * 2} API calls. Consider using pagination or filtering for smaller result sets.`]
           : [])
       ]
