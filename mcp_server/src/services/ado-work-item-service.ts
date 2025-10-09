@@ -687,8 +687,17 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   const httpClient = createADOHttpClient(organization, project); // Keep for calculateSubstantiveChange
   
   try {
+    // Validate required parameters
+    if (!organization || organization.trim() === '') {
+      throw new Error('Organization parameter is required and cannot be empty');
+    }
+    if (!project || project.trim() === '') {
+      throw new Error('Project parameter is required and cannot be empty');
+    }
+
     // Execute WIQL query
     logger.debug(`Executing WIQL query: ${wiqlQuery}`);
+    logger.debug(`Target: ${organization}/${project}`);
     
     const wiqlResult = await repository.executeWiql(wiqlQuery);
 
@@ -956,6 +965,21 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
 
   } catch (error) {
     logger.error('WIQL query execution failed', error);
-    throw new Error(`Failed to execute WIQL query: ${error instanceof Error ? error.message : String(error)}`);
+    
+    // Provide more context in error message
+    const errorContext = `Organization: ${organization}, Project: ${project}`;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Check for common error scenarios and provide helpful messages
+    if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+      throw new Error(
+        `Failed to execute WIQL query: HTTP 404: Not Found. ` +
+        `This usually means the project "${project}" does not exist in organization "${organization}", ` +
+        `or you don't have access to it. ${errorContext}. ` +
+        `Please verify your organization and project names are correct and that you're logged in with 'az login'.`
+      );
+    }
+    
+    throw new Error(`Failed to execute WIQL query: ${errorMessage}. ${errorContext}`);
   }
 }

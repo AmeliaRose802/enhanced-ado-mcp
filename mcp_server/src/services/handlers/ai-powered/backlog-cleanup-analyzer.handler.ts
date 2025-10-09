@@ -64,6 +64,21 @@ export async function handleBacklogCleanupAnalyzer(
       project = requiredConfig.project
     } = parsed.data as BacklogCleanupArgs;
 
+    // Validate required configuration
+    if (!organization || organization.trim() === '') {
+      return buildErrorResponse(
+        'Organization is required for backlog cleanup analysis. Provide organization parameter or configure server with organization argument.',
+        { source: 'backlog-cleanup-analyzer', hint: 'Usage: enhanced-ado-msp <organization> <project> [options]' }
+      );
+    }
+
+    if (!project || project.trim() === '') {
+      return buildErrorResponse(
+        'Project is required for backlog cleanup analysis. Provide project parameter or configure server with project argument.',
+        { source: 'backlog-cleanup-analyzer', hint: 'Usage: enhanced-ado-msp <organization> <project> [options]' }
+      );
+    }
+
     // Validate area path is provided - backlog cleanup requires scoping to avoid scanning entire project
     if (!areaPath) {
       return buildErrorResponse(
