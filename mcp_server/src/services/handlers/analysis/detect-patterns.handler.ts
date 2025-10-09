@@ -6,6 +6,7 @@
 import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
 import { asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
@@ -56,16 +57,20 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
       return buildValidationErrorResponse(parsed.error, 'detect-patterns');
     }
 
+    // Get default configuration values for organization/project
+    const requiredConfig = getRequiredConfig();
+    const argsData = parsed.data as DetectPatternsArgs;
+    
     const {
       workItemIds,
       areaPath,
-      organization,
-      project,
+      organization = argsData.organization || requiredConfig.organization,
+      project = argsData.project || requiredConfig.project,
       patterns = ['duplicates', 'placeholder_titles', 'orphaned_children', 'unassigned_committed', 'stale_automation'],
       maxResults = 200,
       includeSubAreas = true,
       format = 'categorized'
-    } = parsed.data as DetectPatternsArgs;
+    } = { ...argsData, organization: argsData.organization || requiredConfig.organization, project: argsData.project || requiredConfig.project };
 
     logger.debug(`Detecting patterns: ${patterns.join(', ')}`);
 

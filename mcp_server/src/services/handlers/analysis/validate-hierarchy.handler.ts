@@ -6,6 +6,7 @@
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
@@ -121,16 +122,20 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       return buildValidationErrorResponse(parsed.error, 'validate-hierarchy');
     }
 
+    // Get default configuration values for organization/project
+    const requiredConfig = getRequiredConfig();
+    const argsData = parsed.data as ValidateHierarchyArgs;
+
     const {
       workItemIds,
       areaPath,
-      organization,
-      project,
+      organization = argsData.organization || requiredConfig.organization,
+      project = argsData.project || requiredConfig.project,
       maxResults = 500,
       includeSubAreas = true,
       validateTypes = true,
       validateStates = true
-    } = parsed.data as ValidateHierarchyArgs;
+    } = { ...argsData, organization: argsData.organization || requiredConfig.organization, project: argsData.project || requiredConfig.project };
 
     logger.debug(`Validating hierarchy (types=${validateTypes}, states=${validateStates})`);
 

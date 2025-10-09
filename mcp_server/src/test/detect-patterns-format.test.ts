@@ -13,6 +13,26 @@ jest.mock('../services/ado-discovery-service.js', () => ({
   validateAzureCLI: jest.fn(() => ({ isAvailable: true, isLoggedIn: true }))
 }));
 
+jest.mock('../config/config.js', () => ({
+  loadConfiguration: jest.fn(() => ({
+    azureDevOps: {
+      organization: 'test-org',
+      project: 'test-project',
+      areaPath: 'Test\\Area',
+      iterationPath: '',
+      defaultWorkItemType: 'Task',
+      defaultPriority: 2,
+      defaultAssignedTo: '',
+      inheritParentPaths: false
+    }
+  })),
+  updateConfigFromCLI: jest.fn(),
+  getRequiredConfig: jest.fn(() => ({
+    organization: 'test-org',
+    project: 'test-project'
+  }))
+}));
+
 jest.mock('../services/ado-work-item-service.js', () => ({
   queryWorkItemsByWiql: jest.fn(async () => ({
     workItems: [
