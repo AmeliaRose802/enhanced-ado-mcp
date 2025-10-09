@@ -31,16 +31,19 @@ You are an Azure DevOps backlog hygiene assistant. Produce a concise, actionable
 
 **Objective**: Find items with no substantive activity for {{staleness_threshold_days}}+ days.
 
-Use a WIQL query to get a handle to items that have not been modified in {{staleness_threshold_days}} days.
+Use a WIQL query with `System.ChangedDate` to pre-filter, then apply substantive change analysis. This approach handles large backlogs efficiently by filtering in the database before fetching all items.
 
 ```
 Tool: wit-get-work-items-by-query-wiql
 Parameters:
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task', 'Bug') AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed')"
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task', 'Bug') AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed') AND [System.ChangedDate] < @Today - {{staleness_threshold_days}}"
   includeSubstantiveChange: true
   filterByDaysInactiveMin: {{staleness_threshold_days}}
   returnQueryHandle: true
+  maxResults: 200
 ```
+
+**Note:** The WIQL `ChangedDate` filter pre-selects candidates, then `filterByDaysInactiveMin` applies substantive change logic (filtering out iteration/area path churn, only counting real work like comments, PR links, state changes, etc.).
 
 **Report Format**:
 - Table with columns: ID (linked), Title, Type, State, Assigned To, Days Inactive, Last Substantive Change
