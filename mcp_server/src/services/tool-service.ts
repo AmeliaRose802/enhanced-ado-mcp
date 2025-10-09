@@ -31,6 +31,8 @@ import { handleBulkUpdateByQueryHandle } from './handlers/bulk-operations/bulk-u
 import { handleBulkAssignByQueryHandle } from './handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
 import { handleBulkRemoveByQueryHandle } from './handlers/bulk-operations/bulk-remove-by-query-handle.handler.js';
 import { handleLinkWorkItemsByQueryHandles } from './handlers/bulk-operations/link-work-items-by-query-handles.handler.js';
+import { handleBulkTransitionState } from './handlers/bulk-operations/bulk-transition-handler.js';
+import { handleBulkMoveToIteration } from './handlers/bulk-operations/bulk-move-iteration-handler.js';
 
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
@@ -48,10 +50,9 @@ import { handleValidateHierarchy } from './handlers/analysis/validate-hierarchy.
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
 import { handleNewCopilotItem } from './handlers/integration/new-copilot-item.handler.js';
 
-// Context handlers
+  // Context handlers
 import { handleGetWorkItemContextPackage } from './handlers/context/get-work-item-context-package.handler.js';
-
-// Global server instance for sampling service
+import { handleGetContextPackagesByQueryHandle } from './handlers/context/get-context-packages-by-query-handle.handler.js';// Global server instance for sampling service
 let serverInstance: MCPServer | MCPServerLike | null = null;
 
 /**
@@ -229,6 +230,14 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleBulkRemoveByQueryHandle(config, args);
   }
 
+  if (name === 'wit-bulk-transition-state-by-query-handle') {
+    return await handleBulkTransitionState(config, args);
+  }
+
+  if (name === 'wit-bulk-move-to-iteration-by-query-handle') {
+    return await handleBulkMoveToIteration(config, args);
+  }
+
   // Link work items using query handles
   if (name === 'wit-link-work-items-by-query-handles') {
     return await handleLinkWorkItemsByQueryHandles(config, args);
@@ -260,7 +269,6 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   // Context packages by query handle
   if (name === 'wit-get-context-packages-by-query-handle') {
-    const { handleGetContextPackagesByQueryHandle } = await import('./handlers/context/get-context-packages-by-query-handle.handler.js');
     return await handleGetContextPackagesByQueryHandle(config, args);
   }
 
