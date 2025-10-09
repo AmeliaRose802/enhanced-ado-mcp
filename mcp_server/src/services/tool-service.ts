@@ -8,6 +8,7 @@ import { SamplingService } from "./sampling-service.js";
 import { handleGetConfiguration } from "./handlers/core/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
 import { handleGetWorkItemsContextBatch } from './handlers/core/get-work-items-context-batch.handler.js';
+import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -28,12 +29,14 @@ import { handleBulkCommentByQueryHandle } from './handlers/bulk-operations/bulk-
 import { handleBulkUpdateByQueryHandle } from './handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
 import { handleBulkAssignByQueryHandle } from './handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
 import { handleBulkRemoveByQueryHandle } from './handlers/bulk-operations/bulk-remove-by-query-handle.handler.js';
+import { handleLinkWorkItemsByQueryHandles } from './handlers/bulk-operations/link-work-items-by-query-handles.handler.js';
 
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
 import { handleBulkEnhanceDescriptions } from './handlers/ai-powered/bulk-enhance-descriptions.handler.js';
 import { handleBulkAssignStoryPoints } from './handlers/ai-powered/bulk-assign-story-points.handler.js';
 import { handleBulkAddAcceptanceCriteria } from './handlers/ai-powered/bulk-add-acceptance-criteria.handler.js';
+import { handleBacklogCleanupAnalyzer } from './handlers/ai-powered/backlog-cleanup-analyzer.handler.js';
 
 // Analysis handlers
 import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
@@ -81,7 +84,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Get configuration information
-  if (name === 'wit-get-config') {
+  if (name === 'wit-get-configuration') {
     return await handleGetConfiguration(args);
   }
 
@@ -136,32 +139,37 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Create work item using REST API (TypeScript implementation)
-  if (name === 'wit-create-item') {
+  if (name === 'wit-create-new-item') {
     return await handleCreateNewItem(config, args);
   }
 
+  // Clone work item
+  if (name === 'wit-clone-work-item') {
+    return await handleCloneWorkItem(config, args);
+  }
+
   // Query work items using WIQL (Work Item Query Language)
-  if (name === 'wit-query-wiql') {
+  if (name === 'wit-get-work-items-by-query-wiql') {
     return await handleWiqlQuery(config, args);
   }
 
   // Query Analytics using OData for aggregations and metrics
-  if (name === 'wit-query-odata') {
+  if (name === 'wit-query-analytics-odata') {
     return await handleODataAnalytics(config, args);
   }
 
   // Full context package (single work item)
-  if (name === 'wit-get-context') {
+  if (name === 'wit-get-work-item-context-package') {
     return await handleGetWorkItemContextPackage(args as Parameters<typeof handleGetWorkItemContextPackage>[0]);
   }
 
   // Batch context package (graph of work items)
-  if (name === 'wit-get-context-batch') {
+  if (name === 'wit-get-work-items-context-batch') {
     return await handleGetWorkItemsContextBatch(args as Parameters<typeof handleGetWorkItemsContextBatch>[0]);
   }
 
   // Get last substantive change for a work item
-  if (name === 'wit-get-last-change') {
+  if (name === 'wit-get-last-substantive-change') {
     const { getLastSubstantiveChange } = await import('./handlers/analysis/get-last-substantive-change.handler.js');
     const result = await getLastSubstantiveChange(args as Parameters<typeof getLastSubstantiveChange>[0]);
     return { 
@@ -174,64 +182,69 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   }
 
   // Assign work item to GitHub Copilot with branch link
-  if (name === 'wit-assign-copilot') {
+  if (name === 'wit-assign-to-copilot') {
     return await handleAssignToCopilot(config, args);
   }
 
   // Create work item and immediately assign to GitHub Copilot
-  if (name === 'wit-create-copilot-item') {
+  if (name === 'wit-new-copilot-item') {
     return await handleNewCopilotItem(config, args);
   }
 
   // Extract security instruction links from work item
-  if (name === 'wit-analyze-security') {
+  if (name === 'wit-extract-security-links') {
     return await handleExtractSecurityLinks(config, args);
   }
 
   // Detect common patterns and issues
-  if (name === 'wit-analyze-patterns') {
+  if (name === 'wit-detect-patterns') {
     return await handleDetectPatterns(config, args);
   }
 
   // Fast hierarchy validation (types and states)
-  if (name === 'wit-analyze-hierarchy') {
+  if (name === 'wit-validate-hierarchy') {
     return await handleValidateHierarchy(config, args);
   }
 
   // Bulk operations using query handles (eliminates ID hallucination)
-  if (name === 'wit-bulk-comment') {
+  if (name === 'wit-bulk-comment-by-query-handle') {
     return await handleBulkCommentByQueryHandle(config, args);
   }
 
-  if (name === 'wit-bulk-update') {
+  if (name === 'wit-bulk-update-by-query-handle') {
     return await handleBulkUpdateByQueryHandle(config, args);
   }
 
-  if (name === 'wit-bulk-assign') {
+  if (name === 'wit-bulk-assign-by-query-handle') {
     return await handleBulkAssignByQueryHandle(config, args);
   }
 
-  if (name === 'wit-bulk-remove') {
+  if (name === 'wit-bulk-remove-by-query-handle') {
     return await handleBulkRemoveByQueryHandle(config, args);
   }
 
-  if (name === 'wit-query-handle-validate') {
+  // Link work items using query handles
+  if (name === 'wit-link-work-items-by-query-handles') {
+    return await handleLinkWorkItemsByQueryHandles(config, args);
+  }
+
+  if (name === 'wit-validate-query-handle') {
     return await handleValidateQueryHandle(config, args);
   }
 
-  if (name === 'wit-analyze-items') {
+  if (name === 'wit-analyze-by-query-handle') {
     return await handleAnalyzeByQueryHandle(config, args);
   }
 
-  if (name === 'wit-query-handle-list') {
+  if (name === 'wit-list-query-handles') {
     return await handleListQueryHandles(config, args);
   }
 
-  if (name === 'wit-query-handle-inspect') {
+  if (name === 'wit-inspect-query-handle') {
     return await handleInspectQueryHandle(config, args);
   }
 
-  if (name === 'wit-query-handle-select') {
+  if (name === 'wit-select-items-from-query-handle') {
     return await handleSelectItemsFromQueryHandle(config, args);
   }
 
@@ -259,6 +272,14 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkAddAcceptanceCriteria(config, args, serverInstance);
+  }
+
+  // Backlog cleanup analyzer (AI-powered)
+  if (name === 'wit-backlog-cleanup-analyzer') {
+    if (!serverInstance) {
+      throw new Error("Server instance not available for sampling");
+    }
+    return await handleBacklogCleanupAnalyzer(config, args, serverInstance);
   }
 
   // AI-powered WIQL query generator

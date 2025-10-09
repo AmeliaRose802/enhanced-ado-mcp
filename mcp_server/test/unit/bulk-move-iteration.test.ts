@@ -21,14 +21,47 @@ jest.mock('../../src/services/ado-discovery-service', () => ({
 
 jest.mock('../../src/utils/ado-http-client', () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
-    get: jest.fn().mockResolvedValue({
-      data: {
-        value: [{
-          id: 'iteration-id',
-          name: 'Sprint 11',
-          path: 'TestProject\\Sprint 11'
-        }]
+    get: jest.fn().mockImplementation((url) => {
+      // Handle classification nodes API for iteration validation
+      if (url.includes('classificationnodes/Iterations')) {
+        if (url.includes('InvalidSprint')) {
+          return Promise.reject(new Error('Iteration not found'));
+        }
+        return Promise.resolve({
+          data: {
+            id: 'iteration-id',
+            name: 'Sprint 11',
+            path: 'TestProject\\Sprint 11',
+            identifier: 'iteration-guid'
+          }
+        });
       }
+      // Handle work item fetch
+      if (url.includes('workitems/')) {
+        const idMatch = url.match(/workitems\/(\d+)/);
+        const id = idMatch ? parseInt(idMatch[1], 10) : 123;
+        return Promise.resolve({
+          data: {
+            id,
+            fields: {
+              'System.IterationPath': 'TestProject\\Sprint 10',
+              'System.Title': `Task ${id}`,
+              'System.State': 'Active',
+              'System.WorkItemType': 'Task'
+            }
+          }
+        });
+      }
+      // Default response
+      return Promise.resolve({
+        data: {
+          value: [{
+            id: 'iteration-id',
+            name: 'Sprint 11',
+            path: 'TestProject\\Sprint 11'
+          }]
+        }
+      });
     }),
     patch: jest.fn().mockResolvedValue({
       data: {
@@ -47,6 +80,16 @@ jest.mock('../../src/config/config', () => ({
       organization: 'test-org',
       project: 'test-project'
     }
+  })),
+  getRequiredConfig: jest.fn(() => ({
+    organization: 'test-org',
+    project: 'test-project',
+    defaultWorkItemType: 'Task',
+    defaultPriority: 2,
+    defaultAreaPath: '',
+    defaultIterationPath: '',
+    gitRepository: { defaultBranch: 'main' },
+    gitHubCopilot: { guid: '' }
   }))
 }));
 
@@ -62,6 +105,60 @@ describe('Bulk Move to Iteration Handler', () => {
   beforeEach(() => {
     queryHandleService.clearAll();
     jest.clearAllMocks();
+    // Reset ADOHttpClient to default implementation
+    const { ADOHttpClient } = require('../../src/utils/ado-http-client');
+    ADOHttpClient.mockImplementation(() => ({
+      get: jest.fn().mockImplementation((url) => {
+        // Handle classification nodes API for iteration validation
+        if (url.includes('classificationnodes/Iterations')) {
+          if (url.includes('InvalidSprint')) {
+            return Promise.reject(new Error('Iteration not found'));
+          }
+          return Promise.resolve({
+            data: {
+              id: 'iteration-id',
+              name: 'Sprint 11',
+              path: 'TestProject\\Sprint 11',
+              identifier: 'iteration-guid'
+            }
+          });
+        }
+        // Handle work item fetch
+        if (url.includes('workitems/')) {
+          const idMatch = url.match(/workitems\/(\d+)/);
+          const id = idMatch ? parseInt(idMatch[1], 10) : 123;
+          return Promise.resolve({
+            data: {
+              id,
+              fields: {
+                'System.IterationPath': 'TestProject\\Sprint 10',
+                'System.Title': `Task ${id}`,
+                'System.State': 'Active',
+                'System.WorkItemType': 'Task'
+              }
+            }
+          });
+        }
+        // Default response
+        return Promise.resolve({
+          data: {
+            value: [{
+              id: 'iteration-id',
+              name: 'Sprint 11',
+              path: 'TestProject\\Sprint 11'
+            }]
+          }
+        });
+      }),
+      patch: jest.fn().mockResolvedValue({
+        data: {
+          id: 123,
+          fields: {
+            'System.IterationPath': 'TestProject\\Sprint 11'
+          }
+        }
+      })
+    }));
   });
 
   afterAll(() => {
@@ -95,11 +192,6 @@ describe('Bulk Move to Iteration Handler', () => {
     });
 
     it('should return error for invalid iteration path', async () => {
-      const { ADOHttpClient } = require('../../src/utils/ado-http-client');
-      ADOHttpClient.mockImplementation(() => ({
-        get: jest.fn().mockRejectedValue(new Error('Iteration not found'))
-      }));
-
       const workItemIds = [101];
       const workItemContext = new Map([
         [101, { title: 'Task 1', state: 'Active', type: 'Task' }]
@@ -155,6 +247,7 @@ describe('Bulk Move to Iteration Handler', () => {
       expect(result.success).toBe(true);
       expect((result.data as any).selected_items_count).toBe(2);
       expect((result.data as any).total_items_in_handle).toBe(5);
+      expect((result.data as any).preview_items).toHaveLength(2);
     });
 
     it('should move items matching criteria', async () => {
@@ -239,9 +332,9 @@ describe('Bulk Move to Iteration Handler', () => {
 
       expect(result.success).toBe(true);
       expect((result.data as any).dry_run).toBe(true);
-      expect((result.data as any).preview).toBeDefined();
-      expect((result.data as any).preview).toHaveLength(2);
-      expect(result.warnings).toContain('Dry run mode - no changes made');
+      expect((result.data as any).preview_items).toBeDefined();
+      expect((result.data as any).preview_items).toHaveLength(2);
+      expect((result.data as any).summary).toContain('DRY RUN');
     });
 
     it('should limit preview to maxPreviewItems', async () => {
@@ -270,7 +363,7 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).preview).toHaveLength(5);
+      expect((result.data as any).preview_items).toHaveLength(5);
       expect((result.data as any).selected_items_count).toBe(15);
     });
 
@@ -297,8 +390,8 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).preview[0].current_iteration).toBe('TestProject\\Sprint 10');
-      expect((result.data as any).preview[1].current_iteration).toBe('TestProject\\Backlog');
+      expect((result.data as any).preview_items[0].current_iteration).toBe('TestProject\\Sprint 10');
+      expect((result.data as any).preview_items[1].current_iteration).toBe('TestProject\\Backlog');
     });
   });
 
@@ -414,7 +507,7 @@ describe('Bulk Move to Iteration Handler', () => {
         dryRun: false
       });
 
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false); // Failures mean overall operation failed
       expect((result.data as any).items_succeeded).toBe(1);
       expect((result.data as any).items_failed).toBe(1);
       expect(result.warnings).toEqual(
@@ -602,7 +695,9 @@ describe('Bulk Move to Iteration Handler', () => {
       });
 
       expect(result.success).toBe(true);
-      expect((result.data as any).preview[0].current_iteration).toMatch(/Not set|Unknown/);
+      expect((result.data as any).preview_items).toBeDefined();
+      expect((result.data as any).preview_items.length).toBeGreaterThan(0);
+      expect((result.data as any).preview_items[0].current_iteration).toMatch(/Not set|Unknown/);
     });
   });
 });

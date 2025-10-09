@@ -21,11 +21,13 @@ jest.mock('../../src/services/ado-discovery-service', () => ({
 
 // Create mocks at module level
 const mockGet = jest.fn();
+const mockPost = jest.fn();
 const mockPatch = jest.fn();
 
 jest.mock('../../src/utils/ado-http-client', () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
     get: mockGet,
+    post: mockPost,
     patch: mockPatch
   }))
 }));
@@ -36,6 +38,16 @@ jest.mock('../../src/config/config', () => ({
       organization: 'test-org',
       project: 'test-project'
     }
+  })),
+  getRequiredConfig: jest.fn(() => ({
+    organization: 'test-org',
+    project: 'test-project',
+    defaultWorkItemType: 'Task',
+    defaultPriority: 2,
+    defaultAreaPath: '',
+    defaultIterationPath: '',
+    gitRepository: { defaultBranch: 'main' },
+    gitHubCopilot: { guid: '' }
   }))
 }));
 
@@ -52,7 +64,12 @@ describe('Bulk Transition State Handler', () => {
     queryHandleService.clearAll();
     jest.clearAllMocks();
     
-    // Configure default mock responses
+    // Reset all mock implementations
+    mockGet.mockReset();
+    mockPost.mockReset();
+    mockPatch.mockReset();
+    
+    // Configure default mock responses for all methods
     mockGet.mockResolvedValue({
       data: {
         count: 1,
@@ -79,6 +96,16 @@ describe('Bulk Transition State Handler', () => {
         }
       }
     });
+    
+    mockPost.mockResolvedValue({ data: {} });
+    
+    // Ensure ADOHttpClient returns all three methods
+    const { ADOHttpClient } = require('../../src/utils/ado-http-client');
+    ADOHttpClient.mockImplementation(() => ({
+      get: mockGet,
+      post: mockPost,
+      patch: mockPatch
+    }));
   });
 
   afterAll(() => {
@@ -375,12 +402,11 @@ describe('Bulk Transition State Handler', () => {
     });
 
     it('should handle partial failures gracefully', async () => {
-      const { ADOHttpClient } = require('../../src/utils/ado-http-client');
-      const mockPatch = jest.fn()
+      // Reset and reconfigure mocks for this specific test
+      mockPatch.mockReset();
+      mockPatch
         .mockResolvedValueOnce({ data: { id: 101, fields: { 'System.State': 'Resolved' } } })
         .mockRejectedValueOnce(new Error('API Error'));
-
-      ADOHttpClient.mockImplementation(() => ({ patch: mockPatch }));
 
       const workItemIds = [101, 102];
       const workItemContext = new Map([
@@ -404,22 +430,22 @@ describe('Bulk Transition State Handler', () => {
         validateTransitions: false
       });
 
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false); // Failures mean overall operation failed
       expect((result.data as any).items_succeeded).toBe(1);
       expect((result.data as any).items_failed).toBe(1);
-      expect(result.warnings).toEqual(
-        expect.arrayContaining([expect.stringContaining('1 item(s) failed')])
+      expect(result.errors).toEqual(
+        expect.arrayContaining([expect.stringContaining('Work item 102')])
       );
     });
   });
 
   describe('Optional parameters', () => {
     it('should include reason when provided', async () => {
-      const { ADOHttpClient } = require('../../src/utils/ado-http-client');
-      const mockPatch = jest.fn().mockResolvedValue({
-        data: { id: 101, fields: { 'System.State': 'Resolved' } }
+      // Reset and configure mock for this test
+      mockPatch.mockReset();
+      mockPatch.mockResolvedValue({
+        data: { id: 101, fields: { 'System.State': 'Resolved', 'System.Reason': 'Fixed' } }
       });
-      ADOHttpClient.mockImplementation(() => ({ patch: mockPatch }));
 
       const workItemIds = [101];
       const workItemContext = new Map([
@@ -454,11 +480,11 @@ describe('Bulk Transition State Handler', () => {
     });
 
     it('should include comment when provided', async () => {
-      const { ADOHttpClient } = require('../../src/utils/ado-http-client');
-      const mockPatch = jest.fn().mockResolvedValue({
+      // Reset and configure mock for this test
+      mockPatch.mockReset();
+      mockPatch.mockResolvedValue({
         data: { id: 101, fields: { 'System.State': 'Resolved' } }
       });
-      ADOHttpClient.mockImplementation(() => ({ patch: mockPatch }));
 
       const workItemIds = [101];
       const workItemContext = new Map([
@@ -573,6 +599,33 @@ describe('Bulk Transition State Handler', () => {
     });
 
     it('should handle items already in target state', async () => {
+      // Mock API to return work items with one already in target state
+      mockGet.mockResolvedValueOnce({
+        data: {
+          count: 2,
+          value: [
+            {
+              id: 101,
+              fields: {
+                'System.Id': 101,
+                'System.State': 'Resolved',
+                'System.WorkItemType': 'Bug',
+                'System.Title': 'Bug 1'
+              }
+            },
+            {
+              id: 102,
+              fields: {
+                'System.Id': 102,
+                'System.State': 'Active',
+                'System.WorkItemType': 'Bug',
+                'System.Title': 'Bug 2'
+              }
+            }
+          ]
+        }
+      });
+
       const workItemIds = [101, 102];
       const workItemContext = new Map([
         [101, { title: 'Bug 1', state: 'Resolved', type: 'Bug' }], // Already resolved

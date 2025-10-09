@@ -253,6 +253,18 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     if (!response.ok) {
       const errorText = await response.text();
       logger.error(`OData Analytics query failed: ${response.status} ${response.statusText} - ${errorText}`);
+      
+      // Provide helpful hints for common Analytics API errors
+      if (response.status === 401 || response.status === 403 || errorText.includes('TF400813')) {
+        throw new Error(
+          `Analytics API authorization error: ${response.status} ${response.statusText}\n` +
+          `The user account does not have permission to access Azure DevOps Analytics.\n` +
+          `Required permission: "View analytics" at the project level.\n` +
+          `Please contact your Azure DevOps administrator to grant Analytics access.\n` +
+          `Details: ${errorText}`
+        );
+      }
+      
       throw new Error(`Analytics API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 

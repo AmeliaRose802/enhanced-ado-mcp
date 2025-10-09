@@ -25,6 +25,16 @@ jest.mock('../../src/config/config', () => ({
       organization: 'test-org',
       project: 'test-project'
     }
+  })),
+  getRequiredConfig: jest.fn(() => ({
+    organization: 'test-org',
+    project: 'test-project',
+    defaultWorkItemType: 'Task',
+    defaultPriority: 2,
+    defaultAreaPath: '',
+    defaultIterationPath: '',
+    gitRepository: { defaultBranch: 'main' },
+    gitHubCopilot: { guid: '' }
   }))
 }));
 

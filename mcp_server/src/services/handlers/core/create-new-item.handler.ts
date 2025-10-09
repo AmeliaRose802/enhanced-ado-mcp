@@ -20,9 +20,22 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
       return buildValidationErrorResponse(parsed.error);
     }
 
-    logger.debug(`Creating work item with REST API: ${parsed.data.title}`);
+    // Import and apply configuration defaults for work item type and other fields
+    const { getRequiredConfig } = await import('../../../config/config.js');
+    const requiredConfig = getRequiredConfig();
     
-    const result = await createWorkItem(parsed.data);
+    // Merge parsed data with config defaults
+    const workItemData = {
+      ...parsed.data,
+      workItemType: parsed.data.workItemType || requiredConfig.defaultWorkItemType,
+      organization: parsed.data.organization || requiredConfig.organization,
+      project: parsed.data.project || requiredConfig.project,
+      priority: parsed.data.priority !== undefined ? parsed.data.priority : requiredConfig.defaultPriority
+    };
+
+    logger.debug(`Creating work item with REST API: ${workItemData.title} (type: ${workItemData.workItemType})`);
+    
+    const result = await createWorkItem(workItemData);
     
     return {
       success: true,

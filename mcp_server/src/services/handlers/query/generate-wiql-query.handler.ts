@@ -14,6 +14,7 @@ import { SamplingClient } from "../../../utils/sampling-client.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { extractWiqlQuery, cleanWiqlQuery } from "../../../utils/wiql-helpers.js";
 import { queryHandleService } from "../../query-handle-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
 
 interface GenerateWiqlQueryArgs {
   description: string;
@@ -52,10 +53,11 @@ export async function handleGenerateWiqlQuery(config: ToolConfig, args: unknown,
       return buildSamplingUnavailableResponse();
     }
 
+    const requiredConfig = getRequiredConfig();
     const {
       description,
-      organization,
-      project,
+      organization = requiredConfig.organization,
+      project = requiredConfig.project,
       maxIterations = 3,
       includeExamples = true,
       testQuery = true,

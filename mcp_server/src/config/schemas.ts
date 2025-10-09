@@ -224,14 +224,16 @@ export const detectPatternsSchema = z.object({
 });
 
 /**
- * Schema for wit-validate-hierarchy-fast tool
- * Fast hierarchy validation with cycle detection
+ * Schema for wit-validate-hierarchy tool
+ * Fast hierarchy validation with type and state checks
  */
 export const validateHierarchyFastSchema = z.object({
-  rootWorkItemId: z.number().int().positive("Root work item ID must be a positive integer"),
-  maxDepth: z.number().int().min(1).max(10).optional().default(5),
-  checkCycles: z.boolean().optional().default(true),
-  checkOrphans: z.boolean().optional().default(true),
+  workItemIds: z.array(z.number()).optional(),
+  areaPath: z.string().optional(),
+  maxResults: z.number().int().min(1).max(2000).optional().default(500),
+  includeSubAreas: z.boolean().optional().default(true),
+  validateTypes: z.boolean().optional().default(true),
+  validateStates: z.boolean().optional().default(true),
   organization: z.string().optional(),
   project: z.string().optional()
 });

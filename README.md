@@ -1140,3 +1140,151 @@ View current configuration:
 * Call tool `wit-get-configuration` with optional `Section` parameter to view specific configuration sections.
 
 Verbose debug logging: set `MCP_DEBUG=1` or enable `toolBehavior.verboseLogging`.
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Authorization Errors
+
+#### Analytics API Permission Errors (TF400813)
+
+**Affected Tools:**
+- `wit-query-analytics-odata` - OData Analytics queries
+- `wit-generate-odata-query` - AI-powered OData generation  
+- `wit-detect-patterns` - Some pattern detection scenarios
+
+**Error Message:**
+```
+TF400813: The user '[GUID]' is not authorized to access this resource.
+Analytics API authorization error: User lacks "View analytics" permission.
+```
+
+**Root Cause:**  
+These tools access the Azure DevOps **Analytics API** (`analytics.dev.azure.com`), which requires separate permissions from regular Work Item Tracking API access.
+
+**Solution:**  
+1. Contact your Azure DevOps administrator
+2. Request **"View analytics"** permission at the project level
+3. Alternative: Use WIQL-based tools instead of OData for queries:
+   - `wit-generate-wiql-query` instead of `wit-generate-odata-query`
+   - `wit-get-work-items-by-query-wiql` instead of `wit-query-analytics-odata`
+
+**Why WIQL works when OData doesn't:**  
+WIQL queries use the Work Item Tracking API, while OData uses the Analytics API. They have different permission requirements.
+
+#### Area Path Configuration Errors (HTTP 404)
+
+**Affected Tools:**
+- `wit-backlog-cleanup-analyzer` - Requires explicit area path
+
+**Error Message:**
+```
+Failed to execute WIQL query: HTTP 404: Not Found
+Area path is required for backlog cleanup analysis.
+```
+
+**Root Cause:**  
+The tool requires scoping to a specific area path to avoid scanning the entire project.
+
+**Solution:**
+```bash
+# Discover valid area paths
+wit-list-area-paths --project "YourProject"
+
+# Then use with explicit area path
+wit-backlog-cleanup-analyzer --area-path "YourProject\\YourTeam"
+
+# Or configure server with default area path
+enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "YourProject\\YourTeam"
+```
+
+#### Work Item Type Configuration Error ($undefined in path)
+
+**Affected Tools:**
+- `wit-create-new-item` - Work item creation
+
+**Error Message:**
+```
+The controller for path '/_apis/wit/workitems/$undefined' was not found
+```
+
+**Root Cause:**  
+Work item type was not provided and no default was configured.
+
+**Solution:**
+```javascript
+// Always specify workItemType explicitly
+{
+  "title": "New feature",
+  "workItemType": "Product Backlog Item",  // Required!
+  "description": "..."
+}
+
+// Or configure default at server startup
+enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "Project\\Team"
+```
+
+The server will now properly default to "Product Backlog Item" if not specified.
+
+### Permission Verification
+
+**Check your Azure DevOps permissions:**
+
+1. **Work Item Tracking** (required for most tools):
+   - Project Settings → Permissions → "View work items in this node"
+   - Area Path permissions for your team
+
+2. **Analytics** (required for OData tools):
+   - Project Settings → Permissions → "View analytics"
+   - Organization Settings → Analytics → "View" access
+
+3. **Discovery Tools** (always available):
+   ```bash
+   # List area paths (verify access)
+   wit-list-area-paths
+   
+   # List iteration paths  
+   wit-list-iteration-paths
+   
+   # List repositories
+   wit-list-repositories
+   
+   # View current configuration
+   wit-get-configuration
+   ```
+
+### Debug Mode
+
+Enable verbose logging to diagnose issues:
+
+```bash
+# Environment variable
+export MCP_DEBUG=1  # Linux/macOS
+$env:MCP_DEBUG=1    # PowerShell
+
+# Or in VS Code settings.json
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "env": {
+        "MCP_DEBUG": "1"
+      }
+    }
+  }
+}
+```
+
+This will output detailed API calls, authentication status, and error details.
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check the error category** - Error messages now include helpful hints
+2. **Use discovery tools** - Verify your configuration and permissions
+3. **Enable debug logging** - Get detailed diagnostic information
+4. **Review feature specs** - See [`docs/feature_specs/`](docs/feature_specs/) for detailed tool documentation
+5. **Open an issue** - Include debug logs and error messages
+
+---

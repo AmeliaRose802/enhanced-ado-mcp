@@ -213,9 +213,10 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
         });
       }
 
-      // Check if any transitions are invalid
-      const invalidTransitions = validationResults.filter(r => !r.validation.valid);
-      if (invalidTransitions.length > 0) {
+      // Check if any transitions are invalid (Removed state blocking transitions)
+      const invalidTransitions = validationResults.filter(r => !r.validation.valid && r.currentState === 'Removed');
+      if (invalidTransitions.length > 0 && !dryRun) {
+        // Only fail actual operations, not dry runs
         const errorMessages = invalidTransitions.map(r => 
           `Work item ${r.id} (${r.type}): ${r.validation.reason}`
         );
@@ -242,8 +243,17 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
             validationFailed: true
           },
           errors: errorMessages,
-          warnings: ['State transition validation failed. Set validateTransitions=false to skip validation and force transitions.']
+          warnings: ['State transition validation failed. Removed state items cannot be transitioned. Set validateTransitions=false to skip validation and force transitions.']
         };
+      }
+      
+      // Collect warnings for potentially problematic transitions (not blocked, but questionable)
+      const questionableTransitions = validationResults.filter(r => !r.validation.valid && r.currentState !== 'Removed');
+      if (questionableTransitions.length > 0) {
+        const warningMessages = questionableTransitions.map(r => 
+          `Work item ${r.id} (${r.type}): ${r.validation.reason}`
+        );
+        logger.warn(`Questionable transitions detected: ${warningMessages.join('; ')}`);
       }
     }
 
@@ -275,35 +285,39 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
       // Collect warnings from validation or from checking work items directly
       const warnings: string[] = [];
       
-      // Add warnings from validation results
+      // Always check work items for Removed state or already-in-target-state conditions
+      if (workItems.length > 0) {
+        workItems.forEach(item => {
+          const currentState = item.fields['System.State'];
+          if (currentState === 'Removed') {
+            warnings.push(`Work item ${item.id}: Cannot transition from Removed state`);
+          } else if (currentState === targetState) {
+            warnings.push(`Work item ${item.id}: Work item already in target state '${targetState}'`);
+          }
+        });
+      }
+      
+      // Always fall back to workItemContext for any items not covered by workItems
+      selectedWorkItemIds.forEach((id: number) => {
+        // Skip if we already checked this item via workItems array
+        if (workItems.length > 0 && workItems.find(item => item.id === id)) {
+          return;
+        }
+        
+        const context = queryData.itemContext.find(item => item.id === id);
+        const currentState = context?.state || 'Unknown';
+        if (currentState === 'Removed') {
+          warnings.push(`Work item ${id}: Cannot transition from Removed state`);
+        } else if (currentState === targetState) {
+          warnings.push(`Work item ${id}: Work item already in target state '${targetState}'`);
+        }
+      });
+      
+      // Add warnings from validation results (for other questionable transitions)
       if (validationResults.length > 0) {
         validationResults
-          .filter(r => r.validation.reason)
+          .filter(r => r.validation.reason && r.currentState !== 'Removed' && r.currentState !== targetState)
           .forEach(r => warnings.push(`Work item ${r.id}: ${r.validation.reason}`));
-      } else {
-        // Even without explicit validation, warn about items already in target state or in Removed state
-        // Check fetched work items or fall back to workItemContext
-        if (workItems.length > 0) {
-          workItems.forEach(item => {
-            const currentState = item.fields['System.State'];
-            if (currentState === 'Removed') {
-              warnings.push(`Work item ${item.id}: Removed items will be filtered out during execution`);
-            } else if (currentState === targetState) {
-              warnings.push(`Work item ${item.id}: Work item already in target state '${targetState}'`);
-            }
-          });
-        } else {
-          // Fall back to workItemContext if we didn't fetch work items
-          selectedWorkItemIds.forEach((id: number) => {
-            const context = queryData.itemContext.find(item => item.id === id);
-            const currentState = context?.state || 'Unknown';
-            if (currentState === 'Removed') {
-              warnings.push(`Work item ${id}: Removed items will be filtered out during execution`);
-            } else if (currentState === targetState) {
-              warnings.push(`Work item ${id}: Work item already in target state '${targetState}'`);
-            }
-          });
-        }
       }
 
       return {
@@ -362,22 +376,6 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
           continue;
         }
 
-        // Add comment if provided
-        let commentAdded = false;
-        if (comment) {
-          try {
-            const commentUrl = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
-            await httpClient.post(commentUrl, {
-              text: comment,
-              format: 1  // 1 = Markdown, 0 = PlainText
-            });
-            commentAdded = true;
-            logger.debug(`Added comment to work item ${workItemId}`);
-          } catch (commentError) {
-            logger.warn(`Failed to add comment to work item ${workItemId}, proceeding with state transition:`, commentError);
-          }
-        }
-
         // Build state transition patch
         const statePatch: Array<{ op: string; path: string; value: string }> = [
           {
@@ -394,6 +392,18 @@ export async function handleBulkTransitionState(config: ToolConfig, args: unknow
             path: "/fields/System.Reason",
             value: reason
           });
+        }
+
+        // Add comment to history if provided
+        let commentAdded = false;
+        if (comment) {
+          statePatch.push({
+            op: "add",
+            path: "/fields/System.History",
+            value: comment
+          });
+          commentAdded = true;
+          logger.debug(`Adding comment to work item ${workItemId} history`);
         }
 
         // Update the work item state

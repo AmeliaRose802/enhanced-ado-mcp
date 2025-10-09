@@ -13,6 +13,7 @@ import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 import { queryHandleService } from "../../query-handle-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
 
 interface GenerateODataQueryArgs {
   description: string;
@@ -46,10 +47,11 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       return buildSamplingUnavailableResponse();
     }
 
+    const requiredConfig = getRequiredConfig();
     const {
       description,
-      organization,
-      project,
+      organization = requiredConfig.organization,
+      project = requiredConfig.project,
       maxIterations = 3,
       includeExamples = true,
       testQuery = true,
@@ -179,6 +181,17 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         
         if (!response.ok) {
           const errorText = await response.text();
+          
+          // Provide helpful hints for common Analytics API errors
+          if (response.status === 401 || response.status === 403 || errorText.includes('TF400813')) {
+            throw new Error(
+              `Analytics API authorization error: Cannot create query handle.\n` +
+              `The user account does not have permission to access Azure DevOps Analytics.\n` +
+              `Required permission: "View analytics" at the project level.\n` +
+              `Please contact your Azure DevOps administrator to grant Analytics access.`
+            );
+          }
+          
           throw new Error(`Failed to execute OData query: ${response.status} ${response.statusText} - ${errorText}`);
         }
         
@@ -466,6 +479,15 @@ async function testODataQuery(
     if (!response.ok) {
       const errorText = await response.text();
       logger.warn(`OData test failed: ${response.status} ${errorText}`);
+      
+      // Provide helpful hints for Analytics API authorization errors
+      if (response.status === 401 || response.status === 403 || errorText.includes('TF400813')) {
+        return {
+          success: false,
+          error: `Analytics API authorization error: ${response.status}. User lacks "View analytics" permission. Please contact your Azure DevOps administrator.`
+        };
+      }
+      
       return {
         success: false,
         error: `Analytics API error: ${response.status} ${response.statusText} - ${errorText}`

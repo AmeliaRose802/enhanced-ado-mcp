@@ -2,32 +2,55 @@ import { join, resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { cwd } from "process";
 
-// Helper to get current directory that works in both test and production
-function getCurrentDir(): string {
-  // In test/Jest environment, use process.cwd()
+/**
+ * Get the directory containing this file at runtime
+ * CRITICAL: This must resolve to the actual file location, NOT process.cwd()
+ * because the MCP server can be launched from any directory
+ */
+function getThisFileDirectory(): string {
+  // In test/Jest environment
   if (process.env.JEST_WORKER_ID !== undefined) {
-    // We're in Jest - use cwd and navigate to src/utils
     return join(cwd(), 'src', 'utils');
   }
   
-  // In production - use __dirname equivalent with import.meta.url for ES modules
-  // Check if we're in an ES module context before accessing import.meta
+  // In ES module production - import.meta.url is available
+  // We need to check if we're in an ES module context safely
   try {
-    // Use eval to prevent Jest from parsing import.meta at compile time
-    const metaUrl = eval('typeof import.meta !== "undefined" ? import.meta.url : null');
-    if (metaUrl && typeof metaUrl === 'string') {
-      return dirname(fileURLToPath(metaUrl));
+    // Use eval to avoid Jest parse-time errors with import.meta
+    // This is only executed at runtime when not in Jest
+    const hasImportMeta = eval('typeof import.meta !== "undefined" && import.meta.url');
+    if (hasImportMeta) {
+      const importMetaUrl = eval('import.meta.url');
+      const fileDir = dirname(fileURLToPath(importMetaUrl));
+      if (process.env.MCP_DEBUG === '1') {
+        console.error(`[paths.ts] Resolved via import.meta.url: ${fileDir}`);
+      }
+      return fileDir;
     }
   } catch (e) {
-    // Fallback if import.meta is not available
+    // import.meta not available or eval failed
+    if (process.env.MCP_DEBUG === '1') {
+      console.error('[paths.ts] import.meta not available:', e);
+    }
   }
   
-  // Fallback to cwd-based path
+  // Fallback - this should only happen in non-ES-module contexts
+  if (process.env.MCP_DEBUG === '1') {
+    console.error('[paths.ts] WARNING: Using cwd() fallback');
+  }
   return join(cwd(), 'src', 'utils');
 }
 
-// Base paths - prompts are in mcp_server directory
-// Structure: mcp_server/dist/utils/paths.js -> ../../prompts
-const currentDir = getCurrentDir();
-export const repoRoot = resolve(currentDir, "..", "..");
+// Calculate paths relative to THIS file's location
+// Structure: dist/utils/paths.js -> ../../ = mcp_server root
+//        OR: src/utils/paths.ts -> ../../ = mcp_server root
+const thisFileDir = getThisFileDirectory();
+export const repoRoot = resolve(thisFileDir, "..", "..");
 export const promptsDir = join(repoRoot, "prompts");
+
+// Debug logging
+if (process.env.MCP_DEBUG === '1') {
+  console.error(`[paths.ts] thisFileDir: ${thisFileDir}`);
+  console.error(`[paths.ts] repoRoot: ${repoRoot}`);
+  console.error(`[paths.ts] promptsDir: ${promptsDir}`);
+}

@@ -201,11 +201,27 @@ export class ADOHttpClient {
       const responseText = await response.text();
       let responseData: T;
 
+      // Check content-type to determine if response is JSON
+      const contentType = response.headers.get('content-type') || '';
+      const isJsonResponse = contentType.includes('application/json');
+
+      // If not JSON, it's likely an HTML error page
+      if (!isJsonResponse && responseText.length > 0) {
+        const preview = responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText;
+        throw new ADOHttpError(
+          `Received non-JSON response (${contentType}). This usually indicates an authentication or authorization error. Response preview: ${preview}`,
+          response.status,
+          response.statusText
+        );
+      }
+
       try {
         responseData = responseText ? JSON.parse(responseText) : ({} as T);
       } catch (parseError) {
+        // Include the actual response text in the error to help diagnose the issue
+        const preview = responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText;
         throw new ADOHttpError(
-          `Failed to parse response as JSON: ${parseError}`,
+          `Failed to parse response as JSON: ${parseError instanceof Error ? parseError.message : String(parseError)}. Response was: ${preview}`,
           response.status,
           response.statusText
         );

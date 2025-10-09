@@ -310,6 +310,24 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
     );
   } catch (error) {
     logger.error('Detect patterns error:', error);
+    
+    // Check for authorization errors and provide helpful guidance
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('TF400813') || errorMessage.includes('not authorized')) {
+      return buildErrorResponse(
+        new Error(
+          `Authorization error: The user account does not have sufficient permissions to query work items.\n` +
+          `This may be due to area path restrictions or project-level permissions.\n` +
+          `Please verify:\n` +
+          `1. You have "View work items in this node" permission for the specified area path\n` +
+          `2. The area path exists and is correctly specified\n` +
+          `3. Your account has project-level read access\n` +
+          `Original error: ${errorMessage}`
+        ),
+        { source: "detect-patterns" }
+      );
+    }
+    
     return buildErrorResponse(
       error as Error,
       { source: "detect-patterns" }

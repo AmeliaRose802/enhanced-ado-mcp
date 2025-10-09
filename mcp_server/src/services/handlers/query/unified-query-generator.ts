@@ -11,6 +11,7 @@ import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { handleGenerateWiqlQuery } from "./generate-wiql-query.handler.js";
 import { handleGenerateODataQuery } from "./generate-odata-query.handler.js";
+import { getRequiredConfig } from "../../../config/config.js";
 
 interface UnifiedQueryGeneratorArgs {
   description: string;
@@ -53,10 +54,11 @@ export async function handleUnifiedQueryGenerator(
       return buildSamplingUnavailableResponse();
     }
 
+    const requiredConfig = getRequiredConfig();
     const {
       description,
-      organization,
-      project,
+      organization = requiredConfig.organization,
+      project = requiredConfig.project,
       maxIterations = 3,
       includeExamples = true,
       testQuery = true,
