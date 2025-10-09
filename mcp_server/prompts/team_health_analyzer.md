@@ -33,7 +33,8 @@ You are a **Team Health & Well-being Manager**. Your task is to **IMMEDIATELY be
 
 **Fetch Team Roster:**
 - Use OData to identify all team members who completed work in the period
-- Query: `$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail, AssignedTo/UserName), aggregate($count as Count))`
+- Query: `$apply=filter(CompletedDate ge {{start_date}}T00:00:00Z and CompletedDate le {{end_date}}T23:59:59Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail, AssignedTo/UserName), aggregate($count as Count))`
+- Note: Area path filtering removed from OData as it's not reliable; filter results in application logic instead
 
 **For Each Team Member, Collect:**
 
@@ -41,7 +42,8 @@ You are a **Team Health & Well-being Manager**. Your task is to **IMMEDIATELY be
 - Completed items by work type
 - Completion velocity over time
 - Work distribution patterns
-- Custom query: `$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail eq '{email}')/groupby((WorkItemType), aggregate($count as Count))`
+- Custom query: `$apply=filter(CompletedDate ge {{start_date}}T00:00:00Z and CompletedDate le {{end_date}}T23:59:59Z and AssignedTo/UserEmail eq '{email}')/groupby((WorkItemType), aggregate($count as Count))`
+- Note: Filter results by area path in application logic after retrieving data
 
 **Current Active Load (WIQL):**
 - Query: `[System.AssignedTo] = '{email}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review') AND [System.AreaPath] UNDER '{{area_path}}'`
@@ -563,15 +565,17 @@ ${i+1}. **${action.title}**
 ```
 wit-query-analytics-odata with:
 queryType: "customQuery"
-customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail, AssignedTo/UserName), aggregate($count as Count))"
+customQuery: "$apply=filter(CompletedDate ge {{start_date}}T00:00:00Z and CompletedDate le {{end_date}}T23:59:59Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail, AssignedTo/UserName), aggregate($count as Count))"
 ```
+Note: Filter by area path in application logic after retrieving results
 
 **Per-Person Completed Work (OData):**
 ```
 wit-query-analytics-odata with:
 queryType: "customQuery"
-customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail eq '{email}')/groupby((WorkItemType), aggregate($count as Count))"
+customQuery: "$apply=filter(CompletedDate ge {{start_date}}T00:00:00Z and CompletedDate le {{end_date}}T23:59:59Z and AssignedTo/UserEmail eq '{email}')/groupby((WorkItemType), aggregate($count as Count))"
 ```
+Note: Filter by area path in application logic after retrieving results
 
 **Per-Person Active Work (WIQL):**
 ```
@@ -622,16 +626,20 @@ dryRun: false
 ## Pre-Configured Context Variables
 
 - `{{area_path}}` - Full configured area path
-- `{{area_substring}}` - Pre-extracted substring for OData `contains()`
-- `{{start_date}}` - Calculated start date (YYYY-MM-DD)
-- `{{start_date_iso}}` - Start date in ISO 8601 format (YYYY-MM-DD)
-- `{{end_date}}` - Today's date (YYYY-MM-DD)
-- `{{today}}` - Today's date (YYYY-MM-DD)
+- `{{area_substring}}` - Pre-extracted substring for OData `contains()` (Note: Not reliable for filtering, use WIQL instead)
+- `{{start_date}}` - Calculated start date (YYYY-MM-DD format)
+- `{{end_date}}` - Today's date (YYYY-MM-DD format)
+- `{{today}}` - Today's date (YYYY-MM-DD format)
 - `{{analysis_period_days}}` - Days to analyze (default: 90)
 - `{{max_recommendations_per_person}}` - Max recommendations per person (default: 5)
 - `{{include_growth_plans}}` - Include growth plans (default: true)
 
 **These are REAL VALUES. Use them as-is in your queries.**
+
+**Date Formatting Notes:**
+- For OData queries: Use `{{start_date}}T00:00:00Z` and `{{end_date}}T23:59:59Z` for full ISO 8601 format
+- For WIQL queries: Use `{{start_date}}` and `{{end_date}}` as-is (YYYY-MM-DD format)
+- OData area path filtering with `contains()` is unreliable - filter results in application logic instead
 
 ---
 
