@@ -39,7 +39,6 @@ import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-que
 import { handleBulkEnhanceDescriptions } from './handlers/ai-powered/bulk-enhance-descriptions.handler.js';
 import { handleBulkAssignStoryPoints } from './handlers/ai-powered/bulk-assign-story-points.handler.js';
 import { handleBulkAddAcceptanceCriteria } from './handlers/ai-powered/bulk-add-acceptance-criteria.handler.js';
-import { handleBacklogCleanupAnalyzer } from './handlers/ai-powered/backlog-cleanup-analyzer.handler.js';
 
 // Analysis handlers
 import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
@@ -292,14 +291,6 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
       throw new Error("Server instance not available for sampling");
     }
     return await handleBulkAddAcceptanceCriteria(config, args, serverInstance);
-  }
-
-  // Backlog cleanup analyzer (AI-powered)
-  if (name === 'wit-backlog-cleanup-analyzer') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleBacklogCleanupAnalyzer(config, args, serverInstance);
   }
 
   // AI-powered WIQL query generator

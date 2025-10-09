@@ -1173,15 +1173,12 @@ These tools access the Azure DevOps **Analytics API** (`analytics.dev.azure.com`
 **Why WIQL works when OData doesn't:**  
 WIQL queries use the Work Item Tracking API, while OData uses the Analytics API. They have different permission requirements.
 
-#### Area Path Configuration Errors (HTTP 404)
 
 **Affected Tools:**
-- `wit-backlog-cleanup-analyzer` - Requires explicit area path
 
 **Error Message:**
 ```
 Failed to execute WIQL query: HTTP 404: Not Found
-Area path is required for backlog cleanup analysis.
 ```
 
 **Root Cause:**  
@@ -1193,7 +1190,6 @@ The tool requires scoping to a specific area path to avoid scanning the entire p
 wit-list-area-paths --project "YourProject"
 
 # Then use with explicit area path
-wit-backlog-cleanup-analyzer --area-path "YourProject\\YourTeam"
 
 # Or configure server with default area path
 enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "YourProject\\YourTeam"

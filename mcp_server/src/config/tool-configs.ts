@@ -38,7 +38,6 @@ import {
   bulkMoveToIterationByQueryHandleSchema,
   cloneWorkItemSchema,
   linkWorkItemsByQueryHandlesSchema,
-  backlogCleanupAnalyzerSchema,
   getPromptsSchema
 } from "./schemas.js";
 
@@ -317,25 +316,6 @@ export const toolConfigs: ToolConfig[] = [
         areaPath: { type: "string", description: "Area path to filter work items (uses configured default if not provided)" }
       },
       required: ["assignedToEmail"]
-    }
-  },
-  {
-    name: "wit-backlog-cleanup-analyzer",
-    description: "🤖 AI-POWERED BACKLOG ANALYSIS: Analyze backlog for stale, incomplete, or problematic work items with configurable staleness threshold. Identifies items missing descriptions, acceptance criteria, story points, assignments, and provides prioritized recommendations for cleanup. Returns query handle for bulk remediation workflows.",
-    script: "",
-    schema: backlogCleanupAnalyzerSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        areaPath: { type: "string", description: "Area path to analyze (uses configured default if not provided)" },
-        stalenessThresholdDays: { type: "number", description: "Days without substantive change to consider stale (default 180)" },
-        includeSubAreas: { type: "boolean", description: "Include child area paths (default true)" },
-        includeQualityChecks: { type: "boolean", description: "Check for missing descriptions, acceptance criteria, story points (default true)" },
-        includeMetadataChecks: { type: "boolean", description: "Check for unassigned items, missing iterations, priorities (default true)" },
-        maxResults: { type: "number", description: "Maximum work items to analyze (default 500, max 2000)" },
-        returnQueryHandle: { type: "boolean", description: "Return query handle for bulk remediation (default true)" }
-      },
-      required: []
     }
   },
   // Configuration and Discovery Tools
@@ -1087,7 +1067,6 @@ export const AI_POWERED_TOOLS = [
   'wit-ai-assignment-analyzer',
   'wit-personal-workload-analyzer',
   'wit-sprint-planning-analyzer',
-  'wit-backlog-cleanup-analyzer',
   'wit-bulk-enhance-descriptions-by-query-handle',
   'wit-bulk-assign-story-points-by-query-handle',
   'wit-bulk-add-acceptance-criteria-by-query-handle',

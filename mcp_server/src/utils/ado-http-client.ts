@@ -140,6 +140,8 @@ export class ADOHttpClient {
     if (!urlObj.searchParams.has('api-version')) {
       urlObj.searchParams.set('api-version', '7.1');
     }
+    
+    logger.debug(`[HTTP] Full URL: ${urlObj.toString()}, Org: "${this.organization}"`);
 
     // Refresh token if this is not already a retry
     if (!_isRetry) {

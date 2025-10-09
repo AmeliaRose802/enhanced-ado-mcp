@@ -153,6 +153,7 @@ export class WorkItemRepository {
    * Execute a WIQL query
    */
   async executeWiql(wiqlQuery: string): Promise<ADOWiqlResult> {
+    logger.debug(`[WIQL] Executing query for org="${this.organization}", project="${this.project}"`);
     const wiqlBody = { query: wiqlQuery };
     const response = await this.httpClient.post<ADOWiqlResult>('wit/wiql', wiqlBody);
     return response.data;

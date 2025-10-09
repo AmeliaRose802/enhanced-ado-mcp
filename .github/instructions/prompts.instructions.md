@@ -131,7 +131,6 @@ This prevents the AI from wrapping responses in code blocks.
 
 ### Workflow Prompts
 - `unified_work_item_analyzer.md` - Comprehensive analysis
-- `unified_hierarchy_manager.md` - Manage item hierarchies
 - `sprint_planning_analyzer.md` - Plan sprint contents
 
 ## Creating New Prompts

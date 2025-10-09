@@ -186,22 +186,6 @@ export const sprintPlanningAnalyzerSchema = z.object({
 });
 
 /**
- * Schema for wit-backlog-cleanup-analyzer tool
- * AI-powered backlog hygiene analysis with configurable staleness threshold
- */
-export const backlogCleanupAnalyzerSchema = z.object({
-  areaPath: z.string().optional(),
-  stalenessThresholdDays: z.number().int().min(1).optional().default(180),
-  includeSubAreas: z.boolean().optional().default(true),
-  includeQualityChecks: z.boolean().optional().default(true),
-  includeMetadataChecks: z.boolean().optional().default(true),
-  maxResults: z.number().int().min(1).max(2000).optional().default(500),
-  returnQueryHandle: z.boolean().optional().default(true),
-  organization: z.string().optional(),
-  project: z.string().optional()
-});
-
-/**
  * Schema for wit-detect-patterns tool
  * Identify common work item issues (duplicates, placeholders, orphans, etc.)
  */
