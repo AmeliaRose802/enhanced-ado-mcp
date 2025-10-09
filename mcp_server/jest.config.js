@@ -21,6 +21,11 @@ export default {
   
   // Module name mapper to handle .js extensions in imports
   moduleNameMapper: {
+    // Mock paths module first to avoid import.meta issues
+    '^.*\\/utils\\/paths\\.js$': '<rootDir>/test/mocks/paths.mock.ts',
+    // Mock the .mjs file that Jest can't parse
+    '^.*\\/utils\\/module-dir\\.mjs$': '<rootDir>/test/mocks/paths.mock.ts',
+    // Then handle .js extensions
     '^(\\.\\.?\\/.+)\\.js$': '$1'
   },
   
@@ -43,7 +48,8 @@ export default {
     'ai-assignment-integration.test.ts',
     'ai-assignment-analyzer.test.ts',
     'wiql-full-packages.test.ts',
-    'wiql-missing-fields-filter.test.ts'
+    'wiql-missing-fields-filter.test.ts',
+    'unified-query-generator.test.ts'  // Uses prompt-loader which imports .mjs file Jest can't parse
   ],
   
   // Coverage configuration

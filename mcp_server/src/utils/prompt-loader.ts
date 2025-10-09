@@ -29,7 +29,10 @@ export function loadSystemPrompt(promptName: string, variables?: Record<string, 
       
       logger.debug(`System prompt '${promptName}' loaded and cached`);
     } catch (error) {
-      logger.error(`Failed to load system prompt '${promptName}':`, error);
+      const promptPath = join(promptsDir, 'system', `${promptName}.md`);
+      logger.error(`Failed to load system prompt '${promptName}' from ${promptPath}:`, error);
+      logger.error(`PromptsDir resolved to: ${promptsDir}`);
+      logger.error(`Please ensure the prompts directory is correctly copied during build.`);
       throw new Error(`Failed to load system prompt '${promptName}': ${error instanceof Error ? error.message : String(error)}`);
     }
   }
