@@ -217,13 +217,19 @@ Efficiently determine last meaningful change by filtering automated changes.
 - `System.History` - Comments (human engagement)
 - `Microsoft.VSTS.Common.Priority` - Priority changes
 - `Microsoft.VSTS.Common.AcceptanceCriteria` - Acceptance criteria updates
+- `Microsoft.VSTS.Common.Severity` - Bug severity assessment
+- `Microsoft.VSTS.Common.ReproSteps` - Reproduction steps (bug investigation)
+- `Microsoft.VSTS.Scheduling.StoryPoints` - Story point estimation
+- `Microsoft.VSTS.Scheduling.RemainingWork` - Remaining work hours (active task tracking)
+- `Microsoft.VSTS.Scheduling.CompletedWork` - Completed work hours (progress logging)
+- `System.RelatedLinkCount` - Work item links (especially PR associations)
+- `System.ExternalLinkCount` - External links (PR, commits, etc.)
 
 **Automated Fields** - Changes to these fields are filtered out:
 - `System.IterationPath` - Sprint reassignments (administrative)
 - `System.AreaPath` - Area path changes (organizational)
 - `Microsoft.VSTS.Common.StackRank` - Backlog reordering
 - `Microsoft.VSTS.Common.BacklogPriority` - Priority ranking
-- `Microsoft.VSTS.Scheduling.StoryPoints` - Bulk estimation updates
 
 #### Input Parameters
 

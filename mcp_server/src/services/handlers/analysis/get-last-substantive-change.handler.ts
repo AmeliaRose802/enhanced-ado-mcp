@@ -46,10 +46,17 @@ const SUBSTANTIVE_FIELDS = [
   'System.Title',
   'System.State',
   'System.AssignedTo',
+  'System.Tags',
+  'System.History',  // Comments - represent genuine human engagement
   'Microsoft.VSTS.Common.Priority',
   'Microsoft.VSTS.Common.AcceptanceCriteria',
-  'System.Tags',
-  'System.History'  // Comments - represent genuine human engagement
+  'Microsoft.VSTS.Common.Severity',  // Bug severity assessment
+  'Microsoft.VSTS.Common.ReproSteps',  // Reproduction steps for bugs
+  'Microsoft.VSTS.Scheduling.StoryPoints',  // Effort estimation (often individual, not bulk)
+  'Microsoft.VSTS.Scheduling.RemainingWork',  // Active work tracking
+  'Microsoft.VSTS.Scheduling.CompletedWork',  // Work completion tracking
+  'System.RelatedLinkCount',  // Link additions (especially PR links) represent active work
+  'System.ExternalLinkCount'  // External links including PR associations
 ];
 
 /**
@@ -61,7 +68,7 @@ const AUTOMATED_FIELDS = [
   'System.IterationPath',
   'System.AreaPath',
   'Microsoft.VSTS.Common.StackRank',
-  'Microsoft.VSTS.Common.BacklogPriority',
+  'Microsoft.VSTS.Common.BacklogPriority'
 ];
 
 /**
