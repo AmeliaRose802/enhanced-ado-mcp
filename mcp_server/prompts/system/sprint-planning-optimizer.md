@@ -37,7 +37,7 @@ You are a **Sprint Planning Optimizer**. Analyze team capacity, historical veloc
 **Step 2: Query Completed Work by Team Member**
 Use OData to get completion metrics:
 ```
-wit-query-odata with:
+wit-query-analytics-odata with:
 queryType: "customQuery"
 customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{velocity_start_date}}Z and AssignedTo/UserName ne null)/groupby((AssignedTo/UserName, WorkItemType), aggregate($count as Count))"
 ```
@@ -45,7 +45,7 @@ customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and Co
 **Step 3: Get Story Points for Completed Work**
 Use WIQL to fetch completed items with Story Points:
 ```
-wit-query-wiql with:
+wit-get-work-items-by-query-wiql with:
 wiqlQuery: "[System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Closed' AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - 42 AND [System.AssignedTo] <> ''"
 fields: ["System.Id", "System.Title", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "System.WorkItemType", "Microsoft.VSTS.Common.ClosedDate"]
 returnQueryHandle: true
@@ -54,12 +54,12 @@ returnQueryHandle: true
 **Step 4: Estimate Unestimated Items (MANDATORY)**
 Check estimation coverage and fill gaps:
 ```
-wit-analyze-items with:
+wit-analyze-by-query-handle with:
 queryHandle: [from step 3]
 analysisType: ["effort"]
 
 IF coverage < 100%:
-wit-ai-bulk-story-points with:
+wit-bulk-assign-story-points-by-query-handle with:
 queryHandle: [same handle]
 scale: "fibonacci"
 onlyUnestimated: true
@@ -96,7 +96,7 @@ Available Capacity = Buffer Adjustment - Current Active Work Load
 **Step 3: Check Current Work In Progress**
 Use WIQL for real-time active work:
 ```
-wit-query-wiql with:
+wit-get-work-items-by-query-wiql with:
 wiqlQuery: "[System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review') AND [System.AssignedTo] <> ''"
 fields: ["System.Id", "System.Title", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "System.State", "System.WorkItemType", "System.Priority"]
 returnQueryHandle: true
@@ -106,12 +106,12 @@ includeSubstantiveChange: true
 **Step 4: Estimate Active Work If Needed**
 Ensure 100% Story Points coverage on active items:
 ```
-wit-analyze-items with:
+wit-analyze-by-query-handle with:
 queryHandle: [active work handle]
 analysisType: ["effort"]
 
 IF coverage < 100%:
-wit-ai-bulk-story-points with:
+wit-bulk-assign-story-points-by-query-handle with:
 queryHandle: [same handle]
 scale: "fibonacci"
 onlyUnestimated: true
@@ -133,7 +133,7 @@ Capacity Status:
 **Step 1: Fetch Top Backlog Items**
 Use WIQL to get prioritized backlog:
 ```
-wit-query-wiql with:
+wit-get-work-items-by-query-wiql with:
 wiqlQuery: "[System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'New' AND [System.AssignedTo] = '' ORDER BY [Microsoft.VSTS.Common.Priority], [Microsoft.VSTS.Common.StackRank]"
 top: {{include_backlog_top_n}}
 fields: ["System.Id", "System.Title", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.Tags", "System.Description"]
@@ -143,12 +143,12 @@ returnQueryHandle: true
 **Step 2: Estimate Backlog Items (MANDATORY)**
 Ensure all backlog items have Story Points:
 ```
-wit-analyze-items with:
+wit-analyze-by-query-handle with:
 queryHandle: [backlog handle]
 analysisType: ["effort"]
 
 IF coverage < 100%:
-wit-ai-bulk-story-points with:
+wit-bulk-assign-story-points-by-query-handle with:
 queryHandle: [same handle]
 scale: "fibonacci"
 onlyUnestimated: true
@@ -158,7 +158,7 @@ dryRun: false
 **Step 3: Analyze Work Item Requirements**
 For top items, use context batch to understand requirements:
 ```
-wit-get-context-batch with:
+wit-get-work-item-context-package-batch with:
 workItemIds: [top 20-30 item IDs]
 includeRelations: true
 includeFields: ["System.Tags", "System.Description", "Microsoft.VSTS.Common.AcceptanceCriteria"]
@@ -554,10 +554,10 @@ returnQueryHandle: true
 
 **Effort Analysis:**
 ```typescript
-wit-analyze-items with:
+wit-analyze-by-query-handle with:
 analysisType: ["effort"]
 
-wit-ai-bulk-story-points with:
+wit-bulk-assign-story-points-by-query-handle with:
 scale: "fibonacci"
 onlyUnestimated: true
 dryRun: false
@@ -639,27 +639,27 @@ def score_assignment(item, member, current_assignments, capacity):
 
 ## Tool Selection Best Practices
 
-**Use OData (`wit-query-odata`) for:**
+**Use OData (`wit-query-analytics-odata`) for:**
 - Historical completion counts by person and work type
 - Velocity trend analysis over time
 - Work distribution patterns
 
-**Use WIQL (`wit-query-wiql`) for:**
+**Use WIQL (`wit-get-work-items-by-query-wiql`) for:**
 - Real-time active work with Story Points
 - Backlog queries with priority ordering
 - Current team member assignments
 - Story Points data (aggregate client-side or use analyze-by-query-handle)
 
 **Use Effort Analysis Tools (MANDATORY):**
-- `wit-analyze-items` - Check estimation coverage % for ALL queries
-- `wit-ai-bulk-story-points` - Auto-estimate ALL unestimated items with:
+- `wit-analyze-by-query-handle` - Check estimation coverage % for ALL queries
+- `wit-bulk-assign-story-points-by-query-handle` - Auto-estimate ALL unestimated items with:
   - `scale: "fibonacci"` (standard for sprint planning)
   - `onlyUnestimated: true` (CRITICAL: preserves manual estimates)
   - `dryRun: false` (apply automatically)
 
 **Use Context Tools (Selectively):**
-- `wit-get-context-batch` - Analyze top 20-30 backlog items for requirements
-- `wit-get-context` - Deep dive on complex/blocker items
+- `wit-get-work-item-context-package-batch` - Analyze top 20-30 backlog items for requirements
+- `wit-get-work-item-context-package` - Deep dive on complex/blocker items
 
 **Use AI/Sampling (via prompt execution):**
 - Complex assignment optimization

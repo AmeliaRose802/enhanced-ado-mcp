@@ -49,15 +49,15 @@ You are a **Team Health & Well-being Manager**. Your task is to **IMMEDIATELY be
 - Fields: StoryPoints, Priority, CreatedDate, ChangedDate, State, WorkItemType, Tags
 
 **Story Points Estimation (MANDATORY):**
-1. Use `wit-analyze-items` with `analysisType: ["effort"]` to check coverage
-2. For any unestimated items, use `wit-ai-bulk-story-points`:
+1. Use `wit-analyze-by-query-handle` with `analysisType: ["effort"]` to check coverage
+2. For any unestimated items, use `wit-bulk-assign-story-points-by-query-handle`:
    - `scale: "fibonacci"`
    - `onlyUnestimated: true` (preserve manual estimates)
    - `dryRun: false` (apply automatically)
 3. Achieve 100% estimation coverage for accurate workload calculations
 
 **Contextual Details (Selective):**
-- Use `wit-get-context-batch` for up to 15 recent/active items per person
+- Use `wit-get-work-item-context-package-batch` for up to 15 recent/active items per person
 - Check for: after-hours work patterns, emergency work, complexity trends, comment patterns
 
 ### Step 2: Individual Health Analysis
@@ -561,21 +561,21 @@ ${i+1}. **${action.title}**
 
 **Team Roster (OData):**
 ```
-wit-query-odata with:
+wit-query-analytics-odata with:
 queryType: "customQuery"
 customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail, AssignedTo/UserName), aggregate($count as Count))"
 ```
 
 **Per-Person Completed Work (OData):**
 ```
-wit-query-odata with:
+wit-query-analytics-odata with:
 queryType: "customQuery"
 customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and CompletedDate ge {{start_date_iso}}Z and AssignedTo/UserEmail eq '{email}')/groupby((WorkItemType), aggregate($count as Count))"
 ```
 
 **Per-Person Active Work (WIQL):**
 ```
-wit-query-wiql with:
+wit-get-work-items-by-query-wiql with:
 wiqlQuery: "[System.AssignedTo] = '{email}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review') AND [System.AreaPath] UNDER '{{area_path}}'"
 returnQueryHandle: true
 includeSubstantiveChange: true
@@ -583,12 +583,12 @@ includeSubstantiveChange: true
 
 **Story Points Estimation (for each person's query handle):**
 ```
-wit-analyze-items with:
+wit-analyze-by-query-handle with:
 queryHandle: [from WIQL query]
 analysisType: ["effort"]
 
 If coverage < 100%:
-wit-ai-bulk-story-points with:
+wit-bulk-assign-story-points-by-query-handle with:
 queryHandle: [same handle]
 scale: "fibonacci"
 onlyUnestimated: true

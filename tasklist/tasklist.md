@@ -1,45 +1,34 @@
-- ⚠️ PARTIAL: Add Prettier to CI pipeline - pre-commit hooks enforce it, but GitHub Actions test.yml missing format:check step
-- Standardize Naming:
+- ⚠️ NEEDS WORK: Standardize Naming:
     - Standardize file naming: Mix of kebab-case (query-handle-service.ts) and camelCase - pick one
     - Standardize function naming: Some use handle*, others use action verbs - be consistent
     - Standardize variable naming: Config uses mix of camelCase and PascalCase
-- Create test fixtures/factories: Avoid hardcoded test data - use factories for work items, queries, etc.
-- Create consistent folder naming in handlers: You have ai-powered/, bulk-operations/, context/, etc. but analysis/ contains both analyzers and handlers. Separate these more clearly
+- Create test fixtures/factories: Avoid hardcoded test data - use factories for work items, queries, etc. 
 - Extract handler logic into service layer: Many handlers likely contain business logic that should be in services for better testability and reusability
-- ⚠️ PARTIAL: Remove "any" types - Many remain (30+ matches in utils, test files, etc. - needs comprehensive pass)
-- Extract query logic from query-handle-service: The 628-line service likely has multiple responsibilities - consider splitting into QueryExecutor, QueryCache, QueryValidator services
-- Create a proper ADO client abstraction: Abstract the HTTP client into a clean service boundary with proper error handling, retry logic, and rate limiting. This is esepecally important since we may want to allow some of our tools to support multiple work item management systems eventually
+- ⚠️ PARTIAL: Remove "any" types - Many remain (200+ matches mostly in test files using `(result.data as any)` pattern, 2 in schemas.ts for legitimate flexibility, ~10 in actual source code)
+- Extract query logic from query-handle-service: The service likely has multiple responsibilities - consider splitting into QueryExecutor, QueryCache, QueryValidator services
+- Create a proper ADO client abstraction: Abstract the HTTP client into a clean service boundary with proper error handling, retry logic, and rate limiting. This is especially important since we may want to allow some of our tools to support multiple work item management systems eventually
 - Implement repository pattern for work items: Separate data access logic from business logic
 - Standardize error response format: Ensure all handlers return consistent error structures using response-builder
 - Create a handler factory pattern: Centralize handler registration and routing instead of the massive switch/if-else in tool-service.ts
-- ⚠️ PARTIAL: Add `wit-clone-work-item` tool - Schema exists in tool-configs.ts line 163, but NOT wired up in tool-service.ts
-- Fix `wit-generate-query` to return query handle (not currently returning handle)
-- Fix OData query generator to return query handle (not currently returning handle)
-- Fix WIQL query generator to return handle for remaining results
-- ⚠️ NOT DONE: Remove `wit-get-last-substantive-change` tool - Still exists in tool-configs.ts line 415
-- Add more determistic relible tools baked in with the AI based ones to help the AI reach a better query which limits results correctly
-- Feed error messages back to AI tool that writes query to make sure result is good
-- Investigate: Query generator tool may not be returning a valid query. 
-- Fix bug with json parsing in sprint planning tool. See #sprint_planning_response.json
-- Standardize tool naming patterns (currently inconsistent verb-object, noun, action-method)
-- Add category prefixes to all tools (`wit-query-*`, `wit-bulk-*`, `wit-analyze-*`, `wit-ai-*`)
-- Review all prompts under the /prompts directory to follow best practices. Use the prompt improver chatmode to make fixes. Remove mentions of "new" or "improved" since they don't add value.
-- Ensure all prompts output links in valid format
-- Ensure prompts don't look at Done/Removed items (except velocity analyzer)
-- Make sure prompts only list tools that are actually needed for that prompt
-- Review auto filling for prompts to make sure that everything is filled in as expected
-- Fix `wit-sprint-planning-analyzer` output format (change from 2000+ word essay to JSON with assignments, capacity, risk flags)
-- Fix GitHub Copilot GUID lookup (eliminate need to manually enter, look up by name instead)
-- Fix browser auto-launch for token (should not pop up browser)
-- Fix team velocity prompt days parameter (entering different days returns same results)
-- Fix context info auto-fill in AI assignment prompt (should look up work item ID automatically)
-- Add performance expectations to resources (how long each tool takes)
-- Add end-to-end workflow examples to resources (tool combinations)
-- Document when to use AI vs rule-based tools clearly in resources offered
-- Comprehensively audit all resources for accuracy after changes
-- Add documentation explaining where different types of files belong
-- Limit the json returned by tool calls to what is useful. Don't include duplicated info, empty fields, long verbose data not requested etc. We need to optimize the callers context window
-- Cleanup:
+- ⚠️ TODO: Add more deterministic reliable tools baked in with the AI based ones to help the AI reach a better query which limits results correctly 
+- ⚠️ TODO: Standardize tool naming patterns (currently inconsistent verb-object, noun, action-method)
+- ⚠️ TODO: Review all prompts under the /prompts directory to follow best practices. Use the prompt improver chatmode to make fixes. Remove mentions of "new" or "improved" since they don't add value
+- ⚠️ TODO: Ensure all prompts output links in valid format
+- ⚠️ TODO: Ensure prompts don't look at Done/Removed items (except velocity analyzer)
+- ⚠️ TODO: Make sure prompts only list tools that are actually needed for that prompt
+- ⚠️ TODO: Review auto filling for prompts to make sure that everything is filled in as expected
+- ⚠️ TODO: Fix `wit-sprint-planning-analyzer` output format (change from 2000+ word essay to JSON with assignments, capacity, risk flags)
+- ⚠️ TODO: Fix GitHub Copilot GUID lookup (eliminate need to manually enter, look up by name instead)
+- ⚠️ TODO: Fix browser auto-launch for token (should not pop up browser)
+- ⚠️ TODO: Fix team velocity prompt days parameter (entering different days returns same results)
+- ⚠️ TODO: Fix context info auto-fill in AI assignment prompt (should look up work item ID automatically)
+- ⚠️ TODO: Add performance expectations to resources (how long each tool takes)
+- ⚠️ TODO: Add end-to-end workflow examples to resources (tool combinations)
+- ⚠️ TODO: Document when to use AI vs rule-based tools clearly in resources offered
+- ⚠️ TODO: Comprehensively audit all resources for accuracy after changes
+- ⚠️ TODO: Add documentation explaining where different types of files belong
+- ⚠️ TODO: Limit the json returned by tool calls to what is useful. Don't include duplicated info, empty fields, long verbose data not requested etc. We need to optimize the callers context window
+- ⚠️ TODO: Cleanup:
     - After all other tasks perform a general cleanup again to remove files which are no longer needed
-    - Remove redundent and overly verbose code
-    - Check for redundent backup code. Since we are pre-production we don't want to support legacy anything, reudency etc. Move fast and break things.
+    - Remove redundant and overly verbose code
+    - Check for redundant backup code. Since we are pre-production we don't want to support legacy anything, redundancy etc. Move fast and break things

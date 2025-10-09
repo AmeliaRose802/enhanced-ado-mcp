@@ -8,6 +8,10 @@
 - Configuration & Discovery
   ANALYSIS_TOOLS.md
 
+## Utility & Testing
+- Get Prompts Tool (New!)
+  GET_PROMPTS.md
+
 ## Query & Search
 - Query Tools (WIQL & OData)
   QUERY_TOOLS.md

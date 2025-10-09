@@ -9,6 +9,7 @@ import { handleGetConfiguration } from "./handlers/core/get-configuration.handle
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
 import { handleGetWorkItemsContextBatch } from './handlers/core/get-work-items-context-batch.handler.js';
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
+import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -86,6 +87,11 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   // Get configuration information
   if (name === 'wit-get-configuration') {
     return await handleGetConfiguration(args);
+  }
+
+  // Get prompts (useful for testing and specialized agent workflows)
+  if (name === 'wit-get-prompts') {
+    return await handleGetPrompts(args as Parameters<typeof handleGetPrompts>[0]);
   }
 
   // AI-powered intelligence analysis (uses sampling if available)

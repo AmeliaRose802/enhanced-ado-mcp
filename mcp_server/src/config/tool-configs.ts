@@ -38,7 +38,8 @@ import {
   bulkMoveToIterationByQueryHandleSchema,
   cloneWorkItemSchema,
   linkWorkItemsByQueryHandlesSchema,
-  backlogCleanupAnalyzerSchema
+  backlogCleanupAnalyzerSchema,
+  getPromptsSchema
 } from "./schemas.js";
 
 /**
@@ -1050,6 +1051,30 @@ export const toolConfigs: ToolConfig[] = [
         areaPath: { type: "string", description: "Area path to filter work items (uses config default if not provided)" }
       },
       required: ["iterationPath", "teamMembers"]
+    }
+  },
+  {
+    name: "wit-get-prompts",
+    description: "Retrieve pre-filled prompt templates by name or list all available prompts. Useful for testing prompt templates or for agents that need direct access to prompt content for specialized use cases.",
+    script: "",
+    schema: getPromptsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        promptName: { 
+          type: "string", 
+          description: "Name of the prompt to retrieve (omit to get all prompts)" 
+        },
+        includeContent: { 
+          type: "boolean", 
+          description: "Whether to include the filled prompt content (default: true)" 
+        },
+        args: { 
+          type: "object", 
+          description: "Arguments to fill in prompt template variables (merged with config defaults)" 
+        }
+      },
+      required: []
     }
   }
 ];

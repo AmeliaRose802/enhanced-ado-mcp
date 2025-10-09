@@ -722,3 +722,13 @@ export const analyzeByQueryHandleSchema = z.object({
   organization: z.string().optional(),
   project: z.string().optional()
 });
+
+/**
+ * Schema for wit-get-prompts tool
+ * Retrieve pre-filled prompt templates by name or all prompts
+ */
+export const getPromptsSchema = z.object({
+  promptName: z.string().optional(),
+  includeContent: z.boolean().optional().default(true),
+  args: z.record(z.unknown()).optional()
+});

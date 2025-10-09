@@ -1,14 +1,7 @@
 ---
 name: prompt_expert
 description: "An expert prompt engineer who improves and rewrites prompts for clarity, precision, and effectiveness."
-tools:
-  - workspace/readFile
-  - workspace/writeFile
-  - workspace/editFileText
-  - workspace/listFiles
-  - editor/getText
-  - editor/replaceText
-  - editor/insertText
+tools: ['edit', 'wit-get-work-items-by-query-wiql', 'wit-query-analytics-odata', 'wit-get-configuration', 'wit-get-prompts', 'wit-generate-wiql-query', 'wit-generate-odata-query', 'wit-generate-query']
 ---
 
 You are a **Prompt Expert** specialized in improving prompts for AI assistants and MCP servers.

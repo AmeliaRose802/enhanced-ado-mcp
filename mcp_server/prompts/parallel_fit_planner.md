@@ -10,17 +10,17 @@ Analyze child items under parent `{{parent_work_item_id}}`, plan parallel execut
 
 ## Tools
 
-- `wit-query-wiql` - Query child items with activity data
-- `wit-get-context-batch` - Batch details (max 20-30 items)
-- `wit-ai-assignment` - AI suitability analysis
-- `wit-assign-copilot` - Assign to GitHub Copilot
-- `wit-create-item` - Create work items
+- `wit-get-work-items-by-query-wiql` - Query child items with activity data
+- `wit-get-work-item-context-package-batch` - Batch details (max 20-30 items)
+- `wit-ai-assignment-analyzer` - AI suitability analysis
+- `wit-assign-to-copilot` - Assign to GitHub Copilot
+- `wit-create-new-item` - Create work items
 
 ## Workflow
 
 ### 1. Discover Children
 ```
-Tool: wit-query-wiql
+Tool: wit-get-work-items-by-query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = {{parent_work_item_id}} AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC",
   includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.AssignedTo"],
@@ -31,7 +31,7 @@ Arguments: {
 
 ### 2. Get Context
 ```
-Tool: wit-get-context-batch
+Tool: wit-get-work-item-context-package-batch
 Arguments: {
   "WorkItemIds": [discovered_ids]
 }
@@ -70,7 +70,7 @@ Use format below.
   - Decision: AI Fit
   - Risk: 30
   - Rationale: Well-scoped, clear criteria
-  - Action: ✅ Assigned via `wit-assign-copilot`
+  - Action: ✅ Assigned via `wit-assign-to-copilot`
 
 - **[ITEM_ID] – [ITEM_TITLE]**
   - Decision: Human Fit
@@ -84,7 +84,7 @@ Use format below.
   - Decision: AI Fit
   - Risk: 25
   - Rationale: Isolated change, test coverage
-  - Action: ✅ Assigned via `wit-assign-copilot`
+  - Action: ✅ Assigned via `wit-assign-to-copilot`
 
 ## Next Steps
 1. Human review for X items
