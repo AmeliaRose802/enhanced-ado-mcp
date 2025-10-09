@@ -67,10 +67,12 @@ If results/handle are returned, use them **only to down-rank** obviously duplica
 
 Call **`wit-generate-wiql-query`** with **exact** descriptions (do not alter wording). Each returns a reproducible **query handle**.
 
-**A. Current Iteration (for de-duplication / carryover)**
+> Note: Queries A-D are designed to work without iteration path filtering, since iteration-based planning is not used.
+
+**A. Recently Active Work (for de-duplication)**
 ```json
 {
-  "description": "All active Tasks, Requirements, and Bugs in the current iteration under {{area_path}} (exclude terminal states)",
+  "description": "All active Tasks, Requirements, and Bugs under {{area_path}} changed in the last 30 days; exclude terminal states (Done, Closed, Resolved, Completed, Removed)",
   "organization": "{{organization}}",
   "project": "{{project}}",
   "returnQueryHandle": true
@@ -80,17 +82,19 @@ Call **`wit-generate-wiql-query`** with **exact** descriptions (do not alter wor
 **B. Ready Requirements (candidate PBIs/User Stories)**
 ```json
 {
-  "description": "Active Requirements under {{area_path}} that have non-empty Acceptance Criteria and an estimate (Story Points > 0); exclude terminal states and blocked items if field exists",
+  "description": "Active Requirements under {{area_path}} with Story Points > 0; exclude terminal states (Done, Closed, Resolved, Completed, Removed)",
   "organization": "{{organization}}",
   "project": "{{project}}",
   "returnQueryHandle": true
 }
 ```
 
+> Note: Filter for non-empty Acceptance Criteria client-side after fetching, as WIQL cannot query HTML field content.
+
 **C. Critical Bugs**
 ```json
 {
-  "description": "Active Bugs under {{area_path}} with Priority <= 2 or Severity is High/Critical; exclude terminal states",
+  "description": "Active Bugs under {{area_path}} with Priority <= 2 or Severity is High/Critical; exclude terminal states (Done, Closed, Resolved, Completed, Removed)",
   "organization": "{{organization}}",
   "project": "{{project}}",
   "returnQueryHandle": true
@@ -100,17 +104,7 @@ Call **`wit-generate-wiql-query`** with **exact** descriptions (do not alter wor
 **D. Small Tasks (quick wins)**
 ```json
 {
-  "description": "Active Tasks under {{area_path}} with Story Points <= 3 OR no estimate, changed in the last 30 days; exclude terminal states",
-  "organization": "{{organization}}",
-  "project": "{{project}}",
-  "returnQueryHandle": true
-}
-```
-
-**E. Carryover (still open from prior iteration)**
-```json
-{
-  "description": "Active work items under {{area_path}} that were in the last iteration but remain open (not Done/Closed/Resolved/Completed/Removed)",
+  "description": "Active Tasks under {{area_path}} with Story Points <= 3 OR no estimate, changed in the last 30 days; exclude terminal states (Done, Closed, Resolved, Completed, Removed)",
   "organization": "{{organization}}",
   "project": "{{project}}",
   "returnQueryHandle": true
@@ -123,11 +117,11 @@ Call **`wit-generate-wiql-query`** with **exact** descriptions (do not alter wor
 
 ## Step 2 — Fetch Items per Handle
 
-For each handle from Step 1, call **`wit-get-work-items-by-query-wiql`** with the fixed field set and `"includeSubstantiveChange": true`. Compute:
+For each handle from Step 1 (A-D), call **`wit-get-work-items-by-query-wiql`** with the fixed field set and `"includeSubstantiveChange": true`. Compute:
 - `daysInactive = floor((nowUTC - lastSubstantiveChangeUTC)/1 day)`.
 - `sizeBucket`: S (≤3 pts or unknown), M (5–8), L (≥13).
 
-Build a **deduplicated candidate pool** by removing items already in the **Current Iteration** handle.
+Build a **deduplicated candidate pool** by removing duplicate items across queries (prioritize the query with better context).
 
 ---
 
@@ -136,7 +130,7 @@ Build a **deduplicated candidate pool** by removing items already in the **Curre
 Score each candidate (higher is better):
 - **Criticality**: Bugs with Priority ≤ 2 or Severity High/Critical (+4)
 - **Readiness**: Has Acceptance Criteria (+2), has estimate > 0 (+1)
-- **Recency**: `daysInactive ≤ 30` (+1), carryover (+1)
+- **Recency**: `daysInactive ≤ 30` (+1)
 - **Quality down-rank** (if pattern results exist): duplicate/placeholder title (−2)
 
 Sort by total score (desc), then `Priority` (asc), then `StoryPoints` (asc), then `System.Id` (asc).
@@ -145,15 +139,15 @@ Sort by total score (desc), then `Priority` (asc), then `StoryPoints` (asc), the
 
 ## Step 4 — Derive Team & Load, Then Recommend Assignments
 
-Derive the **team roster** from assignees on open items in **Current Iteration** plus recent activity (Changed in ≤ 45 days) in the area path. For each person:
-- **Current WIP** = count of their open items (Tasks/Bugs/Requirements) in Current Iteration.
+Derive the **team roster** from assignees on open items in the **Recently Active Work** query plus items changed in ≤ 45 days in the area path. For each person:
+- **Current WIP** = count of their open items (Tasks/Bugs/Requirements) from Recently Active Work.
 - **Suggested WIP cap** = 3 items (soft). Prefer S and M items first.
 
 **Assignment algorithm (deterministic & explainable):**
-1. Start with **Carryover** items: keep with current assignee; if unassigned, place in pool.
-2. Round‑robin assign from the **prioritized list** to team members, always choosing the person with the **lowest current WIP**; break ties by alphabetical display name.
+1. Start with items that already have assignees: keep with current assignee if their WIP < cap.
+2. Round‑robin assign unassigned items from the **prioritized list** to team members, always choosing the person with the **lowest current WIP**; break ties by alphabetical display name.
 3. Avoid assigning >1 **L** item per person; if unavoidable, replace a lower‑priority item to keep balance.
-4. Keep unassigned if data is insufficient (e.g., no team roster inferred) and flag as “needs triage”.
+4. Keep unassigned if data is insufficient (e.g., no team roster inferred) and flag as "needs triage".
 
 ---
 
@@ -172,13 +166,10 @@ Produce the sprint plan with sections **in this order**:
 3. **Proposed Assignments by Person**  
    For each team member: list items with size bucket (S/M/L) and a one‑line rationale, then show a subtotal of Story Points.
 
-4. **Carryover Items (Still Open)**  
-   Table columns: `ID | Title | Current Assignee | Blockers`.
-
-5. **Query Handles Used**  
+4. **Query Handles Used**  
    Show: Handle name → value → timestamp → age (minutes).
 
-6. **Risks & Assumptions**  
+5. **Risks & Assumptions**  
    Note any data gaps (missing estimates/AC), potential duplicates (via pattern detector), and unassigned items needing triage.
 
 **Limits & Sorting**  
@@ -191,8 +182,8 @@ Produce the sprint plan with sections **in this order**:
 ## Execution Steps (Do Now)
 
 1. (Optional) Call `wit-detect-patterns` for `{{area_path}}` with `["duplicates","placeholder_titles"]` to get quality hints.
-2. Call `wit-generate-wiql-query` for A–E with `returnQueryHandle: true` (wording must match exactly).
+2. Call `wit-generate-wiql-query` for A–D with `returnQueryHandle: true` (wording must match exactly).
 3. For each handle, call `wit-get-work-items-by-query-wiql` with the fixed field set and `includeSubstantiveChange: true`.
 4. Build the deduplicated candidate pool, score, and rank.
-5. Derive team roster from current iteration activity and open items; compute WIP; run the assignment algorithm.
+5. Derive team roster from recently active work and open items; compute WIP; run the assignment algorithm.
 6. Output the final markdown plan per the format above.

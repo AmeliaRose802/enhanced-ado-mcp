@@ -208,6 +208,23 @@ Fast, rule-based validation of work item hierarchy.
 
 Efficiently determine last meaningful change by filtering automated changes.
 
+**Substantive Fields** - Changes to these fields are considered meaningful activity:
+- `System.Title` - Work item title changes
+- `System.Description` - Description updates
+- `System.State` - State transitions (New → Active → Done)
+- `System.AssignedTo` - Assignment changes
+- `System.Tags` - Tag additions/removals
+- `System.History` - Comments (human engagement)
+- `Microsoft.VSTS.Common.Priority` - Priority changes
+- `Microsoft.VSTS.Common.AcceptanceCriteria` - Acceptance criteria updates
+
+**Automated Fields** - Changes to these fields are filtered out:
+- `System.IterationPath` - Sprint reassignments (administrative)
+- `System.AreaPath` - Area path changes (organizational)
+- `Microsoft.VSTS.Common.StackRank` - Backlog reordering
+- `Microsoft.VSTS.Common.BacklogPriority` - Priority ranking
+- `Microsoft.VSTS.Scheduling.StoryPoints` - Bulk estimation updates
+
 #### Input Parameters
 
 **Required:**

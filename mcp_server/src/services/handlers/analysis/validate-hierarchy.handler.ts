@@ -124,18 +124,24 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     // Get default configuration values for organization/project
     const requiredConfig = getRequiredConfig();
-    const argsData = parsed.data as ValidateHierarchyArgs;
+    
+    // Merge args with config defaults (args take precedence)
+    const validationArgs = {
+      ...parsed.data,
+      organization: parsed.data.organization || requiredConfig.organization,
+      project: parsed.data.project || requiredConfig.project
+    };
 
     const {
       workItemIds,
       areaPath,
-      organization = argsData.organization || requiredConfig.organization,
-      project = argsData.project || requiredConfig.project,
+      organization,
+      project,
       maxResults = 500,
       includeSubAreas = true,
       validateTypes = true,
       validateStates = true
-    } = { ...argsData, organization: argsData.organization || requiredConfig.organization, project: argsData.project || requiredConfig.project };
+    } = validationArgs;
 
     logger.debug(`Validating hierarchy (types=${validateTypes}, states=${validateStates})`);
 

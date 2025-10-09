@@ -3,7 +3,7 @@ name: backlog_cleanup
 description: Agressive backlog janitor
 version: 2.0
 arguments:
-  staleness_threshold_days: { type: string, required: true, description: "What level of inactive items should be concedered dead" }
+  staleness_threshold_days: { type: number, required: true, description: "How old items do we call dead?" }
 ---
 
 # Backlog Cleanup & Quality Analysis
@@ -36,11 +36,10 @@ Use a WIQL query to get a handle to items that have not been modified in {{stale
 ```
 Tool: wit-get-work-items-by-query-wiql
 Parameters:
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed')"
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task', 'Bug') AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed')"
   includeSubstantiveChange: true
   filterByDaysInactiveMin: {{staleness_threshold_days}}
   returnQueryHandle: true
-  maxResults: 200
 ```
 
 **Report Format**:
@@ -49,89 +48,99 @@ Parameters:
 
 **Recommended Actions**:
 1. Review items with team before removing
-2. If approved: Use bulk comment tool to add "Automated cleanup: Inactive for {{staleness_threshold_days}}+ days"
-3. Then use bulk state change to move to 'Removed'
+2. If approved: Use `wit-bulk-add-comments` to add "Automated cleanup: Inactive for {{staleness_threshold_days}}+ days"
+3. Then use `wit-bulk-update-state` to move items to 'Removed' state
+
+**Tools for Remediation**:
+- `wit-bulk-add-comments` - Add comments to all items in query handle
+- `wit-bulk-update-state` - Change state to 'Removed' for all items
+- `wit-bulk-update-fields` - Alternative for updating multiple fields at once
 
 **User Prompt**: "Found {count} stale items. Would you like to review these or proceed with removal?"
 
 ---
 
-### Step 2: Identify Missing Descriptions (High Priority)
-
-**Objective**: Find items without descriptions that need documentation.
-
-```
-Tool: wit-get-work-items-by-query-wiql
-Parameters:
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed')"
-  filterByMissingDescription: true
-  returnQueryHandle: true
-  maxResults: 200
-```
-
-Display to user in a table with columns: ID (linked), Title, Type, State, Days Inactive. Offer to use AI bulk enhancement tool to generate descriptions.
-
-### Gather items without story points
-
-```
-Tool: wit-get-work-items-by-query-wiql
-Parameters:
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] IN ('Product Backlog Item', 'User Story', 'Bug') AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed')"
-  includeFields: ["Microsoft.VSTS.Scheduling.StoryPoints"]
-  returnQueryHandle: true
-  maxResults: 200
-```
-
-Filter results where StoryPoints is null or empty. Display to user in a table with columns: ID (linked), Title, Type, State. Offer to use AI estimation tool to assign story points.
-
-### Gather items that are orphaned
-
-```
-Tool: wit-validate-hierarchy
-Parameters:
-  scope: "project"
-  validationLevel: "strict"
-  includeOrphanedItems: true
-  returnQueryHandles: true
-```
-
 **Report Format**:
-- Table with columns: ID (linked), Title, Type, State, Current Parent (should be "None")
+- Table with columns: ID (linked), Title, Type, State, Days Inactive
 - Count and query handle at top
 
 **Recommended Actions**:
-1. Use AI parent suggestion tool to identify appropriate parents
-2. Present suggestions to user for approval
-3. Use bulk link tool to establish parent relationships
+1. Review items and determine which need descriptions
+2. Use `wit-bulk-intelligent-enhancement` to generate descriptions with AI
+3. Review generated descriptions before applying
 
-**User Prompt**: "Found {count} orphaned items. Would you like me to suggest appropriate parents?"
+**Tools for Remediation**:
+- `wit-bulk-intelligent-enhancement` - AI-powered description generation for multiple items
+- `wit-update-work-item` - Manually add descriptions to individual items
+- `wit-bulk-update-fields` - Update descriptions for multiple items with custom text
+
+**User Prompt**: "Found {count} items without descriptions. Would you like me to generate descriptions using AI?"
 
 ---
 
-### Step 5: Fix Incorrect Parent Relationships (Medium Priority)
+### Step 3: Gather Items Without Story Points (High Priority)
 
-**Objective**: Find items with invalid parent-child type combinations.
+**Objective**: Find Product Backlog Items, User Stories, and Bugs without story point estimates.
+
+```
+Tool: wit-get-work-items-by-query-wiql
+Parameters:
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Product Backlog Item', 'User Story', 'Bug') AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed')"
+  includeFields: ["Microsoft.VSTS.Scheduling.StoryPoints"]
+  returnQueryHandle: true
+```
+
+Filter results where StoryPoints is null or empty. Display to user in a table with columns: ID (linked), Title, Type, State.
+
+**Report Format**:
+- Table with columns: ID (linked), Title, Type, State
+- Count and query handle at top
+
+**Recommended Actions**:
+1. Review items and determine estimation approach
+2. Use `wit-bulk-assign-story-points` for AI-powered estimation
+3. Review and adjust estimates as needed
+
+**Tools for Remediation**:
+- `wit-bulk-assign-story-points` - AI-powered story point estimation for multiple items
+- `wit-update-work-item` - Manually assign story points to individual items
+- `wit-bulk-update-fields` - Set story points for multiple items with specific values
+
+**User Prompt**: "Found {count} items without story points. Would you like me to estimate them using AI?"
+
+### Step 4: Validate Hierarchy (Medium Priority)
+
+**Objective**: Check for orphaned items and incorrect parent-child relationships.
 
 ```
 Tool: wit-validate-hierarchy
 Parameters:
-  scope: "project"
-  validationLevel: "strict"
-  includeInvalidParentTypes: true
-  returnQueryHandles: true
+  areaPath: "{{area_path}}"
+  includeSubAreas: true
+  maxResults: 500
+  validateTypes: true
+  validateStates: true
 ```
 
 **Report Format**:
-- Table with columns: ID (linked), Title, Type, Current Parent Type, Valid Parent Types
-- Count and query handle at top
+- Separate sections for:
+  - Orphaned items (PBIs/Tasks without parents)
+  - Invalid parent types (e.g., Task parented to Epic)
+  - State inconsistencies (e.g., Active child under Done parent)
+- Each section with: ID (linked), Title, Type, Current Parent (if any), Issue Description
 
 **Recommended Actions**:
-1. Show each invalid relationship with explanation
-2. Suggest correct parent type or removal of link
-3. Use bulk unlink tool to remove invalid relationships
-4. Optionally re-parent to valid items
+1. **For orphaned items**: Review and establish appropriate parent relationships
+2. **For invalid types**: Re-parent to correct work item types or remove links
+3. **For state issues**: Update parent/child states to be consistent
 
-**User Prompt**: "Found {count} incorrectly parented items. Would you like to see details and fix them?"
+**Tools for Remediation**:
+- `wit-bulk-link-work-items` - Create parent-child relationships for orphaned items
+- `wit-update-work-item` - Update individual item parents or remove invalid links
+- `wit-bulk-update-state` - Fix state inconsistencies across parent/child items
+- `wit-bulk-update-fields` - Update multiple fields to resolve hierarchy issues
+
+**User Prompt**: "Found hierarchy issues: {orphaned_count} orphaned, {invalid_type_count} invalid parents, {state_issue_count} state inconsistencies. Would you like to fix these?"
 
 ---
 
@@ -141,14 +150,12 @@ Parameters:
 
 **Issues by Severity**:
 - 🔴 Critical: {stale_count} stale items
-- 🟡 High: {missing_desc_count} missing descriptions
 - 🟡 High: {missing_points_count} missing story points  
 - 🟠 Medium: {orphaned_count} orphaned items
 - 🟠 Medium: {incorrect_parent_count} incorrect parents
 
 **Query Handles Provided**:
 - `stale_items`: {handle}
-- `missing_descriptions`: {handle}
 - `missing_story_points`: {handle}
 - `orphaned_items`: {handle}
 - `incorrect_parents`: {handle}

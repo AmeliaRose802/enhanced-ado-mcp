@@ -48,7 +48,8 @@ const SUBSTANTIVE_FIELDS = [
   'System.AssignedTo',
   'Microsoft.VSTS.Common.Priority',
   'Microsoft.VSTS.Common.AcceptanceCriteria',
-  'System.Tags'
+  'System.Tags',
+  'System.History'  // Comments - represent genuine human engagement
 ];
 
 /**
@@ -61,7 +62,6 @@ const AUTOMATED_FIELDS = [
   'System.AreaPath',
   'Microsoft.VSTS.Common.StackRank',
   'Microsoft.VSTS.Common.BacklogPriority',
-  'Microsoft.VSTS.Scheduling.StoryPoints'  // Often bulk-adjusted during planning
 ];
 
 /**
