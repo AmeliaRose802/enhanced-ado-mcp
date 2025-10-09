@@ -206,10 +206,12 @@ export async function handleBacklogCleanupAnalyzer(
       info: issues.filter(i => i.severity === 'info')
     };
 
-    // Generate query handle if requested
+    // Generate query handles if requested - one for each category plus one for all items
     let queryHandle: string | undefined;
+    const categoryHandles: Record<string, string> = {};
+    
     if (returnQueryHandle && result.workItems.length > 0) {
-      // Build work item context map
+      // Build work item context map for all items
       const workItemContextMap = new Map<number, any>();
       for (const item of result.workItems) {
         workItemContextMap.set(item.id, {
@@ -222,6 +224,7 @@ export async function handleBacklogCleanupAnalyzer(
         });
       }
 
+      // Store handle for all items (backward compatibility)
       queryHandle = queryHandleService.storeQuery(
         result.workItems.map(i => i.id),
         wiqlQuery,
@@ -237,6 +240,82 @@ export async function handleBacklogCleanupAnalyzer(
           analysisTimestamp: new Date().toISOString()
         }
       );
+
+      // Store separate handles for each category with issues
+      if (categorized.critical.length > 0) {
+        const criticalIds = categorized.critical.map(i => i.workItemId);
+        const criticalContextMap = new Map<number, any>();
+        criticalIds.forEach(id => {
+          const context = workItemContextMap.get(id);
+          if (context) criticalContextMap.set(id, context);
+        });
+        
+        categoryHandles.critical = queryHandleService.storeQuery(
+          criticalIds,
+          wiqlQuery,
+          {
+            project,
+            queryType: 'backlog-cleanup-critical'
+          },
+          undefined,
+          criticalContextMap,
+          {
+            includeSubstantiveChange: true,
+            stalenessThresholdDays,
+            analysisTimestamp: new Date().toISOString()
+          }
+        );
+      }
+
+      if (categorized.warning.length > 0) {
+        const warningIds = categorized.warning.map(i => i.workItemId);
+        const warningContextMap = new Map<number, any>();
+        warningIds.forEach(id => {
+          const context = workItemContextMap.get(id);
+          if (context) warningContextMap.set(id, context);
+        });
+        
+        categoryHandles.warning = queryHandleService.storeQuery(
+          warningIds,
+          wiqlQuery,
+          {
+            project,
+            queryType: 'backlog-cleanup-warning'
+          },
+          undefined,
+          warningContextMap,
+          {
+            includeSubstantiveChange: true,
+            stalenessThresholdDays,
+            analysisTimestamp: new Date().toISOString()
+          }
+        );
+      }
+
+      if (categorized.info.length > 0) {
+        const infoIds = categorized.info.map(i => i.workItemId);
+        const infoContextMap = new Map<number, any>();
+        infoIds.forEach(id => {
+          const context = workItemContextMap.get(id);
+          if (context) infoContextMap.set(id, context);
+        });
+        
+        categoryHandles.info = queryHandleService.storeQuery(
+          infoIds,
+          wiqlQuery,
+          {
+            project,
+            queryType: 'backlog-cleanup-info'
+          },
+          undefined,
+          infoContextMap,
+          {
+            includeSubstantiveChange: true,
+            stalenessThresholdDays,
+            analysisTimestamp: new Date().toISOString()
+          }
+        );
+      }
     }
 
     return buildSuccessResponse(
@@ -252,6 +331,7 @@ export async function handleBacklogCleanupAnalyzer(
         },
         issues: categorized,
         queryHandle,
+        categoryHandles: Object.keys(categoryHandles).length > 0 ? categoryHandles : undefined,
         recommendations: [
           categorized.critical.length > 0 ? 'Address critical issues immediately (unassigned active items)' : null,
           categorized.warning.length > 0 ? 'Review warning items for potential cleanup or updates' : null,
@@ -262,7 +342,8 @@ export async function handleBacklogCleanupAnalyzer(
       { 
         source: "backlog-cleanup-analyzer",
         issueCount: issues.length,
-        queryHandle: queryHandle || null
+        queryHandle: queryHandle || null,
+        categoryHandleCount: Object.keys(categoryHandles).length
       }
     );
 
