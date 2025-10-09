@@ -136,7 +136,7 @@ ORDER BY [System.WorkItemType], [System.CreatedDate] DESC
 SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject'
 
 -- Then validate each item's parent exists
--- (Use wit-analyze-hierarchy for automatic checking)
+-- (Use wit-validate-hierarchy for automatic checking)
 ```
 
 ### Find Childless Parents

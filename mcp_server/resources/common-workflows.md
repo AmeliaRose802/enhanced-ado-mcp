@@ -208,7 +208,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Analyze for AI Assignment
 ```json
-// Tool: wit-ai-assignment-analyzer (for each candidate)
+// Tool: wit-ai-assignment-analyzer-analyzer (for each candidate)
 {
   "workItemId": 12345,
   "outputFormat": "json"
@@ -435,7 +435,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 2: Analyze Each for AI Suitability
 ```json
-// Tool: wit-ai-assignment-analyzer
+// Tool: wit-ai-assignment-analyzer-analyzer
 {
   "workItemId": 12345,
   "outputFormat": "json"

@@ -366,7 +366,7 @@ After implementing these changes, successful handle adoption will show:
 
 1. **Narrative uses handles:** "Found X items (handle: qh_abc123)"
 2. **No ID lists in text:** No sequences like "#12345, #12346, #12347"
-3. **Handle validation checks:** Using wit-query-handle-validate before operations
+3. **Handle validation checks:** Using wit-validate-query-handle before operations
 4. **Handle-based analysis:** Using wit-analyze-by-query-handle instead of manual analysis
 5. **Bulk operations via handles:** All bulk operations use query handles
 
@@ -397,8 +397,8 @@ After implementing these changes, successful handle adoption will show:
 
 ### For Troubleshooting
 
-1. **Use `wit-query-handle-list`** to see active handles
-2. **Use `wit-query-handle-validate`** to check specific handle status
+1. **Use `wit-list-query-handles`** to see active handles
+2. **Use `wit-validate-query-handle`** to check specific handle status
 3. **Re-query if handle expires** (>1 hour old)
 4. **Check warnings in responses** for handle-related issues
 

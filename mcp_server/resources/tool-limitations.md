@@ -535,7 +535,7 @@ az login
 - **StoryPoints sum** → WIQL + manual calculation or wit-analyze-by-query-handle
 
 ### "I need to analyze work items..."
-- **AI suitability** → `wit-ai-assignment-analyzer`
+- **AI suitability** → `wit-ai-assignment-analyzer-analyzer`
 - **Completeness check** → `wit-intelligence-analyzer` with `analysisType: "full"`
 - **Bulk analysis** → Query handle + `wit-analyze-by-query-handle`
 

@@ -71,7 +71,7 @@ Use tool discovery when:
 }
 ```
 
-**Result**: Recommends `wit-ai-assignment-analyzer`
+**Result**: Recommends `wit-ai-assignment-analyzer-analyzer`
 
 ### Example 4: Complex Workflow
 ```json
@@ -110,7 +110,7 @@ Use tool discovery when:
     "If you need to assign immediately, use wit-new-copilot-item"
   ],
   "warnings": [
-    "Consider using wit-get-configuration first to see defaults"
+    "Consider using wit-get-configurationuration first to see defaults"
   ]
 }
 ```
@@ -138,7 +138,7 @@ Always: Query → Inspect → Bulk (dryRun) → Bulk (apply)
 
 ### Analysis
 - Single item: `wit-get-work-item-context-package`
-- AI suitability: `wit-ai-assignment-analyzer`
+- AI suitability: `wit-ai-assignment-analyzer-analyzer`
 - Multiple items: `wit-analyze-by-query-handle`
 
 ## Fallback Behavior
@@ -155,5 +155,5 @@ If AI sampling is unavailable, tool discovery uses keyword matching:
 
 ## Related Tools
 
-- `wit-get-configuration`: View server setup
+- `wit-get-configurationuration`: View server setup
 - Resource: `tool-selection-guide.md` for manual reference

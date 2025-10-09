@@ -106,9 +106,14 @@ export async function handleValidateQueryHandle(config: ToolConfig, args: unknow
           }
         }
 
-        result.sample_items = sampleItems;
-        if (queryData.workItemIds.length > 5) {
-          result.sample_note = `Showing first 5 of ${queryData.workItemIds.length} items`;
+        // Bug #4 Fix: Only set sample_items if we successfully fetched items
+        if (sampleItems.length > 0) {
+          result.sample_items = sampleItems;
+          if (queryData.workItemIds.length > 5) {
+            result.sample_note = `Showing first 5 of ${queryData.workItemIds.length} items`;
+          }
+        } else {
+          result.sample_items_error = "Failed to fetch any sample items";
         }
       } catch (err) {
         logger.error(`Error fetching sample items: ${err}`);

@@ -258,6 +258,12 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleQueryHandleInfo(config, args);
   }
 
+  // Context packages by query handle
+  if (name === 'wit-get-context-packages-by-query-handle') {
+    const { handleGetContextPackagesByQueryHandle } = await import('./handlers/context/get-context-packages-by-query-handle.handler.js');
+    return await handleGetContextPackagesByQueryHandle(config, args);
+  }
+
   // Bulk intelligent enhancement tools (AI-powered)
   if (name === 'wit-bulk-enhance-descriptions-by-query-handle') {
     if (!serverInstance) {

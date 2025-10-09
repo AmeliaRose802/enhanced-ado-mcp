@@ -18,12 +18,12 @@ Are you performing bulk operations (updating/removing/assigning multiple items)?
 │           • "all" → operate on all items (default)
 │           • [0,2,5] → operate on specific items by index
 │           • {states:["New"], daysInactiveMin:90} → criteria-based
-│       4. Preview selection with wit-query-handle-select
+│       4. Preview selection with wit-select-items-from-query-handle
 │       5. Pass query_handle + itemSelector to bulk operation tool
 │       6. Handle expires after 1 hour
 │
 └─ NO → Regular Query
-    └─ Use wit-query-wiql without returnQueryHandle
+    └─ Use wit-get-work-items-by-query-wiql without returnQueryHandle
 ```
 
 ### ✅ Use Query Handles When:
@@ -83,7 +83,7 @@ Are you performing bulk operations (updating/removing/assigning multiple items)?
 ## 🛡️ Enhanced Safety Features (NEW)
 
 ### Item Selection Preview
-**Tool:** `wit-query-handle-select`  
+**Tool:** `wit-select-items-from-query-handle`  
 **Purpose:** Preview exactly which items will be selected before bulk operations
 
 ```json
@@ -185,7 +185,7 @@ Do you want to affect ALL items from a query?
    └─ NO → Do items share common attributes (state, tags, etc.)?
       ├─ YES → Use itemSelector: { states: [...], tags: [...], ... }
       │
-      └─ NO → Use wit-query-handle-inspect first, then decide
+      └─ NO → Use wit-inspect-query-handle first, then decide
 ```
 
 ### When to Use Each Selection Type
@@ -250,7 +250,7 @@ Multiple criteria use AND logic (all must match).
 #### ALWAYS Preview Before Destructive Operations
 
 For `wit-bulk-remove`:
-1. Run `wit-query-handle-select` first
+1. Run `wit-select-items-from-query-handle` first
 2. Show user what will be deleted
 3. Get explicit confirmation
 4. Then execute removal
@@ -270,7 +270,7 @@ wit-bulk-update(
 
 Before selecting, inspect to see what's available:
 ```
-wit-query-handle-inspect(queryHandle)
+wit-inspect-query-handle(queryHandle)
 // Returns: indices, states, tags, counts, examples
 ```
 
@@ -299,14 +299,14 @@ wit-query-handle-inspect(queryHandle)
 User: "Assign all critical Active bugs to the security team"
 
 1. Query:
-   wit-query-wiql(
+   wit-get-work-items-by-query-wiql(
      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.Tags] CONTAINS 'critical'",
      returnQueryHandle: true
    )
    Result: queryHandle "qh_xyz789"
 
 2. Preview:
-   wit-query-handle-select(
+   wit-select-items-from-query-handle(
      queryHandle: "qh_xyz789",
      itemSelector: "all"  // Query already filtered to critical + Active
    )
@@ -325,7 +325,7 @@ User: "Assign all critical Active bugs to the security team"
 User: "Add 'needs update' comment to all stale Active items"
 
 1. Query (get Active items):
-   wit-query-wiql(
+   wit-get-work-items-by-query-wiql(
      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
      returnQueryHandle: true,
      includeSubstantiveChange: true  // Get activity data
@@ -333,7 +333,7 @@ User: "Add 'needs update' comment to all stale Active items"
    Result: queryHandle "qh_abc123"
 
 2. Preview (select only stale ones):
-   wit-query-handle-select(
+   wit-select-items-from-query-handle(
      queryHandle: "qh_abc123",
      itemSelector: { daysInactiveMin: 7 }
    )
@@ -352,18 +352,18 @@ User: "Add 'needs update' comment to all stale Active items"
 User: "Update the first 3 unassigned PBIs"
 
 1. Query:
-   wit-query-wiql(
+   wit-get-work-items-by-query-wiql(
      wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Product Backlog Item' AND [System.AssignedTo] = ''",
      returnQueryHandle: true
    )
    Result: queryHandle "qh_def456"
 
 2. Inspect:
-   wit-query-handle-inspect(queryHandle: "qh_def456")
+   wit-inspect-query-handle(queryHandle: "qh_def456")
    Shows: 10 items with indices 0-9
 
 3. Preview:
-   wit-query-handle-select(
+   wit-select-items-from-query-handle(
      queryHandle: "qh_def456",
      itemSelector: [0, 1, 2]  // First 3
    )
@@ -382,7 +382,7 @@ User: "Update the first 3 unassigned PBIs"
 ## 🤖 AI-Powered Query Generation (NEW)
 
 ### Generate WIQL Queries from Natural Language
-**Tool:** `wit-ai-generate-wiql`  
+**Tool:** `wit-generate-wiql-query`  
 **When:** Need to construct complex WIQL queries from descriptions  
 **Example:** "Find all active bugs assigned to me created in the last 30 days"
 
@@ -401,7 +401,7 @@ User: "Update the first 3 unassigned PBIs"
 - Returns validated query with sample results
 
 ### Generate OData Queries for Analytics
-**Tool:** `wit-ai-generate-odata`  
+**Tool:** `wit-generate-odata-query`  
 **When:** Need metrics, aggregations, or historical data queries from descriptions  
 **Example:** "Count completed items by type in the last 90 days"
 
@@ -527,7 +527,7 @@ User: "Update the first 3 unassigned PBIs"
 ## AI-Powered Analysis
 
 ### Analyze for AI Assignment
-**Tool:** `wit-ai-assignment-analyzer`  
+**Tool:** `wit-ai-assignment-analyzer-analyzer`  
 **When:** Check if item is suitable for Copilot  
 **Example:** Evaluate if task is ready for AI
 
@@ -723,7 +723,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 ### Get Configuration
-**Tool:** `wit-get-configuration`  
+**Tool:** `wit-get-configurationuration`  
 **When:** Need to see current MCP server settings  
 **Example:** View organization, project, area path
 
@@ -740,32 +740,32 @@ Need to build a query?
 
 Need data?
 ├─ Individual items? → wit-get-work-items-by-query-wiql
-├─ Metrics/counts? → wit-query-odata (wit-query-analytics-odata)
+├─ Metrics/counts? → wit-query-analytics-odata (wit-query-analytics-odata)
 └─ Full context? → wit-get-work-item-context-package
 
 Creating items?
-├─ Standard creation? → wit-create-item (wit-create-new-item)
+├─ Standard creation? → wit-create-new-item (wit-create-new-item)
 ├─ For Copilot? → wit-new-copilot-item
 └─ Assign existing? → wit-assign-to-copilot
 
 Analysis needed?
-├─ AI suitability? → wit-ai-assignment (wit-ai-assignment-analyzer)
+├─ AI suitability? → wit-ai-assignment-analyzer (wit-ai-assignment-analyzer-analyzer)
 ├─ Quality check? → wit-intelligence-analyzer
 ├─ Find issues? → wit-detect-patterns
-└─ Validate hierarchy? → wit-analyze-hierarchy (wit-validate-hierarchy)
+└─ Validate hierarchy? → wit-validate-hierarchy (wit-validate-hierarchy)
 
 Bulk operations?
 ├─ Add comments? → wit-bulk-comment-by-query-handle
 └─ Process many? → Use batch tools
 
 Configuration?
-└─ View settings? → wit-get-configuration
+└─ View settings? → wit-get-configurationuration
 ```
 
 ## Performance Considerations
 
 ### Fast Operations
-- `wit-get-configuration` - Instant
+- `wit-get-configurationuration` - Instant
 - `wit-validate-hierarchy` - < 1s for 100 items
 - `wit-query-analytics-odata` - Server-side aggregation (fast)
 
@@ -775,7 +775,7 @@ Configuration?
 - `wit-detect-patterns` - Depends on item count
 
 ### Slower Operations (Use AI)
-- `wit-ai-assignment-analyzer` - AI analysis (~5-10s)
+- `wit-ai-assignment-analyzer-analyzer` - AI analysis (~5-10s)
 - `wit-intelligence-analyzer` - AI analysis (~5-10s)
 
 ## Common Combinations
@@ -806,7 +806,7 @@ Configuration?
 2. `wit-query-analytics-odata` - Get velocity metrics
 3. `wit-generate-wiql-query` - Build backlog query
 4. `wit-get-work-items-by-query-wiql` - Get candidates
-5. `wit-ai-assignment-analyzer` - Check Copilot suitability
+5. `wit-ai-assignment-analyzer-analyzer` - Check Copilot suitability
 6. `wit-assign-to-copilot` - Delegate to AI
 
 ### Project Completion Planning

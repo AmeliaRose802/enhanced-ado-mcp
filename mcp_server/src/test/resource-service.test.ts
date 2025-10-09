@@ -159,11 +159,12 @@ describe('Resource Service', () => {
     it('tool selection guide should list all major tools', async () => {
       const content = await getResourceContent('ado://docs/tool-selection-guide');
       
-      expect(content.text).toContain('wit-query-wiql');
-      expect(content.text).toContain('wit-query-odata');
-      expect(content.text).toContain('wit-create-item');
-      expect(content.text).toContain('wit-ai-assignment');
-      expect(content.text).toContain('wit-analyze-hierarchy');
+      // Check for current tool names (tools have been updated/renamed)
+      expect(content.text).toContain('wit-get-work-items-by-query-wiql');
+      expect(content.text).toContain('wit-query-analytics-odata');
+      expect(content.text).toContain('wit-create-new-item');
+      expect(content.text).toContain('wit-ai-assignment-analyzer');
+      expect(content.text).toContain('wit-validate-hierarchy');
     });
   });
 });

@@ -149,6 +149,38 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
     // If returnQueryHandle is true and query is valid, execute and store results
     if (returnQueryHandle && isValid && currentQuery) {
       try {
+        // Bug #3 Fix: Check if query contains aggregations before trying to create handle
+        const isAggregationQuery = /\$apply.*?(groupby|aggregate)/i.test(currentQuery);
+        
+        if (isAggregationQuery) {
+          logger.warn(`Cannot create query handle for aggregation query - aggregations return summary data, not work item lists`);
+          return {
+            success: true,
+            data: asToolData({
+              query: currentQuery,
+              isValidated: testQuery && isValid,
+              ...(testResults && {
+                resultCount: testResults.resultCount,
+                sampleResults: testResults.sampleResults
+              }),
+              summary: `Successfully generated OData aggregation query. Query handles are not supported for aggregation queries as they return statistical summaries rather than work item lists.`
+            }),
+            metadata: {
+              source: "ai-sampling-odata-generator",
+              validated: isValid,
+              iterationCount: iterations.length,
+              queryType: 'aggregation',
+              ...(cumulativeUsage && { usage: cumulativeUsage })
+            },
+            errors: [],
+            warnings: [
+              "⚠️ Query handles not available for aggregated queries - results are statistical summaries, not work item lists",
+              "Use this query directly with wit-query-analytics-odata to get aggregated results",
+              ...(!testQuery ? ["Query validation was skipped - query may contain syntax errors"] : [])
+            ]
+          };
+        }
+        
         logger.info(`Executing OData query to create query handle (maxResults: ${maxResults})...`);
         
         // Execute the query with proper fields selection

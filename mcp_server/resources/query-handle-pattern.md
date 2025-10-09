@@ -51,7 +51,7 @@ The Query Handle Pattern eliminates ID hallucination in bulk operations by ensur
 
 ### Step 1: Get Query Handle
 
-Use `wit-query-wiql` with `returnQueryHandle: true`:
+Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`:
 
 ```json
 {
@@ -273,19 +273,19 @@ itemSelector: {
 
 1. **Query** - Get work items with WIQL:
    ```
-   wit-query-wiql with returnQueryHandle: true
+   wit-get-work-items-by-query-wiql with returnQueryHandle: true
    Result: queryHandle "qh_abc123"
    ```
 
 2. **Inspect** - Preview available items:
    ```
-   wit-query-handle-inspect with queryHandle: "qh_abc123"
+   wit-inspect-query-handle with queryHandle: "qh_abc123"
    Shows: 10 items with indices, states, tags
    ```
 
 3. **Preview Selection** - Verify what will be selected:
    ```
-   wit-query-handle-select 
+   wit-select-items-from-query-handle 
      queryHandle: "qh_abc123"
      itemSelector: { states: ["Active"] }
    Result: "Would select 5 of 10 items"
@@ -304,7 +304,7 @@ itemSelector: {
 ❌ **DO NOT extract IDs manually:**
 ```
 // WRONG - causes hallucination
-queryResult = wit-query-wiql(...)
+queryResult = wit-get-work-items-by-query-wiql(...)
 manualIds = [123, 456, 789]  // AI might hallucinate these
 wit-bulk-comment(workItemIds: manualIds, ...)
 ```
@@ -312,7 +312,7 @@ wit-bulk-comment(workItemIds: manualIds, ...)
 ✅ **DO use query handles:**
 ```
 // CORRECT - validated selection
-queryHandle = wit-query-wiql(returnQueryHandle: true)
+queryHandle = wit-get-work-items-by-query-wiql(returnQueryHandle: true)
 wit-bulk-comment(queryHandle, itemSelector: "all")
 ```
 
@@ -325,7 +325,7 @@ wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]})
 ✅ **DO preview before destructive ops:**
 ```
 // CORRECT - verify first
-wit-query-handle-select(queryHandle, itemSelector: {states: ["Done"]})
+wit-select-items-from-query-handle(queryHandle, itemSelector: {states: ["Done"]})
 // User confirms: "Yes, remove those 5 items"
 wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
 ```

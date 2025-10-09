@@ -41,19 +41,6 @@ Generate valid, syntactically correct WIQL queries based on natural language des
    - Area Path: [System.AreaPath] with UNDER operator
    - Iteration Path: [System.IterationPath] with UNDER operator
    - Parent: [System.Parent] for direct parent ID
-   - **HTML/Long-Text Fields**: The following fields are HTML/long-text and CANNOT be used with equality operators (=, <>, IN, etc.):
-     - [System.Description]
-     - [Microsoft.VSTS.Common.AcceptanceCriteria]
-     - [System.History]
-     - [Microsoft.VSTS.Common.ReproSteps]
-   - **To check if HTML fields are empty**: You CANNOT query for empty HTML fields directly in WIQL. Instead:
-     - Use the field in SELECT clause only: `SELECT [System.Id], [Microsoft.VSTS.Common.AcceptanceCriteria]`
-     - Filter results programmatically after retrieval
-     - Suggest using OData Analytics API for content-based HTML field queries
-   - **If user asks for empty acceptance criteria, descriptions, etc.**:
-     - Explain the limitation in your response
-     - Suggest retrieving all items and filtering client-side
-     - Recommend using wit-query-analytics-odata for more advanced field content queries
 
 5. **Filtering:**
    - **ALWAYS include area path filter when {{AREA_PATH}} is available**: [System.AreaPath] UNDER '{{AREA_PATH}}'
@@ -238,19 +225,6 @@ ORDER BY [System.CreatedDate] DESC
 7. ❌ **Using WorkItemLinks when WorkItems is simpler**:
    - For direct children only, use: `FROM WorkItems WHERE [System.Parent] = 123`
    - WorkItemLinks is for multi-level (recursive) or complex link queries
-
-8. ❌ **Querying HTML/long-text fields with equality operators** (CRITICAL):
-   - **NEVER do this**: `WHERE [System.Description] = ''` or `WHERE [Microsoft.VSTS.Common.AcceptanceCriteria] = NULL`
-   - This causes error: "TF400066: The specified operator cannot be used with long-text fields"
-   - **HTML/long-text fields CANNOT be queried** with =, <>, IN, NOT IN, etc.
-   - **Instead**: 
-     - Include field in SELECT but not in WHERE clause
-     - Filter results programmatically after retrieval
-     - Use OData Analytics API for content-based queries
-   - **If user asks to find items with empty descriptions/acceptance criteria**:
-     - Explain this WIQL limitation clearly
-     - Return a query that selects the field without filtering
-     - Suggest client-side filtering or OData alternative
 
 **RESULT SIZE MANAGEMENT:**
 When querying for closed/completed items:
