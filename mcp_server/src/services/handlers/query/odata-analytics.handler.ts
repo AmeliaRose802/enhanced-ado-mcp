@@ -5,6 +5,7 @@
 
 import type { ToolConfig, ToolExecutionResult, ToolExecutionData, ToolExecutionMetadata, JSONValue, ODataAnalyticsArgs, ODataResponse } from "../../../types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { getRequiredConfig } from "../../../config/config.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
@@ -215,7 +216,13 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       return buildValidationErrorResponse(parsed.error);
     }
 
-    let queryArgs = parsed.data as ODataAnalyticsArgs;
+    // Get default configuration values for organization/project
+    const requiredConfig = getRequiredConfig();
+    const queryArgs = {
+      ...parsed.data,
+      organization: parsed.data.organization || requiredConfig.organization,
+      project: parsed.data.project || requiredConfig.project
+    } as ODataAnalyticsArgs;
     
     // Import config to get default area path
     const { loadConfiguration } = await import('../../../config/config.js');
@@ -223,7 +230,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     
     // Apply default area path if not provided
     if (!queryArgs.areaPath && serverConfig.azureDevOps.areaPath) {
-      queryArgs = { ...queryArgs, areaPath: serverConfig.azureDevOps.areaPath };
+      queryArgs.areaPath = serverConfig.azureDevOps.areaPath;
       logger.debug(`Applied default area path: ${serverConfig.azureDevOps.areaPath}`);
     }
     

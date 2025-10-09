@@ -22,7 +22,21 @@ jest.mock('../config/config.js', () => ({
       inheritParentPaths: false
     }
   })),
-  updateConfigFromCLI: jest.fn()
+  updateConfigFromCLI: jest.fn(),
+  getRequiredConfig: jest.fn(() => ({
+    organization: 'test-org',
+    project: 'test-project',
+    defaultWorkItemType: 'Task',
+    defaultPriority: 2,
+    defaultAreaPath: 'Test\\Area',
+    defaultIterationPath: '',
+    gitRepository: {
+      defaultBranch: 'main'
+    },
+    gitHubCopilot: {
+      guid: ''
+    }
+  }))
 }));
 
 // Mock Azure CLI validation
