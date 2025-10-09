@@ -70,7 +70,7 @@ Call `wit-ai-generate-wiql` with `returnQueryHandle: true`:
 
 ### Step 2: Get Work Items Using Query Handle
 
-Use the query handle returned from Step 1 to retrieve work items with `ado_get_work_items_by_query_handle`:
+Use the query handle returned from Step 1 to retrieve work items with `wit-get-work-items-by-query-wiql`:
 ```json
 {
   "queryHandle": "<handle_from_step_1>",
@@ -105,7 +105,7 @@ Use the query handle returned from Step 1 to retrieve work items with `ado_get_w
 
 Calculate `daysInactive` for each item based on last substantive change (returned in the query results), then classify into categories.
 
-**IMPORTANT**: Never call mutation tools (`ado_update_work_item`, `ado_add_comment`, etc.) in this prompt.
+**IMPORTANT**: Never call mutation tools (`wit-bulk-update-by-query-handle`, `wit-bulk-comment-by-query-handle`, etc.) in this prompt.
 
 ## Query Generation Guidelines
 
@@ -206,7 +206,7 @@ Use this exact column structure:
 Always review with stakeholders before executing:
 ```json
 {
-  "tool": "ado_remove_work_items",
+  "tool": "wit-bulk-remove-by-query-handle",
   "queryHandle": "{deadItemsHandle}",
   "removeReason": "Inactive > {{stalenessThresholdDays}} days with no substantive changes",
   "addAuditComment": true,
@@ -219,7 +219,7 @@ Always review with stakeholders before executing:
 Start with dry run:
 ```json
 {
-  "tool": "ado_enhance_descriptions",
+  "tool": "wit-bulk-enhance-descriptions-by-query-handle",
   "queryHandle": "{poorDescHandle}",
   "enhancementStyle": "technical",
   "preserveExisting": true,
@@ -232,7 +232,7 @@ Start with dry run:
 
 ```json
 {
-  "tool": "ado_add_acceptance_criteria",
+  "tool": "wit-bulk-add-acceptance-criteria-by-query-handle",
   "queryHandle": "{missingACHandle}",
   "criteriaFormat": "gherkin",
   "minCriteria": 3,
@@ -246,7 +246,7 @@ Start with dry run:
 
 ```json
 {
-  "tool": "ado_estimate_story_points",
+  "tool": "wit-bulk-assign-story-points-by-query-handle",
   "queryHandle": "{missingPointsHandle}",
   "pointScale": "fibonacci",
   "analysisDepth": "detailed",
@@ -260,7 +260,7 @@ Start with dry run:
 Template with substitution tokens:
 ```json
 {
-  "tool": "ado_add_comment",
+  "tool": "wit-bulk-comment-by-query-handle",
   "queryHandle": "{targetHandle}",
   "commentTemplate": "📋 Backlog Audit: Item inactive for {daysInactive} days. Last substantive change: {lastSubstantiveChangeDate}. Assigned to: {assignedTo}.",
   "dryRun": false
@@ -373,7 +373,7 @@ Your output MUST include:
 **BEGIN ANALYSIS NOW:**
 
 1. Call `wit-ai-generate-wiql` with a clear natural language description and `returnQueryHandle: true`
-2. Use the returned query handle to call `ado_get_work_items_by_query_handle` with all required fields
+2. Use the returned query handle to call `wit-get-work-items-by-query-wiql` with all required fields
 3. Calculate `daysInactive` from last substantive change for each item
 4. Categorize items according to the heuristics defined
 5. Generate tables for each category (sorted by severity/days inactive)
