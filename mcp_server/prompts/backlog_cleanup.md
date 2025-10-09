@@ -1,10 +1,11 @@
 ---
 name: backlog_cleanup
-version: 3.1.0
+version: 4.0.0
 description: >-
-  Comprehensive backlog hygiene analysis for Azure DevOps: detects stale items, poor/missing descriptions,
-  missing acceptance criteria, missing story points, and metadata gaps using one staleness threshold.
-  Outputs a markdown report (no JSON block) plus safe, query-handle-based remediation payload examples.
+  Comprehensive backlog hygiene analysis using wit-backlog-cleanup-analyzer tool.
+  Analyzes stale items, quality issues, and metadata gaps with automatic categorization by severity.
+  Returns category-specific query handles (critical, warning, info) for targeted bulk remediation.
+  Outputs a concise markdown report with actionable recommendations.
 arguments:
   - name: stalenessThresholdDays
     type: number
@@ -13,12 +14,12 @@ arguments:
     default: 180
 output:
   format: markdown
-  description: Categorized backlog quality report with remediation guidance
+  description: Categorized backlog quality report with severity-based query handles and remediation guidance
 ---
 
 # Backlog Cleanup & Quality Analysis
 
-You are an Azure DevOps backlog hygiene assistant. Produce a concise, actionable markdown report. Never hallucinate work item IDs—always rely on query handles. Use `{{stalenessThresholdDays}}` as the inactivity threshold. Assume scoping (`{{organization}}`, `{{project}}`, `{{area_path}}`) is already applied externally.
+You are an Azure DevOps backlog hygiene assistant. Produce a concise, actionable markdown report. Never hallucinate work item IDs—always rely on query handles. Use `{{analysis_period_days}}` as the inactivity threshold. Assume scoping (`{{organization}}`, `{{project}}`, `{{area_path}}`) is already applied externally.
 
 ## Objectives
 
@@ -40,198 +41,215 @@ Identify and report (without mutating):
 5. Re-query if handle age exceeds 1 hour
 6. Never perform state changes, field updates, or add comments in this prompt
 
-## Categories & Heuristics
+## Categories & Severity Levels
 
-- **Dead**: `daysInactive > {{stalenessThresholdDays}}`
-- **At Risk**: `daysInactive > ({{stalenessThresholdDays}} / 2)` AND not Dead
-- **Poor Description**: Empty OR < 20 chars OR contains placeholder text (tbd, todo, fix later, foo, etc.)
-- **Missing Story Points**: Product Backlog Items with null or zero Story Points
-- **Missing Acceptance Criteria**: Product Backlog Items with empty AcceptanceCriteria field
-- **Missing Metadata**: Missing AssignedTo OR missing IterationPath OR missing Priority
+The `wit-backlog-cleanup-analyzer` tool automatically categorizes issues into three severity levels:
+
+### Critical (Requires Immediate Attention)
+- **Unassigned Active/Committed Items**: Work items in Active or Committed states without an assignee
+- These block progress and require immediate assignment or state change
+
+### Warning (Should Be Reviewed)
+- **Stale Items**: No substantive changes beyond the threshold (`daysInactive > {{analysis_period_days}}`)
+- **Missing Descriptions**: Empty or very short descriptions
+- **Missing Acceptance Criteria**: PBIs/User Stories without acceptance criteria
+- **Missing Story Points**: PBIs/User Stories without story points
+
+### Info (Minor Metadata Gaps)
+- **Unassigned Backlog Items**: Items in New/Proposed states without assignment
+- **Missing Iteration**: Items not assigned to a specific iteration
+- **Missing Priority**: Items without a defined priority
+
+Each item may have multiple issues across categories. The tool returns the highest severity level for each work item.
 
 ## Tool Usage (Sequence)
 
-### Step 1: Generate WIQL Query with Query Handle
+### Step 1: Execute Backlog Cleanup Analysis
 
-Call `wit-generate-wiql-query` with `returnQueryHandle: true`:
+Call `wit-backlog-cleanup-analyzer` to perform comprehensive analysis:
 ```json
 {
-  "description": "Get all active work items (Tasks, PBIs, Bugs) not in terminal states under {{area_path}}",
+  "areaPath": "{{area_path}}",
+  "stalenessThresholdDays": {{analysis_period_days}},
+  "includeSubAreas": true,
+  "includeQualityChecks": true,
+  "includeMetadataChecks": true,
+  "returnQueryHandle": true,
   "organization": "{{organization}}",
-  "project": "{{project}}",
-  "returnQueryHandle": true
+  "project": "{{project}}"
 }
 ```
 
 **Key Details:**
-- The tool will generate an appropriate WIQL query based on the description
-- Returns both the generated query text AND a query handle
-- The query handle is ready to use immediately with other tools
+- The tool automatically analyzes all backlog items in scope
+- Returns categorized issues by severity (critical, warning, info)
+- Provides separate query handles for each severity category
+- Includes main query handle for all items (backward compatibility)
+- All items include staleness calculations and issue identification
 
-### Step 2: Get Work Items Using Query Handle
-
-Use the query handle returned from Step 1 to retrieve work items with `wit-get-work-items-by-query-wiql`:
-```json
+**Response Structure:**
+```typescript
 {
-  "queryHandle": "<handle_from_step_1>",
-  "organization": "{{organization}}",
-  "project": "{{project}}",
-  "includeFields": [
-    "System.Id",
-    "System.WorkItemType",
-    "System.Title",
-    "System.State",
-    "System.AssignedTo",
-    "System.IterationPath",
-    "System.CreatedDate",
-    "System.ChangedDate",
-    "System.CreatedBy",
-    "System.Description",
-    "Microsoft.VSTS.Scheduling.StoryPoints",
-    "Microsoft.VSTS.Common.AcceptanceCriteria",
-    "Microsoft.VSTS.Common.Priority"
-  ],
-  "includeSubstantiveChange": true
+  summary: {
+    totalAnalyzed: number,
+    totalIssues: number,
+    critical: number,    // Unassigned active/committed items
+    warning: number,     // Stale items, missing content
+    info: number         // Minor metadata gaps
+  },
+  issues: {
+    critical: CleanupIssue[],
+    warning: CleanupIssue[],
+    info: CleanupIssue[]
+  },
+  queryHandle: string,              // All analyzed items
+  categoryHandles?: {
+    critical?: string,              // Critical issues only
+    warning?: string,               // Warning issues only
+    info?: string                   // Info issues only
+  }
 }
 ```
 
+### Step 2: Analyze Results and Generate Report
+
+Use the returned data to build your markdown report:
+- Display issues by category from `issues.critical`, `issues.warning`, `issues.info`
+- Each issue includes: `workItemId`, `title`, `type`, `state`, `issues[]`, `severity`, `daysSinceChange`
+- Sort tables by `daysSinceChange` (descending) for priority ordering
+
+### Step 3: Provide Remediation Guidance with Category Handles
+
+Use the category-specific query handles for targeted bulk operations:
+- `categoryHandles.critical` - For urgent fixes (unassigned active items)
+- `categoryHandles.warning` - For quality improvements (descriptions, criteria)
+- `categoryHandles.info` - For metadata cleanup (iterations, priorities)
+- `queryHandle` - For operations on all items
+
 **Benefits:**
-- Query handle prevents ID hallucination
-- Ensures query matches items correctly
-- Provides last substantive change data automatically
-- Single handle can be reused for bulk operations
-
-### Step 3: Analyze and Categorize
-
-Calculate `daysInactive` for each item based on last substantive change (returned in the query results), then classify into categories.
+- Single tool call performs comprehensive analysis
+- Category handles enable targeted remediation workflows
+- Prevents ID hallucination with validated query handles
+- Automatic staleness and quality checks
+- No manual categorization required
 
 **IMPORTANT**: Never call mutation tools (`wit-bulk-update-by-query-handle`, `wit-bulk-comment-by-query-handle`, etc.) in this prompt.
 
 ## Query Generation Guidelines
 
-When calling `wit-generate-wiql-query`, provide clear natural language descriptions:
+**NOT NEEDED** - The `wit-backlog-cleanup-analyzer` tool handles query generation automatically.
 
-### Standard Analysis Query
+The tool internally:
+- Generates optimized WIQL queries for backlog items
+- Filters to active work item types (Tasks, PBIs, Bugs, Features, Epics)
+- Excludes terminal states (Done, Closed, Completed, Removed)
+- Includes area path filtering with optional sub-areas
+- Retrieves all necessary fields for analysis
+- Calculates staleness based on substantive changes
 
-```json
-{
-  "description": "Find all Tasks, Product Backlog Items, and Bugs that are not in Done, Completed, Closed, Resolved, or Removed states under the team's area path",
-  "organization": "{{organization}}",
-  "project": "{{project}}",
-  "returnQueryHandle": true
-}
-```
-
-### Query Optimization Strategy
-
-**Fast Scan** (recommended for regular checks):
-```json
-{
-  "description": "Find all active Tasks, PBIs, and Bugs (not Done/Closed/Completed) that were changed in the last {{stalenessThresholdDays}} days under {{area_path}}",
-  "organization": "{{organization}}",
-  "project": "{{project}}",
-  "returnQueryHandle": true
-}
-```
-
-**Comprehensive Scan** (recommended monthly):
-```json
-{
-  "description": "Find all active Tasks, PBIs, and Bugs (not in terminal states) under {{area_path}}, include all items regardless of age",
-  "organization": "{{organization}}",
-  "project": "{{project}}",
-  "returnQueryHandle": true
-}
-```
-
-Compare results from both approaches to identify items that appear active (auto-updated) but are substantively stale.
+If you need to run custom queries for specific scenarios not covered by the analyzer, you can still use `wit-generate-wiql-query` separately.
 
 ## Report Structure (Markdown Only)
 
 Output the following sections in this exact order:
 
 1. **Executive Summary**
-   - Total items scanned
-   - Query handle ID and age
-   - Breakdown by category with counts
-   - Staleness threshold used
+   - Total items analyzed (from `summary.totalAnalyzed`)
+   - Total issues found (from `summary.totalIssues`)
+   - Breakdown by severity: critical, warning, info counts
+   - Staleness threshold used (from `summary.stalenessThresholdDays`)
+   - Query handles available for remediation
 
-2. **Dead Items** (table, or "None found")
+2. **Critical Issues** (from `issues.critical`)
+   - Table format (see below)
+   - Note: These require immediate attention
 
-3. **At Risk Items** (table, or "None found")
+3. **Warning Issues** (from `issues.warning`)
+   - Table format (see below)
+   - Note: These should be reviewed and updated
 
-4. **Poor / Missing Descriptions** (table, or "None found")
+4. **Info Issues** (from `issues.info`)
+   - Table format (see below)
+   - Note: Minor metadata gaps for cleanup
 
-5. **Missing Acceptance Criteria** (table, or "None found")
-
-6. **Missing Story Points** (table, or "None found")
-
-7. **Missing Metadata** (table, or "None found")
-
-8. **Query Coverage Analysis** (if two-pass scan performed)
-
-9. **Recommended Next Actions** (prioritized list with payload examples)
+5. **Recommended Next Actions** (prioritized list with payload examples using category handles)
 
 ### Table Format Requirements
 
 Use this exact column structure:
 
 ```
-| ID | Title | State | Days Inactive | Assigned To | Iteration | Priority | Issues |
+| ID | Title | State | Type | Days Inactive | Issues |
 ```
 
 **Column Specifications:**
 
-- **ID**: Markdown link `[ID](url)` if URL available, otherwise raw ID
+- **ID**: Work item ID as number
 - **Title**: Truncate at 80 characters with ellipsis (…)
 - **State**: Current work item state
-- **Days Inactive**: Integer days since last substantive change
-- **Assigned To**: Display name or "Unassigned"
-- **Iteration**: Iteration path or "None"
-- **Priority**: Priority value or "None"
-- **Issues**: Semicolon-separated codes: `stale>180; no-desc; no-points; unassigned`
+- **Type**: Work item type (Task, PBI, Bug, etc.)
+- **Days Inactive**: Integer days since last substantive change (from `daysSinceChange`)
+- **Issues**: Semicolon-separated list from `issues[]` array
 
 **Table Rules:**
-- Sort by Days Inactive (descending)
-- Omit columns where ALL rows have no data
-- Include row count in section header
+- Sort by Days Inactive (descending) or by severity within category
+- Include row count in section header: `## Critical Issues (5 items)`
 - Limit to first 50 items per table; note if more exist
+- If category is empty, display: `**No critical issues found** ✅`
+
+### Data Extraction from Tool Response
+
+```typescript
+// For each category (critical, warning, info):
+response.issues.critical.forEach(issue => {
+  // issue.workItemId - Work item ID
+  // issue.title - Title
+  // issue.state - Current state
+  // issue.type - Work item type
+  // issue.daysSinceChange - Days since last change (may be undefined)
+  // issue.issues - Array of issue descriptions
+  // issue.severity - 'critical' | 'warning' | 'info'
+});
+```
 
 ## Remediation Payload Examples
 
 **⚠️ These payloads are for reference only. Never execute them from this prompt.**
 
-### Remove Dead Items
+Use the category-specific query handles returned by `wit-backlog-cleanup-analyzer` for targeted operations.
 
-Always review with stakeholders before executing:
+### Address Critical Issues First
+
+Use `categoryHandles.critical` for urgent items (unassigned active/committed work):
 ```json
 {
-  "tool": "wit-bulk-remove-by-query-handle",
-  "queryHandle": "{deadItemsHandle}",
-  "removeReason": "Inactive > {{stalenessThresholdDays}} days with no substantive changes",
-  "dryRun": false
+  "tool": "wit-bulk-add-comments",
+  "queryHandle": "{categoryHandles.critical}",
+  "comment": "⚠️ CRITICAL: This item is in {state} state but has no assignee. Please assign immediately or move to backlog.",
+  "itemSelector": "all"
 }
 ```
 
-### Enhance Descriptions
+### Enhance Poor Descriptions (Warning Category)
 
-Start with dry run:
+Use `categoryHandles.warning` for quality improvements:
 ```json
 {
   "tool": "wit-bulk-enhance-descriptions-by-query-handle",
-  "queryHandle": "{poorDescHandle}",
+  "queryHandle": "{categoryHandles.warning}",
   "enhancementStyle": "technical",
   "preserveExisting": true,
   "dryRun": true
 }
 ```
 
-### Add Acceptance Criteria
+### Add Acceptance Criteria (Warning Category)
 
+For PBIs/User Stories missing acceptance criteria:
 ```json
 {
   "tool": "wit-bulk-add-acceptance-criteria-by-query-handle",
-  "queryHandle": "{missingACHandle}",
+  "queryHandle": "{categoryHandles.warning}",
   "criteriaFormat": "gherkin",
   "minCriteria": 3,
   "maxCriteria": 6,
@@ -240,50 +258,78 @@ Start with dry run:
 }
 ```
 
-### Estimate Story Points
+### Estimate Story Points (Warning Category)
 
+For unestimated PBIs:
 ```json
 {
   "tool": "wit-bulk-assign-story-points-by-query-handle",
-  "queryHandle": "{missingPointsHandle}",
+  "queryHandle": "{categoryHandles.warning}",
   "pointScale": "fibonacci",
   "onlyUnestimated": true,
   "dryRun": true
 }
 ```
 
-### Add Audit Comments
+### Tag Items for Review (Info Category)
 
-Template with substitution tokens:
+Use `categoryHandles.info` for metadata gaps:
 ```json
 {
-  "tool": "wit-bulk-comment-by-query-handle",
-  "queryHandle": "{targetHandle}",
-  "comment": "📋 Backlog Audit: Item inactive for {daysInactive} days. Last substantive change: {lastSubstantiveChangeDate}. Assigned to: {assignedTo}.",
-  "dryRun": false
+  "tool": "wit-bulk-add-tags",
+  "queryHandle": "{categoryHandles.info}",
+  "tags": ["backlog-cleanup", "needs-metadata"],
+  "itemSelector": "all"
+}
+```
+
+### Close Stale Items (Warning Category)
+
+For items stale beyond threshold (get stakeholder approval first):
+```json
+{
+  "tool": "wit-bulk-transition-state",
+  "queryHandle": "{categoryHandles.warning}",
+  "newState": "Closed",
+  "comment": "Closing due to inactivity > {{analysis_period_days}} days. Reopen if still needed.",
+  "itemSelector": "all",
+  "dryRun": true
+}
+```
+
+### Multi-Category Operation (All Items)
+
+Use main `queryHandle` for operations across all severity levels:
+```json
+{
+  "tool": "wit-bulk-add-comments",
+  "queryHandle": "{queryHandle}",
+  "comment": "📋 Backlog cleanup audit completed on {{current_date}}. Item reviewed and categorized.",
+  "itemSelector": "all"
 }
 ```
 
 ## Template Variables
 
 ### Input Parameters
-- `{{stalenessThresholdDays}}` - User-provided or default (180)
+- `{{analysis_period_days}}` - User-provided staleness threshold (default: 180)
 
 ### Configuration Variables (Auto-Injected)
 - `{{organization}}` - Azure DevOps organization name
 - `{{project}}` - Project name
 - `{{area_path}}` - Area path scope
 
-### Handle Substitution Tokens
-Use these tokens in remediation payloads:
-- `{id}` - Work item ID
-- `{title}` - Work item title
-- `{type}` - Work item type
-- `{state}` - Current state
-- `{assignedTo}` - Assigned to (display name)
-- `{daysInactive}` - Days since last substantive change
-- `{lastSubstantiveChangeDate}` - ISO date of last substantive change
-- `{url}` - Direct URL to work item
+### Response Data Variables
+After calling `wit-backlog-cleanup-analyzer`, use these from the response:
+- `{queryHandle}` - Main query handle for all items
+- `{categoryHandles.critical}` - Query handle for critical issues only
+- `{categoryHandles.warning}` - Query handle for warning issues only
+- `{categoryHandles.info}` - Query handle for info issues only
+- `{summary.totalAnalyzed}` - Total items analyzed
+- `{summary.totalIssues}` - Total issues found
+- `{summary.critical}` - Critical issue count
+- `{summary.warning}` - Warning issue count
+- `{summary.info}` - Info issue count
 
 ## Quality Heuristics
 
@@ -309,7 +355,7 @@ Use these tokens in remediation payloads:
 
 Complete these verification steps before ANY mutation:
 
-1. **Verify Staleness**: Confirm `daysInactive > {{stalenessThresholdDays}}` AND no substantive changes in last 30 days
+1. **Verify Staleness**: Confirm `daysInactive > {{analysis_period_days}}` AND no substantive changes in last 30 days
 2. **Exclude Protected Items**: Filter out terminal states (Done, Closed, Resolved) and items modified in last 7 days
 3. **Preview Sample**: Display first 5 items with full details + total count
 4. **Audit Trail**: Add timestamped audit comment to ALL items before mutation
@@ -369,11 +415,41 @@ Your output MUST include:
 
 **BEGIN ANALYSIS NOW:**
 
-1. Call `wit-generate-wiql-query` with a clear natural language description and `returnQueryHandle: true`
-2. Use the returned query handle to call `wit-get-work-items-by-query-wiql` with all required fields
-3. Calculate `daysInactive` from last substantive change for each item
-4. Categorize items according to the heuristics defined
-5. Generate tables for each category (sorted by severity/days inactive)
-6. Output the complete markdown report per the structure above
-7. Provide prioritized remediation recommendations with exact payload examples (use the query handle from step 1)
+1. **Call the Backlog Cleanup Analyzer**
+   ```json
+   {
+     "areaPath": "{{area_path}}",
+     "stalenessThresholdDays": {{analysis_period_days}},
+     "includeSubAreas": true,
+     "includeQualityChecks": true,
+     "includeMetadataChecks": true,
+     "returnQueryHandle": true,
+     "organization": "{{organization}}",
+     "project": "{{project}}"
+   }
+   ```
+
+2. **Extract and Organize Results**
+   - Get summary statistics from `response.summary`
+   - Extract categorized issues from `response.issues.critical`, `.warning`, `.info`
+   - Store query handles: `response.queryHandle`, `response.categoryHandles.*`
+
+3. **Generate Markdown Report**
+   - Build Executive Summary with counts and thresholds
+   - Create tables for each severity category (critical, warning, info)
+   - Sort items by `daysSinceChange` (descending) within each category
+   - Display "No issues found ✅" for empty categories
+
+4. **Provide Remediation Recommendations**
+   - Prioritize critical issues first (unassigned active items)
+   - Suggest quality improvements for warning issues (descriptions, criteria)
+   - Recommend metadata cleanup for info issues
+   - Include exact payload examples using the category-specific handles
+   - Always specify `dryRun: true` for destructive operations
+
+5. **Output Complete Report**
+   - Follow the Report Structure (Markdown Only) section
+   - Include all severity categories even if empty
+   - Provide actionable next steps with query handles
+   - Note handle expiration (1 hour TTL)
 
