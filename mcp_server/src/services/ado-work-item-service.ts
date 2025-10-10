@@ -667,7 +667,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     filterByDaysInactiveMax,
     computeMetrics = false,
     staleThresholdDays = 180,
-    filterByPatterns = []
+    filterByPatterns
   } = args;
 
   // Auto-enable includeSubstantiveChange if any filtering parameters are provided
