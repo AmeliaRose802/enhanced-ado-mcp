@@ -775,8 +775,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         'System.IterationPath',
         'System.AssignedTo',
         'System.CreatedDate',
-        'System.ChangedDate',
-        'System.Description'
+        'System.ChangedDate'
       ]);
       
       // Only include fields that were explicitly requested and not already extracted
@@ -790,6 +789,15 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
             additionalFields[field] = fieldValue;
           }
         }
+      }
+      
+      // Always include Description and AcceptanceCriteria in additionalFields if filtering by them,
+      // even if undefined/null, so the filter logic has consistent data to work with
+      if (filterByPatterns?.includes('missing_description')) {
+        additionalFields['System.Description'] = wi.fields['System.Description'];
+      }
+      if (filterByPatterns?.includes('missing_acceptance_criteria')) {
+        additionalFields['Microsoft.VSTS.Common.AcceptanceCriteria'] = wi.fields['Microsoft.VSTS.Common.AcceptanceCriteria'];
       }
       
       const workItem: WiqlWorkItemResult = {

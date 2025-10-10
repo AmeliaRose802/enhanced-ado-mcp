@@ -22,8 +22,8 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 ## Workflow
 
 ### 1. Team Roster (OData, paginate $top=200, $skip+=200)
-`$apply=filter(CompletedDate ge {{start_date}}T00:00:00Z and CompletedDate le {{end_date}}T23:59:59Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail,AssignedTo/UserName),aggregate($count as Count))`
-Note: Filter by area path client-side (OData filtering unreliable).
+`$apply=filter(CompletedDate ge {{start_date}}T00:00:00Z and CompletedDate le {{end_date}}T23:59:59Z and AssignedTo/UserEmail ne null and startswith(AreaSK, '{{area_path}}'))/groupby((AssignedTo/UserEmail,AssignedTo/UserName),aggregate($count as Count))`
+Note: Uses `startswith(AreaSK, '{{area_path}}')` for area path filtering in OData.
 
 ### 2. Per-Person Data
 **Completed (OData):** Work type mix per person
