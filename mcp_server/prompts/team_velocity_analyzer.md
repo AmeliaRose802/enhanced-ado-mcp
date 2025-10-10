@@ -94,14 +94,14 @@ You are a **Team Flow & Progress Analyst**. Produce a holistic, anonymized view 
      - Do NOT double escape the area path. `{{area_path}}` already contains single backslashes (e.g., `One\Azure Compute\OneFleet Node`).
      - If more than 200 results expected, paginate: first run without skip, then re-run with `skip: 200`, `skip: 400`, etc. (Do not rely solely on `maxResults`).
      - Remove unnecessary fields if you hit payload limits; minimally you need `[System.Id]` + `[Microsoft.VSTS.Scheduling.StoryPoints]`.
-4. **Work Type Distribution:** Custom OData with `$apply=filter(contains(Area/AreaPath, '{{area_path_simple_substring}}') and CompletedDate ge {{start_date_iso}}Z)/groupby((WorkItemType), aggregate($count as Count))`
+4. **Work Type Distribution:** Custom OData with `$apply=filter(contains(Area/AreaPath, '{{area_path_substring}}') and CompletedDate ge {{start_date_iso}}Z)/groupby((WorkItemType), aggregate($count as Count))`
 5. **Current Active Load:** WIQL `SELECT [System.Id], [System.Title], [System.State], [System.AssignedTo], [Microsoft.VSTS.Scheduling.StoryPoints], [System.Priority], [System.CreatedDate], [System.WorkItemType] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review')` with `returnQueryHandle: true`. **⚠️ Performance Warning:** DO NOT use ORDER BY [Microsoft.VSTS.Scheduling.StoryPoints] on datasets >100 items (causes timeout). Sort client-side if needed.
 6. **Cycle Time Analysis:** WIQL `SELECT [System.Id], [System.CreatedDate], [Microsoft.VSTS.Common.ClosedDate] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - {{analysis_period_days}}`, calculate cycle time client-side. ⚠️ Use [Microsoft.VSTS.Common.ClosedDate] NOT [System.ClosedDate] (doesn't exist).
 7. **Person-Specific Context:** WIQL `SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.AssignedTo] = '{{user_email}}'` with `returnQueryHandle: true`, `includeSubstantiveChange: true`
-8. **Backlog Counts:** Custom OData with `$apply=filter(contains(Area/AreaPath, '{{area_path_simple_substring}}') and State eq 'New')/groupby((WorkItemType), aggregate($count as Count))`
+8. **Backlog Counts:** Custom OData with `$apply=filter(contains(Area/AreaPath, '{{area_path_substring}}') and State eq 'New')/groupby((WorkItemType), aggregate($count as Count))`
 9. **Unassigned Backlog:** WIQL `SELECT [System.Id], [System.Title], [System.State], [System.WorkItemType] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.AssignedTo] = '' AND [System.State] = 'New'` with `returnQueryHandle: true` (OData AssignedTo eq null is unreliable)
 
-**Key OData Pattern:** Area path filtering with `contains()` MUST be inside `$apply/filter()`, NOT in a separate `$filter` clause. Pattern: `$apply=filter(contains(Area/AreaPath, 'substring') and ...)/groupby(...)`
+**Key OData Pattern:** Area path filtering with `contains()` MUST be inside `$apply/filter()`, NOT in a separate `$filter` clause. Pattern: `$apply=filter(contains(Area/AreaPath, '{{area_path_substring}}') and ...)/groupby(...)` where {{area_path_substring}} is a pre-extracted substring like 'Azure Host Gateway'
 
 **Pagination Pattern (WIQL):**
 - Always request with `returnQueryHandle: true`.

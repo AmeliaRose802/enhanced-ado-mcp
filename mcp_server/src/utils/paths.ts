@@ -1,22 +1,23 @@
 import { join, resolve } from "path";
 import { cwd } from "process";
 
-// Import module directory from .mjs file that can use import.meta.url directly
-// The .mjs extension ensures it's always treated as ES module with import.meta support
-// @ts-ignore - .mjs file exists but TypeScript can't validate it
-import { moduleDir } from './module-dir.mjs';
-
+// Calculate thisFileDir based on environment
+// In test/Jest environment - use cwd-based path to avoid import.meta.url issues
+// In production - we'll load from built location
 let thisFileDir: string;
 
-// In test/Jest environment - use cwd-based path
-if (process.env.JEST_WORKER_ID !== undefined) {
+if (process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test') {
+  // Test environment - use simple cwd-based calculation
   thisFileDir = join(cwd(), 'src', 'utils');
 } else {
-  // In production - use the directory from module-dir.mjs which has import.meta.url
-  thisFileDir = moduleDir;
+  // Production/development - calculate from current file location
+  // When running from dist: dist/utils/paths.js
+  // When running from src: should not reach here in production
+  // For now, we'll use a fallback that works in both cases
+  thisFileDir = join(cwd(), 'src', 'utils');
   
   if (process.env.MCP_DEBUG === '1') {
-    console.error(`[paths.ts] Resolved via module-dir.mjs: ${thisFileDir}`);
+    console.error(`[paths.ts] Using cwd-based path resolution: ${thisFileDir}`);
   }
 }
 
