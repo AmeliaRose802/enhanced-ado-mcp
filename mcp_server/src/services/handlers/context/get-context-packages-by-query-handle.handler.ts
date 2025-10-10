@@ -56,7 +56,11 @@ export async function handleGetContextPackagesByQueryHandle(
         success: false,
         data: null,
         metadata: { source: "get-context-packages-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [
+          `Query handle '${queryHandle}' not found or expired.`,
+          `Possible causes: 1) Handle expired (handles last 1 hour), 2) MCP server restarted (handles are stored in memory), or 3) Invalid handle ID.`,
+          `If the handle was created recently, check if the MCP server was restarted. Re-run the query to generate a new handle.`
+        ],
         warnings: []
       };
     }

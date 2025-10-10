@@ -92,10 +92,12 @@ class QueryHandleService {
   private handles: Map<string, QueryHandleData> = new Map();
   private defaultTTL = 60 * 60 * 1000; // 1 hour in milliseconds
   private cleanupInterval: NodeJS.Timeout | null = null;
+  private serverStartTime: Date = new Date();
 
   constructor() {
     // Start automatic cleanup every 5 minutes
     this.startCleanup();
+    logger.info(`Query Handle Service initialized at ${this.serverStartTime.toISOString()}`);
   }
 
   /**
@@ -179,11 +181,18 @@ class QueryHandleService {
     const data = this.handles.get(handle);
     
     if (!data) {
+      logger.warn(`Query handle '${handle}' not found. Server started at ${this.serverStartTime.toISOString()}. ` +
+                  `Currently tracking ${this.handles.size} active handles. ` +
+                  `Note: Handles are lost if MCP server restarts.`);
       return null;
     }
 
     // Check if expired
-    if (new Date() > data.expiresAt) {
+    const now = new Date();
+    if (now > data.expiresAt) {
+      const ageMinutes = Math.floor((now.getTime() - data.createdAt.getTime()) / (1000 * 60));
+      logger.warn(`Query handle '${handle}' expired. Created at ${data.createdAt.toISOString()}, ` +
+                  `expired at ${data.expiresAt.toISOString()}, age: ${ageMinutes} minutes`);
       this.handles.delete(handle);
       return null;
     }

@@ -65,9 +65,8 @@ Parameters:
 
 ### Step 2: Identify Items Without Descriptions
 
-**Objective**: Find items missing descriptions or acceptance criteria.
+**Objective**: Find items missing descriptions.
 
-**For Missing Descriptions:**
 ```
 Tool: wit-get-work-items-by-query-wiql
 Parameters:
@@ -76,39 +75,24 @@ Parameters:
   includeFields: ["System.Description"]
   returnQueryHandle: true
   handleOnly: true
-```
-
-**For Missing Acceptance Criteria:**
-```
-Tool: wit-get-work-items-by-query-wiql
-Parameters:
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature', 'User Story') AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed', 'Resolved')"
-  filterByPatterns: ["missing_acceptance_criteria"]
-  includeFields: ["Microsoft.VSTS.Common.AcceptanceCriteria"]
-  returnQueryHandle: true
-  handleOnly: true
   maxResults: 500
 ```
 
 **Report Format**:
-- Separate sections for:
-  - Items without descriptions: Count and query handle
-  - Items without acceptance criteria: Count and query handle
-- To display items: Use `wit-query-handle-get-items` with each handle if user requests details
+- Count and query handle at top
+- To display items: Use `wit-query-handle-get-items` with the handle if user requests details
 
 **Recommended Actions**:
-1. Review items and determine which need descriptions/acceptance criteria
+1. Review items and determine which need descriptions
 2. Use `wit-bulk-intelligent-enhancement` to generate descriptions with AI
-3. Use `wit-bulk-add-acceptance-criteria` to generate acceptance criteria with AI
-4. Review generated content before applying
+3. Review generated content before applying
 
 **Tools for Remediation**:
 - `wit-bulk-intelligent-enhancement` - AI-powered description generation for multiple items
-- `wit-bulk-add-acceptance-criteria` - AI-powered acceptance criteria generation
 - `wit-update-work-item` - Manually add descriptions to individual items
 - `wit-bulk-update-fields` - Update descriptions for multiple items with custom text
 
-**User Prompt**: "Found {missing_description_count} items without descriptions and {missing_criteria_count} without acceptance criteria. Would you like me to generate these using AI?"
+**User Prompt**: "Found {count} items without descriptions. Would you like me to generate these using AI?"
 
 ---
 
@@ -153,7 +137,6 @@ Tool: wit-get-work-items-by-query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed', 'Resolved')"
   filterByPatterns: ["duplicates"]
-  includeFields: ["System.CreatedDate", "System.ChangedDate"]
   returnQueryHandle: true
   handleOnly: true
   maxResults: 500
@@ -188,7 +171,6 @@ Tool: wit-get-work-items-by-query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed', 'Resolved')"
   filterByPatterns: ["placeholder_titles"]
-  includeFields: ["System.Description", "System.CreatedDate"]
   returnQueryHandle: true
   handleOnly: true
   maxResults: 500
@@ -222,7 +204,6 @@ Tool: wit-get-work-items-by-query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed', 'Resolved') AND [System.ChangedDate] < @Today - 180"
   filterByPatterns: ["stale_automation"]
-  includeFields: ["System.CreatedBy", "System.ChangedDate"]
   returnQueryHandle: true
   handleOnly: true
   maxResults: 500
@@ -288,7 +269,6 @@ Parameters:
 **Issues by Severity**:
 - 🔴 Critical: {stale_count} stale items
 - 🟡 High: {missing_description_count} missing descriptions
-- 🟡 High: {missing_criteria_count} missing acceptance criteria
 - 🟡 High: {missing_points_count} missing story points
 - 🟠 Medium: {duplicate_count} duplicate items in {duplicate_group_count} groups
 - 🟠 Medium: {placeholder_title_count} placeholder titles
@@ -299,7 +279,6 @@ Parameters:
 **Query Handles Provided**:
 - `stale_items`: {handle}
 - `missing_descriptions`: {handle}
-- `missing_acceptance_criteria`: {handle}
 - `missing_story_points`: {handle}
 - `duplicates`: {handle}
 - `placeholder_titles`: {handle}

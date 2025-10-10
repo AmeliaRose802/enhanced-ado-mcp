@@ -955,7 +955,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         const preFilterCount = filteredWorkItems.length;
         const placeholderPatterns = [
           /\b(TBD|TODO|FIXME|XXX)\b/i,
-          /\b(test|testing|temp|temporary)\b/i,
+          /\b(temp|temporary)\b/i,
           /\b(foo|bar|baz|dummy)\b/i,
           /^(New|Untitled|Item \d+)$/i,
           /\[.*\?\?\?.*\]/i

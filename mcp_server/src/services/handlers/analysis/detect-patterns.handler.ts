@@ -113,7 +113,7 @@ export async function handleDetectPatterns(config: ToolConfig, args: unknown): P
     if (patterns.includes('placeholder_titles')) {
       const placeholderPatterns = [
         { regex: /\b(TBD|TODO|FIXME|XXX)\b/i, name: 'TBD/TODO markers' },
-        { regex: /\b(test|testing|temp|temporary)\b/i, name: 'Test/temporary indicators' },
+        { regex: /\b(temp|temporary)\b/i, name: 'Temporary indicators' },
         { regex: /\b(foo|bar|baz|dummy)\b/i, name: 'Placeholder variables' },
         { regex: /^(New|Untitled|Item \d+)$/i, name: 'Default titles' },
         { regex: /\[.*\?\?\?.*\]/i, name: 'Unknown placeholders' }
