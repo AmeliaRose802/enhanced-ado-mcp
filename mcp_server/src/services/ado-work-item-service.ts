@@ -1016,7 +1016,11 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       if (filterByPatterns.includes('missing_description')) {
         const preFilterCount = filteredWorkItems.length;
         filteredWorkItems = filteredWorkItems.filter(wi => {
-          const description = wi.additionalFields?.['System.Description'] || '';
+          const description = wi.additionalFields?.['System.Description'];
+          // Handle undefined/null before String() to avoid String(undefined) => "undefined"
+          if (description === undefined || description === null || description === '') {
+            return true; // Keep items with no description
+          }
           const descriptionText = String(description).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
           return descriptionText.length < 10; // Consider empty if less than 10 characters
         });
@@ -1027,7 +1031,11 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       if (filterByPatterns.includes('missing_acceptance_criteria')) {
         const preFilterCount = filteredWorkItems.length;
         filteredWorkItems = filteredWorkItems.filter(wi => {
-          const acceptanceCriteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '';
+          const acceptanceCriteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'];
+          // Handle undefined/null before String() to avoid String(undefined) => "undefined"
+          if (acceptanceCriteria === undefined || acceptanceCriteria === null || acceptanceCriteria === '') {
+            return true; // Keep items with no acceptance criteria
+          }
           const criteriaText = String(acceptanceCriteria).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
           return criteriaText.length < 10; // Consider empty if less than 10 characters
         });
