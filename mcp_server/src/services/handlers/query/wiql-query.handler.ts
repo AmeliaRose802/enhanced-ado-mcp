@@ -39,8 +39,16 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     if (queryArgs.fetchFullPackages) {
       logger.debug(`Full context packages will be fetched for each work item`);
     }
+    if (queryArgs.handleOnly && queryArgs.returnQueryHandle) {
+      logger.debug(`Handle-only mode: will return query handle without fetching full work item data`);
+    }
     
-    const result = await queryWorkItemsByWiql(queryArgs);
+    // If handleOnly is true and returnQueryHandle is true, fetch only IDs for efficiency
+    const shouldFetchFullData = !queryArgs.handleOnly || !queryArgs.returnQueryHandle;
+    
+    const result = shouldFetchFullData 
+      ? await queryWorkItemsByWiql(queryArgs)
+      : await queryWorkItemsByWiql({ ...queryArgs, includeFields: [] }); // Minimal fields for ID-only fetch
     
     const pageSize = queryArgs.top ?? queryArgs.maxResults ?? 200;
 
@@ -92,27 +100,29 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
     if (queryArgs.returnQueryHandle) {
       const workItemIds = result.workItems.map((wi) => wi.id);
       
-      // Build work item context map if we have work items data
+      // Build work item context map if we have work items data (skip if handleOnly mode)
       const workItemContext = new Map<number, WorkItemContext>();
-      for (const wi of result.workItems) {
-        // Get tags from System.Tags field (stored as semicolon-separated string)
-        const tagsValue = wi.additionalFields?.['System.Tags'];
-        const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
-        
-        workItemContext.set(wi.id, {
-          title: wi.title,
-          state: wi.state,
-          type: wi.type,
-          createdDate: wi.createdDate,
-          assignedTo: wi.assignedTo,
-          areaPath: wi.areaPath,
-          iterationPath: wi.iterationPath,
-          changedDate: wi.changedDate,
-          tags: tagsString, // Store as string for service to parse
-          ...(wi.lastSubstantiveChangeDate && { lastSubstantiveChangeDate: wi.lastSubstantiveChangeDate }),
-          ...(wi.daysInactive !== undefined && { daysInactive: wi.daysInactive }),
-          ...(wi.additionalFields && wi.additionalFields)
-        });
+      if (shouldFetchFullData) {
+        for (const wi of result.workItems) {
+          // Get tags from System.Tags field (stored as semicolon-separated string)
+          const tagsValue = wi.additionalFields?.['System.Tags'];
+          const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
+          
+          workItemContext.set(wi.id, {
+            title: wi.title,
+            state: wi.state,
+            type: wi.type,
+            createdDate: wi.createdDate,
+            assignedTo: wi.assignedTo,
+            areaPath: wi.areaPath,
+            iterationPath: wi.iterationPath,
+            changedDate: wi.changedDate,
+            tags: tagsString, // Store as string for service to parse
+            ...(wi.lastSubstantiveChangeDate && { lastSubstantiveChangeDate: wi.lastSubstantiveChangeDate }),
+            ...(wi.daysInactive !== undefined && { daysInactive: wi.daysInactive }),
+            ...(wi.additionalFields && wi.additionalFields)
+          });
+        }
       }
 
       // Build analysis metadata
@@ -138,6 +148,53 @@ export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promis
 
       logger.info(`Query handle created: ${handle} (${workItemIds.length} work items)`);
 
+      // Handle-only mode: return minimal response with just the handle and count
+      if (queryArgs.handleOnly) {
+        return {
+          success: true,
+          data: {
+            query_handle: handle,
+            work_item_count: workItemIds.length,
+            total_count: result.totalCount,
+            query: result.query,
+            summary: `Query handle created for ${workItemIds.length} work item(s). Handle-only mode: work item details not fetched for efficiency. Use the handle with bulk operation tools or wit-query-handle-get-items to retrieve items. Handle expires in 1 hour.`,
+            next_steps: [
+              "Use wit-query-handle-get-items to retrieve work item details if needed",
+              "Use wit-bulk-comment to add comments to all items",
+              "Use wit-bulk-update to update fields on all items",
+              "Use wit-bulk-assign to assign all items to a user",
+              "Use wit-bulk-remove to remove all items",
+              "Always use dryRun: true first to preview changes before applying them"
+            ],
+            expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
+              pagination: {
+                skip: result.skip,
+                top: result.top,
+                totalCount: result.totalCount,
+                hasMore: result.hasMore,
+                ...(result.hasMore && { nextSkip: result.skip + result.top })
+              }
+            })
+          },
+          metadata: {
+            source: "rest-api-wiql",
+            queryHandleMode: true,
+            handleOnlyMode: true,
+            handle,
+            count: workItemIds.length,
+            totalCount: result.totalCount
+          },
+          errors: [],
+          warnings: [
+            ...(result.hasMore
+              ? [`Query returned ${result.totalCount} total results. Handle contains first ${workItemIds.length} items. Use pagination if you need all results.`]
+              : [])
+          ]
+        };
+      }
+
+      // Standard mode with full work item details
       return {
         success: true,
         data: {

@@ -6,13 +6,13 @@
 import { executeTool } from "../services/tool-service.js";
 
 async function testFilterByMissingDescription() {
-  console.log("\n🧪 Testing WIQL query with filterByMissingDescription...");
+  console.log("\n🧪 Testing WIQL query with filterByPatterns: ['missing_description']...");
   
   try {
     const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task', 'Bug')",
       top: 50,
-      filterByMissingDescription: true,
+      filterByPatterns: ["missing_description"],
       returnQueryHandle: true
     });
     
@@ -50,13 +50,13 @@ async function testFilterByMissingDescription() {
 }
 
 async function testFilterByMissingAcceptanceCriteria() {
-  console.log("\n🧪 Testing WIQL query with filterByMissingAcceptanceCriteria...");
+  console.log("\n🧪 Testing WIQL query with filterByPatterns: ['missing_acceptance_criteria']...");
   
   try {
     const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature')",
       top: 50,
-      filterByMissingAcceptanceCriteria: true,
+      filterByPatterns: ["missing_acceptance_criteria"],
       returnQueryHandle: true
     });
     
@@ -95,8 +95,7 @@ async function testBothFilters() {
     const result = await executeTool("wit-query-wiql", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] = 'Product Backlog Item'",
       top: 50,
-      filterByMissingDescription: true,
-      filterByMissingAcceptanceCriteria: true,
+      filterByPatterns: ["missing_description", "missing_acceptance_criteria"],
       returnQueryHandle: true
     });
     

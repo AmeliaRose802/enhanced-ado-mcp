@@ -186,28 +186,6 @@ export const sprintPlanningAnalyzerSchema = z.object({
 });
 
 /**
- * Schema for wit-detect-patterns tool
- * Identify common work item issues (duplicates, placeholders, orphans, etc.)
- */
-export const detectPatternsSchema = z.object({
-  workItemIds: z.array(z.number()).optional(),
-  areaPath: z.string().optional(),
-  organization: z.string().optional(),
-  project: z.string().optional(),
-  patterns: z.array(z.enum([
-    "duplicates",
-    "placeholder_titles", 
-    "orphaned_children",
-    "unassigned_committed",
-    "stale_automation",
-    "no_description"
-  ])).optional().default(["duplicates", "placeholder_titles", "orphaned_children", "unassigned_committed", "stale_automation"]),
-  maxResults: z.number().int().min(1).max(1000).optional().default(200),
-  includeSubAreas: z.boolean().optional().default(true),
-  format: z.enum(["categorized", "flat", "summary"]).optional().default("categorized")
-});
-
-/**
  * Schema for wit-validate-hierarchy tool
  * Fast hierarchy validation with type and state checks
  */
@@ -277,9 +255,16 @@ export const wiqlQuerySchema = z.object({
   filterBySubstantiveChangeBefore: z.string().optional(),
   filterByDaysInactiveMin: z.number().optional(),
   filterByDaysInactiveMax: z.number().optional(),
-  filterByMissingDescription: z.boolean().optional().default(false),
-  filterByMissingAcceptanceCriteria: z.boolean().optional().default(false),
+  filterByPatterns: z.array(z.enum([
+    "duplicates",
+    "placeholder_titles",
+    "unassigned_committed",
+    "stale_automation",
+    "missing_description",
+    "missing_acceptance_criteria"
+  ])).optional(),
   returnQueryHandle: z.boolean().optional().default(true),
+  handleOnly: z.boolean().optional().default(false),
   fetchFullPackages: z.boolean().optional().default(false),
   includePaginationDetails: z.boolean().optional().default(false)
 });

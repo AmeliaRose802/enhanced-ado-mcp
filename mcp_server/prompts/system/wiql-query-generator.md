@@ -56,13 +56,14 @@ Generate valid, syntactically correct WIQL queries based on natural language des
      - Recommend using wit-query-analytics-odata for more advanced field content queries
 
 5. **Filtering:**
-   - **ALWAYS include area path filter when {{AREA_PATH}} is available**: [System.AreaPath] UNDER '{{AREA_PATH}}'
+   - **Include area path filter ONLY when {{AREA_PATH}} is provided (not empty)**: [System.AreaPath] UNDER '{{AREA_PATH}}'
+   - **NEVER make up or infer area paths** - only use the exact {{AREA_PATH}} value provided
    - Use IN for multiple values: [System.State] IN ('Active', 'New')
    - Use NOT IN for exclusions: [System.State] NOT IN ('Removed', 'Closed')
    - Use UNDER for path hierarchies: [System.AreaPath] UNDER '{{PROJECT}}\\Area'
    - Use = for exact matches
    - Always add filters to prevent queries from returning >20,000 items
-   - Area path filtering is the best way to scope queries to relevant work items
+   - When area path is provided, it's the best way to scope queries to relevant work items
 
 6. **Date Queries:**
    - Use @Today, @Today-7, @Today+30 for relative dates
@@ -80,11 +81,11 @@ Generate valid, syntactically correct WIQL queries based on natural language des
 - Area Path: {{AREA_PATH}}{{#if AREA_PATH}} ← **USE THIS in WHERE clause with UNDER operator**{{/if}}
 - Iteration Path: {{ITERATION_PATH}}
 
-**IMPORTANT**: If {{AREA_PATH}} is provided (not empty), ALWAYS add this to your WHERE clause:
+**IMPORTANT**: If {{AREA_PATH}} is provided (not empty), you SHOULD add this to your WHERE clause:
 ```
 AND [System.AreaPath] UNDER '{{AREA_PATH}}'
 ```
-If {{AREA_PATH}} is empty, omit the area path filter.
+If {{AREA_PATH}} is empty or not provided, **DO NOT add an area path filter** - let the query span the entire project unless the user's description specifically mentions an area.
 
 **CHOOSING QUERY TYPE:**
 

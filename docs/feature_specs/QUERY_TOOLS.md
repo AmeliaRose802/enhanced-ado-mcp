@@ -49,15 +49,42 @@ Enable flexible work item querying with:
 - `filterBySubstantiveChangeBefore` (string) - Filter by substantive change before date
 - `filterByDaysInactiveMin` (number) - Filter by minimum days inactive
 - `filterByDaysInactiveMax` (number) - Filter by maximum days inactive
-- `filterByMissingDescription` (boolean) - Filter to items with missing description
-- `filterByMissingAcceptanceCriteria` (boolean) - Filter to items with missing acceptance criteria
+- `filterByPatterns` (array of strings) - Filter by common work item patterns:
+  - `"missing_description"` - Items with empty description or <10 chars
+  - `"missing_acceptance_criteria"` - Items with empty acceptance criteria or <10 chars
+  - `"duplicates"` - Items with similar titles (case-insensitive)
+  - `"placeholder_titles"` - Items with TBD/TODO/FIXME/XXX/test/temp/foo/bar/baz markers
+  - `"unassigned_committed"` - Active/Committed/In Progress items without assignee
+  - `"stale_automation"` - Automation-created items inactive 180+ days
 - `returnQueryHandle` (boolean) - Return query handle for safe operations (default true)
+- `handleOnly` (boolean) - ⚡ **EFFICIENCY MODE:** Return ONLY query handle without fetching work item data (default false)
 - `fetchFullPackages` (boolean) - Fetch full context packages for each item (expensive)
 - `includePaginationDetails` (boolean) - Force include pagination details
 
+#### Handle-Only Mode (New in v1.5.1)
+
+When `handleOnly: true` is combined with `returnQueryHandle: true`, the tool returns **only the query handle and count** without fetching full work item details. This is highly efficient for workflows where:
+
+- You need to perform bulk operations without previewing items
+- You have a large result set and don't need immediate details
+- You want to minimize API calls and response payload size
+- You'll analyze items later using `wit-query-handle-get-items`
+
+**Benefits:**
+- **Faster execution** - Skips work item detail fetching
+- **Reduced API calls** - Only executes WIQL, doesn't fetch work item details
+- **Smaller response** - Only returns handle and count
+- **Lower token usage** - Minimal response payload for LLMs
+
+**Use Cases:**
+- Backlog cleanup workflows (get counts before reviewing)
+- Bulk operations where preview isn't needed
+- Large query result sets (>500 items)
+- Query validation before committing to full fetch
+
 #### Output Format
 
-**Success Response:**
+**Success Response (Standard Mode):**
 ```json
 {
   "success": true,
@@ -87,6 +114,39 @@ Enable flexible work item querying with:
 }
 ```
 
+**Success Response (Handle-Only Mode with `handleOnly: true`):**
+```json
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_c1b1b9a3ab3ca2f2ae8af6114c4a50e3",
+    "work_item_count": 45,
+    "total_count": 45,
+    "query": "SELECT [System.Id] FROM WorkItems WHERE...",
+    "summary": "Query handle created for 45 work item(s). Handle-only mode: work item details not fetched for efficiency. Use the handle with bulk operation tools or wit-query-handle-get-items to retrieve items. Handle expires in 1 hour.",
+    "next_steps": [
+      "Use wit-query-handle-get-items to retrieve work item details if needed",
+      "Use wit-bulk-comment to add comments to all items",
+      "Use wit-bulk-update to update fields on all items",
+      "Use wit-bulk-assign to assign all items to a user",
+      "Use wit-bulk-remove to remove all items",
+      "Always use dryRun: true first to preview changes before applying them"
+    ],
+    "expires_at": "2025-10-09T14:30:00Z"
+  },
+  "metadata": {
+    "source": "rest-api-wiql",
+    "queryHandleMode": true,
+    "handleOnlyMode": true,
+    "handle": "qh_c1b1b9a3ab3ca2f2ae8af6114c4a50e3",
+    "count": 45,
+    "totalCount": 45
+  },
+  "errors": [],
+  "warnings": []
+}
+```
+
 #### Examples
 
 **Example 1: Find Active Bugs**
@@ -106,6 +166,16 @@ Enable flexible work item querying with:
 ```
 Returns items inactive for 180+ days with staleness analysis.
 
+**Example 2b: Find Items with Missing Description**
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task', 'Bug')",
+  "filterByPatterns": ["missing_description"],
+  "maxResults": 50
+}
+```
+Returns active items with empty or very short descriptions (< 10 characters).
+
 **Example 3: Hierarchical Query with Pagination**
 ```json
 {
@@ -115,6 +185,38 @@ Returns items inactive for 180+ days with staleness analysis.
 }
 ```
 Returns first 50 children of work item 12345.
+
+**Example 4: Handle-Only Mode for Bulk Operations** ⚡ **NEW**
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] = 'New'",
+  "returnQueryHandle": true,
+  "handleOnly": true
+}
+```
+Returns only the query handle and count (e.g., 250 items) without fetching work item details. Use this when you plan to perform bulk operations and don't need to preview items first. Reduces API calls and response size significantly.
+
+**Example 5: Backlog Cleanup Workflow with Handle-Only**
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] NOT IN ('Done', 'Removed') AND [System.ChangedDate] < @Today - 180",
+  "includeSubstantiveChange": true,
+  "filterByDaysInactiveMin": 180,
+  "returnQueryHandle": true,
+  "handleOnly": true
+}
+```
+Efficiently finds stale items without fetching full details. Returns handle for bulk commenting/removal. If user wants to review items, follow up with `wit-query-handle-get-items`.
+
+**Example 6: Find Incomplete Work Items (Multiple Patterns)**
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] = 'Product Backlog Item'",
+  "filterByPatterns": ["missing_description", "missing_acceptance_criteria"],
+  "maxResults": 100
+}
+```
+Finds Product Backlog Items missing BOTH description AND acceptance criteria. Multiple patterns are applied as AND conditions.
 
 ### 2. wit-query-odata
 

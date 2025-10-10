@@ -55,8 +55,8 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       maxIterations = 3,
       includeExamples = true,
       testQuery = true,
-      areaPath,
-      iterationPath,
+      areaPath = requiredConfig.defaultAreaPath,
+      iterationPath = requiredConfig.defaultIterationPath,
       returnQueryHandle = true,
       maxResults = 200,
       includeFields = []

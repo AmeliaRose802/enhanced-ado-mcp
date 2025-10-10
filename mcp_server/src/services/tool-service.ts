@@ -42,7 +42,6 @@ import { handleBulkAddAcceptanceCriteria } from './handlers/ai-powered/bulk-add-
 
 // Analysis handlers
 import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
-import { handleDetectPatterns } from './handlers/analysis/detect-patterns.handler.js';
 import { handleValidateHierarchy } from './handlers/analysis/validate-hierarchy.handler.js';
 
 // Integration handlers
@@ -200,11 +199,6 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   // Extract security instruction links from work item
   if (name === 'wit-extract-security-links') {
     return await handleExtractSecurityLinks(config, args);
-  }
-
-  // Detect common patterns and issues
-  if (name === 'wit-detect-patterns') {
-    return await handleDetectPatterns(config, args);
   }
 
   // Fast hierarchy validation (types and states)

@@ -498,8 +498,7 @@ interface WiqlQueryArgs {
   filterByDaysInactiveMax?: number;
   computeMetrics?: boolean;
   staleThresholdDays?: number;
-  filterByMissingDescription?: boolean;
-  filterByMissingAcceptanceCriteria?: boolean;
+  filterByPatterns?: Array<'duplicates' | 'placeholder_titles' | 'unassigned_committed' | 'stale_automation' | 'missing_description' | 'missing_acceptance_criteria'>;
 }
 
 // Fields that indicate substantive changes
@@ -668,8 +667,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     filterByDaysInactiveMax,
     computeMetrics = false,
     staleThresholdDays = 180,
-    filterByMissingDescription = false,
-    filterByMissingAcceptanceCriteria = false
+    filterByPatterns = []
   } = args;
 
   // Auto-enable includeSubstantiveChange if any filtering parameters are provided
@@ -713,17 +711,21 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       };
     }
 
-    // Store total count before pagination
-    const totalCount = wiqlResult.workItems.length;
+    // Store original count from WIQL
+    const wiqlTotalCount = wiqlResult.workItems.length;
     
-    // Apply pagination: skip items, then take pageSize items
-    const paginatedWorkItems = wiqlResult.workItems.slice(skip, skip + pageSize);
-    const workItemIds = paginatedWorkItems.map((wi: { id: number }) => wi.id);
+    // Determine if we need to fetch ALL items for filtering (no pagination yet)
+    const filtersApplied = needsSubstantiveChange || (filterByPatterns && filterByPatterns.length > 0);
     
-    // Calculate if there are more results
-    const hasMore = (skip + pageSize) < totalCount;
+    // If filters are applied, we need to fetch ALL work items first, then filter, then paginate
+    // If no filters, we can paginate at the query level for efficiency
+    const workItemIdsToFetch = filtersApplied 
+      ? wiqlResult.workItems.map((wi: { id: number }) => wi.id)  // Fetch ALL
+      : wiqlResult.workItems.slice(skip, skip + pageSize).map((wi: { id: number }) => wi.id); // Fetch only page
 
-    logger.debug(`WIQL query returned ${totalCount} items, fetching details for items ${skip + 1}-${skip + workItemIds.length} (page size: ${pageSize})`);
+    logger.debug(filtersApplied 
+      ? `WIQL query returned ${wiqlTotalCount} items. Fetching ALL for filtering before pagination.`
+      : `WIQL query returned ${wiqlTotalCount} items, fetching details for items ${skip + 1}-${Math.min(skip + pageSize, wiqlTotalCount)} (page size: ${pageSize})`);
 
     // Fetch work item details
     // Default fields to include
@@ -738,22 +740,22 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     ];
 
     // Add date fields if needed for substantive change analysis or computed metrics
-    if (includeSubstantiveChange || computeMetrics) {
+    if (needsSubstantiveChange || computeMetrics) {
       defaultFields.push('System.CreatedDate', 'System.ChangedDate');
     }
 
-    // Add description and acceptance criteria fields if filtering by them
-    if (filterByMissingDescription) {
+    // Add description and acceptance criteria fields if filtering by them via patterns
+    if (filterByPatterns?.includes('missing_description')) {
       defaultFields.push('System.Description');
     }
-    if (filterByMissingAcceptanceCriteria) {
+    if (filterByPatterns?.includes('missing_acceptance_criteria')) {
       defaultFields.push('Microsoft.VSTS.Common.AcceptanceCriteria');
     }
 
     // Combine default fields with user-requested fields
     const allFields = [...new Set([...defaultFields, ...includeFields])];
 
-    const detailsResult = await repository.getBatch(workItemIds, allFields);
+    const detailsResult = await repository.getBatch(workItemIdsToFetch, allFields);
 
     if (!detailsResult) {
       throw new Error('Failed to fetch work item details');
@@ -895,72 +897,178 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       
       if (filterBySubstantiveChangeAfter) {
         const afterDate = new Date(filterBySubstantiveChangeAfter);
+        const beforeFilter = filteredWorkItems.length;
+        const itemsWithoutDate = filteredWorkItems.filter(wi => !wi.lastSubstantiveChangeDate).length;
+        
         filteredWorkItems = filteredWorkItems.filter(wi => {
           if (!wi.lastSubstantiveChangeDate) return false;
           return new Date(wi.lastSubstantiveChangeDate) > afterDate;
         });
-        logger.debug(`Filtered by substantive change after ${filterBySubstantiveChangeAfter}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        
+        logger.debug(`Filtered by substantive change after ${filterBySubstantiveChangeAfter}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDate > 0 ? ` (${itemsWithoutDate} items excluded due to missing lastSubstantiveChangeDate)` : ''}`);
         preFilterCount = filteredWorkItems.length;
       }
       
       if (filterBySubstantiveChangeBefore) {
         const beforeDate = new Date(filterBySubstantiveChangeBefore);
+        const itemsWithoutDate = filteredWorkItems.filter(wi => !wi.lastSubstantiveChangeDate).length;
+        
         filteredWorkItems = filteredWorkItems.filter(wi => {
           if (!wi.lastSubstantiveChangeDate) return false;
           return new Date(wi.lastSubstantiveChangeDate) < beforeDate;
         });
-        logger.debug(`Filtered by substantive change before ${filterBySubstantiveChangeBefore}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        
+        logger.debug(`Filtered by substantive change before ${filterBySubstantiveChangeBefore}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDate > 0 ? ` (${itemsWithoutDate} items excluded due to missing lastSubstantiveChangeDate)` : ''}`);
         preFilterCount = filteredWorkItems.length;
       }
       
       if (filterByDaysInactiveMin !== undefined) {
+        const itemsWithoutDaysInactive = filteredWorkItems.filter(wi => wi.daysInactive === undefined).length;
+        
         filteredWorkItems = filteredWorkItems.filter(wi => {
           if (wi.daysInactive === undefined) return false;
           return wi.daysInactive >= filterByDaysInactiveMin;
         });
-        logger.debug(`Filtered by daysInactive >= ${filterByDaysInactiveMin}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        
+        logger.debug(`Filtered by daysInactive >= ${filterByDaysInactiveMin}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDaysInactive > 0 ? ` (${itemsWithoutDaysInactive} items excluded due to missing daysInactive - check for work items without createdDate or failed substantive change analysis)` : ''}`);
         preFilterCount = filteredWorkItems.length;
       }
       
       if (filterByDaysInactiveMax !== undefined) {
+        const itemsWithoutDaysInactive = filteredWorkItems.filter(wi => wi.daysInactive === undefined).length;
+        
         filteredWorkItems = filteredWorkItems.filter(wi => {
           if (wi.daysInactive === undefined) return false;
           return wi.daysInactive <= filterByDaysInactiveMax;
         });
-        logger.debug(`Filtered by daysInactive <= ${filterByDaysInactiveMax}: ${preFilterCount} → ${filteredWorkItems.length}`);
+        
+        logger.debug(`Filtered by daysInactive <= ${filterByDaysInactiveMax}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDaysInactive > 0 ? ` (${itemsWithoutDaysInactive} items excluded due to missing daysInactive - check for work items without createdDate or failed substantive change analysis)` : ''}`);
       }
     }
 
-    // Apply missing description filter
-    if (filterByMissingDescription) {
-      const preFilterCount = filteredWorkItems.length;
-      filteredWorkItems = filteredWorkItems.filter(wi => {
-        const description = wi.additionalFields?.['System.Description'] || '';
-        const descriptionText = String(description).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
-        return descriptionText.length < 10; // Consider empty if less than 10 characters
-      });
-      logger.debug(`Filtered by missing description: ${preFilterCount} → ${filteredWorkItems.length}`);
+    // Apply pattern-based filters
+    if (filterByPatterns && filterByPatterns.length > 0) {
+      logger.debug(`Applying pattern filters: ${filterByPatterns.join(', ')}`);
+      
+      // Pattern: Placeholder titles
+      if (filterByPatterns.includes('placeholder_titles')) {
+        const preFilterCount = filteredWorkItems.length;
+        const placeholderPatterns = [
+          /\b(TBD|TODO|FIXME|XXX)\b/i,
+          /\b(test|testing|temp|temporary)\b/i,
+          /\b(foo|bar|baz|dummy)\b/i,
+          /^(New|Untitled|Item \d+)$/i,
+          /\[.*\?\?\?.*\]/i
+        ];
+        
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          return placeholderPatterns.some(pattern => pattern.test(wi.title));
+        });
+        logger.debug(`Filtered by placeholder_titles: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
+      
+      // Pattern: Duplicates (similar titles)
+      if (filterByPatterns.includes('duplicates')) {
+        const preFilterCount = filteredWorkItems.length;
+        const titleMap = new Map<string, number[]>();
+        
+        // Build map of normalized titles to work item IDs
+        for (const wi of filteredWorkItems) {
+          const normalizedTitle = wi.title.toLowerCase().trim().replace(/[^\w\s]/g, '');
+          if (!titleMap.has(normalizedTitle)) {
+            titleMap.set(normalizedTitle, []);
+          }
+          titleMap.get(normalizedTitle)!.push(wi.id);
+        }
+        
+        // Keep only items with duplicate titles
+        const duplicateIds = new Set<number>();
+        for (const ids of titleMap.values()) {
+          if (ids.length > 1) {
+            ids.forEach(id => duplicateIds.add(id));
+          }
+        }
+        
+        filteredWorkItems = filteredWorkItems.filter(wi => duplicateIds.has(wi.id));
+        logger.debug(`Filtered by duplicates: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
+      
+      // Pattern: Unassigned items in committed state
+      if (filterByPatterns.includes('unassigned_committed')) {
+        const preFilterCount = filteredWorkItems.length;
+        const committedStates = ['Active', 'Committed', 'In Progress', 'Doing'];
+        
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          return committedStates.includes(wi.state) && !wi.assignedTo;
+        });
+        logger.debug(`Filtered by unassigned_committed: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
+      
+      // Pattern: Missing description
+      if (filterByPatterns.includes('missing_description')) {
+        const preFilterCount = filteredWorkItems.length;
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          const description = wi.additionalFields?.['System.Description'] || '';
+          const descriptionText = String(description).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
+          return descriptionText.length < 10; // Consider empty if less than 10 characters
+        });
+        logger.debug(`Filtered by missing_description: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
+      
+      // Pattern: Missing acceptance criteria
+      if (filterByPatterns.includes('missing_acceptance_criteria')) {
+        const preFilterCount = filteredWorkItems.length;
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          const acceptanceCriteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '';
+          const criteriaText = String(acceptanceCriteria).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
+          return criteriaText.length < 10; // Consider empty if less than 10 characters
+        });
+        logger.debug(`Filtered by missing_acceptance_criteria: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
+      
+      // Pattern: Stale automation items (created by automation, not touched in 180+ days)
+      if (filterByPatterns.includes('stale_automation')) {
+        const preFilterCount = filteredWorkItems.length;
+        const automationPatterns = [/\[S360\]/i, /\[automated\]/i, /\[bot\]/i, /\[scan\]/i];
+        const now = new Date();
+        
+        filteredWorkItems = filteredWorkItems.filter(wi => {
+          const isAutomation = automationPatterns.some(pattern => pattern.test(wi.title));
+          if (!isAutomation || !wi.changedDate) return false;
+          
+          const changedDate = new Date(wi.changedDate);
+          const daysSinceChange = Math.floor((now.getTime() - changedDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          return daysSinceChange > 180;
+        });
+        logger.debug(`Filtered by stale_automation: ${preFilterCount} → ${filteredWorkItems.length}`);
+      }
     }
 
-    // Apply missing acceptance criteria filter
-    if (filterByMissingAcceptanceCriteria) {
-      const preFilterCount = filteredWorkItems.length;
-      filteredWorkItems = filteredWorkItems.filter(wi => {
-        const acceptanceCriteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '';
-        const criteriaText = String(acceptanceCriteria).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
-        return criteriaText.length < 10; // Consider empty if less than 10 characters
-      });
-      logger.debug(`Filtered by missing acceptance criteria: ${preFilterCount} → ${filteredWorkItems.length}`);
-    }
+    // Now apply pagination to the filtered results
+    const totalCountAfterFiltering = filteredWorkItems.length;
+    const paginatedWorkItems = filtersApplied 
+      ? filteredWorkItems.slice(skip, skip + pageSize)  // Apply pagination to filtered results
+      : filteredWorkItems;  // Already paginated at query level
+    
+    const hasMore = filtersApplied
+      ? (skip + pageSize) < totalCountAfterFiltering  // Check against filtered count
+      : (skip + pageSize) < wiqlTotalCount;  // Check against original WIQL count
+    
+    const finalTotalCount = filtersApplied ? totalCountAfterFiltering : wiqlTotalCount;
+
+    logger.debug(filtersApplied
+      ? `After filtering: ${totalCountAfterFiltering} items remain. Returning page ${skip + 1}-${Math.min(skip + pageSize, totalCountAfterFiltering)}`
+      : `Returning ${paginatedWorkItems.length} items from WIQL query`);
 
     return {
-      workItems: filteredWorkItems,
-      count: filteredWorkItems.length,
+      workItems: paginatedWorkItems,
+      count: paginatedWorkItems.length,
       query: wiqlQuery,
-      totalCount,
+      totalCount: finalTotalCount,
       skip,
       top: pageSize,
-      hasMore
+      hasMore: hasMore
     };
 
   } catch (error) {

@@ -15,7 +15,6 @@ import {
   workItemContextPackageSchema,
   workItemsBatchContextSchema,
   getLastSubstantiveChangeSchema,
-  detectPatternsSchema,
   validateHierarchyFastSchema,
   bulkCommentByQueryHandleSchema,
   bulkUpdateByQueryHandleSchema,
@@ -335,7 +334,7 @@ export const toolConfigs: ToolConfig[] = [
   },
   {
     name: "wit-get-work-items-by-query-wiql",
-    description: "🔐 ANTI-HALLUCINATION TOOL: Execute WIQL query and get both work item details AND a query handle for safe operations. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Limit: 200 items (use pagination for more). Can filter results by last substantive change date to find stale or recently active items.",
+    description: "🔐 ANTI-HALLUCINATION TOOL: Execute WIQL query and get both work item details AND a query handle for safe operations. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Use handleOnly=true with returnQueryHandle=true to return ONLY the query handle without fetching work item data (efficient for bulk operations where you don't need to preview items). Limit: 200 items (use pagination for more). Can filter results by last substantive change date to find stale or recently active items.",
     script: "", // Handled internally
     schema: wiqlQuerySchema,
     inputSchema: {
@@ -353,9 +352,9 @@ export const toolConfigs: ToolConfig[] = [
         filterBySubstantiveChangeBefore: { type: "string", description: "Filter results to only include work items with lastSubstantiveChangeDate before this date (ISO 8601 format). Auto-enables includeSubstantiveChange. Use for finding stale items." },
         filterByDaysInactiveMin: { type: "number", description: "Filter results to only include work items with daysInactive >= this value. Auto-enables includeSubstantiveChange. Use for finding stale items (e.g., 180 for items inactive 6+ months)." },
         filterByDaysInactiveMax: { type: "number", description: "Filter results to only include work items with daysInactive <= this value. Auto-enables includeSubstantiveChange. Use for finding recently active items (e.g., 30 for items active in last month)." },
-        filterByMissingDescription: { type: "boolean", description: "Filter to only include work items with missing or empty description. Useful for backlog cleanup - finding items that need documentation." },
-        filterByMissingAcceptanceCriteria: { type: "boolean", description: "Filter to only include work items with missing or empty acceptance criteria. Useful for finding PBIs/Features that need completion criteria defined." },
+        filterByPatterns: { type: "array", items: { type: "string", enum: ["duplicates", "placeholder_titles", "unassigned_committed", "stale_automation", "missing_description", "missing_acceptance_criteria"] }, description: "Filter results by common work item patterns. 'duplicates': similar titles (case-insensitive comparison). 'placeholder_titles': contains TBD/TODO/FIXME/XXX/test/temp/foo/bar/baz markers. 'unassigned_committed': Active/Committed/In Progress state but no assignee. 'stale_automation': Automation-created items ([S360]/[automated]/[bot]/[scan]) inactive 180+ days. 'missing_description': description field empty or <10 chars. 'missing_acceptance_criteria': acceptance criteria field empty or <10 chars. Can specify multiple patterns to filter by all." },
         returnQueryHandle: { type: "boolean", description: "🔐 DEFAULT TRUE: Return query handle for safe operations. ⚠️ Only set to false if you need raw IDs for immediate user display. For analysis, bulk operations, or any workflow that might reference IDs later, keep this true to prevent hallucination. Handle expires after 1 hour." },
+        handleOnly: { type: "boolean", description: "⚡ EFFICIENCY MODE: When true (with returnQueryHandle=true), returns ONLY the query handle and count without fetching full work item data. Use this for bulk operations where you don't need to preview/analyze items first - saves API calls and response payload. To retrieve items later, use wit-query-handle-get-items with the handle. Default: false." },
         fetchFullPackages: { type: "boolean", description: "Fetch full context packages for each work item including description, comments, history, relations, children, and parent. ⚠️ WARNING: Increases API calls significantly (1 call per work item + relations/comments). Use for deep analysis of small result sets (<50 items). Automatically includes extended fields, relations, comments, and history." },
         includePaginationDetails: { type: "boolean", description: "Force include pagination details in response even for complete result sets. By default, pagination is only included when totalCount > top (multi-page results). Set to true to always include pagination metadata." }
       },
@@ -411,34 +410,8 @@ export const toolConfigs: ToolConfig[] = [
   },
 
   {
-    name: "wit-detect-patterns",
-    description: "Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned committed items, and stale automation. Returns categorized matches by severity.",
-    script: "", // Handled internally
-    schema: detectPatternsSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to analyze (if not provided, uses areaPath)" },
-        areaPath: { type: "string", description: "Area path to search for work items (if workItemIds not provided)" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" },
-        patterns: { 
-          type: "array", 
-          items: { 
-            type: "string",
-            enum: ["duplicates", "placeholder_titles", "orphaned_children", "unassigned_committed", "stale_automation", "no_description"]
-          }, 
-          description: "Patterns to detect" 
-        },
-        maxResults: { type: "number", description: "Maximum number of results when using areaPath" },
-        includeSubAreas: { type: "boolean", description: "Include sub-area paths when using areaPath" }
-      },
-      required: []
-    }
-  },
-  {
     name: "wit-validate-hierarchy",
-    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis.",
+    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis. Note: Large area paths (>500 items) may take 1-2 minutes to process - consider using smaller maxResults or more specific area paths for faster results.",
     script: "", // Handled internally
     schema: validateHierarchyFastSchema,
     inputSchema: {

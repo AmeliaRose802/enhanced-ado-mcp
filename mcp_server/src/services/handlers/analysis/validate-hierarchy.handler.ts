@@ -15,8 +15,8 @@ import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessR
 interface ValidateHierarchyArgs {
   workItemIds?: number[];
   areaPath?: string;
-  organization: string;
-  project: string;
+  organization?: string;
+  project?: string;
   maxResults?: number;
   includeSubAreas?: boolean;
   validateTypes?: boolean;
@@ -111,6 +111,11 @@ function isValidStateProgression(parentState: string, childState: string): { val
 }
 
 export async function handleValidateHierarchy(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+  // Declare variables at function scope for error handling
+  let organization: string = '';
+  let project: string = '';
+  let areaPath: string | undefined;
+  
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -125,7 +130,7 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
     // Get default configuration values for organization/project
     const requiredConfig = getRequiredConfig();
     
-    // Merge args with config defaults (args take precedence)
+    // Merge args with config defaults (args take precedence, but fall back to config if empty/undefined)
     const validationArgs = {
       ...parsed.data,
       organization: parsed.data.organization || requiredConfig.organization,
@@ -134,16 +139,18 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     const {
       workItemIds,
-      areaPath,
-      organization,
-      project,
       maxResults = 500,
       includeSubAreas = true,
       validateTypes = true,
       validateStates = true
     } = validationArgs;
+    
+    // Set for error handling
+    organization = validationArgs.organization;
+    project = validationArgs.project;
+    areaPath = validationArgs.areaPath;
 
-    logger.debug(`Validating hierarchy (types=${validateTypes}, states=${validateStates})`);
+    logger.info(`Validating hierarchy in organization="${organization}", project="${project}", areaPath="${areaPath || 'none'}" (types=${validateTypes}, states=${validateStates})`);
 
     let workItems: Array<{id: number; title: string; type: string; state: string; additionalFields?: Record<string, unknown>}> = [];
 
@@ -334,6 +341,35 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
     );
   } catch (error) {
     logger.error('Validate hierarchy error:', error);
+    
+    // Provide helpful error messages for common issues
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
+      const requiredConfig = getRequiredConfig();
+      return buildErrorResponse(
+        new Error(
+          `Failed to validate hierarchy: Project not found or access denied.\n\n` +
+          `Currently using:\n` +
+          `  Organization: "${organization}"\n` +
+          `  Project: "${project}"\n` +
+          `  Area Path: "${areaPath || 'none'}"\n\n` +
+          `Server configuration defaults:\n` +
+          `  Organization: "${requiredConfig.organization}"\n` +
+          `  Project: "${requiredConfig.project}"\n\n` +
+          `This error means either:\n` +
+          `  1. The project "${project}" does not exist in organization "${organization}"\n` +
+          `  2. You don't have access to this organization/project\n` +
+          `  3. The area path exists in a different organization/project\n\n` +
+          `Solutions:\n` +
+          `  - Provide explicit "organization" and "project" parameters that match where the area path exists\n` +
+          `  - Verify you're logged in with the correct Azure account: az login\n` +
+          `  - Check that the area path "${areaPath || 'none'}" exists in the specified project`
+        ),
+        { source: "validate-hierarchy" }
+      );
+    }
+    
     return buildErrorResponse(
       error as Error,
       { source: "validate-hierarchy" }

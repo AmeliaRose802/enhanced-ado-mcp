@@ -64,10 +64,11 @@ Generate valid OData queries for Azure DevOps Analytics API based on natural lan
 - Iteration Path: {{ITERATION_PATH}}
 - Organization: {{ORGANIZATION}}
 
-**IMPORTANT**: If {{AREA_PATH}} is provided (not empty), add this filter:
+**IMPORTANT**: If {{AREA_PATH}} is provided (not empty), you SHOULD add this filter:
 ```
 startswith(Area/AreaPath, '{{AREA_PATH}}')
 ```
+If {{AREA_PATH}} is empty or not provided, **DO NOT add an area path filter** - let the query span the entire project unless the user's description specifically mentions an area path.
 
 **COMMON QUERY PATTERNS:**
 

@@ -44,14 +44,49 @@ export class WorkItemRepository {
 
   /**
    * Get multiple work items by IDs
+   * Handles batching automatically for large requests (200 items per batch)
    */
   async getBatch(workItemIds: number[], fields?: string[]): Promise<ADOWorkItem[]> {
-    const ids = workItemIds.join(',');
-    const fieldsParam = fields ? `&fields=${encodeURIComponent(fields.join(','))}` : '';
-    const response = await this.httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
-      `wit/workitems?ids=${ids}${fieldsParam}`
-    );
-    return response.data.value || [];
+    // Azure DevOps API limit: 200 work items per request
+    const BATCH_SIZE = 200;
+    
+    if (workItemIds.length === 0) {
+      return [];
+    }
+    
+    // If within limit, make single request
+    if (workItemIds.length <= BATCH_SIZE) {
+      const ids = workItemIds.join(',');
+      const fieldsParam = fields ? `&fields=${encodeURIComponent(fields.join(','))}` : '';
+      const response = await this.httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+        `wit/workitems?ids=${ids}${fieldsParam}`
+      );
+      return response.data.value || [];
+    }
+    
+    // Split into chunks and fetch in parallel
+    logger.debug(`[getBatch] Fetching ${workItemIds.length} work items in ${Math.ceil(workItemIds.length / BATCH_SIZE)} batches of ${BATCH_SIZE}`);
+    
+    const chunks: number[][] = [];
+    for (let i = 0; i < workItemIds.length; i += BATCH_SIZE) {
+      chunks.push(workItemIds.slice(i, i + BATCH_SIZE));
+    }
+    
+    const batchPromises = chunks.map(async (chunk, index) => {
+      logger.debug(`[getBatch] Fetching batch ${index + 1}/${chunks.length} (${chunk.length} items)`);
+      const ids = chunk.join(',');
+      const fieldsParam = fields ? `&fields=${encodeURIComponent(fields.join(','))}` : '';
+      const response = await this.httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+        `wit/workitems?ids=${ids}${fieldsParam}`
+      );
+      return response.data.value || [];
+    });
+    
+    const results = await Promise.all(batchPromises);
+    const allWorkItems = results.flat();
+    
+    logger.debug(`[getBatch] Successfully fetched ${allWorkItems.length} work items`);
+    return allWorkItems;
   }
 
   /**
