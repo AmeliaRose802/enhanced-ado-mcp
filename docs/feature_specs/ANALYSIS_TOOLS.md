@@ -9,7 +9,7 @@
 
 The Enhanced ADO MCP Server provides comprehensive analysis and validation tools for work items:
 
-1. **wit-analyze-patterns** - Identify common work item issues
+1. **wit-get-work-items-by-query-wiql with filterByPatterns** - Identify common work item issues (replaces deprecated wit-analyze-patterns)
 2. **wit-analyze-hierarchy** - Fast rule-based hierarchy validation
 3. **wit-get-last-change** - Determine meaningful change dates
 4. **wit-analyze-security** - Extract security scan instruction links
@@ -28,110 +28,87 @@ Enable work item quality analysis with:
 
 ## Tools
 
-### 1. wit-analyze-patterns
+### 1. Pattern Detection via WIQL Queries
 
-Identify common work item issues by severity.
+**Note:** Pattern detection is now integrated into `wit-get-work-items-by-query-wiql` via the `filterByPatterns` parameter. The standalone `wit-analyze-patterns` tool has been deprecated.
 
-#### Input Parameters
+Identify common work item issues using WIQL queries with pattern filters.
 
-**Optional:**
-- `workItemIds` (array of numbers) - Specific IDs to analyze
-- `areaPath` (string) - Area path to search (if workItemIds not provided)
-- `organization` (string) - Azure DevOps organization
-- `project` (string) - Azure DevOps project
-- `patterns` (array of strings) - Patterns to detect:
-  - `"duplicates"` - Duplicate titles
-  - `"placeholder_titles"` - Generic titles (TODO, TBD, etc.)
-  - `"orphaned_children"` - Children with removed/missing parents
-  - `"unassigned_committed"` - Unassigned items in active sprints
-  - `"stale_automation"` - Items not touched by humans
-  - `"no_description"` - Missing descriptions
-- `maxResults` (number) - Max results when using areaPath
-- `includeSubAreas` (boolean) - Include sub-area paths
+#### Using Pattern Detection
+
+Use `wit-get-work-items-by-query-wiql` with the `filterByPatterns` parameter:
+
+**Available Patterns:**
+- `"duplicates"` - Duplicate titles (case-insensitive)
+- `"placeholder_titles"` - Generic titles (TODO, TBD, test, temp, etc.)
+- `"unassigned_committed"` - Unassigned items in Active/Committed/In Progress states
+- `"stale_automation"` - Items only modified by automation
+- `"missing_description"` - Empty description field
+- `"missing_acceptance_criteria"` - Empty acceptance criteria field
+
+**Example Query:**
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project\\Team' AND [System.State] NOT IN ('Done', 'Closed')",
+  "filterByPatterns": ["placeholder_titles", "missing_description"],
+  "returnQueryHandle": true
+}
+```
 
 #### Output Format
+
+When using `filterByPatterns`, the WIQL query returns only matching items:
 
 **Success Response:**
 ```json
 {
   "success": true,
   "data": {
-    "total_analyzed": 150,
-    "issues_found": 45,
-    "patterns": {
-      "duplicates": {
-        "count": 8,
-        "severity": "medium",
-        "matches": [
-          {
-            "ids": [12345, 12346],
-            "title": "Implement authentication",
-            "reason": "Exact title match"
-          }
-        ]
+    "workItems": [
+      {
+        "id": 12347,
+        "title": "TODO: Fix bug",
+        "state": "New",
+        "assignedTo": "user@company.com"
       },
-      "placeholder_titles": {
-        "count": 5,
-        "severity": "high",
-        "matches": [
-          {
-            "id": 12347,
-            "title": "TODO: Fix bug",
-            "reason": "Contains placeholder keyword: TODO"
-          }
-        ]
-      },
-      "orphaned_children": {
-        "count": 3,
-        "severity": "high",
-        "matches": [
-          {
-            "id": 12348,
-            "title": "Child task",
-            "parent_id": 99999,
-            "reason": "Parent work item 99999 is removed or not found"
-          }
-        ]
-      },
-      "no_description": {
-        "count": 15,
-        "severity": "low",
-        "matches": [
-          {
-            "id": 12349,
-            "title": "Implement feature X",
-            "reason": "Description field is empty"
-          }
-        ]
+      {
+        "id": 12349,
+        "title": "Implement feature X",
+        "state": "Active",
+        "assignedTo": null
       }
-    },
-    "recommendations": [
-      "Merge or close duplicate work items",
-      "Replace placeholder titles with descriptive names",
-      "Fix orphaned children by removing parent links or restoring parents",
-      "Add descriptions to work items for clarity"
-    ]
+    ],
+    "queryHandle": "qh_abc123...",
+    "totalCount": 2,
+    "metadata": {
+      "patternsApplied": ["placeholder_titles", "missing_description"],
+      "filteredCount": 2
+    }
   },
   "errors": [],
   "warnings": []
 }
 ```
 
+Use the query handle with bulk operations to remediate issues.
+
 #### Examples
 
-**Example 1: Detect All Patterns in Area**
+**Example 1: Find Items with Quality Issues**
 ```json
 {
-  "areaPath": "Project\\Team",
-  "patterns": ["duplicates", "placeholder_titles", "orphaned_children", "no_description"]
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project\\Team' AND [System.State] NOT IN ('Done', 'Closed')",
+  "filterByPatterns": ["placeholder_titles", "missing_description"],
+  "returnQueryHandle": true
 }
 ```
 
-**Example 2: Detect Specific Issues**
+**Example 2: Find Duplicates and Stale Items**
 ```json
 {
-  "workItemIds": [12345, 12346, 12347, 12348],
-  "patterns": ["duplicates", "placeholder_titles"]
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project\\Team'",
+  "filterByPatterns": ["duplicates", "stale_automation"],
+  "returnQueryHandle": true
 }
 ```
 
@@ -429,7 +406,7 @@ Uses defaults from `.ado-mcp-config.json`.
 
 ## Performance Considerations
 
-- **detect-patterns**: 1 API call per 200 items
+- **filterByPatterns (via WIQL)**: 1 API call per 200 items (integrated into query)
 - **validate-hierarchy-fast**: 1-2 API calls (items + relations)
 - **get-last-substantive-change**: 1 API call (revisions)
 - **extract-security-links**: 1-2 API calls (item + comments)
@@ -471,10 +448,11 @@ Uses defaults from `.ado-mcp-config.json`.
 ```bash
 # Test pattern detection
 {
-  "tool": "wit-analyze-patterns",
+  "tool": "wit-get-work-items-by-query-wiql",
   "arguments": {
-    "areaPath": "Project\\Team",
-    "patterns": ["duplicates", "placeholder_titles"]
+    "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project\\Team'",
+    "filterByPatterns": ["duplicates", "placeholder_titles"],
+    "returnQueryHandle": true
   }
 }
 

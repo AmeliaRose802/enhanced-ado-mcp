@@ -13,7 +13,6 @@
     "wit-get-work-items-by-query-wiql.json",
     "wit-query-analytics-odata.json",
     "wit-get-last-substantive-change.json",
-    "wit-detect-patterns.json",
     "wit-validate-hierarchy-fast.json",
     "wit-bulk-comment-by-query-handle.json",
     "wit-bulk-update-by-query-handle.json",

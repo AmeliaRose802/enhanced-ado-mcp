@@ -138,9 +138,31 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
     const frontmatter: PromptFrontmatter = {};
     let inArguments = false;
     const argumentsObject: Record<string, PromptArgument> = {};
+    let currentMultiLineKey: string | null = null;
+    let multiLineValue: string[] = [];
     
-    for (const line of frontmatterLines) {
+    for (let i = 0; i < frontmatterLines.length; i++) {
+      const line = frontmatterLines[i];
       const trimmed = line.trim();
+      
+      // Handle multi-line values (YAML folded/literal style)
+      if (currentMultiLineKey) {
+        // Check if this line is indented (continuation of multi-line value)
+        if (line.startsWith('  ') && !line.match(/^\w+:/)) {
+          multiLineValue.push(trimmed);
+          continue;
+        } else {
+          // Multi-line value ended, store it
+          const fullValue = multiLineValue.join(' ').trim();
+          if (currentMultiLineKey === 'description') {
+            frontmatter.description = fullValue;
+          }
+          currentMultiLineKey = null;
+          multiLineValue = [];
+          // Fall through to process current line
+        }
+      }
+      
       if (!trimmed) continue;
       
       if (trimmed === 'arguments:') {
@@ -222,6 +244,12 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
         const keyValueMatch = trimmed.match(/^(\w+):\s*(.+)$/);
         if (keyValueMatch) {
           const [, key, value] = keyValueMatch;
+          // Check for multi-line YAML folded style (>- or >)
+          if (value === '>-' || value === '>') {
+            currentMultiLineKey = key;
+            multiLineValue = [];
+            continue;
+          }
           // Explicitly handle known keys
           if (key === 'name') {
             frontmatter.name = value;
@@ -231,6 +259,14 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
             frontmatter.version = value;
           }
         }
+      }
+    }
+    
+    // Handle case where multi-line value extends to end of frontmatter
+    if (currentMultiLineKey && multiLineValue.length > 0) {
+      const fullValue = multiLineValue.join(' ').trim();
+      if (currentMultiLineKey === 'description') {
+        frontmatter.description = fullValue;
       }
     }
     

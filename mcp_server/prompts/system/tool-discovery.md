@@ -66,7 +66,7 @@ Always warn about:
 - `wit-ai-assignment-analyzer`: Analyze AI suitability
 - `wit-intelligence-analyzer`: Comprehensive work item analysis
 - `wit-analyze-by-query-handle`: Handle-based analysis
-- `wit-detect-patterns`: Find common issues
+- `wit-get-work-items-by-query-wiql` with `filterByPatterns`: Find common issues (duplicates, placeholders, missing fields)
 - `wit-validate-hierarchy`: Validate parent-child relationships
 
 ### Bulk Operation Tools (Query Handle Based)

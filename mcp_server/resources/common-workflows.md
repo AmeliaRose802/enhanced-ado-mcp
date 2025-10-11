@@ -149,15 +149,15 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: Detect Patterns and Issues
 ```json
-// Tool: wit-detect-patterns
+// Tool: wit-get-work-items-by-query-wiql
 {
-  "workItemIds": [100, 101, 102, ...], // from step 1
-  "patterns": ["orphaned_children", "no_description", "duplicates"]
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (100, 101, 102, ...)",
+  "filterByPatterns": ["missing_description", "duplicates"],
+  "returnQueryHandle": true
 }
 ```
 
 **Finds:**
-- Items without parents
 - Items missing descriptions
 - Potential duplicates
 
@@ -345,10 +345,11 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 3: Detect Common Issues
 ```json
-// Tool: wit-detect-patterns
+// Tool: wit-get-work-items-by-query-wiql
 {
-  "workItemIds": [12345, 12346, ...],
-  "patterns": ["no_description"]
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (12345, 12346, ...)",
+  "filterByPatterns": ["missing_description"],
+  "returnQueryHandle": true
 }
 ```
 

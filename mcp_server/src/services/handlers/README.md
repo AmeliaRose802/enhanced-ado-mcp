@@ -141,10 +141,11 @@ import { someType } from "../../../types/type-name.js";   // Types (up 3 levels)
 - Non-AI analysis tools (AI analysis goes in `ai-powered/`)
 
 **Current handlers:**
-- `detect-patterns.handler.ts` - Find duplicates, placeholders, orphans
 - `get-last-substantive-change.handler.ts` - True activity analysis
 - `validate-hierarchy.handler.ts` - Fast rule-based hierarchy validation
 - `extract-security-links.handler.ts` - Extract security remediation links
+
+**Note:** Pattern detection (duplicates, placeholders, missing fields) now integrated into WIQL queries via `filterByPatterns` parameter.
 
 **Key characteristics:**
 - Rule-based or algorithmic analysis (no AI)

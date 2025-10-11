@@ -1,23 +1,32 @@
-import { join, resolve } from "path";
+import { join, resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { cwd } from "process";
 
 // Calculate thisFileDir based on environment
-// In test/Jest environment - use cwd-based path to avoid import.meta.url issues
-// In production - we'll load from built location
 let thisFileDir: string;
 
 if (process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test') {
   // Test environment - use simple cwd-based calculation
   thisFileDir = join(cwd(), 'src', 'utils');
 } else {
-  // Production/development - calculate from current file location
-  // When running from dist: dist/utils/paths.js
-  // When running from src: should not reach here in production
-  // For now, we'll use a fallback that works in both cases
-  thisFileDir = join(cwd(), 'src', 'utils');
-  
-  if (process.env.MCP_DEBUG === '1') {
-    console.error(`[paths.ts] Using cwd-based path resolution: ${thisFileDir}`);
+  // Production/development - use import.meta.url to get actual file location
+  // This works correctly regardless of where the process is started from
+  try {
+    // ES Module equivalent of __dirname
+    // @ts-ignore - import.meta.url is available at runtime in ES modules
+    thisFileDir = dirname(fileURLToPath(import.meta.url));
+    
+    if (process.env.MCP_DEBUG === '1') {
+      console.error(`[paths.ts] Using import.meta.url-based path resolution: ${thisFileDir}`);
+    }
+  } catch (error) {
+    // Fallback to dist location if import.meta.url fails
+    thisFileDir = join(cwd(), 'dist', 'utils');
+    
+    if (process.env.MCP_DEBUG === '1') {
+      console.error(`[paths.ts] Fallback to cwd-based path resolution: ${thisFileDir}`);
+      console.error(`[paths.ts] Error using import.meta.url:`, error);
+    }
   }
 }
 

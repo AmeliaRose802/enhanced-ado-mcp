@@ -498,7 +498,7 @@ AI-powered tool discovery from natural language intent.
     "workflow_suggestion": "1. Query for stale bugs → 2. Inspect query handle → 3. Update priorities in bulk",
     "related_tools": [
       "wit-query-handle-inspect",
-      "wit-analyze-patterns"
+      "wit-get-work-items-by-query-wiql" (with filterByPatterns)
     ]
   },
   "errors": [],

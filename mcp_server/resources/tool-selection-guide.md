@@ -751,7 +751,7 @@ Creating items?
 Analysis needed?
 ├─ AI suitability? → wit-ai-assignment-analyzer (wit-ai-assignment-analyzer-analyzer)
 ├─ Quality check? → wit-intelligence-analyzer
-├─ Find issues? → wit-detect-patterns
+├─ Find issues? → wit-get-work-items-by-query-wiql (with filterByPatterns)
 └─ Validate hierarchy? → wit-validate-hierarchy (wit-validate-hierarchy)
 
 Bulk operations?
@@ -772,7 +772,7 @@ Configuration?
 ### Moderate Operations
 - `wit-get-work-items-by-query-wiql` - Depends on result count
 - `wit-get-work-items-context-batch` - Depends on count
-- `wit-detect-patterns` - Depends on item count
+- `wit-get-work-items-by-query-wiql` with `filterByPatterns` - Depends on item count
 
 ### Slower Operations (Use AI)
 - `wit-ai-assignment-analyzer-analyzer` - AI analysis (~5-10s)
@@ -798,7 +798,7 @@ Configuration?
 ### Backlog Cleanup
 1. `wit-generate-wiql-query` - Build query for stale items
 2. `wit-get-work-items-by-query-wiql` - Get items with query handle
-3. `wit-detect-patterns` - Find issues
+3. `wit-get-work-items-by-query-wiql` with `filterByPatterns` - Find issues
 4. `wit-bulk-comment-by-query-handle` - Notify owners
 
 ### Sprint Planning

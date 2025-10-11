@@ -195,8 +195,7 @@ All bulk operations support `itemSelector` for safe, validated item targeting.
 ### Backlog Hygiene Tools
 
 20. `wit-bulk-add-comments` - Add comments to multiple work items (1-50) efficiently with template variable substitution support
-21. `wit-detect-patterns` - Identify common work item issues: duplicates, placeholder titles, orphaned children, unassigned items, and stale automation
-22. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
+21. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
 
 **Bulk State Transitions:** Use the official **Azure DevOps MCP server** `ado_update-workitems` tool for bulk state updates, which provides native ADO integration and better performance.
 
