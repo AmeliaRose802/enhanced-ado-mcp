@@ -2,13 +2,14 @@
  * Standard response builder for tool execution results
  */
 
-import type { ToolExecutionResult, JSONValue } from '../types/index.js';
-import { ErrorCategory, ErrorCode, type ErrorMetadata, createErrorMetadata, categorizeError } from '../types/error-categories.js';
+import type { ToolExecutionResult, JSONValue, ToolExecutionData, ToolExecutionMetadata } from '../types/index.js';
+import { ErrorCategory, ErrorCode, type ErrorMetadata, type ErrorContext, createErrorMetadata, categorizeError } from '../types/error-categories.js';
+import type { ZodError } from 'zod';
 
-export function buildSuccessResponse(data: any, metadata: Record<string, any> = {}): ToolExecutionResult {
+export function buildSuccessResponse(data: unknown, metadata: Partial<ToolExecutionMetadata> = {}): ToolExecutionResult {
   return {
     success: true,
-    data,
+    data: data as ToolExecutionData,
     metadata: { ...metadata, samplingAvailable: true },
     errors: [],
     warnings: []
@@ -17,7 +18,7 @@ export function buildSuccessResponse(data: any, metadata: Record<string, any> = 
 
 export function buildErrorResponse(
   error: string | Error, 
-  metadata: Record<string, any> = {},
+  metadata: Partial<ToolExecutionMetadata> = {},
   category?: ErrorCategory,
   code?: typeof ErrorCode[keyof typeof ErrorCode]
 ): ToolExecutionResult {
@@ -26,11 +27,11 @@ export function buildErrorResponse(
   // Auto-categorize if category not provided
   const errorCategory = category ?? categorizeError(errorMsg);
   
-  // Create error metadata
+  // Create error metadata with proper type conversion
   const errorMetadata: ErrorMetadata = createErrorMetadata(
     errorCategory,
     code,
-    metadata
+    metadata as ErrorContext  // Safe cast since createErrorMetadata handles the conversion
   );
   
   return {
@@ -61,19 +62,20 @@ export function buildSamplingUnavailableResponse(): ToolExecutionResult {
  * Build validation error response for tool handlers
  * Formats Zod validation errors with actionable guidance for AI agents
  */
-export function buildValidationErrorResponse(validationError: any, source: string = 'validation'): ToolExecutionResult {
+export function buildValidationErrorResponse(validationError: ZodError | { issues?: Array<{ path: (string | number)[]; message: string; received?: unknown }> }, source: string = 'validation'): ToolExecutionResult {
   // Format Zod errors with detailed field-level information
   let errorMessage = 'Validation error:\n';
   
   if (validationError.issues && Array.isArray(validationError.issues)) {
     // Zod error with multiple issues
-    const formattedIssues = validationError.issues.map((issue: any) => {
+    const formattedIssues = validationError.issues.map((issue) => {
       const path = issue.path.length > 0 ? issue.path.join('.') : 'root';
       const message = issue.message;
       
       // Add context about what was received vs what was expected
       let details = '';
-      if (issue.received !== undefined) {
+      // Type guard for Zod issues that have 'received' property
+      if ('received' in issue && issue.received !== undefined) {
         details = ` (received: ${JSON.stringify(issue.received)})`;
       }
       
@@ -86,7 +88,8 @@ export function buildValidationErrorResponse(validationError: any, source: strin
     errorMessage += '\n\n💡 Tip: Check parameter types and constraints. See tool description for valid values.';
   } else {
     // Fallback for non-Zod errors
-    errorMessage = `Validation error: ${validationError.message || String(validationError)}`;
+    const errorMsg = validationError instanceof Error ? validationError.message : String(validationError);
+    errorMessage = `Validation error: ${errorMsg}`;
   }
   
   return buildErrorResponse(
@@ -122,7 +125,7 @@ export function buildAzureCliErrorResponse(error: { isAvailable: boolean, isLogg
  */
 export function buildAuthenticationError(
   message: string,
-  metadata: Record<string, any> = {}
+  metadata: Partial<ToolExecutionMetadata> = {}
 ): ToolExecutionResult {
   return buildErrorResponse(
     message,
@@ -137,7 +140,7 @@ export function buildAuthenticationError(
  */
 export function buildNetworkError(
   message: string,
-  metadata: Record<string, any> = {}
+  metadata: Partial<ToolExecutionMetadata> = {}
 ): ToolExecutionResult {
   return buildErrorResponse(
     message,
@@ -153,7 +156,7 @@ export function buildNetworkError(
 export function buildNotFoundError(
   resourceType: string,
   resourceId: string | number,
-  metadata: Record<string, any> = {}
+  metadata: Partial<ToolExecutionMetadata> = {}
 ): ToolExecutionResult {
   const codeMap: Record<string, typeof ErrorCode[keyof typeof ErrorCode]> = {
     'work-item': ErrorCode.NOT_FOUND_WORK_ITEM,
@@ -181,7 +184,7 @@ export function buildNotFoundError(
  */
 export function buildBusinessLogicError(
   message: string,
-  metadata: Record<string, any> = {}
+  metadata: Partial<ToolExecutionMetadata> = {}
 ): ToolExecutionResult {
   return buildErrorResponse(
     message,
@@ -196,7 +199,7 @@ export function buildBusinessLogicError(
  */
 export function buildRateLimitError(
   message: string = 'Rate limit exceeded. Please try again later.',
-  metadata: Record<string, any> = {}
+  metadata: Partial<ToolExecutionMetadata> = {}
 ): ToolExecutionResult {
   return buildErrorResponse(
     message,
@@ -211,7 +214,7 @@ export function buildRateLimitError(
  */
 export function buildPermissionError(
   message: string,
-  metadata: Record<string, any> = {}
+  metadata: Partial<ToolExecutionMetadata> = {}
 ): ToolExecutionResult {
   return buildErrorResponse(
     message,

@@ -151,10 +151,10 @@ export type JSONValue =
 
 /**
  * Tool execution result data
- * Can be any JSON-serializable value or undefined
+ * Can be any JSON-serializable value, complex object, or undefined
  * This replaces 'any' while maintaining flexibility for various data structures
  */
-export type ToolExecutionData = JSONValue | undefined;
+export type ToolExecutionData = JSONValue | Record<string, unknown> | unknown[] | undefined;
 
 /**
  * Helper to safely cast values to JSONValue for tool execution data
