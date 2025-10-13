@@ -78,7 +78,7 @@ npm run test:coverage
 ### Configuration & Schemas
 - `mcp_server/src/config/config.ts` - Configuration loading
 - `mcp_server/src/config/schemas.ts` - Zod validation schemas
-- `mcp_server/src/config/tool-configs.ts` - Tool registry
+- `mcp_server/src/config/tool-configs/` - Tool registry (split by category)
 
 ### AI Features
 - `mcp_server/src/services/sampling-service.ts` - LLM integration
@@ -102,15 +102,17 @@ npm run test:coverage
    });
    ```
 
-2. **Register Tool** (`config/tool-configs.ts`):
+2. **Register Tool** (add to appropriate file in `config/tool-configs/`):
    ```typescript
-   export const TOOL_CONFIGS: ToolConfigs = {
-     'my-tool-name': {
+   // In work-item-creation.ts, bulk-operations.ts, etc.
+   export const categoryTools: ToolConfig[] = [
+     {
+       name: 'my-tool-name',
        schema: myToolSchema,
        description: 'What this tool does',
        // ... config
      }
-   };
+   ];
    ```
 
 3. **Create Handler** (`services/handlers/my-tool-handler.ts`):

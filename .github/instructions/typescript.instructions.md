@@ -17,7 +17,11 @@ src/
 ├── config/               # Configuration and schemas
 │   ├── config.ts
 │   ├── schemas.ts
-│   └── tool-configs.ts
+│   └── tool-configs/     # Tool registry by category
+│       ├── index.ts
+│       ├── work-item-creation.ts
+│       ├── bulk-operations.ts
+│       └── ... (8 category files)
 ├── services/             # Business logic layer
 │   ├── tool-service.ts
 │   ├── handlers/         # Tool implementations

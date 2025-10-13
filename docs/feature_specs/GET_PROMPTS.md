@@ -390,7 +390,7 @@ mcp_server/
 
 - **Schema**: `mcp_server/src/config/schemas.ts` (`getPromptsSchema`)
 - **Handler**: `mcp_server/src/services/handlers/core/get-prompts.handler.ts`
-- **Tool Config**: `mcp_server/src/config/tool-configs.ts`
+- **Tool Config**: `mcp_server/src/config/tool-configs/discovery.ts`
 - **Routing**: `mcp_server/src/services/tool-service.ts`
 
 ---

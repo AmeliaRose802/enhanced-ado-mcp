@@ -9,7 +9,7 @@ import { ToolExecutionResult, asToolData } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
-import { toolConfigs } from '../../config/tool-configs.js';
+import { toolConfigs } from '../../config/tool-configs/index.js';
 
 export interface ToolDiscoveryArgs {
   intent: string;

@@ -8,7 +8,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { HybridStdioServerTransport } from "./hybridTransport.js";
 import { logger } from "./utils/logger.js";
-import { getAvailableToolConfigs } from "./config/tool-configs.js";
+import { getAvailableToolConfigs } from "./config/tool-configs/index.js";
 import { loadPrompts, getPromptContent } from "./services/prompt-service.js";
 import { executeTool, setServerInstance } from "./services/tool-service.js";
 import { checkSamplingSupport } from "./utils/sampling-client.js";

@@ -1,13 +1,6 @@
-/**
- * Azure DevOps Work Item Service
- * 
- * Provides functionality to create and manage work items using Azure DevOps REST API
- */
-
 import { logger } from '../utils/logger.js';
 import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
-
-import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult, ADOFieldOperation } from '../types/index.js';
+import type { ADOWorkItem, ADOWorkItemRevision, ADOApiResponse, ADOFieldOperation } from '../types/index.js';
 import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
 import { createWorkItemRepository } from '../repositories/work-item.repository.js';
 
@@ -35,134 +28,65 @@ interface WorkItemResult {
   parent_linked: boolean;
 }
 
-/**
- * Get Azure DevOps PAT token from Azure CLI (wrapper for consistency)
- */
-function getAzureDevOpsToken(organization?: string): string {
-  // organization parameter kept for API compatibility but not used
-  // Token is valid for all orgs in the Azure DevOps resource
-  return getToken();
-}
-
-/**
- * Resolve @me to current user email
- * Note: @me resolution now requires an explicit email/UPN instead
- */
 function resolveAssignedTo(assignedTo?: string): string | undefined {
-  if (!assignedTo || assignedTo === '') {
-    return undefined;
-  }
-  
+  if (!assignedTo) return undefined;
   if (assignedTo === '@me') {
-    logger.warn('@me assignment is no longer supported. Please provide explicit user email/UPN.');
+    logger.warn('@me assignment no longer supported. Use explicit email/UPN.');
     return undefined;
   }
-  
   return assignedTo;
 }
 
-/**
- * Create a work item using Azure DevOps REST API (using HTTP client)
- */
 export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItemResult> {
   const {
-    title,
-    workItemType,
-    parentWorkItemId,
-    description,
-    organization,
-    project,
-    areaPath,
-    iterationPath,
-    assignedTo,
-    priority,
-    tags,
-    inheritParentPaths = true
+    title, workItemType, parentWorkItemId, description, organization, project,
+    areaPath, iterationPath, assignedTo, priority, tags, inheritParentPaths = true
   } = args;
 
-  // Create repository
   const repository = createWorkItemRepository(organization, project);
-  
-  // Resolve @me assignment
   const resolvedAssignedTo = resolveAssignedTo(assignedTo);
-  
-  // Get parent paths if inheriting
   let effectiveAreaPath = areaPath;
   let effectiveIterationPath = iterationPath;
   
   if (parentWorkItemId && inheritParentPaths) {
     try {
-      const parentData = await repository.getById(parentWorkItemId);
-      
-      if (parentData.fields) {
-        if (!effectiveAreaPath && parentData.fields['System.AreaPath']) {
-          effectiveAreaPath = parentData.fields['System.AreaPath'] as string;
-        }
-        if (!effectiveIterationPath && parentData.fields['System.IterationPath']) {
-          effectiveIterationPath = parentData.fields['System.IterationPath'] as string;
-        }
-      }
+      const { fields: parentFields } = await repository.getById(parentWorkItemId);
+      if (!effectiveAreaPath) effectiveAreaPath = parentFields['System.AreaPath'] as string;
+      if (!effectiveIterationPath) effectiveIterationPath = parentFields['System.IterationPath'] as string;
     } catch (error) {
       logger.warn(`Failed to get parent work item ${parentWorkItemId}`, error);
     }
   }
-  
-  // Build JSON Patch document for work item creation
+
   const fields: ADOFieldOperation[] = [
     { op: 'add', path: '/fields/System.Title', value: title }
   ];
   
-  if (description) {
-    fields.push({ op: 'add', path: '/fields/System.Description', value: description });
-  }
-  
-  if (effectiveAreaPath) {
-    fields.push({ op: 'add', path: '/fields/System.AreaPath', value: effectiveAreaPath });
-  }
-  
-  if (effectiveIterationPath) {
-    fields.push({ op: 'add', path: '/fields/System.IterationPath', value: effectiveIterationPath });
-  }
-  
-  if (resolvedAssignedTo) {
-    fields.push({ op: 'add', path: '/fields/System.AssignedTo', value: resolvedAssignedTo });
-  }
-  
-  if (priority !== undefined && priority !== null) {
-    fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.Priority', value: priority });
-  }
-  
-  if (tags) {
-    fields.push({ op: 'add', path: '/fields/System.Tags', value: tags });
-  }
+  if (description) fields.push({ op: 'add', path: '/fields/System.Description', value: description });
+  if (effectiveAreaPath) fields.push({ op: 'add', path: '/fields/System.AreaPath', value: effectiveAreaPath });
+  if (effectiveIterationPath) fields.push({ op: 'add', path: '/fields/System.IterationPath', value: effectiveIterationPath });
+  if (resolvedAssignedTo) fields.push({ op: 'add', path: '/fields/System.AssignedTo', value: resolvedAssignedTo });
+  if (priority !== undefined && priority !== null) fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.Priority', value: priority });
+  if (tags) fields.push({ op: 'add', path: '/fields/System.Tags', value: tags });
   
   logger.debug(`Creating work item: ${title} (${workItemType})`);
   
   let workItem: ADOWorkItem;
   try {
-    // Create work item via repository
     workItem = await repository.create(workItemType, fields);
-    
-    if (!workItem.id) {
-      throw new Error(`Failed to create work item: ${JSON.stringify(workItem)}`);
-    }
-    
+    if (!workItem.id) throw new Error(`Failed to create work item: ${JSON.stringify(workItem)}`);
     logger.debug(`Created work item ${workItem.id}`);
   } catch (error) {
-    if (error instanceof ADOHttpError) {
-      logger.error('Failed to create work item', { status: error.status, message: error.message });
-      throw new Error(`Failed to create work item: ${error.message}`);
-    }
-    throw new Error(`Failed to create work item: ${error instanceof Error ? error.message : String(error)}`);
+    const message = error instanceof ADOHttpError ? error.message : (error instanceof Error ? error.message : String(error));
+    if (error instanceof ADOHttpError) logger.error('Failed to create work item', { status: error.status, message });
+    throw new Error(`Failed to create work item: ${message}`);
   }
   
-  // Link to parent if specified
   let parentLinked = false;
   if (parentWorkItemId) {
     try {
       await repository.linkToParent(workItem.id, parentWorkItemId);
       parentLinked = true;
-      
       logger.debug(`Linked work item ${workItem.id} to parent ${parentWorkItemId}`);
     } catch (error) {
       logger.warn(`Failed to link work item ${workItem.id} to parent ${parentWorkItemId}`, error);
@@ -179,9 +103,6 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
   };
 }
 
-/**
- * Assign work item to GitHub Copilot and link to branch
- */
 interface AssignToCopilotArgs {
   workItemId: number;
   organization: string;
@@ -198,36 +119,22 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   human_friendly_url: string;
   warnings?: string[];
 }> {
-  const {
-    workItemId,
-    organization,
-    project,
-    repository,
-    branch = 'main',
-    gitHubCopilotGuid
-  } = args;
-
+  const { workItemId, organization, project, repository, branch = 'main', gitHubCopilotGuid } = args;
   const workItemRepository = createWorkItemRepository(organization, project);
   const warnings: string[] = [];
-  
-  // Get repository information
-  let repositoryId: string;
-  let projectId: string;
-  
+
+  let repositoryId: string, projectId: string;
   try {
     const repoInfo = await workItemRepository.getRepository(repository);
-    repositoryId = repoInfo.id;
-    projectId = repoInfo.project.id;
+    ({ id: repositoryId, project: { id: projectId } } = repoInfo);
   } catch (error) {
-    throw new Error(`Failed to retrieve repository information: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`Failed to retrieve repository: ${error instanceof Error ? error.message : String(error)}`);
   }
   
-  // Create branch artifact link
   let branchLinkCreated = false;
   try {
     await workItemRepository.linkToBranch(workItemId, projectId, repositoryId, branch, repository);
     branchLinkCreated = true;
-    
     logger.debug(`Created branch artifact link for work item ${workItemId}`);
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -238,19 +145,9 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
       warnings.push(`Could not create branch artifact link: ${errorMsg}`);
     }
   }
-  
-  // Assign to GitHub Copilot
+
   try {
-    const assignFields = [
-      {
-        op: 'add' as const,
-        path: '/fields/System.AssignedTo',
-        value: gitHubCopilotGuid
-      }
-    ];
-    
-    await workItemRepository.update(workItemId, assignFields);
-    
+    await workItemRepository.update(workItemId, [{ op: 'add' as const, path: '/fields/System.AssignedTo', value: gitHubCopilotGuid }]);
     logger.debug(`Assigned work item ${workItemId} to GitHub Copilot`);
   } catch (error) {
     throw new Error(`Failed to assign work item: ${error instanceof Error ? error.message : String(error)}`);
@@ -265,9 +162,6 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   };
 }
 
-/**
- * Delete work item
- */
 interface DeleteWorkItemArgs {
   WorkItemId: number;
   Organization: string;
@@ -280,33 +174,18 @@ export async function deleteWorkItem(args: DeleteWorkItemArgs): Promise<{
   deleted: boolean;
   hard_delete: boolean;
 }> {
-  const {
-    WorkItemId,
-    Organization,
-    Project,
-    HardDelete = false
-  } = args;
-
+  const { WorkItemId, Organization, Project, HardDelete = false } = args;
   const repository = createWorkItemRepository(Organization, Project);
   
   try {
     await repository.delete(WorkItemId, HardDelete);
-    
     logger.debug(`Deleted work item ${WorkItemId} (hard delete: ${HardDelete})`);
-    
-    return {
-      work_item_id: WorkItemId,
-      deleted: true,
-      hard_delete: HardDelete
-    };
+    return { work_item_id: WorkItemId, deleted: true, hard_delete: HardDelete };
   } catch (error) {
     throw new Error(`Failed to delete work item: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
-/**
- * Extract instruction links from work item body
- */
 interface ExtractSecurityLinksArgs {
   workItemId: number;
   organization: string;
@@ -326,37 +205,19 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
   instruction_links: InstructionLink[];
   links_found: number;
   work_item_url: string;
-  work_item_details?: {
-    assigned_to?: string;
-    state: string;
-    type: string;
-  };
+  work_item_details?: { assigned_to?: string; state: string; type: string };
 }> {
-  const {
-    workItemId,
-    organization,
-    project,
-    scanType = 'All',
-    includeWorkItemDetails = false
-  } = args;
-
+  const { workItemId, organization, project, scanType = 'All', includeWorkItemDetails = false } = args;
   const repository = createWorkItemRepository(organization, project);
-  
-  // Get work item details
+
   let workItem: ADOWorkItem;
   try {
     workItem = await repository.getById(workItemId);
   } catch (error) {
     throw new Error(`Work item ${workItemId} not found`);
   }
-  
-  // Extract links from fields
-  const fieldsToCheck = [
-    'System.Description',
-    'Microsoft.VSTS.TCM.ReproSteps',
-    'Microsoft.VSTS.Common.AcceptanceCriteria'
-  ];
-  
+
+  const fieldsToCheck = ['System.Description', 'Microsoft.VSTS.TCM.ReproSteps', 'Microsoft.VSTS.Common.AcceptanceCriteria'];
   const allLinks: InstructionLink[] = [];
   const urlPattern = /https?:\/\/[^\s<>"]+/gi;
   
@@ -366,35 +227,23 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
       const matches = content.match(urlPattern);
       if (matches) {
         for (let url of matches) {
-          // Clean up trailing punctuation
-          url = url.replace(/[,.;:)]$/, '');
+          url = url.replace(/[,.;:)]$/, ''); // Clean trailing punctuation
+          if (!url || url.includes('example.com')) continue;
           
-          if (url && !url.includes('example.com')) {
-            let type = 'General Link';
-            
-            if (url.match(/docs\.microsoft\.com|learn\.microsoft\.com/i)) {
-              type = 'Microsoft Docs';
-            } else if (url.match(/aka\.ms/i)) {
-              type = 'Microsoft Link';
-            } else if (url.match(/github\.com.*security/i)) {
-              type = 'GitHub Security';
-            } else if (url.match(/security|remediation|mitigation/i)) {
-              type = 'Security Guide';
-            } else if (url.match(/binskim|codeql|credscan/i)) {
-              type = 'Scanner Docs';
-            }
-            
-            allLinks.push({ Url: url, Type: type });
-          }
+          let type = 'General Link';
+          if (url.match(/docs\.microsoft\.com|learn\.microsoft\.com/i)) type = 'Microsoft Docs';
+          else if (url.match(/aka\.ms/i)) type = 'Microsoft Link';
+          else if (url.match(/github\.com.*security/i)) type = 'GitHub Security';
+          else if (url.match(/security|remediation|mitigation/i)) type = 'Security Guide';
+          else if (url.match(/binskim|codeql|credscan/i)) type = 'Scanner Docs';
+          
+          allLinks.push({ Url: url, Type: type });
         }
       }
     }
   }
-  
-  // Remove duplicates
-  const uniqueLinks = Array.from(
-    new Map(allLinks.map(link => [link.Url, link])).values()
-  );
+
+  const uniqueLinks = Array.from(new Map(allLinks.map(link => [link.Url, link])).values());
   
   const result: {
     work_item_id: number;
@@ -402,11 +251,7 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
     instruction_links: InstructionLink[];
     links_found: number;
     work_item_url: string;
-    work_item_details?: {
-      assigned_to?: string;
-      state: string;
-      type: string;
-    };
+    work_item_details?: { assigned_to?: string; state: string; type: string };
   } = {
     work_item_id: workItemId,
     title: workItem.fields['System.Title'],
@@ -426,9 +271,6 @@ export async function extractSecurityInstructionLinks(args: ExtractSecurityLinks
   return result;
 }
 
-/**
- * Create work item and immediately assign to GitHub Copilot
- */
 interface CreateAndAssignToCopilotArgs extends CreateWorkItemArgs {
   repository: string;
   branch?: string;
@@ -443,23 +285,11 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
   repository_linked: boolean;
   human_friendly_url: string;
 }> {
-  const {
-    repository,
-    branch = 'main',
-    gitHubCopilotGuid,
-    ...createArgs
-  } = args;
+  const { repository, branch = 'main', gitHubCopilotGuid, ...createArgs } = args;
 
-  // First create the work item (unassigned)
-  const createResult = await createWorkItem({
-    ...createArgs,
-    assignedTo: '' // Create unassigned initially
-  });
+  const createResult = await createWorkItem({ ...createArgs, assignedTo: '' });
+  await new Promise(resolve => setTimeout(resolve, 2000)); // Allow work item to initialize
   
-  // Small delay to let work item initialize
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Then assign to Copilot
   const assignResult = await assignWorkItemToCopilot({
     workItemId: createResult.id,
     organization: args.organization,
@@ -479,9 +309,6 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
   };
 }
 
-/**
- * Query work items using WIQL (Work Item Query Language)
- */
 interface WiqlQueryArgs {
   wiqlQuery: string;
   organization: string;
@@ -501,71 +328,33 @@ interface WiqlQueryArgs {
   filterByPatterns?: Array<'duplicates' | 'placeholder_titles' | 'unassigned_committed' | 'stale_automation' | 'missing_description' | 'missing_acceptance_criteria'>;
 }
 
-// Fields that indicate substantive changes
 const SUBSTANTIVE_FIELDS = [
-  'System.Description',
-  'System.Title',
-  'System.State',
-  'System.AssignedTo',
-  'Microsoft.VSTS.Common.Priority',
-  'Microsoft.VSTS.Common.AcceptanceCriteria',
-  'System.Tags',
-  'Microsoft.VSTS.Common.ReproSteps',
+  'System.Description', 'System.Title', 'System.State', 'System.AssignedTo',
+  'Microsoft.VSTS.Common.Priority', 'Microsoft.VSTS.Common.AcceptanceCriteria',
+  'System.Tags', 'Microsoft.VSTS.Common.ReproSteps'
 ];
 
-// Fields that are typically automated/bulk updates
 const AUTOMATED_FIELDS = [
-  'System.IterationPath',
-  'System.AreaPath',
-  'Microsoft.VSTS.Common.StackRank',
-  'Microsoft.VSTS.Common.BacklogPriority',
-  'Microsoft.VSTS.Scheduling.StoryPoints',
+  'System.IterationPath', 'System.AreaPath', 'Microsoft.VSTS.Common.StackRank',
+  'Microsoft.VSTS.Common.BacklogPriority', 'Microsoft.VSTS.Scheduling.StoryPoints'
 ];
 
 function daysBetween(dateString: string): number {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  return Math.floor((Date.now() - new Date(dateString).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function isSubstantiveChange(
-  currentRev: ADOWorkItemRevision,
-  previousRev: ADOWorkItemRevision | null
-): { isSubstantive: boolean; changeType: string } {
-  if (!previousRev) {
-    return { isSubstantive: false, changeType: 'Creation' };
-  }
+function isSubstantiveChange(currentRev: ADOWorkItemRevision, previousRev: ADOWorkItemRevision | null): { isSubstantive: boolean; changeType: string } {
+  if (!previousRev) return { isSubstantive: false, changeType: 'Creation' };
 
-  // Check what fields changed
-  const changedFields: string[] = [];
-  for (const field of SUBSTANTIVE_FIELDS) {
-    if (currentRev.fields[field] !== previousRev.fields[field]) {
-      changedFields.push(field);
-    }
-  }
+  const changedFields = SUBSTANTIVE_FIELDS.filter(field => currentRev.fields[field] !== previousRev.fields[field]);
+  const automatedFieldsChanged = AUTOMATED_FIELDS.filter(field => currentRev.fields[field] !== previousRev.fields[field]);
 
-  const automatedFieldsChanged: string[] = [];
-  for (const field of AUTOMATED_FIELDS) {
-    if (currentRev.fields[field] !== previousRev.fields[field]) {
-      automatedFieldsChanged.push(field);
-    }
-  }
-
-  // If only automated fields changed and NO substantive fields changed, treat as non-substantive
   if (changedFields.length === 0 && automatedFieldsChanged.length > 0) {
-    return {
-      isSubstantive: false,
-      changeType: `Automated: ${automatedFieldsChanged.join(', ')}`,
-    };
+    return { isSubstantive: false, changeType: `Automated: ${automatedFieldsChanged.join(', ')}` };
   }
 
-  // If any substantive field changed, it's substantive
   if (changedFields.length > 0) {
-    return {
-      isSubstantive: true,
-      changeType: changedFields.map((f) => f.split('.').pop()).join(', '),
-    };
+    return { isSubstantive: true, changeType: changedFields.map(f => f.split('.').pop()).join(', ') };
   }
 
   return { isSubstantive: false, changeType: 'No significant changes' };
@@ -578,44 +367,25 @@ async function calculateSubstantiveChange(
   Project: string,
   historyCount: number,
   httpClient: ADOHttpClient
-): Promise<{
-  lastSubstantiveChangeDate: string;
-  daysInactive: number;
-}> {
+): Promise<{ lastSubstantiveChangeDate: string; daysInactive: number }> {
   try {
-    // Get revision history
     const response = await httpClient.get<ADOApiResponse<ADOWorkItemRevision[]>>(
       `wit/workItems/${workItemId}/revisions?$top=${historyCount}`
     );
-    const revisions = response.data.value || [];
+    const revisions = (response.data.value || []).sort((a: ADOWorkItemRevision, b: ADOWorkItemRevision) => b.rev - a.rev);
 
-    // Sort revisions by rev number descending (newest first)
-    revisions.sort((a: ADOWorkItemRevision, b: ADOWorkItemRevision) => b.rev - a.rev);
+    let lastSubstantiveChangeDate = createdDate;
 
-    let lastSubstantiveChangeDate: string = createdDate;
-
-    // Walk through revisions from newest to oldest
     for (let i = 0; i < revisions.length; i++) {
-      const currentRev = revisions[i];
-      const previousRev = i < revisions.length - 1 ? revisions[i + 1] : null;
-
-      const analysis = isSubstantiveChange(currentRev, previousRev);
-
+      const analysis = isSubstantiveChange(revisions[i], i < revisions.length - 1 ? revisions[i + 1] : null);
       if (analysis.isSubstantive) {
-        lastSubstantiveChangeDate = currentRev.fields['System.ChangedDate'] || createdDate;
+        lastSubstantiveChangeDate = revisions[i].fields['System.ChangedDate'] || createdDate;
         break;
       }
     }
 
-    const daysInactive = daysBetween(lastSubstantiveChangeDate);
-
-    return {
-      lastSubstantiveChangeDate,
-      daysInactive,
-    };
+    return { lastSubstantiveChangeDate, daysInactive: daysBetween(lastSubstantiveChangeDate) };
   } catch (error) {
-    logger.error(`Failed to calculate substantive change for work item ${workItemId}:`, error);
-    // Re-throw the error so it can be properly handled upstream
     throw new Error(`Substantive change calculation failed for work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -631,10 +401,10 @@ interface WiqlWorkItemResult {
   createdDate?: string;
   changedDate?: string;
   url: string;
-  additionalFields?: Record<string, unknown>;  // Only fields explicitly requested via IncludeFields
-  lastSubstantiveChangeDate?: string;  // Computed: date of last substantive change (filters automated updates)
-  daysInactive?: number;  // Computed: days since last substantive change
-  computedMetrics?: {  // Additional computed metrics
+  additionalFields?: Record<string, unknown>;
+  lastSubstantiveChangeDate?: string;
+  daysInactive?: number;
+  computedMetrics?: {
     daysSinceCreated?: number;
     daysSinceChanged?: number;
     hasDescription: boolean;
@@ -652,153 +422,72 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   hasMore: boolean;
 }> {
   const {
-    wiqlQuery,
-    organization,
-    project,
-    includeFields = [],
-    maxResults = 200,
-    skip = 0,
-    top,
-    includeSubstantiveChange = false,
-    substantiveChangeHistoryCount = 50,
-    filterBySubstantiveChangeAfter,
-    filterBySubstantiveChangeBefore,
-    filterByDaysInactiveMin,
-    filterByDaysInactiveMax,
-    computeMetrics = false,
-    staleThresholdDays = 180,
-    filterByPatterns
+    wiqlQuery, organization, project, includeFields = [], maxResults = 200, skip = 0, top,
+    includeSubstantiveChange = false, substantiveChangeHistoryCount = 50,
+    filterBySubstantiveChangeAfter, filterBySubstantiveChangeBefore,
+    filterByDaysInactiveMin, filterByDaysInactiveMax,
+    computeMetrics = false, staleThresholdDays = 180, filterByPatterns
   } = args;
 
-  // Auto-enable includeSubstantiveChange if any filtering parameters are provided
-  const needsSubstantiveChange = includeSubstantiveChange || 
-    filterBySubstantiveChangeAfter !== undefined || 
+  const needsSubstantiveChange = includeSubstantiveChange ||
+    filterBySubstantiveChangeAfter !== undefined ||
     filterBySubstantiveChangeBefore !== undefined ||
     filterByDaysInactiveMin !== undefined ||
     filterByDaysInactiveMax !== undefined;
 
-  // Use 'top' if provided, otherwise use 'maxResults'
   const pageSize = top ?? maxResults;
-
-  // Get repository
   const repository = createWorkItemRepository(organization, project);
-  const httpClient = createADOHttpClient(organization, project); // Keep for calculateSubstantiveChange
+  const httpClient = createADOHttpClient(organization, project);
   
   try {
-    // Validate required parameters
-    if (!organization || organization.trim() === '') {
-      throw new Error('Organization parameter is required and cannot be empty');
-    }
-    if (!project || project.trim() === '') {
-      throw new Error('Project parameter is required and cannot be empty');
-    }
-
-    // Execute WIQL query
+    if (!organization?.trim()) throw new Error('Organization parameter is required');
+    if (!project?.trim()) throw new Error('Project parameter is required');
     logger.debug(`Executing WIQL query: ${wiqlQuery}`);
     logger.debug(`Target: ${organization}/${project}`);
     
     const wiqlResult = await repository.executeWiql(wiqlQuery);
 
-    if (!wiqlResult.workItems || wiqlResult.workItems.length === 0) {
-      return {
-        workItems: [],
-        count: 0,
-        query: wiqlQuery,
-        totalCount: 0,
-        skip: skip,
-        top: pageSize,
-        hasMore: false
-      };
+    if (!wiqlResult.workItems?.length) {
+      return { workItems: [], count: 0, query: wiqlQuery, totalCount: 0, skip, top: pageSize, hasMore: false };
     }
 
-    // Store original count from WIQL
     const wiqlTotalCount = wiqlResult.workItems.length;
+    const filtersApplied = needsSubstantiveChange || (filterByPatterns?.length ?? 0) > 0;
     
-    // Determine if we need to fetch ALL items for filtering (no pagination yet)
-    const filtersApplied = needsSubstantiveChange || (filterByPatterns && filterByPatterns.length > 0);
-    
-    // If filters are applied, we need to fetch ALL work items first, then filter, then paginate
-    // If no filters, we can paginate at the query level for efficiency
-    const workItemIdsToFetch = filtersApplied 
-      ? wiqlResult.workItems.map((wi: { id: number }) => wi.id)  // Fetch ALL
-      : wiqlResult.workItems.slice(skip, skip + pageSize).map((wi: { id: number }) => wi.id); // Fetch only page
+    const workItemIdsToFetch = filtersApplied
+      ? wiqlResult.workItems.map((wi: { id: number }) => wi.id)
+      : wiqlResult.workItems.slice(skip, skip + pageSize).map((wi: { id: number }) => wi.id);
 
-    logger.debug(filtersApplied 
-      ? `WIQL query returned ${wiqlTotalCount} items. Fetching ALL for filtering before pagination.`
-      : `WIQL query returned ${wiqlTotalCount} items, fetching details for items ${skip + 1}-${Math.min(skip + pageSize, wiqlTotalCount)} (page size: ${pageSize})`);
+    logger.debug(filtersApplied
+      ? `WIQL returned ${wiqlTotalCount} items. Fetching ALL for filtering before pagination.`
+      : `WIQL returned ${wiqlTotalCount} items, fetching ${skip + 1}-${Math.min(skip + pageSize, wiqlTotalCount)} (page size: ${pageSize})`);
 
-    // Fetch work item details
-    // Default fields to include
-    const defaultFields = [
-      'System.Id',
-      'System.Title',
-      'System.WorkItemType',
-      'System.State',
-      'System.AreaPath',
-      'System.IterationPath',
-      'System.AssignedTo'
-    ];
+    const defaultFields = ['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.AreaPath', 'System.IterationPath', 'System.AssignedTo'];
 
-    // Add date fields if needed for substantive change analysis or computed metrics
-    if (needsSubstantiveChange || computeMetrics) {
-      defaultFields.push('System.CreatedDate', 'System.ChangedDate');
-    }
+    if (needsSubstantiveChange || computeMetrics) defaultFields.push('System.CreatedDate', 'System.ChangedDate');
+    if (filterByPatterns?.includes('missing_description')) defaultFields.push('System.Description');
+    if (filterByPatterns?.includes('missing_acceptance_criteria')) defaultFields.push('Microsoft.VSTS.Common.AcceptanceCriteria');
 
-    // Add description and acceptance criteria fields if filtering by them via patterns
-    if (filterByPatterns?.includes('missing_description')) {
-      defaultFields.push('System.Description');
-    }
-    if (filterByPatterns?.includes('missing_acceptance_criteria')) {
-      defaultFields.push('Microsoft.VSTS.Common.AcceptanceCriteria');
-    }
-
-    // Combine default fields with user-requested fields
     const allFields = [...new Set([...defaultFields, ...includeFields])];
-
     const detailsResult = await repository.getBatch(workItemIdsToFetch, allFields);
 
-    if (!detailsResult) {
-      throw new Error('Failed to fetch work item details');
-    }
+    if (!detailsResult) throw new Error('Failed to fetch work item details');
 
-    // Map work items to result format
     const workItems: WiqlWorkItemResult[] = detailsResult.map((wi: ADOWorkItem) => {
-      // Extract additional fields not already in the top-level structure
-      // Filter out redundant and verbose fields to save context window space
+      const extractedFields = new Set(['System.Id', 'System.Title', 'System.WorkItemType', 'System.State', 'System.AreaPath', 'System.IterationPath', 'System.AssignedTo', 'System.CreatedDate', 'System.ChangedDate']);
       const additionalFields: Record<string, unknown> = {};
-      const extractedFields = new Set([
-        'System.Id',
-        'System.Title',
-        'System.WorkItemType',
-        'System.State',
-        'System.AreaPath',
-        'System.IterationPath',
-        'System.AssignedTo',
-        'System.CreatedDate',
-        'System.ChangedDate'
-      ]);
       
-      // Only include fields that were explicitly requested and not already extracted
       for (const field of includeFields) {
         if (!extractedFields.has(field) && wi.fields[field] !== undefined) {
           const fieldValue = wi.fields[field];
-          // Simplify AssignedTo-like objects to just displayName
-          if (typeof fieldValue === 'object' && fieldValue !== null && 'displayName' in fieldValue) {
-            additionalFields[field] = (fieldValue as { displayName: string }).displayName;
-          } else {
-            additionalFields[field] = fieldValue;
-          }
+          additionalFields[field] = (typeof fieldValue === 'object' && fieldValue !== null && 'displayName' in fieldValue)
+            ? (fieldValue as { displayName: string }).displayName
+            : fieldValue;
         }
       }
       
-      // Always include Description and AcceptanceCriteria in additionalFields if filtering by them,
-      // even if undefined/null, so the filter logic has consistent data to work with
-      if (filterByPatterns?.includes('missing_description')) {
-        additionalFields['System.Description'] = wi.fields['System.Description'];
-      }
-      if (filterByPatterns?.includes('missing_acceptance_criteria')) {
-        additionalFields['Microsoft.VSTS.Common.AcceptanceCriteria'] = wi.fields['Microsoft.VSTS.Common.AcceptanceCriteria'];
-      }
+      if (filterByPatterns?.includes('missing_description')) additionalFields['System.Description'] = wi.fields['System.Description'];
+      if (filterByPatterns?.includes('missing_acceptance_criteria')) additionalFields['Microsoft.VSTS.Common.AcceptanceCriteria'] = wi.fields['Microsoft.VSTS.Common.AcceptanceCriteria'];
       
       const workItem: WiqlWorkItemResult = {
         id: wi.id,
@@ -814,59 +503,42 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         ...(Object.keys(additionalFields).length > 0 && { additionalFields })
       };
 
-      // Compute basic metrics if requested
       if (computeMetrics) {
         const description = wi.fields['System.Description'] || '';
-        const descriptionText = description.replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
+        const descriptionText = description.replace(/<[^>]*>/g, '').trim();
         const hasDescription = descriptionText.length > 50;
         
         const createdDate = workItem.createdDate ? new Date(workItem.createdDate) : null;
         const changedDate = workItem.changedDate ? new Date(workItem.changedDate) : null;
         const now = new Date();
         
-        const daysSinceCreated = createdDate ? Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
-        const daysSinceChanged = changedDate ? Math.floor((now.getTime() - changedDate.getTime()) / (1000 * 60 * 60 * 24)) : undefined;
+        const daysSinceCreated = createdDate ? Math.floor((now.getTime() - createdDate.getTime()) / 86400000) : undefined;
+        const daysSinceChanged = changedDate ? Math.floor((now.getTime() - changedDate.getTime()) / 86400000) : undefined;
         const isStale = daysSinceChanged !== undefined && daysSinceChanged > staleThresholdDays;
         
-        workItem.computedMetrics = {
-          daysSinceCreated,
-          daysSinceChanged,
-          hasDescription,
-          isStale
-        };
+        workItem.computedMetrics = { daysSinceCreated, daysSinceChanged, hasDescription, isStale };
       }
 
       return workItem;
     });
 
-    // If substantive change analysis is requested, calculate it for each work item
     if (needsSubstantiveChange) {
       logger.debug(`Calculating substantive change data for ${workItems.length} work items`);
       
-      // Process work items in batches to avoid overwhelming the API
-      const BATCH_SIZE = 10; // Process 10 items at a time
+      const BATCH_SIZE = 10;
       const workItemsWithCreatedDate = workItems.filter(wi => wi.createdDate);
-      
       logger.debug(`${workItemsWithCreatedDate.length} work items have createdDate, ${workItems.length - workItemsWithCreatedDate.length} do not`);
       
       const allResults: Array<{ id: number; lastSubstantiveChangeDate: string; daysInactive: number } | null> = [];
-      let successCount = 0;
-      let errorCount = 0;
+      let successCount = 0, errorCount = 0;
       
       for (let i = 0; i < workItemsWithCreatedDate.length; i += BATCH_SIZE) {
         const batch = workItemsWithCreatedDate.slice(i, i + BATCH_SIZE);
-        logger.debug(`Processing substantive change batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(workItemsWithCreatedDate.length / BATCH_SIZE)} (${batch.length} items)`);
+        logger.debug(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(workItemsWithCreatedDate.length / BATCH_SIZE)} (${batch.length} items)`);
         
-        const batchPromises = batch.map(async (workItem) => {
+        const batchResults = await Promise.all(batch.map(async (workItem) => {
           try {
-            const result = await calculateSubstantiveChange(
-              workItem.id,
-              workItem.createdDate!,
-              organization,
-              project,
-              substantiveChangeHistoryCount,
-              httpClient
-            );
+            const result = await calculateSubstantiveChange(workItem.id, workItem.createdDate!, organization, project, substantiveChangeHistoryCount, httpClient);
             successCount++;
             return { id: workItem.id, ...result };
           } catch (error) {
@@ -874,15 +546,13 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
             logger.error(`Failed to calculate substantive change for work item ${workItem.id}:`, error);
             return null;
           }
-        });
+        }));
         
-        const batchResults = await Promise.all(batchPromises);
         allResults.push(...batchResults);
       }
       
       logger.debug(`Substantive change analysis complete: ${successCount} succeeded, ${errorCount} failed`);
 
-      // Merge substantive change data into work items
       for (const result of allResults) {
         if (result) {
           const workItem = workItems.find(wi => wi.id === result.id);
@@ -893,184 +563,102 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         }
       }
       
-      if (errorCount > 0) {
-        logger.warn(`${errorCount} work items failed substantive change analysis - they will not have lastSubstantiveChangeDate/daysInactive fields`);
-      }
+      if (errorCount > 0) logger.warn(`${errorCount} work items failed substantive change analysis - they will not have lastSubstantiveChangeDate/daysInactive fields`);
     }
 
-    // Apply substantive change filters if specified
     let filteredWorkItems = workItems;
     if (needsSubstantiveChange) {
       let preFilterCount = filteredWorkItems.length;
       
       if (filterBySubstantiveChangeAfter) {
         const afterDate = new Date(filterBySubstantiveChangeAfter);
-        const beforeFilter = filteredWorkItems.length;
         const itemsWithoutDate = filteredWorkItems.filter(wi => !wi.lastSubstantiveChangeDate).length;
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          if (!wi.lastSubstantiveChangeDate) return false;
-          return new Date(wi.lastSubstantiveChangeDate) > afterDate;
-        });
-        
-        logger.debug(`Filtered by substantive change after ${filterBySubstantiveChangeAfter}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDate > 0 ? ` (${itemsWithoutDate} items excluded due to missing lastSubstantiveChangeDate)` : ''}`);
+        filteredWorkItems = filteredWorkItems.filter(wi => wi.lastSubstantiveChangeDate && new Date(wi.lastSubstantiveChangeDate) > afterDate);
+        logger.debug(`Filtered by substantive change after ${filterBySubstantiveChangeAfter}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDate > 0 ? ` (${itemsWithoutDate} excluded: missing date)` : ''}`);
         preFilterCount = filteredWorkItems.length;
       }
       
       if (filterBySubstantiveChangeBefore) {
         const beforeDate = new Date(filterBySubstantiveChangeBefore);
         const itemsWithoutDate = filteredWorkItems.filter(wi => !wi.lastSubstantiveChangeDate).length;
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          if (!wi.lastSubstantiveChangeDate) return false;
-          return new Date(wi.lastSubstantiveChangeDate) < beforeDate;
-        });
-        
-        logger.debug(`Filtered by substantive change before ${filterBySubstantiveChangeBefore}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDate > 0 ? ` (${itemsWithoutDate} items excluded due to missing lastSubstantiveChangeDate)` : ''}`);
+        filteredWorkItems = filteredWorkItems.filter(wi => wi.lastSubstantiveChangeDate && new Date(wi.lastSubstantiveChangeDate) < beforeDate);
+        logger.debug(`Filtered by substantive change before ${filterBySubstantiveChangeBefore}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDate > 0 ? ` (${itemsWithoutDate} excluded: missing date)` : ''}`);
         preFilterCount = filteredWorkItems.length;
       }
       
       if (filterByDaysInactiveMin !== undefined) {
-        const itemsWithoutDaysInactive = filteredWorkItems.filter(wi => wi.daysInactive === undefined).length;
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          if (wi.daysInactive === undefined) return false;
-          return wi.daysInactive >= filterByDaysInactiveMin;
-        });
-        
-        logger.debug(`Filtered by daysInactive >= ${filterByDaysInactiveMin}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDaysInactive > 0 ? ` (${itemsWithoutDaysInactive} items excluded due to missing daysInactive - check for work items without createdDate or failed substantive change analysis)` : ''}`);
+        const itemsWithoutDays = filteredWorkItems.filter(wi => wi.daysInactive === undefined).length;
+        filteredWorkItems = filteredWorkItems.filter(wi => wi.daysInactive !== undefined && wi.daysInactive >= filterByDaysInactiveMin);
+        logger.debug(`Filtered by daysInactive >= ${filterByDaysInactiveMin}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDays > 0 ? ` (${itemsWithoutDays} excluded: missing daysInactive)` : ''}`);
         preFilterCount = filteredWorkItems.length;
       }
       
       if (filterByDaysInactiveMax !== undefined) {
-        const itemsWithoutDaysInactive = filteredWorkItems.filter(wi => wi.daysInactive === undefined).length;
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          if (wi.daysInactive === undefined) return false;
-          return wi.daysInactive <= filterByDaysInactiveMax;
-        });
-        
-        logger.debug(`Filtered by daysInactive <= ${filterByDaysInactiveMax}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDaysInactive > 0 ? ` (${itemsWithoutDaysInactive} items excluded due to missing daysInactive - check for work items without createdDate or failed substantive change analysis)` : ''}`);
+        const itemsWithoutDays = filteredWorkItems.filter(wi => wi.daysInactive === undefined).length;
+        filteredWorkItems = filteredWorkItems.filter(wi => wi.daysInactive !== undefined && wi.daysInactive <= filterByDaysInactiveMax);
+        logger.debug(`Filtered by daysInactive <= ${filterByDaysInactiveMax}: ${preFilterCount} → ${filteredWorkItems.length}${itemsWithoutDays > 0 ? ` (${itemsWithoutDays} excluded: missing daysInactive)` : ''}`);
       }
     }
 
-    // Apply pattern-based filters
-    if (filterByPatterns && filterByPatterns.length > 0) {
+    if (filterByPatterns?.length) {
       logger.debug(`Applying pattern filters: ${filterByPatterns.join(', ')}`);
       
-      // Pattern: Placeholder titles
+      const applyFilter = (name: string, predicate: (wi: WiqlWorkItemResult) => boolean) => {
+        const before = filteredWorkItems.length;
+        filteredWorkItems = filteredWorkItems.filter(predicate);
+        logger.debug(`Filtered by ${name}: ${before} → ${filteredWorkItems.length}`);
+      };
+      
       if (filterByPatterns.includes('placeholder_titles')) {
-        const preFilterCount = filteredWorkItems.length;
-        const placeholderPatterns = [
-          /\b(TBD|TODO|FIXME|XXX)\b/i,
-          /\b(temp|temporary)\b/i,
-          /\b(foo|bar|baz|dummy)\b/i,
-          /^(New|Untitled|Item \d+)$/i,
-          /\[.*\?\?\?.*\]/i
-        ];
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          return placeholderPatterns.some(pattern => pattern.test(wi.title));
-        });
-        logger.debug(`Filtered by placeholder_titles: ${preFilterCount} → ${filteredWorkItems.length}`);
+        const patterns = [/\b(TBD|TODO|FIXME|XXX)\b/i, /\b(temp|temporary)\b/i, /\b(foo|bar|baz|dummy)\b/i, /^(New|Untitled|Item \d+)$/i, /\[.*\?\?\?.*\]/i];
+        applyFilter('placeholder_titles', wi => patterns.some(p => p.test(wi.title)));
       }
       
-      // Pattern: Duplicates (similar titles)
       if (filterByPatterns.includes('duplicates')) {
-        const preFilterCount = filteredWorkItems.length;
         const titleMap = new Map<string, number[]>();
-        
-        // Build map of normalized titles to work item IDs
-        for (const wi of filteredWorkItems) {
-          const normalizedTitle = wi.title.toLowerCase().trim().replace(/[^\w\s]/g, '');
-          if (!titleMap.has(normalizedTitle)) {
-            titleMap.set(normalizedTitle, []);
-          }
-          titleMap.get(normalizedTitle)!.push(wi.id);
-        }
-        
-        // Keep only items with duplicate titles
+        filteredWorkItems.forEach(wi => {
+          const normalized = wi.title.toLowerCase().trim().replace(/[^\w\s]/g, '');
+          if (!titleMap.has(normalized)) titleMap.set(normalized, []);
+          titleMap.get(normalized)!.push(wi.id);
+        });
         const duplicateIds = new Set<number>();
-        for (const ids of titleMap.values()) {
-          if (ids.length > 1) {
-            ids.forEach(id => duplicateIds.add(id));
-          }
-        }
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => duplicateIds.has(wi.id));
-        logger.debug(`Filtered by duplicates: ${preFilterCount} → ${filteredWorkItems.length}`);
+        Array.from(titleMap.values()).filter(ids => ids.length > 1).forEach(ids => ids.forEach(id => duplicateIds.add(id)));
+        applyFilter('duplicates', wi => duplicateIds.has(wi.id));
       }
       
-      // Pattern: Unassigned items in committed state
       if (filterByPatterns.includes('unassigned_committed')) {
-        const preFilterCount = filteredWorkItems.length;
         const committedStates = ['Active', 'Committed', 'In Progress', 'Doing'];
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          return committedStates.includes(wi.state) && !wi.assignedTo;
-        });
-        logger.debug(`Filtered by unassigned_committed: ${preFilterCount} → ${filteredWorkItems.length}`);
+        applyFilter('unassigned_committed', wi => committedStates.includes(wi.state) && !wi.assignedTo);
       }
       
-      // Pattern: Missing description
       if (filterByPatterns.includes('missing_description')) {
-        const preFilterCount = filteredWorkItems.length;
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          const description = wi.additionalFields?.['System.Description'];
-          // Handle undefined/null before String() to avoid String(undefined) => "undefined"
-          if (description === undefined || description === null || description === '') {
-            return true; // Keep items with no description
-          }
-          const descriptionText = String(description).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
-          return descriptionText.length < 10; // Consider empty if less than 10 characters
+        applyFilter('missing_description', wi => {
+          const desc = wi.additionalFields?.['System.Description'];
+          if (desc === undefined || desc === null || desc === '') return true;
+          return String(desc).replace(/<[^>]*>/g, '').trim().length < 10;
         });
-        logger.debug(`Filtered by missing_description: ${preFilterCount} → ${filteredWorkItems.length}`);
       }
       
-      // Pattern: Missing acceptance criteria
       if (filterByPatterns.includes('missing_acceptance_criteria')) {
-        const preFilterCount = filteredWorkItems.length;
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          const acceptanceCriteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'];
-          // Handle undefined/null before String() to avoid String(undefined) => "undefined"
-          if (acceptanceCriteria === undefined || acceptanceCriteria === null || acceptanceCriteria === '') {
-            return true; // Keep items with no acceptance criteria
-          }
-          const criteriaText = String(acceptanceCriteria).replace(/<[^>]*>/g, '').trim(); // Strip HTML tags
-          return criteriaText.length < 10; // Consider empty if less than 10 characters
+        applyFilter('missing_acceptance_criteria', wi => {
+          const criteria = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'];
+          if (criteria === undefined || criteria === null || criteria === '') return true;
+          return String(criteria).replace(/<[^>]*>/g, '').trim().length < 10;
         });
-        logger.debug(`Filtered by missing_acceptance_criteria: ${preFilterCount} → ${filteredWorkItems.length}`);
       }
       
-      // Pattern: Stale automation items (created by automation, not touched in 180+ days)
       if (filterByPatterns.includes('stale_automation')) {
-        const preFilterCount = filteredWorkItems.length;
         const automationPatterns = [/\[S360\]/i, /\[automated\]/i, /\[bot\]/i, /\[scan\]/i];
-        const now = new Date();
-        
-        filteredWorkItems = filteredWorkItems.filter(wi => {
-          const isAutomation = automationPatterns.some(pattern => pattern.test(wi.title));
-          if (!isAutomation || !wi.changedDate) return false;
-          
-          const changedDate = new Date(wi.changedDate);
-          const daysSinceChange = Math.floor((now.getTime() - changedDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          return daysSinceChange > 180;
+        applyFilter('stale_automation', wi => {
+          if (!wi.changedDate || !automationPatterns.some(p => p.test(wi.title))) return false;
+          return Math.floor((Date.now() - new Date(wi.changedDate).getTime()) / 86400000) > 180;
         });
-        logger.debug(`Filtered by stale_automation: ${preFilterCount} → ${filteredWorkItems.length}`);
       }
     }
 
-    // Now apply pagination to the filtered results
     const totalCountAfterFiltering = filteredWorkItems.length;
-    const paginatedWorkItems = filtersApplied 
-      ? filteredWorkItems.slice(skip, skip + pageSize)  // Apply pagination to filtered results
-      : filteredWorkItems;  // Already paginated at query level
-    
-    const hasMore = filtersApplied
-      ? (skip + pageSize) < totalCountAfterFiltering  // Check against filtered count
-      : (skip + pageSize) < wiqlTotalCount;  // Check against original WIQL count
-    
+    const paginatedWorkItems = filtersApplied ? filteredWorkItems.slice(skip, skip + pageSize) : filteredWorkItems;
+    const hasMore = filtersApplied ? (skip + pageSize) < totalCountAfterFiltering : (skip + pageSize) < wiqlTotalCount;
     const finalTotalCount = filtersApplied ? totalCountAfterFiltering : wiqlTotalCount;
 
     logger.debug(filtersApplied
@@ -1084,23 +672,19 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       totalCount: finalTotalCount,
       skip,
       top: pageSize,
-      hasMore: hasMore
+      hasMore
     };
 
   } catch (error) {
     logger.error('WIQL query execution failed', error);
-    
-    // Provide more context in error message
     const errorContext = `Organization: ${organization}, Project: ${project}`;
     const errorMessage = error instanceof Error ? error.message : String(error);
     
-    // Check for common error scenarios and provide helpful messages
     if (errorMessage.includes('404') || errorMessage.includes('Not Found')) {
       throw new Error(
         `Failed to execute WIQL query: HTTP 404: Not Found. ` +
-        `This usually means the project "${project}" does not exist in organization "${organization}", ` +
-        `or you don't have access to it. ${errorContext}. ` +
-        `Please verify your organization and project names are correct and that you're logged in with 'az login'.`
+        `Project "${project}" may not exist in organization "${organization}", or you lack access. ${errorContext}. ` +
+        `Verify names and login with 'az login'.`
       );
     }
     

@@ -50,7 +50,7 @@ npm run generate-docs
 ```
 
 This will:
-1. Read all tool configurations from `src/config/tool-configs.ts`
+1. Read all tool configurations from `src/config/tool-configs/index.ts`
 2. Extract schemas and descriptions
 3. Generate OpenAPI 3.0 specification
 4. Generate individual JSON schemas

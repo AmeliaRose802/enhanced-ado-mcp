@@ -1,6 +1,6 @@
 import { ToolExecutionResult, asToolData } from "../types/index.js";
 import type { MCPServer, MCPServerLike } from "../types/mcp.js";
-import { toolConfigs, isAIPoweredTool } from "../config/tool-configs.js";
+import { toolConfigs, isAIPoweredTool } from "../config/tool-configs/index.js";
 import { logger } from "../utils/logger.js";
 import { checkSamplingSupport } from "../utils/sampling-client.js";
 import { SamplingService } from "./sampling-service.js";

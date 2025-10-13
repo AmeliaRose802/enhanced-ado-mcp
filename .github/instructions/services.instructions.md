@@ -333,16 +333,18 @@ export class MyAnalyzer {
 
 ### Tool Registration
 
-**In `config/tool-configs.ts`:**
+**In appropriate `config/tool-configs/*.ts` file:**
 ```typescript
-export const TOOL_CONFIGS: ToolConfigs = {
-  'my-tool': {
+// Add to work-item-creation.ts, bulk-operations.ts, etc.
+export const categoryTools: ToolConfig[] = [
+  {
+    name: 'my-tool',
     schema: myToolSchema,
     description: 'What this tool does',
-    requiresSampling: false,
-    category: 'work-items'
+    script: '',
+    inputSchema: { /* ... */ }
   }
-};
+];
 ```
 
 **In `services/tool-service.ts`:**

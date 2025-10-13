@@ -80,7 +80,16 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 **Components:**
 - `config.ts` - Configuration loading and validation
 - `schemas.ts` - Zod schemas for input validation
-- `tool-configs.ts` - Tool registry and metadata
+- `tool-configs/` - Tool registry organized by category
+  - `index.ts` - Re-exports all tools
+  - `work-item-creation.ts` - Creation & assignment tools
+  - `bulk-operations.ts` - Bulk update/state tools
+  - `ai-analysis.ts` - AI-powered analysis tools
+  - `ai-enhancement.ts` - AI-powered enhancement tools
+  - `query-tools.ts` - WIQL/OData queries
+  - `query-handle.ts` - Handle operations
+  - `work-item-context.ts` - Context retrieval
+  - `discovery.ts` - Configuration & prompts
 
 **Configuration Sources (Priority Order):**
 1. CLI arguments (highest priority)
@@ -662,7 +671,13 @@ selectByCriteria(criteria: SelectionCriteria): number[] {
 ### Adding a New Tool
 
 1. Define Zod schema in `config/schemas.ts`
-2. Add tool config to `config/tool-configs.ts`
+2. Add tool config to appropriate category in `config/tool-configs/`
+   - Creation tools → `work-item-creation.ts`
+   - Bulk operations → `bulk-operations.ts`
+   - AI features → `ai-analysis.ts` or `ai-enhancement.ts`
+   - Queries → `query-tools.ts` or `query-handle.ts`
+   - Context → `work-item-context.ts`
+   - Discovery → `discovery.ts`
 3. Create handler in `services/handlers/`
 4. Add service method if needed
 5. Wire up in `tool-service.ts`

@@ -178,7 +178,7 @@ To add new selection criteria:
 4. **Update Documentation**:
    - Update `docs/QUERY_HANDLE_MIGRATION.md` with examples
    - Update `mcp_server/resources/query-handle-pattern.md`
-   - Update tool descriptions in `src/config/tool-configs.ts`
+   - Update tool descriptions in appropriate `src/config/tool-configs/*.ts` file
 
 ### Running Tests
 
