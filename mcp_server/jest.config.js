@@ -40,16 +40,18 @@ export default {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
+    // Integration tests that require real ADO credentials
     'work-item-rest-api.test.ts',
-    'wiql-query.test.ts',
     'configuration-discovery.test.ts',
-    'sampling-feature.test.ts',
     'hierarchy-validator-integration.test.ts',
     'ai-assignment-integration.test.ts',
+    // Tests with import.meta issues (Jest limitation)
+    'unified-query-generator.test.ts',
     'ai-assignment-analyzer.test.ts',
+    'sampling-feature.test.ts',
     'wiql-full-packages.test.ts',
     'wiql-missing-fields-filter.test.ts',
-    'unified-query-generator.test.ts'  // Disabled - Jest parse issue with import.meta.url, tools work in production
+    'wiql-query.test.ts'
   ],
   
   // Coverage configuration
