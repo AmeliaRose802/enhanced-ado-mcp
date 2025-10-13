@@ -14,7 +14,7 @@ import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
-import { extractJSON } from "../../../utils/ai-helpers.js";
+import { extractJSON, getStringOrDefault, getNumberOrDefault, getBooleanOrDefault } from '../../../utils/ai-helpers.js';
 
 interface EstimationResult {
   workItemId: number;
@@ -223,7 +223,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
           temperature: 0.3
         });
 
-        const responseText = samplingClient.extractResponseText(aiResult);
+        const responseText = samplingClient.extractResponseText(aiResult as { content: { text: string } });
         const jsonData = extractJSON(responseText);
 
         if (!jsonData || jsonData.storyPoints === undefined) {
@@ -272,11 +272,11 @@ Estimate the story points for this work item using the ${pointScale} scale.
           workItemId,
           title,
           success: true,
-          storyPoints: jsonData.storyPoints,
-          confidence: jsonData.confidence,
-          complexity: jsonData.complexity,
-          estimateReasoning: jsonData.estimateReasoning,
-          suggestDecomposition: jsonData.suggestDecomposition
+          storyPoints: (jsonData.storyPoints as number | string | null) ?? undefined,
+          confidence: jsonData.confidence ? getNumberOrDefault(jsonData.confidence, 0) : undefined,
+          complexity: jsonData.complexity ? getStringOrDefault(jsonData.complexity, '') : undefined,
+          estimateReasoning: jsonData.estimateReasoning ? getStringOrDefault(jsonData.estimateReasoning, '') : undefined,
+          suggestDecomposition: jsonData.suggestDecomposition ? getBooleanOrDefault(jsonData.suggestDecomposition, false) : undefined
         });
 
       } catch (error) {

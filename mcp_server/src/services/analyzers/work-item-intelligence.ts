@@ -8,7 +8,7 @@ import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
-import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
+import { extractJSON, getStringOrDefault, getNumberOrDefault, getArrayOfStrings, getNestedValue, formatForAI } from '../../utils/ai-helpers.js';
 import { executeTool } from '../tool-service.js';
 
 export class WorkItemIntelligenceAnalyzer {
@@ -50,7 +50,7 @@ export class WorkItemIntelligenceAnalyzer {
   private async performAnalysis(args: WorkItemIntelligenceArgs): Promise<AnalysisResult> {
     const analysisType = args.AnalysisType || 'full';
     const systemPromptName = `${analysisType}-analyzer`;
-    const userContent = formatForAI(args);
+    const userContent = formatForAI(args as unknown as Record<string, unknown>);
 
     // Add timeout wrapper to prevent hanging
     const timeoutMs = 90000; // 90 seconds (1.5 minutes)
@@ -97,25 +97,49 @@ export class WorkItemIntelligenceAnalyzer {
     return temps[analysisType] || 0.3;
   }
 
-  private parseAnalysisResponse(aiResult: any, analysisType: string): AnalysisResult {
-    const responseText = this.samplingClient.extractResponseText(aiResult);
+  private parseAnalysisResponse(aiResult: unknown, analysisType: string): AnalysisResult {
+    const responseText = this.samplingClient.extractResponseText(aiResult as { content: { text: string } });
     logger.debug(`Parsing AI response for ${analysisType}:`, responseText.substring(0, 200) + '...');
     const jsonData = extractJSON(responseText);
     
     // If we successfully parsed JSON, use it directly with minimal processing
     if (jsonData) {
       return {
-        completenessScore: jsonData.overallScore || jsonData.completeness?.overallScore || 5,
-        aiReadinessScore: jsonData.aiReadiness?.overallScore || jsonData.overallScore || 5,
-        category: jsonData.category || jsonData.categorization?.category || "General",
-        priority: jsonData.priority || jsonData.suggestedPriority || jsonData.categorization?.priority || "Medium",
-        complexity: jsonData.complexity || jsonData.suggestedComplexity || jsonData.categorization?.complexity || "Medium",
-        assignmentSuggestion: jsonData.decision || jsonData.assignment || jsonData.categorization?.assignment,
-        recommendations: jsonData.recommendations || jsonData.suggestions || [],
-        missingElements: jsonData.missing || jsonData.missingInfo || [],
-        strengths: jsonData.strengths || [],
+        completenessScore: getNumberOrDefault(
+          jsonData.overallScore || getNestedValue(jsonData, ['completeness', 'overallScore']),
+          5
+        ),
+        aiReadinessScore: getNumberOrDefault(
+          getNestedValue(jsonData, ['aiReadiness', 'overallScore']) || jsonData.overallScore,
+          5
+        ),
+        category: getStringOrDefault(
+          jsonData.category || getNestedValue(jsonData, ['categorization', 'category']),
+          'General'
+        ),
+        priority: getStringOrDefault(
+          jsonData.priority || jsonData.suggestedPriority || getNestedValue(jsonData, ['categorization', 'priority']),
+          'Medium'
+        ) as 'High' | 'Low' | 'Medium' | 'Critical',
+        complexity: getStringOrDefault(
+          jsonData.complexity || jsonData.suggestedComplexity || getNestedValue(jsonData, ['categorization', 'complexity']),
+          'Medium'
+        ) as 'Medium' | 'Simple' | 'Complex' | 'Expert',
+        assignmentSuggestion: ((): 'AI' | 'Human' | 'Hybrid' => {
+          const value = getStringOrDefault(
+            jsonData.decision || jsonData.assignment || getNestedValue(jsonData, ['categorization', 'assignment']),
+            'Human'
+          );
+          if (value === 'AI' || value === 'Human' || value === 'Hybrid') {
+            return value;
+          }
+          return 'Human';
+        })(),
+        recommendations: getArrayOfStrings(jsonData.recommendations || jsonData.suggestions),
+        missingElements: getArrayOfStrings(jsonData.missing || jsonData.missingInfo),
+        strengths: getArrayOfStrings(jsonData.strengths),
         improvementAreas: [],
-        rawAnalysis: jsonData  // Include full JSON for intelligent agent to interpret
+        rawAnalysis: jsonData as Record<string, string | number | boolean | null>
       };
     }
     

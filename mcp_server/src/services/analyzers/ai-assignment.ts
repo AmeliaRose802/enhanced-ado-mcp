@@ -9,6 +9,22 @@ import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
 import type { ADOWorkItem } from '../../types/index.js';
 
+/** Internal analysis input structure */
+interface AnalysisInput {
+  work_item_id: number;
+  work_item_title: string;
+  work_item_description: string;
+  work_item_type: string;
+  acceptance_criteria: string;
+  priority: string;
+  state: string;
+  assigned_to: string;
+  tags: string;
+  area_path: string;
+  iteration_path: string;
+  output_format: string;
+}
+
 /**
  * Get work item details from Azure DevOps
  */
@@ -81,7 +97,7 @@ export class AIAssignmentAnalyzer {
     }
   }
 
-  private async performAnalysis(analysisInput: any): Promise<AIAssignmentResult> {
+  private async performAnalysis(analysisInput: AnalysisInput): Promise<AIAssignmentResult> {
     // Build variables for the system prompt to auto-fill work item context
     const variables: Record<string, string> = {
       WORK_ITEM_ID: String(analysisInput.work_item_id || ''),
@@ -129,8 +145,8 @@ Output format: ${analysisInput.output_format}`,
     return this.parseResponse(aiResult);
   }
 
-  private parseResponse(aiResult: any): AIAssignmentResult {
-    const text = this.samplingClient.extractResponseText(aiResult);
+  private parseResponse(aiResult: unknown): AIAssignmentResult {
+    const text = this.samplingClient.extractResponseText(aiResult as { content: { text: string } });
     const json = extractJSON(text);
     
     if (!json) {
@@ -140,30 +156,56 @@ Output format: ${analysisInput.output_format}`,
     return this.buildResultFromJSON(json);
   }
 
-  private buildResultFromJSON(json: any): AIAssignmentResult {
+  private buildResultFromJSON(json: Record<string, unknown>): AIAssignmentResult {
     if (!json.decision) {
       throw new Error('AI response missing required field: decision');
     }
 
+    // Helper to safely get arrays
+    const getArray = (value: unknown): string[] => {
+      if (Array.isArray(value)) {
+        return value.filter((v): v is string => typeof v === 'string');
+      }
+      return [];
+    };
+
+    // Helper to safely get numbers
+    const getNumber = (value: unknown, fallback: number): number => {
+      return typeof value === 'number' ? value : fallback;
+    };
+
+    // Helper to safely get nested values
+    const getNested = (obj: unknown, path: string[]): unknown => {
+      let current: unknown = obj;
+      for (const key of path) {
+        if (current && typeof current === 'object' && key in current) {
+          current = (current as Record<string, unknown>)[key];
+        } else {
+          return undefined;
+        }
+      }
+      return current;
+    };
+
     return {
-      decision: json.decision,
-      confidence: json.confidence ?? 0.5,
-      riskScore: json.riskScore ?? 50,
-      primaryReasons: json.reasons ?? json.primaryReasons ?? [],
-      missingInfo: json.missingInfo ?? [],
-      recommendedNextSteps: json.nextSteps ?? json.recommendedNextSteps ?? [],
+      decision: json.decision as 'AI_FIT' | 'HUMAN_FIT' | 'HYBRID',
+      confidence: getNumber(json.confidence, 0.5),
+      riskScore: getNumber(json.riskScore, 50),
+      primaryReasons: getArray(json.reasons || json.primaryReasons),
+      missingInfo: getArray(json.missingInfo),
+      recommendedNextSteps: getArray(json.nextSteps || json.recommendedNextSteps),
       estimatedScope: {
         files: {
-          min: json.scope?.filesMin ?? json.estimatedScope?.files?.min ?? 1,
-          max: json.scope?.filesMax ?? json.estimatedScope?.files?.max ?? 5
+          min: getNumber(getNested(json, ['scope', 'filesMin']) || getNested(json, ['estimatedScope', 'files', 'min']), 1),
+          max: getNumber(getNested(json, ['scope', 'filesMax']) || getNested(json, ['estimatedScope', 'files', 'max']), 5)
         },
-        complexity: json.scope?.complexity ?? json.estimatedScope?.complexity ?? "medium"
+        complexity: (getNested(json, ['scope', 'complexity']) || getNested(json, ['estimatedScope', 'complexity']) || 'medium') as 'low' | 'medium' | 'high'
       },
       guardrails: {
-        testsRequired: json.guardrails?.testsRequired ?? false,
-        featureFlagOrToggle: json.guardrails?.featureFlag ?? json.guardrails?.featureFlagOrToggle ?? false,
-        touchSensitiveAreas: json.guardrails?.touchesSensitive ?? json.guardrails?.touchSensitiveAreas ?? false,
-        needsCodeReviewFromOwner: json.guardrails?.needsReview ?? json.guardrails?.needsCodeReviewFromOwner ?? false
+        testsRequired: Boolean((json.guardrails as Record<string, unknown>)?.testsRequired),
+        featureFlagOrToggle: Boolean((json.guardrails as Record<string, unknown>)?.featureFlag || (json.guardrails as Record<string, unknown>)?.featureFlagOrToggle),
+        touchSensitiveAreas: Boolean((json.guardrails as Record<string, unknown>)?.touchesSensitive || (json.guardrails as Record<string, unknown>)?.touchSensitiveAreas),
+        needsCodeReviewFromOwner: Boolean((json.guardrails as Record<string, unknown>)?.needsReview || (json.guardrails as Record<string, unknown>)?.needsCodeReviewFromOwner)
       }
     };
   }

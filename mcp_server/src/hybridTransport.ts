@@ -7,8 +7,8 @@ export class HybridStdioServerTransport {
   private _started = false;
   private _buffer: Buffer = Buffer.alloc(0);
 
-  onmessage?: (msg: any) => void;
-  onerror?: (err: any) => void;
+  onmessage?: (msg: unknown) => void;
+  onerror?: (err: unknown) => void;
   onclose?: () => void;
 
   constructor(_stdin = process.stdin, _stdout = process.stdout) {
@@ -28,7 +28,7 @@ export class HybridStdioServerTransport {
     this.onclose?.();
   }
 
-  send(message: any) {
+  send(message: unknown) {
     return new Promise<void>((resolve) => {
       const json = JSON.stringify(message);
       const framingMode = process.env.MCP_FORCE_CONTENT_LENGTH === "1" ? "cl" : process.env.MCP_FORCE_NEWLINE === "1" ? "nl" : "auto";

@@ -14,7 +14,7 @@ import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
-import { extractJSON } from "../../../utils/ai-helpers.js";
+import { extractJSON, getArrayOfStrings, getStringOrDefault, getNumberOrDefault, getBooleanOrDefault } from '../../../utils/ai-helpers.js';
 
 interface CriteriaResult {
   workItemId: number;
@@ -208,10 +208,12 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
           temperature: 0.4
         });
 
-        const responseText = samplingClient.extractResponseText(aiResult);
+        const responseText = samplingClient.extractResponseText(aiResult as { content: { text: string } });
         const jsonData = extractJSON(responseText);
 
-        if (!jsonData || !jsonData.acceptanceCriteria || jsonData.acceptanceCriteria.length === 0) {
+        const acceptanceCriteria = jsonData ? getArrayOfStrings(jsonData.acceptanceCriteria) : [];
+        
+        if (!jsonData || acceptanceCriteria.length === 0) {
           results.push({
             workItemId,
             title,
@@ -224,11 +226,11 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
         // Format criteria based on format
         let formattedCriteria: string;
         if (criteriaFormat === 'gherkin') {
-          formattedCriteria = jsonData.acceptanceCriteria.join('\n\n');
+          formattedCriteria = acceptanceCriteria.join('\n\n');
         } else if (criteriaFormat === 'checklist') {
-          formattedCriteria = jsonData.acceptanceCriteria.map((c: string) => `- [ ] ${c}`).join('\n');
+          formattedCriteria = acceptanceCriteria.map((c: string) => `- [ ] ${c}`).join('\n');
         } else { // user-story
-          formattedCriteria = jsonData.acceptanceCriteria.join('\n\n');
+          formattedCriteria = acceptanceCriteria.join('\n\n');
         }
 
         const finalCriteria = preserveExisting && currentCriteria 
@@ -252,10 +254,10 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
           workItemId,
           title,
           success: true,
-          acceptanceCriteria: jsonData.acceptanceCriteria,
-          criteriaFormat: jsonData.criteriaFormat,
-          confidence: jsonData.confidence,
-          insufficientInfo: jsonData.insufficientInfo
+          acceptanceCriteria,
+          criteriaFormat: getStringOrDefault(jsonData.criteriaFormat, criteriaFormat),
+          confidence: jsonData.confidence ? getNumberOrDefault(jsonData.confidence, 0) : undefined,
+          insufficientInfo: getBooleanOrDefault(jsonData.insufficientInfo, false)
         });
 
       } catch (error) {

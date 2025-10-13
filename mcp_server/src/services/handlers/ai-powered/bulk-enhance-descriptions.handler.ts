@@ -15,7 +15,7 @@ import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
-import { extractJSON } from "../../../utils/ai-helpers.js";
+import { extractJSON, getStringOrDefault, getNumberOrDefault } from '../../../utils/ai-helpers.js';
 
 interface EnhancementResult {
   workItemId: number;
@@ -216,7 +216,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
           temperature: 0.4
         });
 
-        const responseText = samplingClient.extractResponseText(aiResult);
+        const responseText = samplingClient.extractResponseText(aiResult as { content: { text: string } });
         const jsonData = extractJSON(responseText);
 
         if (!jsonData || !jsonData.enhancedDescription) {
@@ -250,9 +250,9 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
           workItemId,
           title,
           success: true,
-          enhancedDescription,
-          improvementReason: jsonData.improvementReason,
-          confidence: jsonData.confidenceScore
+          enhancedDescription: getStringOrDefault(enhancedDescription, ''),
+          improvementReason: jsonData.improvementReason ? getStringOrDefault(jsonData.improvementReason, '') : undefined,
+          confidence: jsonData.confidenceScore ? getNumberOrDefault(jsonData.confidenceScore, 0) : undefined
         });
 
       } catch (error) {
