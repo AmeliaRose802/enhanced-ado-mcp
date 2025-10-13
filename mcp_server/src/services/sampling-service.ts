@@ -9,7 +9,7 @@ import type {
   AIAssignmentAnalyzerArgs,
   PersonalWorkloadAnalyzerArgs,
   SprintPlanningAnalyzerArgs
-} from './sampling-types.js';
+} from '../types/analysis.js';
 
 import { WorkItemIntelligenceAnalyzer } from './analyzers/work-item-intelligence.js';
 import { AIAssignmentAnalyzer } from './analyzers/ai-assignment.js';
@@ -53,5 +53,10 @@ export class SamplingService {
   }
 }
 
-export * from './sampling-types.js';
+export type { 
+  WorkItemIntelligenceArgs,
+  AIAssignmentAnalyzerArgs,
+  PersonalWorkloadAnalyzerArgs,
+  SprintPlanningAnalyzerArgs
+} from '../types/analysis.js';
 export type { ToolDiscoveryArgs } from './analyzers/tool-discovery.js';

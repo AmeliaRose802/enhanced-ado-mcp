@@ -10,7 +10,7 @@ import type {
   HierarchyValidatorArgs, 
   HierarchyValidationResult,
   WorkItemHierarchyInfo
-} from '../sampling-types.js';
+} from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/index.js';
 import { logger } from '../../utils/logger.js';

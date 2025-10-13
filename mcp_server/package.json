@@ -1,6 +1,6 @@
 {
   "name": "enhanced-ado-mcp-server",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "private": false,
   "type": "module",
   "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol with AI-powered tools, REST API integration, and intelligent automation",

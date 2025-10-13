@@ -1,5 +1,5 @@
 import type { ToolExecutionResult } from '../../types/index.js';
-import type { AIAssignmentAnalyzerArgs, AIAssignmentResult } from '../sampling-types.js';
+import type { AIAssignmentAnalyzerArgs, AIAssignmentResult } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';

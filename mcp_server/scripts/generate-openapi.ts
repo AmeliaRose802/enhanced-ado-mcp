@@ -47,7 +47,6 @@ const schemaCategories: Record<string, { title: string; category: string; aiPowe
   workItemContextPackageSchema: { title: 'Get Work Item Context Package', category: 'Context Retrieval' },
   workItemsBatchContextSchema: { title: 'Get Work Items Batch Context', category: 'Context Retrieval' },
   getLastSubstantiveChangeSchema: { title: 'Get Last Substantive Change', category: 'Work Item Operations' },
-  detectPatternsSchema: { title: 'Detect Patterns', category: 'AI-Powered Analysis', aiPowered: true },
   validateHierarchyFastSchema: { title: 'Validate Hierarchy', category: 'Validation' },
   bulkCommentByQueryHandleSchema: { title: 'Bulk Add Comments', category: 'Bulk Operations' },
   bulkUpdateByQueryHandleSchema: { title: 'Bulk Update Work Items', category: 'Bulk Operations' },

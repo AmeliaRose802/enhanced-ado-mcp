@@ -50,8 +50,6 @@ export interface AnalysisResult {
  * Represents unstructured JSON response from AI analysis
  * This is intentionally flexible as AI responses can vary in structure
  * Use this for storing complete AI responses that may contain custom fields
- * 
- * Note: Also exported as 'RawAnalysisData' for backward compatibility
  */
 export interface RawAIAnalysisData {
   /** 
@@ -60,11 +58,6 @@ export interface RawAIAnalysisData {
    */
   [key: string]: string | number | boolean | null | undefined | JSONValue[] | { [key: string]: JSONValue };
 }
-
-/**
- * @deprecated Use RawAIAnalysisData instead. Kept for backward compatibility.
- */
-export type RawAnalysisData = RawAIAnalysisData;
 
 /**
  * =============================================================================

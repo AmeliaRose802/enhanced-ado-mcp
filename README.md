@@ -3,6 +3,7 @@
 **Enterprise Azure DevOps work item management via Model Context Protocol** - Leverage existing PowerShell automation scripts as AI-powered tools with comprehensive prompt templates for intelligent work item operations.
 
 [![npm version](https://badge.fury.io/js/enhanced-ado-mcp-server.svg)](https://badge.fury.io/js/enhanced-ado-mcp-server)
+[![Tests](https://img.shields.io/badge/Tests-606%20Passing-brightgreen)](mcp_server/test)
 
 ---
 
@@ -1150,8 +1151,7 @@ Verbose debug logging: set `MCP_DEBUG=1` or enable `toolBehavior.verboseLogging`
 
 **Affected Tools:**
 - `wit-query-analytics-odata` - OData Analytics queries
-- `wit-generate-odata-query` - AI-powered OData generation  
-- `wit-detect-patterns` - Some pattern detection scenarios
+- `wit-generate-odata-query` - AI-powered OData generation
 
 **Error Message:**
 ```

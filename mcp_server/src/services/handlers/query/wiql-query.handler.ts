@@ -4,27 +4,21 @@
 
 import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
 import type { WorkItemContext, WorkItemContextPackage } from '../../../types/index.js';
-import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "../context/get-work-item-context-package.handler.js";
 
 export async function handleWiqlQuery(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
-    const azValidation = validateAzureCLI();
-    if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-      return buildAzureCliErrorResponse(azValidation);
+    const validation = validateAndParse(config.schema, args);
+    if (!validation.success) {
+      return validation.error;
     }
 
-    const parsed = config.schema.safeParse(args || {});
-    if (!parsed.success) {
-      return buildValidationErrorResponse(parsed.error);
-    }
-
-    // Get default configuration values for organization/project
+    const parsed = validation;    // Get default configuration values for organization/project
     const requiredConfig = getRequiredConfig();
     const queryArgs = {
       ...parsed.data,

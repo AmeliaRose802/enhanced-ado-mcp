@@ -6,8 +6,8 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
-import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { buildNotFoundError, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
@@ -15,17 +15,12 @@ import { loadConfiguration } from "../../../config/config.js";
 
 export async function handleBulkAssignByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
-    const azValidation = validateAzureCLI();
-    if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-      return buildAzureCliErrorResponse(azValidation);
+    const validation = validateAndParse(config.schema, args);
+    if (!validation.success) {
+      return validation.error;
     }
 
-    const parsed = config.schema.safeParse(args || {});
-    if (!parsed.success) {
-      return buildValidationErrorResponse(parsed.error);
-    }
-
-    const { queryHandle, assignTo, itemSelector, dryRun, maxPreviewItems, organization, project } = parsed.data;
+    const { queryHandle, assignTo, itemSelector, dryRun, maxPreviewItems, organization, project } = validation.data;
 
     // Retrieve work item IDs from query handle using itemSelector
     const selectedWorkItemIds = queryHandleService.resolveItemSelector(queryHandle, itemSelector);

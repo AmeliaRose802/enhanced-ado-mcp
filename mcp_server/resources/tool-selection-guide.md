@@ -686,18 +686,6 @@ User: "Update the first 3 unassigned PBIs"
 
 ## Pattern Detection & Validation
 
-### Detect Issues in Work Items
-**Tool:** `wit-detect-patterns`  
-**When:** Find common problems across items  
-**Example:** Find duplicates, orphans, incomplete items
-
-```json
-{
-  "workItemIds": [100, 101, 102],
-  "patterns": ["duplicates", "orphaned_children", "no_description"]
-}
-```
-
 ### Validate Hierarchy Rules
 **Tool:** `wit-validate-hierarchy`  
 **When:** Check parent-child type and state rules  

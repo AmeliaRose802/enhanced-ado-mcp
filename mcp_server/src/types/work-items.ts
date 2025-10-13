@@ -391,28 +391,6 @@ export interface PatternDetectionResult {
 }
 
 /**
- * Simple Hierarchy Validation Result - Basic parent-child relationship checks
- * @deprecated Use HierarchyValidationResult from analysis.ts for detailed validation
- */
-export interface SimpleHierarchyValidationResult {
-  valid: boolean;
-  total_items: number;
-  issues: Array<{
-    workItemId: number;
-    title: string;
-    issue_type: 'invalid_parent' | 'orphaned' | 'circular' | 'state_mismatch' | 'type_mismatch';
-    severity: 'critical' | 'warning' | 'info';
-    description: string;
-    recommendation?: string;
-  }>;
-  summary: {
-    critical_issues: number;
-    warnings: number;
-    info: number;
-  };
-}
-
-/**
  * Type Guards - Runtime type validation
  */
 

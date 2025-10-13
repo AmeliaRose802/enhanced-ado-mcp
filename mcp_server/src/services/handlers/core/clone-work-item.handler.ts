@@ -4,9 +4,9 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
-import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { createWorkItemRepository } from "../../../repositories/work-item.repository.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import type { ADOFieldOperation, ADOWorkItem } from "../../../types/index.js";
@@ -31,15 +31,11 @@ interface CloneWorkItemArgs {
 
 export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
-    const azValidation = validateAzureCLI();
-    if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-      return buildAzureCliErrorResponse(azValidation);
+    const validation = validateAndParse(config.schema, args);
+    if (!validation.success) {
+      return validation.error;
     }
-
-    const parsed = config.schema.safeParse(args || {});
-    if (!parsed.success) {
-      return buildValidationErrorResponse(parsed.error);
-    }
+    const parsed = validation;
 
     const requiredConfig = getRequiredConfig();
     const {

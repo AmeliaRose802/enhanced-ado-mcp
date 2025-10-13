@@ -3,22 +3,17 @@
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
-import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { createWorkItem } from "../../ado-work-item-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
+import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 
 export async function handleCreateNewItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
-    const azValidation = validateAzureCLI();
-    if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
-      return buildAzureCliErrorResponse(azValidation);
+    const validation = validateAndParse(config.schema, args);
+    if (!validation.success) {
+      return validation.error;
     }
-
-    const parsed = config.schema.safeParse(args || {});
-    if (!parsed.success) {
-      return buildValidationErrorResponse(parsed.error);
-    }
+    const parsed = validation;
 
     // Import and apply configuration defaults for work item type and other fields
     const { getRequiredConfig } = await import('../../../config/config.js');
