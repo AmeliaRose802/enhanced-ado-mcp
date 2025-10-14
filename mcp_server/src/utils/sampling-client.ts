@@ -63,21 +63,38 @@ export function checkSamplingSupport(server: MCPServer | MCPServerLike | null): 
 }
 
 /**
- * Get default model preferences optimized for speed with FREE models only
- * These models have 0x token cost and no rate limits
+ * Get default model preferences optimized for FREE models only
+ * 
+ * This configuration is designed to work across different IDEs and adapt to model changes:
+ * 
+ * Strategy:
+ * - HIGH cost priority (1.0) to strongly prefer free models (0x tokens)
+ * - Generic pattern hints to match any free model names
+ * - Speed priority to prefer fast models among free options
+ * - No specific model names to avoid breaking when models change
+ * 
+ * The hints use substring matching to be compatible with:
+ * - Different IDE implementations (VS Code, Cursor, etc.)
+ * - Future model releases and naming changes
+ * - Regional or variant model names
+ * 
+ * VS Code's model selection will:
+ * 1. Filter to only 0x token models (costPriority: 1.0)
+ * 2. Among free models, prefer "mini" variants (speedPriority: 0.9)
+ * 3. Fall back to any available free GPT-4, GPT-5, or GPT-3 models
  */
 export function getDefaultModelPreferences(): ModelPreferences {
   return {
     hints: [
-      { name: 'gpt-4o-mini' },      // FREE: GPT-4o mini for speed (0x tokens)
-      { name: 'gpt-4.1' },           // FREE: GPT-4.1 balanced (0x tokens)
-      { name: 'gpt-4o' },            // FREE: GPT-4o general purpose (0x tokens)
-      { name: 'gpt-3.5' },           // FREE: GPT-3.5 fallback (0x tokens)
-      { name: 'mini' }               // Generic mini model fallback
+      { name: 'mini' },              // PATTERN: Any "mini" model (GPT-5 mini, GPT-4o mini, etc.)
+      { name: 'gpt-5' },             // PATTERN: Any GPT-5 variant (future-proof)
+      { name: 'gpt-4' },             // PATTERN: Any GPT-4 variant (4.1, 4o, 4-turbo, etc.)
+      { name: 'gpt-3' },             // PATTERN: Any GPT-3 variant (legacy support)
+      { name: 'gpt' }                // PATTERN: Any GPT model (ultimate fallback)
     ],
-    speedPriority: 0.9,              // Speed is very important
-    costPriority: 0.7,               // Cost efficiency matters
-    intelligencePriority: 0.5        // Moderate intelligence needed
+    costPriority: 1.0,               // CRITICAL: Strongly prefer free models (0x tokens)
+    speedPriority: 0.9,              // Speed is very important (prefer "mini" models)
+    intelligencePriority: 0.3        // Lower priority - free fast models are sufficient
   };
 }
 

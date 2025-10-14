@@ -99,7 +99,7 @@ Tool: `wit-get-work-item-context-package`
   "includeExtendedFields": true
 }
 ```
-Tool: `wit-get-work-items-context-batch`
+Tool: `wit-get-context-packages-by-query-handle`
 
 ## Fast Validation
 

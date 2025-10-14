@@ -13,7 +13,12 @@
   },
   "chat.mcp.serverSampling": {
     "ADO-Work-Item-MSP/.vscode/mcp.json: enhanced-ado-msp": {
-      "allowedDuringChat": true
+      "allowedDuringChat": true,
+      "allowedModels": [
+        "copilot/gpt-4.1",
+        "copilot/gpt-4o",
+        "copilot/gpt-5-mini"
+      ]
     }
   }
 }

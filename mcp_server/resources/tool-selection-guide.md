@@ -185,7 +185,7 @@ Do you want to affect ALL items from a query?
    └─ NO → Do items share common attributes (state, tags, etc.)?
       ├─ YES → Use itemSelector: { states: [...], tags: [...], ... }
       │
-      └─ NO → Use wit-inspect-query-handle first, then decide
+      └─ NO → Use wit-query-handle-info first, then decide
 ```
 
 ### When to Use Each Selection Type
@@ -270,7 +270,7 @@ wit-bulk-update(
 
 Before selecting, inspect to see what's available:
 ```
-wit-inspect-query-handle(queryHandle)
+wit-query-handle-info(queryHandle)
 // Returns: indices, states, tags, counts, examples
 ```
 
@@ -359,7 +359,7 @@ User: "Update the first 3 unassigned PBIs"
    Result: queryHandle "qh_def456"
 
 2. Inspect:
-   wit-inspect-query-handle(queryHandle: "qh_def456")
+   wit-query-handle-info(queryHandle: "qh_def456")
    Shows: 10 items with indices 0-9
 
 3. Preview:
@@ -469,13 +469,13 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 ### Multiple Items Efficiently
-**Tool:** `wit-get-work-items-context-batch`  
+**Tool:** `wit-get-context-packages-by-query-handle`  
 **When:** Need details for multiple items with relationships  
-**Example:** Get context for a list of related items
+**Example:** First execute a query, then get context packages for the results
 
 ```json
 {
-  "workItemIds": [100, 101, 102],
+  "queryHandle": "qh_abc123",
   "includeParent": true,
   "includeChildren": true,
   "includeExtendedFields": true
@@ -597,7 +597,7 @@ User: "Update the first 3 unassigned PBIs"
 **Eliminates ID hallucination by using server-stored query results**
 
 #### Validate Query Handle
-**Tool:** `wit-validate-query-handle`  
+**Tool:** `wit-query-handle-info`  
 **When:** Check if a query handle is still valid before using it  
 **Example:** Verify handle hasn't expired
 
@@ -759,7 +759,6 @@ Configuration?
 
 ### Moderate Operations
 - `wit-get-work-items-by-query-wiql` - Depends on result count
-- `wit-get-work-items-context-batch` - Depends on count
 - `wit-get-work-items-by-query-wiql` with `filterByPatterns` - Depends on item count
 
 ### Slower Operations (Use AI)

@@ -103,34 +103,8 @@ This guide addresses the **beta tester feedback** that the handle mechanism wasn
   "expired_handles": 1,
   "guidance": {
     "handle_lifetime": "1 hour (default)",
-    "usage_tip": "Use wit-validate-query-handle to check specific handle status"
+    "usage_tip": "Use wit-query-handle-info to check specific handle status"
   }
-}
-```
-
-### 3. wit-validate-query-handle (Enhanced)
-
-**Purpose:** Check handle status and get sample data without full ID exposure.
-
-```json
-{
-  "tool": "wit-validate-query-handle",
-  "args": {
-    "queryHandle": "qh_project_backlog_abc123",
-    "includeSampleItems": true
-  }
-}
-
-// Response shows sample without encouraging ID listing:
-{
-  "valid": true,
-  "item_count": 147,
-  "time_remaining_minutes": 42,
-  "sample_items": [
-    {"id": 12345, "title": "Implement login", "type": "PBI", "state": "Active"},
-    {"id": 12346, "title": "Fix validation bug", "type": "Bug", "state": "New"}
-  ],
-  "sample_note": "Showing first 5 of 147 items"
 }
 ```
 
@@ -354,7 +328,7 @@ Using the query handle qh_abc123 for safe bulk operations...
 
 **wit-analyze-by-query-handle:** Forces handle-based analysis workflows  
 **wit-list-query-handles:** Makes handles feel like managed resources  
-**Enhanced wit-validate-query-handle:** Better sample data without encouraging ID listing
+**Enhanced wit-query-handle-info:** Better sample data without encouraging ID listing
 
 ---
 
@@ -366,7 +340,7 @@ After implementing these changes, successful handle adoption will show:
 
 1. **Narrative uses handles:** "Found X items (handle: qh_abc123)"
 2. **No ID lists in text:** No sequences like "#12345, #12346, #12347"
-3. **Handle validation checks:** Using wit-validate-query-handle before operations
+3. **Handle validation checks:** Using wit-query-handle-info before operations
 4. **Handle-based analysis:** Using wit-analyze-by-query-handle instead of manual analysis
 5. **Bulk operations via handles:** All bulk operations use query handles
 
@@ -398,7 +372,7 @@ After implementing these changes, successful handle adoption will show:
 ### For Troubleshooting
 
 1. **Use `wit-list-query-handles`** to see active handles
-2. **Use `wit-validate-query-handle`** to check specific handle status
+2. **Use `wit-query-handle-info`** to check specific handle status
 3. **Re-query if handle expires** (>1 hour old)
 4. **Check warnings in responses** for handle-related issues
 
@@ -408,7 +382,7 @@ After implementing these changes, successful handle adoption will show:
 
 1. **Test the new defaults:** Query without specifying `returnQueryHandle` and verify you get handles
 2. **Try handle-based analysis:** Use `wit-analyze-by-query-handle` for project analysis
-3. **Test handle management:** Use `wit-list-query-handles` and `wit-validate-query-handle`
+3. **Test handle management:** Use `wit-list-query-handles` and `wit-query-handle-info`
 4. **Verify anti-patterns are blocked:** Try to use explicit IDs and confirm warnings/errors
 5. **Provide feedback:** Report if handle patterns still feel unnatural or if additional guardrails are needed
 

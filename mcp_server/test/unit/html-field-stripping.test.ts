@@ -1,28 +1,40 @@
 /**
  * Test for HTML field stripping parameters in context package tool
  */
-import { tools } from '../../src/config/tool-configs.js';
+import { workItemContextPackageSchema } from '../../src/config/schemas.js';
 
 describe('HTML Field Stripping Parameters', () => {
-  describe('Tool configuration', () => {
-    it('should register wit-get-work-item-context-package tool', () => {
-      const tool = tools.find(t => t.name === 'wit-get-work-item-context-package');
-      expect(tool).toBeDefined();
-      expect(tool?.name).toBe('wit-get-work-item-context-package');
+  describe('Schema validation', () => {
+    it('should allow includeHtml parameter', () => {
+      const result = workItemContextPackageSchema.safeParse({
+        workItemId: 12345,
+        includeHtml: false
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.includeHtml).toBe(false);
+      }
     });
 
-    it('should have includeHtmlFields in input schema', () => {
-      const tool = tools.find(t => t.name === 'wit-get-work-item-context-package');
-      expect(tool).toBeDefined();
-      expect(tool?.inputSchema?.properties).toBeDefined();
-      // Note: The actual schema validation happens at runtime with Zod
-      // This test just confirms the tool is registered
+    it('should default includeHtml to false', () => {
+      const result = workItemContextPackageSchema.safeParse({
+        workItemId: 12345
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.includeHtml).toBe(false);
+      }
     });
 
-    it('should have description mentioning context package', () => {
-      const tool = tools.find(t => t.name === 'wit-get-work-item-context-package');
-      expect(tool).toBeDefined();
-      expect(tool?.description?.toLowerCase()).toContain('context package');
+    it('should accept true for includeHtml', () => {
+      const result = workItemContextPackageSchema.safeParse({
+        workItemId: 12345,
+        includeHtml: true
+      });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.includeHtml).toBe(true);
+      }
     });
   });
 });

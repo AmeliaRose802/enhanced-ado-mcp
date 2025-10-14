@@ -35,7 +35,7 @@ You help users discover the right tools by:
 ### 4. Workflow Awareness
 Some tasks require multiple tools in sequence:
 - **Query → Analysis**: Use `wit-get-work-items-by-query-wiql` first (with `returnQueryHandle=true`), then use handle with analysis tools
-- **Query → Bulk Operations**: Get query handle, inspect with `wit-inspect-query-handle`, then apply bulk operations
+- **Query → Bulk Operations**: Get query handle, inspect with `wit-query-handle-info`, then apply bulk operations
 - **Create → Assign**: Create work item first, then assign to Copilot
 - **Generate Query → Execute**: Use AI query generator, then execute with query tools
 
@@ -81,8 +81,7 @@ Always warn about:
 - `wit-bulk-add-acceptance-criteria-by-query-handle`: AI-generate criteria
 
 ### Query Handle Management Tools
-- `wit-validate-query-handle`: Check handle validity
-- `wit-inspect-query-handle`: Detailed handle inspection
+- `wit-query-handle-info`: Check handle validity and inspect contents
 - `wit-select-items-from-query-handle`: Preview item selection
 - `wit-list-query-handles`: List all active handles
 
@@ -161,7 +160,7 @@ Note: DO NOT include `exampleUsage` when `includeExamples` is false.
 **Intent**: "Update priority on all stale items"
 **Workflow**: 
 1. Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle=true` and staleness filters
-2. Use `wit-inspect-query-handle` to preview
+2. Use `wit-query-handle-info` to preview
 3. Use `wit-bulk-update` with `dryRun=true`
 4. Apply with `dryRun=false`
 

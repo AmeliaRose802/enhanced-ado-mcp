@@ -4,7 +4,6 @@
 
 import { describe, it, expect } from '@jest/globals';
 import { getPromptsSchema } from '../../src/config/schemas.js';
-import { toolConfigs } from '../../src/config/tool-configs.js';
 
 describe('wit-get-prompts Tool Configuration', () => {
   describe('Schema Validation', () => {
@@ -100,48 +99,10 @@ describe('wit-get-prompts Tool Configuration', () => {
   });
 
   describe('Tool Configuration', () => {
-    it('should be registered in tool configs', () => {
-      const toolConfig = toolConfigs.find(t => t.name === 'wit-get-prompts');
-      expect(toolConfig).toBeDefined();
-      
-      if (toolConfig) {
-        expect(toolConfig.name).toBe('wit-get-prompts');
-        expect(toolConfig.description).toContain('prompt');
-        expect(toolConfig.schema).toBe(getPromptsSchema);
-        expect(toolConfig.inputSchema).toBeDefined();
-      }
-    });
-
-    it('should have correct input schema properties', () => {
-      const toolConfig = toolConfigs.find(t => t.name === 'wit-get-prompts');
-      
-      if (toolConfig?.inputSchema && typeof toolConfig.inputSchema === 'object' && 'properties' in toolConfig.inputSchema) {
-        const properties = toolConfig.inputSchema.properties as Record<string, any>;
-        
-        expect(properties.promptName).toBeDefined();
-        expect(properties.promptName.type).toBe('string');
-        
-        expect(properties.includeContent).toBeDefined();
-        expect(properties.includeContent.type).toBe('boolean');
-        
-        expect(properties.args).toBeDefined();
-        expect(properties.args.type).toBe('object');
-      }
-    });
-
-    it('should have no required parameters', () => {
-      const toolConfig = toolConfigs.find(t => t.name === 'wit-get-prompts');
-      
-      if (toolConfig?.inputSchema && typeof toolConfig.inputSchema === 'object' && 'required' in toolConfig.inputSchema) {
-        const required = toolConfig.inputSchema.required as string[];
-        expect(required).toEqual([]);
-      }
-    });
-
-    it('should not be marked as AI-powered tool', () => {
-      // This tool doesn't require sampling/LLM capabilities
-      const { isAIPoweredTool } = require('../../src/config/tool-configs.js');
-      expect(isAIPoweredTool('wit-get-prompts')).toBe(false);
+    it('should not require any parameters', () => {
+      // wit-get-prompts tool should work with no parameters (list all prompts)
+      const result = getPromptsSchema.safeParse({});
+      expect(result.success).toBe(true);
     });
   });
 

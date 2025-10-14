@@ -11,7 +11,7 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 
 **Discovery & Analysis:**
 - `wit-get-work-items-by-query-wiql` - ⭐ **ENHANCED** Query security items with staleness data and query handles
-- `wit-inspect-query-handle` - ⭐ **NEW** Verify query handle contents and staleness statistics
+- `wit-query-handle-info` - ⭐ **NEW** Verify query handle contents and staleness statistics
 - `wit-get-work-item-context-package-batch` - Batch details (max 20-25 items)
 - `wit-extract-security-links` - Extract documentation links
 
@@ -44,7 +44,7 @@ This returns BOTH security items with staleness data AND a query handle for bulk
 
 ### 1a. Verify Query Handle Contents
 ```
-Tool: wit-inspect-query-handle
+Tool: wit-query-handle-info
 Arguments: {
   queryHandle: "qh_from_previous_response",
   includePreview: true,

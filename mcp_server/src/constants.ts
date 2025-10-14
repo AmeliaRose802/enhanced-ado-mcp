@@ -11,7 +11,6 @@ export const TOOL_NAMES = {
   // Core Work Item Operations
   CREATE_NEW_ITEM: 'wit-create-new-item',
   CLONE_WORK_ITEM: 'wit-clone-work-item',
-  GET_WORK_ITEMS_CONTEXT_BATCH: 'wit-get-work-items-context-batch',
   GET_WORK_ITEM_CONTEXT_PACKAGE: 'wit-get-work-item-context-package',
   GET_CONTEXT_PACKAGES_BY_QUERY_HANDLE: 'wit-get-context-packages-by-query-handle',
   
@@ -23,9 +22,7 @@ export const TOOL_NAMES = {
   UNIFIED_QUERY_GENERATOR: 'wit-unified-query-generator',
   
   // Query Handle Operations
-  INSPECT_QUERY_HANDLE: 'wit-inspect-query-handle',
   LIST_QUERY_HANDLES: 'wit-list-query-handles',
-  VALIDATE_QUERY_HANDLE: 'wit-validate-query-handle',
   SELECT_ITEMS_FROM_QUERY_HANDLE: 'wit-select-items-from-query-handle',
   QUERY_HANDLE_INFO: 'wit-query-handle-info',
   

@@ -1,7 +1,6 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   workItemContextPackageSchema,
-  workItemsBatchContextSchema,
   extractSecurityLinksSchema
 } from "../schemas.js";
 
@@ -34,31 +33,6 @@ export const workItemContextTools: ToolConfig[] = [
         includeTags: { type: "boolean", description: "Include tags list" }
       },
       required: ["workItemId"]
-    }
-  },
-  {
-    name: "wit-get-work-items-context-batch",
-    description: "Retrieve multiple work items (10-50) with relationship graph, aggregate metrics, and optional heuristic scoring in one call.",
-    script: "",
-    schema: workItemsBatchContextSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemIds: { type: "array", items: { type: "number" }, description: "List of work item IDs (max 50)" },
-        includeRelations: { type: "boolean", description: "Include relationship edges between provided items" },
-        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include per work item" },
-        includeExtendedFields: { type: "boolean", description: "Include extended field set beyond defaults" },
-        includeTags: { type: "boolean", description: "Include tags list" },
-        includeStateCounts: { type: "boolean", description: "Return aggregate counts by state and type" },
-        includeStoryPointAggregation: { type: "boolean", description: "Aggregate story points / effort fields if present" },
-        includeRiskScoring: { type: "boolean", description: "Include basic heuristic risk / staleness scoring" },
-        includeAIAssignmentHeuristic: { type: "boolean", description: "Include lightweight AI suitability heuristic" },
-        includeParentOutsideSet: { type: "boolean", description: "Include minimal parent references outside requested set" },
-        includeChildrenOutsideSet: { type: "boolean", description: "Include minimal child references outside requested set" },
-        maxOutsideReferences: { type: "number", description: "Cap number of outside references added" },
-        returnFormat: { type: "string", enum: ["graph", "array"], description: "Return as graph (nodes/edges) or simple array" }
-      },
-      required: ["workItemIds"]
     }
   },
   {

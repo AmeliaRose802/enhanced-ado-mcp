@@ -115,27 +115,70 @@ This MCP server includes **AI-powered analysis tools** that leverage VS Code's l
 
 ### Enabling Language Model Access
 
+#### Method 1: Visual Configuration (Recommended)
+
+1. Open Command Palette (`F1` or `Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Type **"MCP"** and select **"MCP: List Servers"**
+3. Find **"enhanced-ado-msp"** in the list
+4. Click on the server name
+5. Select **"Configure Model Access"**
+6. In the model selection dialog, **check ALL free models** (any model showing **0x** tokens):
+   - ✅ GPT-5 mini (if available)
+   - ✅ GPT-4.1
+   - ✅ GPT-4o
+   - ✅ Any other models marked as **0x** (free)
+7. Click **"OK"** to save
+
+> **How it works:** The server uses **cost priority (1.0)** to automatically select only free models (0x tokens). You don't need to configure specific models - just grant access to all free models and the system will automatically choose the fastest available free model. This works across different IDEs and adapts to model changes automatically.
+
+#### Method 2: Automatic Permission Prompt
+
 When you first use an AI-powered tool (tools 5-8 below), VS Code will prompt you to grant language model access:
 
 1. VS Code will show a permission dialog asking: **"Allow [enhanced-ado-msp] to access language models?"**
 2. Click **"Allow"** to grant access
 3. The permission is remembered for future requests
 
+After granting permission, follow **Method 1** above to configure which models the server can use.
+
 ### Model Selection for Performance
 
-**New in v1.5.0:** All AI-powered tools now automatically request **free models** (GPT-4o mini, GPT-4.1, GPT-4o) to avoid rate limits. These models provide:
-- ⚡ **2-5x faster response times** (1-3 seconds vs 5-10 seconds)
-- 💰 **Lower token costs** for bulk operations
-- ✅ **Excellent quality** for structured work item analysis
+**New in v1.5.0:** All AI-powered tools now automatically select **free models only** using cost-based filtering:
 
-The model preferences use VS Code's model selection API with fallback options, so the system will automatically use the best available fast model based on your GitHub Copilot subscription.
+**How it works:**
+- **Cost Priority = 1.0** - VS Code filters to ONLY 0x token (free) models
+- **Speed Priority = 0.9** - Among free models, prefers "mini" variants
+- **Pattern Matching** - Uses generic patterns ('mini', 'gpt-5', 'gpt-4', 'gpt-3', 'gpt')
 
-**See [Model Selection Guide](docs/MODEL_SELECTION.md)** for customization options and detailed information.
+**Benefits:**
+- ✅ **IDE-agnostic** - Works in VS Code, Cursor, or any MCP-compatible IDE
+- ✅ **Future-proof** - Adapts automatically when GitHub changes available models
+- ✅ **Zero configuration** - Just enable all free models, system picks the best one
+- ✅ **No rate limits** - Only uses 0x token models
+
+This approach provides:
+- ⚡ **Fast response times** - Prioritizes "mini" models among free options (1-3 seconds)
+- 💰 **Zero token costs** - Cost priority = 1.0 ensures ONLY 0x models are used
+- ✅ **Excellent quality** - Free models are highly capable for structured analysis
+- 🔄 **Automatic selection** - VS Code picks the best available free model
+- 🔮 **Future-proof** - Works with any free model GitHub releases
+- 🌍 **Cross-IDE compatible** - Works in VS Code, Cursor, and other MCP clients
+
+The model preferences use VS Code's model selection API with fallback options, so the system will automatically use the best available fast model based on your GitHub Copilot subscription and model availability.
+
+**See [Model Selection Guide](docs/feature_specs/MODEL_SELECTION.md)** for customization options and detailed information.
 
 ### Checking Language Model Access Status
 
 You can verify if your MCP server has language model access:
 
+1. **Via VS Code UI:**
+   - Open Command Palette (`F1`)
+   - Run **"MCP: List Servers"**
+   - Select **"enhanced-ado-msp"**
+   - Check if models are listed and accessible
+
+2. **Via API (programmatic):**
 ```typescript
 // In VS Code, the extension context provides:
 context.languageModelAccessInformation.canSendRequest(chat)
@@ -143,8 +186,11 @@ context.languageModelAccessInformation.canSendRequest(chat)
 
 If you encounter sampling errors, ensure:
 - GitHub Copilot is active and authenticated
-- You've granted language model access when prompted
+- You've granted language model access when prompted (see **Method 1** above to configure)
+- At least one **0x token (free) model** is enabled in model configuration
 - Your GitHub Copilot subscription is active
+
+**Tip:** Enable ALL free models (0x tokens) in the configuration - the system will automatically pick the best one!
 
 ### Manual Configuration (Advanced)
 
@@ -177,8 +223,7 @@ Language model access is managed by VS Code and persists across sessions. To res
 
 8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
 9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, computed metrics, and **query handle generation** for safe bulk operations
-10. `wit-inspect-query-handle` - 🆕 **Inspect query handle contents** - Preview work items in a query handle with indices, states, tags, and staleness info
-11. `wit-get-work-items-context-batch` - Batch retrieve work items with enriched context (up to 50 items)
+
 12. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
 13. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
 14. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
@@ -355,17 +400,13 @@ Use for precise filtering based on work item attributes.
 const queryHandle = await queryWIQL("...", { returnQueryHandle: true });
 // Returns: queryHandle "qh_abc123"
 
-// Step 2: Inspect available items
-await inspectQueryHandle(queryHandle);
-// Shows: 10 items with indices, states, tags
-
-// Step 3: Preview selection (NEW!)
+// Step 2: Preview selection
 await selectItemsFromQueryHandle(queryHandle, {
   itemSelector: { states: ["Active"] }
 });
 // Result: "Would select 5 of 10 items"
 
-// Step 4: Execute bulk operation
+// Step 3: Execute bulk operation
 await bulkCommentByQueryHandle(queryHandle, {
   itemSelector: { states: ["Active"] },
   comment: "Needs review"
@@ -532,7 +573,6 @@ All list operations in the Enhanced ADO MCP Server support pagination to prevent
   ```
 
 ### Batch Operations
-- **wit-get-work-items-context-batch:** Limited to 50 items max (input constraint)
 - **Bulk operations:** Bounded by query handle results (use pagination on the initial query)
 
 All paginated responses include warnings when more results are available with instructions on how to fetch the next page.

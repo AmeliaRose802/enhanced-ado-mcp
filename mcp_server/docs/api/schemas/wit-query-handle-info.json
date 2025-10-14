@@ -1,0 +1,104 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle to get information about (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)"
+    },
+    "detailed": {
+      "type": "boolean",
+      "description": "Include detailed validation data and selection analysis (default false for concise output)"
+    },
+    "includePreview": {
+      "type": "boolean",
+      "description": "Include preview of first 10 work items with their context data (default true)"
+    },
+    "includeStats": {
+      "type": "boolean",
+      "description": "Include staleness statistics and analysis metadata (default true)"
+    },
+    "includeExamples": {
+      "type": "boolean",
+      "description": "Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)"
+    },
+    "itemSelector": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "all"
+          ],
+          "description": "Select all items (for selection analysis when detailed=true)"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 100,
+          "description": "Array of zero-based indices [0,1,2]"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "states": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Filter by work item states"
+            },
+            "titleContains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Filter by title keywords"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Filter by tags"
+            },
+            "daysInactiveMin": {
+              "type": "number",
+              "description": "Minimum days inactive"
+            },
+            "daysInactiveMax": {
+              "type": "number",
+              "description": "Maximum days inactive"
+            }
+          },
+          "description": "Criteria-based selection object"
+        }
+      ],
+      "description": "Optional: When provided with detailed=true, shows selection analysis"
+    },
+    "previewCount": {
+      "type": "number",
+      "description": "Number of items to preview in selection analysis (default 10)"
+    },
+    "includeSampleItems": {
+      "type": "boolean",
+      "description": "Fetch and include sample items from ADO API when detailed=true (default false)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle"
+  ],
+  "$id": "#/components/schemas/wit-query-handle-info",
+  "title": "wit-query-handle-info",
+  "description": "🔍 UNIFIED HANDLE INFO: Get comprehensive information about a query handle in one call. Default mode provides inspection data (work item preview, statistics, selection hints). With detailed=true, adds validation data and optional selection analysis. Replaces separate validate/inspect/select tools for simpler workflows.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

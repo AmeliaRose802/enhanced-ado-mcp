@@ -334,7 +334,7 @@ No special configuration required. Uses organization and project from `.ado-mcp-
 
 - **Handler:** `src/services/handlers/context/get-work-item-context-package.handler.ts`
 - **Handler:** `src/services/handlers/core/get-work-items-context-batch.handler.ts`
-- **Schema:** `src/config/schemas.ts` (workItemContextPackageSchema, workItemsBatchContextSchema)
+- **Schema:** `src/config/schemas.ts` (workItemContextPackageSchema)
 - **Service:** `src/services/ado-work-item-service.ts`
 
 ### Integration Points

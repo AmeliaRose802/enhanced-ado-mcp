@@ -6,13 +6,11 @@
  */
 
 import { queryHandleService } from '../../src/services/query-handle-service.js';
-import { handleInspectQueryHandle } from '../../src/services/handlers/query-handles/inspect-query-handle.handler.js';
 import { handleSelectItemsFromQueryHandle } from '../../src/services/handlers/query-handles/select-items-from-query-handle.handler.js';
 import { handleBulkCommentByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
 import { handleBulkAssignByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
 import { handleBulkUpdateByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
 import { 
-  inspectQueryHandleSchema,
   selectItemsFromQueryHandleSchema,
   bulkCommentByQueryHandleSchema,
   bulkAssignByQueryHandleSchema,
@@ -121,24 +119,7 @@ describe('Selection Integration Tests', () => {
         workItemContext
       );
       
-      // 2. Inspect handle (validate preview functionality)
-      const mockInspectConfig = {
-        name: 'wit-query-handle-inspect',
-        description: 'Test',
-        script: '',
-        schema: inspectQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
-      };
-
-      const inspectResult = await handleInspectQueryHandle(mockInspectConfig, { 
-        queryHandle 
-      });
-      
-      expect(inspectResult.success).toBe(true);
-      expect((inspectResult.data as any).itemPreview).toBeDefined();
-      expect((inspectResult.data as any).work_item_count).toBe(5);
-
-      // 3. Preview selection (critical bugs only)
+      // 2. Preview selection (critical bugs only)
       const mockSelectConfig = {
         name: 'wit-query-handle-select',
         description: 'Test',
@@ -158,7 +139,7 @@ describe('Selection Integration Tests', () => {
         i.tags && i.tags.includes('critical')
       )).toBe(true);
       
-      // 4. Execute bulk comment with same selector (dry run)
+      // 3. Execute bulk comment with same selector (dry run)
       const mockCommentConfig = {
         name: 'wit-bulk-comment',
         description: 'Test',

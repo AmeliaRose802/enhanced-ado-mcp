@@ -274,10 +274,10 @@ Test files should import handlers from their new locations:
 
 ```typescript
 // OLD (pre-reorganization)
-import { handleValidateQueryHandle } from '../services/handlers/validate-query-handle.handler.js';
+import { handleListQueryHandles } from '../services/handlers/list-query-handles.handler.js';
 
 // NEW (post-reorganization)
-import { handleValidateQueryHandle } from '../services/handlers/query-handles/validate-query-handle.handler.js';
+import { handleListQueryHandles } from '../services/handlers/query-handles/list-query-handles.handler.js';
 ```
 
 **Key testing principles:**
@@ -302,8 +302,8 @@ import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
 import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
 
 // Query handle handlers
-import { handleValidateQueryHandle } from './handlers/query-handles/validate-query-handle.handler.js';
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
+import { handleQueryHandleInfo } from './handlers/query-handles/query-handle-info-handler.js';
 
 // ... and so on
 ```

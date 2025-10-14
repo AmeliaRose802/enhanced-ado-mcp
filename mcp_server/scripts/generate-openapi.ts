@@ -19,7 +19,7 @@ import { fileURLToPath } from 'url';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 // Import tool configs (which includes pre-built inputSchemas)
-import { toolConfigs } from '../src/config/tool-configs.js';
+import { toolConfigs } from '../src/config/tool-configs/index.js';
 
 // Get project root
 const __filename = fileURLToPath(import.meta.url);
@@ -42,17 +42,14 @@ const schemaCategories: Record<string, { title: string; category: string; aiPowe
   getConfigurationSchema: { title: 'Get Configuration', category: 'Configuration' },
   wiqlQuerySchema: { title: 'WIQL Query', category: 'Queries' },
   odataAnalyticsQuerySchema: { title: 'OData Analytics Query', category: 'Queries' },
-  inspectQueryHandleSchema: { title: 'Inspect Query Handle', category: 'Query Handles' },
   selectItemsFromQueryHandleSchema: { title: 'Select Items from Query Handle', category: 'Query Handles' },
   workItemContextPackageSchema: { title: 'Get Work Item Context Package', category: 'Context Retrieval' },
-  workItemsBatchContextSchema: { title: 'Get Work Items Batch Context', category: 'Context Retrieval' },
   getLastSubstantiveChangeSchema: { title: 'Get Last Substantive Change', category: 'Work Item Operations' },
   validateHierarchyFastSchema: { title: 'Validate Hierarchy', category: 'Validation' },
   bulkCommentByQueryHandleSchema: { title: 'Bulk Add Comments', category: 'Bulk Operations' },
   bulkUpdateByQueryHandleSchema: { title: 'Bulk Update Work Items', category: 'Bulk Operations' },
   bulkAssignByQueryHandleSchema: { title: 'Bulk Assign Work Items', category: 'Bulk Operations' },
   bulkRemoveByQueryHandleSchema: { title: 'Bulk Remove Work Items', category: 'Bulk Operations' },
-  validateQueryHandleSchema: { title: 'Validate Query Handle', category: 'Query Handles' },
   analyzeByQueryHandleSchema: { title: 'Analyze by Query Handle', category: 'AI-Powered Analysis', aiPowered: true },
   listQueryHandlesSchema: { title: 'List Query Handles', category: 'Query Handles' },
   bulkEnhanceDescriptionsByQueryHandleSchema: { title: 'Bulk Enhance Descriptions', category: 'Bulk Operations', aiPowered: true },

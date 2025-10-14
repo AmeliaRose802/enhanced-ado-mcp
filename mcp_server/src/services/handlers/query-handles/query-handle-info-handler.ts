@@ -2,7 +2,7 @@
  * Unified handler for wit-query-handle-info tool
  * Combines functionality from validate, inspect, and select handlers
  * 
- * Default behavior: Returns basic inspection data (like wit-inspect-query-handle)
+ * Default behavior: Returns basic inspection data
  * With detailed=true: Includes validation and selection analysis capabilities
  */
 

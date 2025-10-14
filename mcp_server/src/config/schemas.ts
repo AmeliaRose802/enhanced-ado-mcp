@@ -297,13 +297,6 @@ export const unifiedQueryGeneratorSchema = z.object({
 // Query Handle Operations Schemas
 // ============================================================================
 
-export const inspectQueryHandleSchema = z.object({
-  queryHandle: z.string().min(1, "Query handle is required"),
-  includeStalenessData: optionalBool(true),
-  includeWorkItemContext: optionalBool(true),
-  ...orgProjectFields()
-});
-
 export const selectItemsFromQueryHandleSchema = z.object({
   queryHandle: z.string().min(1, "Query handle is required"),
   itemSelector: itemSelectorSchema.optional().default("all"),
@@ -319,12 +312,6 @@ export const queryHandleInfoSchema = z.object({
   includeExamples: optionalBool(false),
   itemSelector: itemSelectorSchema.optional(),
   previewCount: z.number().int().min(1).max(50).optional().default(10),
-  includeSampleItems: optionalBool(false),
-  ...orgProjectFields()
-});
-
-export const validateQueryHandleSchema = z.object({
-  queryHandle: z.string().min(1, "Query handle is required"),
   includeSampleItems: optionalBool(false),
   ...orgProjectFields()
 });
@@ -354,23 +341,6 @@ export const workItemContextPackageSchema = z.object({
   maxRelatedItems: z.number().int().min(1).max(100).optional().default(20),
   includeAttachments: optionalBool(false),
   includeTags: optionalBool(true),
-  ...orgProjectFields()
-});
-
-export const workItemsBatchContextSchema = z.object({
-  workItemIds: z.array(z.number()).min(1, "At least one work item ID required").max(50, "Maximum 50 work items allowed"),
-  includeRelations: optionalBool(true),
-  includeFields: z.array(z.string()).optional(),
-  includeExtendedFields: optionalBool(false),
-  includeTags: optionalBool(true),
-  includeStateCounts: optionalBool(false),
-  includeStoryPointAggregation: optionalBool(false),
-  includeRiskScoring: optionalBool(false),
-  includeAIAssignmentHeuristic: optionalBool(false),
-  includeParentOutsideSet: optionalBool(false),
-  includeChildrenOutsideSet: optionalBool(false),
-  maxOutsideReferences: z.number().int().min(1).max(50).optional().default(10),
-  returnFormat: z.enum(["graph", "array"]).optional().default("array"),
   ...orgProjectFields()
 });
 

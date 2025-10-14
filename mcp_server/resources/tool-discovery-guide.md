@@ -60,7 +60,7 @@ Use tool discovery when:
 
 **Result**: Recommends workflow:
 1. `wit-get-work-items-by-query-wiql` (with returnQueryHandle=true)
-2. `wit-inspect-query-handle` (preview)
+2. `wit-query-handle-info` (preview and validate)
 3. `wit-bulk-update-by-query-handle` (dryRun first)
 
 ### Example 3: Analysis Focus

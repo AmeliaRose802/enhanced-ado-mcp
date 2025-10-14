@@ -1,9 +1,7 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
-  validateQueryHandleSchema,
   analyzeByQueryHandleSchema,
   listQueryHandlesSchema,
-  inspectQueryHandleSchema,
   selectItemsFromQueryHandleSchema,
   queryHandleInfoSchema,
   getContextPackagesByQueryHandleSchema
@@ -14,22 +12,6 @@ import {
  * Tools for managing and inspecting query handles
  */
 export const queryHandleTools: ToolConfig[] = [
-  {
-    name: "wit-validate-query-handle",
-    description: "Validate a query handle and get metadata about stored query results. Returns item count, expiration time, original query, and optionally fetches sample items. Use this to check if a handle is still valid before bulk operations.",
-    script: "",
-    schema: validateQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle to validate (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
-        includeSampleItems: { type: "boolean", description: "Fetch and include sample items (first 5) with titles and states (default false)" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["queryHandle"]
-    }
-  },
   {
     name: "wit-analyze-by-query-handle",
     description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, and priority analysis. Forces safe analysis patterns.",
@@ -66,22 +48,6 @@ export const queryHandleTools: ToolConfig[] = [
         skip: { type: "number", description: "Number of handles to skip for pagination (default 0)" }
       },
       required: []
-    }
-  },
-  {
-    name: "wit-inspect-query-handle",
-    description: "🔍 HANDLE INSPECTOR: Detailed inspection of a query handle including staleness data, work item context, and analysis metadata. Shows what data is available for template substitution in bulk operations. Essential for verifying handle contains expected staleness analysis before using with bulk tools.",
-    script: "",
-    schema: inspectQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle to inspect (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
-        includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
-        includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" },
-        includeExamples: { type: "boolean", description: "Include selection examples showing how to use itemSelector (default false, saves ~300 tokens)" }
-      },
-      required: ["queryHandle"]
     }
   },
   {

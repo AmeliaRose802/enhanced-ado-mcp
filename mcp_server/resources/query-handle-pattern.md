@@ -279,7 +279,7 @@ itemSelector: {
 
 2. **Inspect** - Preview available items:
    ```
-   wit-inspect-query-handle with queryHandle: "qh_abc123"
+   wit-query-handle-info with queryHandle: "qh_abc123"
    Shows: 10 items with indices, states, tags
    ```
 

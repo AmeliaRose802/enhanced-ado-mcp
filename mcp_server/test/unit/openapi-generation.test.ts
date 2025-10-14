@@ -141,8 +141,8 @@ describe('OpenAPI Generation', () => {
     });
 
     it('should have schema files for all tools', () => {
-      // Should have at least 30 tools
-      expect(schemaIndex.schemas.length).toBeGreaterThanOrEqual(30);
+      // Should have at least 28 tools (2 deprecated tools removed)
+      expect(schemaIndex.schemas.length).toBeGreaterThanOrEqual(28);
 
       // Check for known schemas
       expect(schemaIndex.schemas).toContain('wit-create-new-item.json');

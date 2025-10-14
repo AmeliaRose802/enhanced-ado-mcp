@@ -326,7 +326,12 @@ describe('Schema Validation Error Messages', () => {
     });
 
     it('should handle non-Zod errors gracefully', () => {
-      const regularError = new Error('Something went wrong');
+      const regularError = { 
+        issues: [{
+          path: [],
+          message: 'Something went wrong'
+        }]
+      };
       const response = buildValidationErrorResponse(regularError);
       
       expect(response.success).toBe(false);

@@ -187,7 +187,7 @@ For each team member:
 3. **Track Progress**: Use `wit-personal-workload-analyzer` to monitor individual workload
 
 ### During Sprint
-1. **Monitor Progress**: Use `wit-get-work-items-context-batch` to check sprint items
+1. **Monitor Progress**: Use query handle tools to check sprint items
 2. **Adjust Assignments**: Use `wit-bulk-update-by-query-handle` to rebalance if needed
 
 ## Common Use Cases
@@ -262,7 +262,6 @@ For each team member:
 - `wit-bulk-assign-story-points-by-query-handle` - Estimate work items
 - `wit-query-analytics-odata` - Historical velocity data
 - `wit-bulk-assign-by-query-handle` - Batch assign work items
-- `wit-get-work-items-context-batch` - Get detailed work item context
 
 ## Tips for Success
 

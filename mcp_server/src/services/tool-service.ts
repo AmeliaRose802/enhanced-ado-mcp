@@ -7,7 +7,6 @@ import { SamplingService } from "./sampling-service.js";
 // Core handlers
 import { handleGetConfiguration } from "./handlers/core/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
-import { handleGetWorkItemsContextBatch } from './handlers/core/get-work-items-context-batch.handler.js';
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 
@@ -19,9 +18,7 @@ import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.
 import { handleUnifiedQueryGenerator } from './handlers/query/unified-query-generator.js';
 
 // Query handle handlers
-import { handleValidateQueryHandle } from './handlers/query-handles/validate-query-handle.handler.js';
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
-import { handleInspectQueryHandle } from './handlers/query-handles/inspect-query-handle.handler.js';
 import { handleSelectItemsFromQueryHandle } from './handlers/query-handles/select-items-from-query-handle.handler.js';
 import { handleQueryHandleInfo } from './handlers/query-handles/query-handle-info-handler.js';
 
@@ -168,11 +165,6 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleGetWorkItemContextPackage(args as Parameters<typeof handleGetWorkItemContextPackage>[0]);
   }
 
-  // Batch context package (graph of work items)
-  if (name === 'wit-get-work-items-context-batch') {
-    return await handleGetWorkItemsContextBatch(args as Parameters<typeof handleGetWorkItemsContextBatch>[0]);
-  }
-
   // Get last substantive change for a work item
   if (name === 'wit-get-last-substantive-change') {
     const { getLastSubstantiveChange } = await import('./handlers/analysis/get-last-substantive-change.handler.js');
@@ -236,20 +228,12 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleLinkWorkItemsByQueryHandles(config, args);
   }
 
-  if (name === 'wit-validate-query-handle') {
-    return await handleValidateQueryHandle(config, args);
-  }
-
   if (name === 'wit-analyze-by-query-handle') {
     return await handleAnalyzeByQueryHandle(config, args);
   }
 
   if (name === 'wit-list-query-handles') {
     return await handleListQueryHandles(config, args);
-  }
-
-  if (name === 'wit-inspect-query-handle') {
-    return await handleInspectQueryHandle(config, args);
   }
 
   if (name === 'wit-select-items-from-query-handle') {
