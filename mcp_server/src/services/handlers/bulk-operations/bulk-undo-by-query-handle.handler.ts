@@ -34,10 +34,10 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
 
     const { queryHandle, dryRun, maxPreviewItems, organization, project } = validation.data;
 
-    // Get the operation history for this query handle
-    const operationHistory = queryHandleService.getOperationHistory(queryHandle);
+    // First verify the query handle exists in the registry
+    const handleData = queryHandleService.getQueryData(queryHandle);
     
-    if (!operationHistory) {
+    if (!handleData) {
       return {
         success: false,
         data: null,
@@ -47,12 +47,15 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
       };
     }
 
-    if (operationHistory.length === 0) {
+    // Get the operation history for this query handle
+    const operationHistory = queryHandleService.getOperationHistory(queryHandle);
+    
+    if (!operationHistory || operationHistory.length === 0) {
       return {
         success: false,
         data: null,
         metadata: { source: "bulk-undo-by-query-handle" },
-        errors: [`No operation history found for query handle '${queryHandle}'. No actions have been performed on this handle yet.`],
+        errors: [`No operation history found for query handle '${queryHandle}'. No bulk operations have been performed on this handle yet.`],
         warnings: []
       };
     }

@@ -10,6 +10,7 @@
 
 import { z } from "zod";
 import { logger } from "../utils/logger.js";
+import { findGitHubCopilotGuid } from "../services/ado-identity-service.js";
 
 // ============================================================================
 // Constants
@@ -163,6 +164,39 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
 
   cachedConfig = cfg;
   return cfg;
+}
+
+/**
+ * Asynchronously look up and cache the GitHub Copilot GUID if not already configured
+ * This should be called after initial configuration load to automatically discover Copilot
+ */
+export async function ensureGitHubCopilotGuid(): Promise<string | null> {
+  const config = loadConfiguration();
+  
+  // If already configured, return it
+  if (config.gitHubCopilot.defaultGuid) {
+    return config.gitHubCopilot.defaultGuid;
+  }
+  
+  // Try to look it up automatically
+  logger.info('GitHub Copilot GUID not configured, attempting automatic lookup...');
+  try {
+    const guid = await findGitHubCopilotGuid(config.azureDevOps.organization);
+    
+    if (guid) {
+      // Update the cached config with the found GUID
+      config.gitHubCopilot.defaultGuid = guid;
+      logger.info(`✓ Automatically discovered GitHub Copilot GUID: ${guid}`);
+      return guid;
+    } else {
+      logger.warn('Could not automatically find GitHub Copilot GUID. Copilot assignment features will not work.');
+      logger.warn('You can manually specify the GUID with --copilot-guid flag');
+      return null;
+    }
+  } catch (error) {
+    logger.error('Failed to lookup GitHub Copilot GUID', error);
+    return null;
+  }
 }
 
 export function updateConfigFromCLI(args: CLIArguments): void {

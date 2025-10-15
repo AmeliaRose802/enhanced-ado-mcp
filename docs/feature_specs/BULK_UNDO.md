@@ -2,8 +2,17 @@
 
 **Feature Category:** Bulk Operations  
 **Status:** ✅ Implemented  
-**Version:** 1.6.0  
-**Last Updated:** 2025-10-14
+**Version:** 1.6.1  
+**Last Updated:** 2025-10-15
+
+## Recent Changes
+
+### Version 1.6.1 (2025-10-15)
+**Bug Fix:** Query handle validation now properly distinguishes between:
+- Non-existent or expired query handles (returns "not found or expired" error)
+- Valid query handles with no operation history (returns "no bulk operations performed" error)
+
+Previously, the tool would incorrectly report "not found or expired" for valid handles that simply had no operations recorded, causing confusion when testing the undo feature on freshly created handles.
 
 ## Overview
 

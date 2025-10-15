@@ -1,0 +1,1318 @@
+# Enhanced ADO MCP Server
+
+AI-powered Azure DevOps work item management via Model Context Protocol.
+
+[![npm version](https://badge.fury.io/js/enhanced-ado-mcp-server.svg)](https://www.npmjs.com/package/enhanced-ado-mcp-server)
+[![Tests](https://img.shields.io/badge/Tests-606%20Passing-brightgreen)](mcp_server/test)
+
+---
+
+## Quick Install
+
+### Prerequisites
+
+**1. Install Azure CLI** (required for authentication)
+   - **Windows:** Download from [aka.ms/installazurecliwindows](https://aka.ms/installazurecliwindows)
+   - **macOS:** `brew install azure-cli`
+   - **Linux:** See [docs.microsoft.com/cli/azure/install-azure-cli-linux](https://docs.microsoft.com/cli/azure/install-azure-cli-linux)
+   
+   After install: `az login`
+
+**2. Install npx** (if not already installed)
+   - Comes with Node.js 18+: [nodejs.org/download](https://nodejs.org/en/download/)
+   - Verify: `npx --version`
+
+   After install: `az login`
+
+**2. Install npx** (if not already installed)
+   - Comes with Node.js 18+: [nodejs.org/download](https://nodejs.org/en/download/)
+   - Verify: `npx --version`
+
+---
+
+### VS Code (Recommended)
+
+**One-Click Install:**
+
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20Project%5C%5CTeam)%22%7D%5D)
+
+You'll be prompted for:
+- Organization name (e.g., `mycompany`)
+- Project name (e.g., `MyProject`)
+- Area path (e.g., `MyProject\\MyTeam`)
+
+**Manual Configuration:**
+
+Add to VS Code `settings.json`:
+```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "enhanced-ado-msp": {
+      "command": "npx",
+      "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "YOUR_PROJECT", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
+    }
+  }
+}
+
+```json
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "YOUR_ORG",
+        "YOUR_PROJECT",
+        "--area-path",
+        "YOUR_PROJECT\\YOUR_TEAM"
+      ],
+      "env": {
+        "PWSH_PATH": "pwsh"
+      }
+    }
+  }
+}
+```
+
+> **Note:** The `--copilot-guid` parameter is **optional**. The server will automatically discover the GitHub Copilot user GUID when needed. If you want to specify it manually, add `"--copilot-guid", "YOUR_COPILOT_GUID"` to the args array.
+
+#### Alternative: Using Global Installation
+
+```json
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "command": "enhanced-ado-msp",
+      "args": [
+        "YOUR_ORG",
+        "YOUR_PROJECT",
+        "--area-path",
+        "YOUR_PROJECT\\YOUR_TEAM"
+      ]
+    }
+  }
+}
+```
+
+> **Note:** GitHub Copilot GUID will be automatically discovered when needed.
+
+## 🎯 Configuring Language Model Access (Sampling)
+
+This MCP server includes **AI-powered analysis tools** that leverage VS Code's language model sampling capability to provide intelligent work item analysis. These features require proper configuration to access language models.
+
+### Prerequisites for Sampling Features
+
+1. **VS Code Insiders** or **VS Code Stable** (version 1.87+)
+2. **GitHub Copilot** extension installed and active
+3. **Language Model Access** enabled for the MCP server
+
+### Enabling Language Model Access
+
+#### Method 1: Visual Configuration (Recommended)
+
+1. Open Command Palette (`F1` or `Ctrl+Shift+P` / `Cmd+Shift+P`)
+2. Type **"MCP"** and select **"MCP: List Servers"**
+3. Find **"enhanced-ado-msp"** in the list
+4. Click on the server name
+5. Select **"Configure Model Access"**
+6. In the model selection dialog, **check ALL free models** (any model showing **0x** tokens):
+   - ✅ GPT-5 mini (if available)
+   - ✅ GPT-4.1
+   - ✅ GPT-4o
+   - ✅ Any other models marked as **0x** (free)
+7. Click **"OK"** to save
+
+> **How it works:** The server uses **cost priority (1.0)** to automatically select only free models (0x tokens). You don't need to configure specific models - just grant access to all free models and the system will automatically choose the fastest available free model. This works across different IDEs and adapts to model changes automatically.
+
+#### Method 2: Automatic Permission Prompt
+
+When you first use an AI-powered tool (tools 5-8 below), VS Code will prompt you to grant language model access:
+
+1. VS Code will show a permission dialog asking: **"Allow [enhanced-ado-msp] to access language models?"**
+2. Click **"Allow"** to grant access
+3. The permission is remembered for future requests
+
+After granting permission, follow **Method 1** above to configure which models the server can use.
+
+### Model Selection for Performance
+
+**New in v1.5.0:** All AI-powered tools now automatically select **free models only** using cost-based filtering:
+
+**How it works:**
+- **Cost Priority = 1.0** - VS Code filters to ONLY 0x token (free) models
+- **Speed Priority = 0.9** - Among free models, prefers "mini" variants
+- **Pattern Matching** - Uses generic patterns ('mini', 'gpt-5', 'gpt-4', 'gpt-3', 'gpt')
+
+**Benefits:**
+- ✅ **IDE-agnostic** - Works in VS Code, Cursor, or any MCP-compatible IDE
+- ✅ **Future-proof** - Adapts automatically when GitHub changes available models
+- ✅ **Zero configuration** - Just enable all free models, system picks the best one
+- ✅ **No rate limits** - Only uses 0x token models
+
+This approach provides:
+- ⚡ **Fast response times** - Prioritizes "mini" models among free options (1-3 seconds)
+- 💰 **Zero token costs** - Cost priority = 1.0 ensures ONLY 0x models are used
+- ✅ **Excellent quality** - Free models are highly capable for structured analysis
+- 🔄 **Automatic selection** - VS Code picks the best available free model
+- 🔮 **Future-proof** - Works with any free model GitHub releases
+- 🌍 **Cross-IDE compatible** - Works in VS Code, Cursor, and other MCP clients
+
+The model preferences use VS Code's model selection API with fallback options, so the system will automatically use the best available fast model based on your GitHub Copilot subscription and model availability.
+
+**See [Model Selection Guide](docs/feature_specs/MODEL_SELECTION.md)** for customization options and detailed information.
+
+### Checking Language Model Access Status
+
+You can verify if your MCP server has language model access:
+
+1. **Via VS Code UI:**
+   - Open Command Palette (`F1`)
+   - Run **"MCP: List Servers"**
+   - Select **"enhanced-ado-msp"**
+   - Check if models are listed and accessible
+
+2. **Via API (programmatic):**
+```typescript
+// In VS Code, the extension context provides:
+context.languageModelAccessInformation.canSendRequest(chat)
+```
+
+If you encounter sampling errors, ensure:
+- GitHub Copilot is active and authenticated
+- You've granted language model access when prompted (see **Method 1** above to configure)
+- At least one **0x token (free) model** is enabled in model configuration
+- Your GitHub Copilot subscription is active
+
+**Tip:** Enable ALL free models (0x tokens) in the configuration - the system will automatically pick the best one!
+
+### Manual Configuration (Advanced)
+
+Language model access is managed by VS Code and persists across sessions. To reset permissions:
+
+1. Open VS Code Settings
+2. Search for "Language Model"
+3. Review and manage extension permissions under **Chat > Language Model Access**
+
+**Note:** Claude Desktop and other non-VS Code MCP clients do not support sampling features. AI-powered tools (5-8) will gracefully degrade and return an error message indicating sampling is unavailable.
+
+## Tools Exposed
+
+### Core Work Item Tools
+
+1. `wit-create-new-item` - Create a new Azure DevOps work item with optional parent relationship. Will correctly inherit area and iteration path from parent.
+2. `wit-assign-to-copilot` - Assign an existing work item to GitHub Copilot and add branch link
+3. `wit-new-copilot-item` - Create a new work item under a parent and immediately assign to GitHub Copilot
+4. `wit-extract-security-links` - Extract instruction links from the body of security scan work items
+
+### AI-Powered Analysis Tools (Requires VS Code Language Model Access)
+
+> **⚠️ Note:** These tools require VS Code with GitHub Copilot and language model access granted. They are not available in Claude Desktop or other MCP clients.
+
+5. `wit-intelligence-analyzer` - AI-powered work item analysis for completeness and AI-readiness
+6. `wit-ai-assignment-analyzer` - Enhanced AI assignment suitability analysis with detailed reasoning (analysis only - use `wit-assign-to-copilot` separately to perform assignment)
+7. `wit-generate-wiql-query` - 🆕 **Generate WIQL queries from natural language descriptions** with automatic validation and iterative refinement. Converts plain English like "all active bugs created last week" into valid WIQL syntax.
+
+### Configuration & Discovery Tools
+
+8. `wit-get-configuration` - Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults
+9. `wit-get-work-items-by-query-wiql` - Query Azure DevOps work items using WIQL (Work Item Query Language) with support for complex filtering, sorting, field selection, computed metrics, and **query handle generation** for safe bulk operations
+
+12. `wit-get-work-item-context-package` - Retrieve comprehensive context for a single work item including linked items and relationships
+13. `wit-get-last-substantive-change` - Analyze single work item for true activity (filters automated iteration/area path changes)
+14. `wit-get-last-substantive-change-bulk` - Bulk analysis (up to 100 items) for true activity levels, identifying genuinely stale vs recently touched items
+
+### Query Handle & Item Selection Tools (NEW in v1.5.0)
+
+15. `wit-select-items-from-query-handle` - 🎯 **Preview item selection** before bulk operations - Shows exactly which items will be selected using index-based or criteria-based selection (states, tags, staleness)
+16. `wit-bulk-comment-by-query-handle` - Add same comment to multiple items selected from query handle
+17. `wit-bulk-update-by-query-handle` - Update fields on items selected from query handle
+18. `wit-bulk-assign-by-query-handle` - Assign items selected from query handle to a user
+19. `wit-bulk-remove-by-query-handle` - Remove items selected from query handle (supports dry-run)
+
+All bulk operations support `itemSelector` for safe, validated item targeting.
+
+### Backlog Hygiene Tools
+
+20. `wit-validate-hierarchy-fast` - Fast, rule-based validation of work item hierarchy relationships and state consistency (non-AI, minimal context usage)
+
+**Bulk State Transitions:** Use the official **Azure DevOps MCP server** `ado_update-workitems` tool for bulk state updates, which provides native ADO integration and better performance.
+
+**Finding Stale Work Items:** Use `wit-get-work-items-by-query-wiql` with `includeSubstantiveChange: true` to find stale items:
+```wiql
+SELECT [System.Id], [System.Title], [System.State] 
+FROM WorkItems 
+WHERE [System.AreaPath] UNDER 'YourProject\YourArea' 
+AND [System.State] NOT IN ('Done', 'Closed', 'Removed') 
+AND [System.ChangedDate] < @Today - 180
+```
+The `includeSubstantiveChange` flag automatically filters out non-substantive updates like iteration path changes.
+
+The scripts are executed unchanged. The server just validates inputs and streams back their JSON output.
+
+## Prompts Available
+
+1. `intelligent_work_item_analyzer` - AI-powered comprehensive work item analysis (completeness, AI-readiness, categorization)
+2. `ai_assignment_analyzer` - Enhanced AI assignment suitability analysis with confidence scoring and detailed reasoning
+3. `work_item_enhancer` - Improve work item descriptions for clarity, scope, and acceptance criteria
+4. `team_velocity_analyzer` - Analyze team member performance, velocity, workload and provide assignment recommendations
+5. `child_item_optimizer` - Analyze and optimize child work items with classification and parallel execution planning
+6. `hierarchy_validator` - Analyze and validate work item parent-child relationships
+7. `parallel_fit_planner` - Analyze child work items for parallel execution and AI/human assignment strategy
+8. `find_dead_items` - Identify stale/abandoned work items using substantive change analysis (filters iteration path churn)
+9. `backlog_cleanup` - Comprehensive backlog hygiene and removal candidate identification
+10. `security_items_analyzer` - Analyze security and compliance items, categorize, and create remediation plans
+
+Prompts are loaded from the `prompts/` directory and support template variable substitution using `{{variable_name}}` syntax.
+
+## Resources Available
+
+**New in v1.4.1:** The server now exposes focused documentation resources via MCP that agents can access for quick reference without using prompts.
+
+### Quick Reference Resources
+
+1. **WIQL Quick Reference** (`ado://docs/wiql-quick-reference`) - Common WIQL query patterns and examples
+2. **WIQL Generator Guide** (`ado://docs/wiql-generator-guide`) - 🆕 **AI-powered query generation guide** - Learn to generate WIQL from natural language
+3. **OData Quick Reference** (`ado://docs/odata-quick-reference`) - OData Analytics query examples for metrics and aggregations
+4. **Hierarchy Query Patterns** (`ado://docs/hierarchy-patterns`) - Patterns for querying work item hierarchies
+5. **Common Workflow Examples** (`ado://docs/common-workflows`) - End-to-end workflow examples combining multiple tools
+6. **Tool Selection Guide** (`ado://docs/tool-selection-guide`) - Decision guide for choosing the right tool
+7. **Query Handle Pattern** (`ado://docs/query-handle-pattern`) - 🆕 **Anti-hallucination architecture** - Learn the handle-first pattern with item selection for safe bulk operations
+
+### How Agents Use Resources
+
+Resources provide tight, focused documentation that agents can access on-demand:
+
+```typescript
+// List available resources
+const resources = await mcp.listResources();
+
+// Read specific resource
+const content = await mcp.readResource("ado://docs/wiql-quick-reference");
+```
+
+**Benefits:**
+- ✅ Faster than using prompts for simple lookups
+- ✅ Reduces context size vs full documentation
+- ✅ Contains working, tested query examples
+- ✅ Tool selection guidance prevents wrong tool usage
+
+See the [Resources README](mcp_server/resources/README.md) for detailed documentation.
+
+## AI-Powered WIQL Query Generation
+
+**New in v1.5.0:** The `wit-generate-wiql-query` tool converts natural language descriptions into valid WIQL queries with automatic validation and iterative refinement.
+
+### Why Use Query Generation?
+
+- **No WIQL Knowledge Required**: Describe what you want in plain English
+- **Automatic Validation**: Tests queries and fixes syntax errors automatically  
+- **Best Practices**: Avoids common mistakes like ORDER BY in WorkItemLinks queries
+- **Iterative Refinement**: Learns from errors and improves the query
+
+### Example: Natural Language to WIQL
+
+```json
+{
+  "description": "Find all active bugs created in the last 7 days",
+  "testQuery": true
+}
+```
+
+**Generated Query:**
+```sql
+SELECT [System.Id], [System.Title], [System.State], [System.CreatedDate]
+FROM WorkItems
+WHERE [System.WorkItemType] = 'Bug'
+AND [System.State] = 'Active'
+AND [System.CreatedDate] >= @Today-7
+ORDER BY [System.CreatedDate] DESC
+```
+
+### More Natural Language Examples
+
+- "All unassigned tasks" → Query for tasks where AssignedTo is empty
+- "Features in Engineering area" → Query with AreaPath UNDER filter
+- "Items modified this week" → Query with ChangedDate >= @Today-7
+- "Children of work item 12345" → WorkItemLinks hierarchical query
+- "High priority bugs assigned to me" → Multi-criteria filtered query
+
+See the [WIQL Generator Guide](mcp_server/resources/wiql-generator-guide.md) for comprehensive examples and patterns.
+
+## 🎯 Item Selection & Safe Bulk Operations
+
+**New in v1.5.0:** Enhanced query handle pattern with intelligent item selection for safe, validated bulk operations. This feature eliminates ID hallucination and provides multiple selection strategies for precise targeting of work items.
+
+### Why Item Selection?
+
+- **Prevent Wrong Item Operations**: Preview exactly which items will be affected before executing
+- **Flexible Selection**: Choose all items, specific indices, or filter by criteria (state, tags, staleness)
+- **Anti-Hallucination**: Work with query handles instead of manually specifying IDs
+- **Safety First**: Always validate selections before destructive operations
+
+### Selection Strategies
+
+#### 1. Select All Items
+```typescript
+itemSelector: "all"  // Affects every item in the query result
+```
+Use when your WIQL query already filtered to exactly the items you want.
+
+#### 2. Index-Based Selection
+```typescript
+itemSelector: [0, 2, 5]  // Select items at specific positions (zero-based)
+```
+Use when you've inspected items and want specific ones by position.
+
+#### 3. Criteria-Based Selection
+```typescript
+// Select by state
+itemSelector: { states: ["Active", "In Progress"] }
+
+// Select by tags
+itemSelector: { tags: ["critical", "security"] }
+
+// Select by staleness
+itemSelector: { daysInactiveMin: 7 }
+
+// Combine criteria (AND logic)
+itemSelector: {
+  states: ["Active"],
+  tags: ["critical"],
+  daysInactiveMin: 3
+}
+```
+Use for precise filtering based on work item attributes.
+
+### Safe Bulk Operation Workflow
+
+**Always follow this pattern for bulk operations:**
+
+```typescript
+// Step 1: Query with handle
+const queryHandle = await queryWIQL("...", { returnQueryHandle: true });
+// Returns: queryHandle "qh_abc123"
+
+// Step 2: Preview selection
+await selectItemsFromQueryHandle(queryHandle, {
+  itemSelector: { states: ["Active"] }
+});
+// Result: "Would select 5 of 10 items"
+
+// Step 3: Execute bulk operation
+await bulkCommentByQueryHandle(queryHandle, {
+  itemSelector: { states: ["Active"] },
+  comment: "Needs review"
+});
+```
+
+### Example: Selective Update
+
+```typescript
+// Query all bugs in current sprint
+const handle = await queryWIQL(
+  "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug'",
+  { returnQueryHandle: true }
+);
+
+// Preview critical bugs only
+await selectItemsFromQueryHandle(handle, {
+  itemSelector: { tags: ["critical"] }
+});
+// Shows: "Would select 3 of 12 items"
+
+// Update only critical bugs
+await bulkAssignByQueryHandle(handle, {
+  itemSelector: { tags: ["critical"] },
+  assignTo: "security-team@company.com"
+});
+```
+
+### Available Bulk Operations with Item Selection
+
+All bulk operations support the `itemSelector` parameter:
+
+- `wit-select-items-from-query-handle` - **Preview selection** before executing (NEW!)
+- `wit-bulk-comment-by-query-handle` - Add comments to selected items
+- `wit-bulk-update-by-query-handle` - Update fields on selected items
+- `wit-bulk-assign-by-query-handle` - Assign selected items to user
+- `wit-bulk-remove-by-query-handle` - Remove selected items (destructive - always preview!)
+
+### Migration from Old Pattern
+
+**Old Pattern (Deprecated):**
+```typescript
+// ❌ Manual ID extraction - prone to hallucination
+const items = await queryWIQL("...");
+const ids = items.map(i => i.id);  // Manual extraction
+await bulkComment(ids, "...");      // No validation
+```
+
+**New Pattern (v1.5.0):**
+```typescript
+// ✅ Handle-based with selection
+const handle = await queryWIQL("...", { returnQueryHandle: true });
+await selectItemsFromQueryHandle(handle, { itemSelector: "all" });  // Preview
+await bulkCommentByQueryHandle(handle, { itemSelector: "all", comment: "..." });
+```
+
+See the [Query Handle Migration Guide](docs/QUERY_HANDLE_MIGRATION.md) for detailed migration instructions.
+
+## WIQL Query Examples
+
+The `wit-get-work-items-by-query-wiql` tool allows you to query Azure DevOps work items using WIQL (Work Item Query Language). Here are some common use cases:
+
+### Basic Query - Find Active Work Items
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
+}
+```
+
+### Query by Area Path
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Closed'",
+  "MaxResults": 50
+}
+```
+
+### Query with Additional Fields
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active'",
+  "IncludeFields": [
+    "System.Description",
+    "Microsoft.VSTS.Common.Priority",
+    "Microsoft.VSTS.Common.Severity",
+    "System.Tags"
+  ]
+}
+```
+
+### Paginated Query - Get Results in Pages
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
+  "top": 50,
+  "skip": 0
+}
+```
+Use `skip: 50` to get the next page, `skip: 100` for the third page, etc. The response includes pagination metadata with `hasMore` and `nextSkip` fields when there are multiple pages (totalCount > top). For single-page results, pagination is omitted to save context window tokens. To force include pagination metadata even for complete results, set `includePaginationDetails: true`.
+
+### Complex Query - Recently Changed Tasks
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Task' AND [System.ChangedDate] >= @Today - 7 ORDER BY [System.ChangedDate] DESC",
+  "MaxResults": 100
+}
+```
+
+### Query by Tags
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'technical-debt' AND [System.State] <> 'Removed'"
+}
+```
+
+**WIQL Reference:** For more information on WIQL syntax, see the [official Azure DevOps WIQL documentation](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax).
+
+## Pagination Support
+
+All list operations in the Enhanced ADO MCP Server support pagination to prevent unbounded data returns:
+
+### WIQL Queries (`wit-get-work-items-by-query-wiql`)
+- **Default limit:** 200 items
+- **Parameters:** `skip` (default: 0), `top` (default: 200)
+- **Metadata:** Returns `hasMore`, `nextSkip`, `totalCount`
+- **Example:**
+  ```json
+  {
+    "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
+    "top": 50,
+    "skip": 0
+  }
+  ```
+
+### Query Handles (`wit-list-query-handles`)
+- **Default limit:** 50 handles
+- **Max limit:** 200 handles
+- **Parameters:** `skip` (default: 0), `top` (default: 50, max: 200)
+- **Metadata:** Returns `total`, `hasMore`, `nextSkip`, `returned`
+- **Example:**
+  ```json
+  {
+    "top": 100,
+    "skip": 0,
+    "includeExpired": false
+  }
+  ```
+
+### OData Analytics (`wit-query-analytics-odata`)
+- **Default limit:** 100 results
+- **Max limit:** 1000 results
+- **Parameters:** `skip` (default: 0), `top` (default: 100, max: 1000)
+- **Metadata:** Returns `hasMore`, `nextSkip`, `skip`, `top`, `returned`
+- **Note:** Pagination only available for queries without aggregation (velocityMetrics and customQuery support it)
+- **Example:**
+  ```json
+  {
+    "queryType": "velocityMetrics",
+    "dateRangeField": "CompletedDate",
+    "dateRangeStart": "2024-01-01",
+    "top": 50,
+    "skip": 0
+  }
+  ```
+
+### Batch Operations
+- **Bulk operations:** Bounded by query handle results (use pagination on the initial query)
+
+All paginated responses include warnings when more results are available with instructions on how to fetch the next page.
+
+
+## Bulk Operations Examples
+
+The Enhanced ADO MCP Server provides powerful bulk operation tools for efficient backlog management and hygiene.
+
+### Bulk State Transition
+
+Transition multiple work items to a new state in one call with validation and dry-run support.
+
+**Example: Remove multiple stale items**
+```json
+{
+  "WorkItemIds": [12345, 12346, 12347],
+  "NewState": "Removed",
+  "Comment": "Automated backlog hygiene: Item inactive for >180 days with no substantive changes.",
+  "Reason": "Abandoned",
+  "DryRun": true
+}
+```
+
+**Dry-Run Response:**
+```json
+{
+  "dryRun": true,
+  "summary": {
+    "total": 3,
+    "valid": 2,
+    "invalid": 1,
+    "wouldUpdate": 2
+  },
+  "validations": [
+    {
+      "workItemId": 12345,
+      "valid": true,
+      "currentState": "Active",
+      "workItemType": "Task",
+      "title": "Old task"
+    },
+    {
+      "workItemId": 12346,
+      "valid": false,
+      "error": "Already in state 'Removed'"
+    }
+  ]
+}
+```
+
+### Bulk Add Comments
+
+Add comments to multiple work items with template support.
+
+**Example: Notify about backlog review**
+```json
+{
+  "Items": [
+    {
+      "WorkItemId": 12345,
+      "Comment": "This item was reviewed during backlog hygiene on 2025-10-01. Last activity: 250 days ago."
+    },
+    {
+      "WorkItemId": 12346,
+      "Comment": "This item was reviewed during backlog hygiene on 2025-10-01. Last activity: 180 days ago."
+    }
+  ]
+}
+```
+
+**Using Templates:**
+```json
+{
+  "Items": [
+    {"WorkItemId": 12345, "Comment": "placeholder"},
+    {"WorkItemId": 12346, "Comment": "placeholder"}
+  ],
+  "Template": "Backlog hygiene review: {{analysisDate}}. Days inactive: {{daysInactive}}. Status: {{status}}",
+  "TemplateVariables": {
+    "analysisDate": "2025-10-01",
+    "status": "Under review"
+  }
+}
+```
+
+### Find Stale Items
+
+Purpose-built tool for backlog hygiene with staleness signals.
+
+**Example: Find stale items in area path**
+```json
+{
+  "AreaPath": "MyProject\\MyTeam",
+  "MinInactiveDays": 180,
+  "IncludeSubAreas": true,
+  "IncludeSubstantiveChange": true,
+  "IncludeSignals": true
+}
+```
+
+**Response with Signals:**
+```json
+{
+  "summary": {
+    "total": 150,
+    "stale": 25,
+    "healthy": 125,
+    "byRiskLevel": {
+      "high": 8,
+      "medium": 12,
+      "low": 5
+    }
+  },
+  "staleItems": [
+    {
+      "id": 12345,
+      "title": "Old task",
+      "state": "To Do",
+      "daysInactive": 250,
+      "signals": {
+        "reasons": [
+          "Inactive for 250 days",
+          "Created 1000+ days ago",
+          "In passive state (To Do)",
+          "Unassigned",
+          "No description"
+        ],
+        "riskLevel": "high"
+      }
+    }
+  ],
+  "categorized": {
+    "high": [...],
+    "medium": [...],
+    "low": [...]
+  }
+}
+```
+
+### Computed Metrics in WIQL
+
+Add computed metrics to WIQL queries for efficient analysis.
+
+**Example: Query with computed metrics**
+```json
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] <> 'Done'",
+  "ComputeMetrics": true,
+  "StaleThresholdDays": 180,
+  "IncludeFields": ["System.Description"]
+}
+```
+
+**Response with Metrics:**
+```json
+{
+  "work_items": [
+    {
+      "id": 12345,
+      "title": "Some task",
+      "computedMetrics": {
+        "daysSinceCreated": 500,
+        "daysSinceChanged": 200,
+        "hasDescription": false,
+        "isStale": true
+      }
+    }
+  ]
+}
+```
+
+## Available Prompts
+
+The Enhanced ADO MCP Server includes powerful prompt templates for AI-powered work item enhancement and analysis. These prompts can be accessed via the MCP Prompts API.
+
+### User-Facing Prompts
+
+#### 1. `work_item_enhancer`
+
+**Purpose:** Enhance work item descriptions to make them clear, complete, and AI-ready
+
+**Arguments:**
+- `Title` (required) - Work item title
+- `Description` (optional) - Current description
+- `WorkItemType` (optional) - Type (Task, Bug, PBI, etc.)
+- `AcceptanceCriteria` (optional) - Current acceptance criteria
+- `ContextInfo` (optional) - Additional project/team context
+
+**Use Cases:**
+- Improve vague or incomplete work items
+- Add missing acceptance criteria
+- Make work items suitable for AI automation
+- Standardize work item format across team
+
+**Example Request:**
+```json
+{
+  "Title": "Fix login button",
+  "Description": "Button doesn't work",
+  "WorkItemType": "Bug"
+}
+```
+
+**Example Output:**
+```markdown
+## Enhanced Work Item
+
+### Title
+Fix login button click handler not responding on mobile devices
+
+### Description
+The login button on the authentication page is not responding to click events on mobile Safari (iOS 15+). Users tap the button but nothing happens, preventing login.
+
+**Current Behavior:**
+- Button appears on screen
+- No visual feedback on tap
+- No API call triggered
+- Works correctly on desktop browsers
+
+**Expected Behavior:**
+- Button should respond to touch events
+- Show visual feedback (pressed state)
+- Trigger authentication API call
+- Navigate to dashboard on success
+
+### Acceptance Criteria
+- [ ] Login button responds to touch events on iOS Safari
+- [ ] Button shows pressed state when tapped
+- [ ] Authentication API is called on button tap
+- [ ] User is redirected to dashboard after successful login
+- [ ] Error message shown if authentication fails
+- [ ] Tested on iOS 15+ and Android devices
+
+### Technical Notes
+- Check touch event handlers vs click handlers
+- Verify CSS for mobile tap states
+- Test on physical devices, not just simulators
+```
+
+---
+
+#### 2. `ai_suitability_analyzer`
+
+**Purpose:** Analyze whether a work item is suitable for automated AI completion
+
+**Arguments:**
+- `Title` (required) - Work item title
+- `Description` (optional) - Work item description
+- `WorkItemType` (optional) - Type of work item
+- `Complexity` (optional) - Estimated complexity
+- `TechnicalContext` (optional) - Tech stack/frameworks involved
+
+**Use Cases:**
+- Decide if work item should be assigned to AI agent
+- Identify blockers for AI automation
+- Triage work items for human vs AI assignment
+- Quality gate before AI assignment
+
+**Example Request:**
+```json
+{
+  "Title": "Update copyright year in footer",
+  "Description": "Change copyright year from 2024 to 2025 in footer component",
+  "WorkItemType": "Task",
+  "TechnicalContext": "React TypeScript"
+}
+```
+
+**Example Output:**
+```json
+{
+  "suitable_for_ai": true,
+  "confidence": 95,
+  "reasoning": "This is a simple, well-defined change with clear scope. The task involves a straightforward text update in a specific component with no complex logic or dependencies.",
+  "strengths": [
+    "Clear, specific objective",
+    "Well-defined scope",
+    "Low risk change",
+    "Easy to verify",
+    "No external dependencies"
+  ],
+  "concerns": [],
+  "recommendation": "Highly suitable for AI automation. This is an ideal task for an AI agent.",
+  "estimated_effort": "5-10 minutes"
+}
+```
+
+---
+
+#### 4. `team_velocity_analyzer`
+
+**Purpose:** Analyze team member performance, velocity, strengths, and recommend optimal work assignments
+
+**Arguments:**
+- `analysis_period_days` (optional, default: 90) - Number of days to analyze backwards
+- `max_recommendations` (optional, default: 3) - Maximum work item recommendations per team member
+
+**Use Cases:**
+- Evaluate team capacity and utilization
+- Identify bottlenecks and over/under-utilized team members
+- Balance workload across team
+- Get data-driven work assignment recommendations
+- Optimize team productivity
+
+**Example Request:**
+```json
+{
+  "analysis_period_days": 90,
+  "max_recommendations": 3
+}
+```
+
+**Example Output:**
+```markdown
+## Team Velocity Analysis
+
+**Team Overview:**
+- Analysis Period: 90 days
+- Team Size: 5 members
+- Overall Score: 75/100
+- Total Completed: 156 items (487 Story Points)
+- Avg Cycle Time: 8.5 days
+- Throughput: 5.4 SP/week
+- Current Active Load: 23 items
+
+**Per Team Member:**
+
+**Alice Johnson** | Health Score: 85/100
+- Completed: 42 items (27%) | Story Points: 145 (30%) | Velocity: 1.6 SP/week
+- Current Load: 4 items | Weighted Load: 18 points | WIP Status: Healthy
+- Coding vs Non-Coding: 85% coding, 15% infrastructure
+- Strengths: High velocity on complex Features, strong follow-through
+- Next Assignments:
+  1. Epic #12345 - Implement user authentication (13 SP)
+  2. PBI #12346 - Add password reset flow (5 SP)
+```
+
+---
+
+#### 5. `project_completion_planner`
+
+**Purpose:** Comprehensive project completion analysis with timeline forecasting and optimized AI/human task assignments
+
+**Arguments:**
+- `project_epic_id` (optional) - Root Epic or Feature ID to analyze (if not provided, analyzes entire area path)
+- `target_completion_date` (optional) - Desired completion date in YYYY-MM-DD format
+- `planning_horizon_weeks` (optional, default: 26) - Planning horizon in weeks (~6 months)
+- `include_buffer` (optional, default: true) - Include 20% time buffer for risks
+
+**Use Cases:**
+- Forecast project completion timeline
+- Assess current progress and remaining work
+- Evaluate team capacity for delivery
+- Generate realistic milestone roadmap
+- Optimize AI vs human task assignments
+- Identify risks and blockers
+- Create detailed execution plan
+
+**Example Request:**
+```json
+{
+  "project_epic_id": 54321,
+  "target_completion_date": "2025-12-31",
+  "planning_horizon_weeks": 26,
+  "include_buffer": true
+}
+```
+
+**Example Output:**
+```markdown
+## Project Completion Analysis: Azure Host Gateway
+
+**Executive Summary:**
+- Total Scope: 287 work items (1,245 Story Points)
+- Completed: 42% (120 items, 523 SP)
+- In Progress: 18% (52 items, 224 SP)
+- Remaining: 40% (115 items, 498 SP)
+- Team Size: 5 active contributors
+- Team Velocity: 18.5 SP/week
+- **Estimated Completion: 2025-11-15** (with 20% buffer)
+- **Confidence Level: Medium (70%)**
+- Health Score: 68/100
+
+**Timeline Forecast:**
+
+Base Scenario: 23 weeks → 2025-10-15 (50% confidence)
+**Recommended: 27 weeks → 2025-11-15 (70% confidence)**
+Conservative: 32 weeks → 2025-12-20 (90% confidence)
+
+**Target Date Analysis:**
+- User target: 2025-12-31
+- Gap: +6 weeks buffer
+- Feasibility: ✅ Achievable with current velocity
+
+**AI Acceleration Opportunities:**
+- AI-suitable work: 78 items (234 SP)
+- AI completion time: 8 weeks (vs 13 weeks human)
+- Time saved: 5 weeks
+- **Revised completion with AI: 2025-10-20**
+
+**Milestone Roadmap:**
+
+**Q4 2025 (Weeks 1-13):**
+- Target: 240 SP, 85 items
+- Key deliverables:
+  1. Feature #12345 - Core authentication (65 SP)
+  2. Feature #12346 - API gateway integration (48 SP)
+- AI assignments: 32 items (96 SP)
+- Human assignments: 53 items (144 SP)
+
+**Critical Risks:**
+- 🔴 Unestimated work: 23% (115 SP estimated) - Cannot reliably forecast
+- 🔴 3 blocked items on critical path
+- ⚠️ Team member Bob overloaded (3x average load)
+
+**Immediate Actions (This Week):**
+1. Estimate remaining backlog items - Owner: Alice - Target: Oct 7
+2. Unblock items #54321, #54322, #54323 - Owner: Bob - Target: Oct 8
+3. Rebalance 4 items from Bob to Carol - Owner: Manager - Target: Oct 6
+
+**Recommended Work Assignments (Next Sprint):**
+
+**Human Assignments:**
+- **Alice** (Current: 18 SP): Epic #12345 (13 SP), PBI #12346 (5 SP)
+- **Bob** (Current: 42 SP): [Reduce load - reassign 4 items]
+- **Carol** (Current: 12 SP): Feature #12347 (8 SP), 2 items from Bob (10 SP)
+
+**AI Assignments (GitHub Copilot):**
+1. Task #54401 - Update API endpoints (3 SP) - Reviewer: Alice
+2. Task #54402 - Add unit tests (2 SP) - Reviewer: Carol
+... [15 more AI-suitable tasks]
+```
+
+---
+
+#### 6. `security_items_analyzer`
+
+**Purpose:** Analyze security and compliance work items in a given area path
+
+**Arguments:**
+- `AreaPath` (required) - Area path to analyze
+- `ScanType` (optional) - Type of security scan (BinSkim, CodeQL, CredScan, All)
+- `IncludeResolved` (optional) - Include resolved items
+- `MaxItems` (optional) - Maximum items to analyze
+
+**Use Cases:**
+- Triage security scan results
+- Categorize security findings
+- Identify AI-suitable remediation tasks
+- Create remediation plans
+- Track security debt
+
+**Example Request:**
+```json
+{
+  "AreaPath": "MyProject\\Security",
+  "ScanType": "CodeQL",
+  "IncludeResolved": false
+}
+```
+
+**Example Output:**
+```json
+{
+  "summary": {
+    "total_items": 45,
+    "critical": 3,
+    "high": 12,
+    "medium": 20,
+    "low": 10,
+    "ai_suitable": 28
+  },
+  "categories": {
+    "injection_vulnerabilities": 8,
+    "authentication_issues": 5,
+    "data_exposure": 7,
+    "configuration_errors": 15,
+    "dependency_updates": 10
+  },
+  "ai_suitable_items": [
+    {
+      "id": 12345,
+      "title": "Update lodash to fix prototype pollution",
+      "category": "dependency_updates",
+      "severity": "high",
+      "reasoning": "Standard dependency update with clear instructions"
+    }
+  ],
+  "requires_human_review": [
+    {
+      "id": 12346,
+      "title": "Implement OAuth 2.0 authentication",
+      "category": "authentication_issues",
+      "severity": "critical",
+      "reasoning": "Complex security architecture change requiring design decisions"
+    }
+  ],
+  "remediation_plan": {
+    "phase_1": "Update dependencies (AI suitable)",
+    "phase_2": "Fix configuration errors (AI suitable)",
+    "phase_3": "Address authentication issues (Human required)"
+  }
+}
+```
+
+### System Prompts (Internal Use)
+
+These prompts are used internally by AI-powered tools and are not directly exposed to users:
+
+- `ai-assignment-analyzer.md` - Detailed AI suitability analysis
+- `completeness-analyzer.md` - Work item completeness scoring
+- `ai-readiness-analyzer.md` - AI-readiness evaluation
+- `enhancement-analyzer.md` - Enhancement suggestions
+- `categorization-analyzer.md` - Smart categorization
+- `full-analyzer.md` - Complete work item analysis
+- `feature-decomposer.md` - Feature breakdown logic
+- `hierarchy-validator.md` - Hierarchy validation rules
+
+## Development
+
+### Building from Source
+
+```bash
+cd mcp_server
+npm install
+npm run build
+npm test
+```
+
+### Code Quality and Pre-commit Hooks
+
+This repository uses **Husky** to enforce code quality standards before commits. The pre-commit hook automatically checks:
+
+- **Formatting** - All TypeScript files must follow Prettier formatting rules
+- **Linting** - ESLint checks for code quality issues
+
+When you commit changes, only your **staged TypeScript files** are checked for efficiency.
+
+**To fix issues before committing:**
+```bash
+cd mcp_server
+npm run format        # Auto-fix formatting issues
+npm run lint:fix      # Auto-fix linting issues
+npm run format:check  # Check without changing files
+```
+
+📖 **For detailed information**, see [`HUSKY_SETUP.md`](HUSKY_SETUP.md)
+
+### Available Scripts
+
+```bash
+npm run build          # Build TypeScript to dist/
+npm run dev            # Run with tsx (development)
+npm start              # Run built version
+npm test               # Run all tests
+npm run test:unit      # Run unit tests only
+npm run test:coverage  # Run tests with coverage
+npm run lint           # Check code style
+npm run lint:fix       # Fix code style issues
+npm run format         # Auto-format TypeScript files
+npm run format:check   # Check formatting without changes
+npm run generate-openapi  # Generate OpenAPI/JSON Schema documentation
+npm run generate-docs     # Alias for generate-openapi
+```
+
+### OpenAPI/JSON Schema Documentation
+
+This project includes auto-generated API documentation from Zod schemas:
+
+**Generate documentation:**
+```bash
+cd mcp_server
+npm run generate-openapi
+```
+
+**Output files:**
+- `docs/api/openapi.json` - OpenAPI 3.0 specification (31 endpoints)
+- `docs/api/schemas/*.json` - Individual JSON schemas for each tool
+- `docs/api/README.md` - Complete documentation guide
+
+**Use cases:**
+- Import into Swagger UI, Redoc, or Postman
+- Generate API clients in any language
+- Validate API requests/responses
+- Share API contracts with consumers
+
+See [`docs/api/README.md`](mcp_server/docs/api/README.md) for complete usage guide.
+
+---
+
+## Environment
+
+Requires PowerShell 7 (`pwsh`) and Azure CLI already logged in with required `az boards` & `az repos` permissions.
+
+Optional: set `PWSH_PATH` env var to override pwsh executable.
+
+## Configuration
+
+Authentication:
+* Use `az login` (Azure CLI). The Azure DevOps extension is added automatically if missing.
+* Personal Access Tokens are no longer supported/required; we intentionally removed that path.
+
+View current configuration:
+* Call tool `wit-get-configuration` with optional `Section` parameter to view specific configuration sections.
+
+Verbose debug logging: set `MCP_DEBUG=1` or enable `toolBehavior.verboseLogging`.
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Authorization Errors
+
+#### Analytics API Permission Errors (TF400813)
+
+**Affected Tools:**
+- `wit-query-analytics-odata` - OData Analytics queries
+- `wit-generate-odata-query` - AI-powered OData generation
+
+**Error Message:**
+```
+TF400813: The user '[GUID]' is not authorized to access this resource.
+Analytics API authorization error: User lacks "View analytics" permission.
+```
+
+**Root Cause:**  
+These tools access the Azure DevOps **Analytics API** (`analytics.dev.azure.com`), which requires separate permissions from regular Work Item Tracking API access.
+
+**Solution:**  
+1. Contact your Azure DevOps administrator
+2. Request **"View analytics"** permission at the project level
+3. Alternative: Use WIQL-based tools instead of OData for queries:
+   - `wit-generate-wiql-query` instead of `wit-generate-odata-query`
+   - `wit-get-work-items-by-query-wiql` instead of `wit-query-analytics-odata`
+
+**Why WIQL works when OData doesn't:**  
+WIQL queries use the Work Item Tracking API, while OData uses the Analytics API. They have different permission requirements.
+
+
+**Affected Tools:**
+
+**Error Message:**
+```
+Failed to execute WIQL query: HTTP 404: Not Found
+```
+
+**Root Cause:**  
+The tool requires scoping to a specific area path to avoid scanning the entire project.
+
+**Solution:**
+```bash
+# Discover valid area paths
+wit-list-area-paths --project "YourProject"
+
+# Then use with explicit area path
+
+# Or configure server with default area path
+enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "YourProject\\YourTeam"
+```
+
+#### Work Item Type Configuration Error ($undefined in path)
+
+**Affected Tools:**
+- `wit-create-new-item` - Work item creation
+
+**Error Message:**
+```
+The controller for path '/_apis/wit/workitems/$undefined' was not found
+```
+
+**Root Cause:**  
+Work item type was not provided and no default was configured.
+
+**Solution:**
+```javascript
+// Always specify workItemType explicitly
+{
+  "title": "New feature",
+  "workItemType": "Product Backlog Item",  // Required!
+  "description": "..."
+}
+
+// Or configure default at server startup
+enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "Project\\Team"
+```
+
+The server will now properly default to "Product Backlog Item" if not specified.
+
+### Permission Verification
+
+**Check your Azure DevOps permissions:**
+
+1. **Work Item Tracking** (required for most tools):
+   - Project Settings → Permissions → "View work items in this node"
+   - Area Path permissions for your team
+
+2. **Analytics** (required for OData tools):
+   - Project Settings → Permissions → "View analytics"
+   - Organization Settings → Analytics → "View" access
+
+3. **Discovery Tools** (always available):
+   ```bash
+   # List area paths (verify access)
+   wit-list-area-paths
+   
+   # List iteration paths  
+   wit-list-iteration-paths
+   
+   # List repositories
+   wit-list-repositories
+   
+   # View current configuration
+   wit-get-configuration
+   ```
+
+### Debug Mode
+
+Enable verbose logging to diagnose issues:
+
+```bash
+# Environment variable
+export MCP_DEBUG=1  # Linux/macOS
+$env:MCP_DEBUG=1    # PowerShell
+
+# Or in VS Code settings.json
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "env": {
+        "MCP_DEBUG": "1"
+      }
+    }
+  }
+}
+```
+
+This will output detailed API calls, authentication status, and error details.
+
+### Getting Help
+
+If you encounter issues not covered here:
+
+1. **Check the error category** - Error messages now include helpful hints
+2. **Use discovery tools** - Verify your configuration and permissions
+3. **Enable debug logging** - Get detailed diagnostic information
+4. **Review feature specs** - See [`docs/feature_specs/`](docs/feature_specs/) for detailed tool documentation
+5. **Open an issue** - Include debug logs and error messages
+
+---

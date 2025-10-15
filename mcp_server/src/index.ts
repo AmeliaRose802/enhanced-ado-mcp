@@ -15,7 +15,7 @@ import { checkSamplingSupport } from "./utils/sampling-client.js";
 import { listResources, getResourceContent } from "./services/resource-service.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { updateConfigFromCLI, type CLIArguments } from "./config/config.js";
+import { updateConfigFromCLI, ensureGitHubCopilotGuid, type CLIArguments } from "./config/config.js";
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
@@ -121,11 +121,6 @@ const argv = yargs(hideBin(process.argv))
     describe: "Default area path",
     type: "string"
   })
-  .option("copilot-guid", {
-    alias: "g",
-    describe: "GitHub Copilot user GUID (required for Copilot tools)",
-    type: "string"
-  })
   .option("verbose", {
     alias: "v",
     describe: "Enable verbose logging",
@@ -145,6 +140,9 @@ async function main() {
     if (argv.verbose) {
       process.env.MCP_DEBUG = '1';
     }
+
+    // Automatically look up GitHub Copilot GUID if not provided
+    await ensureGitHubCopilotGuid();
 
     const useHybrid = process.env.MCP_HYBRID === "1";
     
