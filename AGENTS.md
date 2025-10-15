@@ -62,10 +62,11 @@ npm run test:coverage
 - User must be logged in: `az login`
 - Tokens cached automatically
 
-**Configuration Files:**
-- `mcp_server/.ado-mcp-config.json` - Server configuration
-- Environment variables override config values
-- CLI arguments have highest priority
+**Configuration:**
+- **CLI arguments** - Organization, project, area path (required)
+- **Built-in defaults** - Work item type, priority, assignee, branch
+- **Auto-discovery** - GitHub Copilot GUID discovered automatically
+- **No config file needed** - All configuration via CLI arguments and auto-discovery
 
 ## Important Files & Directories
 

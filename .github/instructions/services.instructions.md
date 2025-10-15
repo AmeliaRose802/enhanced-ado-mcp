@@ -218,9 +218,11 @@ function formatErrorMessage(error: unknown): string {
 ### Configuration Priority
 
 1. CLI arguments (highest)
-2. Environment variables
-3. Config file (`.ado-mcp-config.json`)
+2. Built-in defaults and auto-discovery
+3. Optional config file (`.ado-mcp-config.json`) - if present
 4. Schema defaults (lowest)
+
+**Note:** Configuration file is optional. The server works with just CLI arguments (organization, project, --area-path).
 
 ### Adding New Configuration
 

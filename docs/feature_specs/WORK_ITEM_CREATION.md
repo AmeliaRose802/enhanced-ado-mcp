@@ -2,8 +2,8 @@
 
 **Feature Category:** Core Work Item Operations  
 **Status:** ✅ Implemented  
-**Version:** 1.5.0  
-**Last Updated:** 2025-10-07
+**Version:** 1.6.0  
+**Last Updated:** 2025-10-15
 
 ## Overview
 
@@ -214,23 +214,35 @@ Creates child task under 12345, assigns to Copilot, and links branch in auth-ser
 
 ## Configuration
 
-These tools auto-fill parameters from `.ado-mcp-config.json`:
+These tools auto-fill parameters from CLI arguments and built-in defaults:
 
+**CLI Arguments:**
+```bash
+enhanced-ado-msp <organization> <project> [--area-path "Project\\Team"]
+```
+
+**Built-in Defaults:**
+- `defaultWorkItemType`: "Product Backlog Item"
+- `defaultPriority`: 2
+- `defaultAssignedTo`: "@me"
+- `defaultBranch`: "main"
+- `gitHubCopilot.guid`: **Auto-discovered** from Azure DevOps Identity API
+
+**GitHub Copilot Auto-Discovery:**
+
+The server automatically discovers the GitHub Copilot user GUID on startup using the Azure DevOps Identity Picker API. No manual configuration required!
+
+- Searches for identities matching "github copilot", "github", or "bot"
+- Validates correct identity format (`userId@directoryGuid`)
+- Caches discovered GUID for the session
+- Falls back to manual specification if auto-discovery fails
+
+**Manual Override (if needed):**
+
+If auto-discovery fails, you can manually specify the GUID in your arguments:
 ```json
 {
-  "organization": "my-org",
-  "project": "my-project",
-  "defaultWorkItemType": "Task",
-  "defaultAreaPath": "Project\\Team",
-  "defaultIterationPath": "Project\\Sprint 10",
-  "defaultAssignedTo": "team@company.com",
-  "defaultPriority": 2,
-  "gitRepository": {
-    "branch": "main"
-  },
-  "gitHubCopilot": {
-    "guid": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6"
-  }
+  "gitHubCopilotGuid": "66dda6c5-...-116241219397@72f988bf-...-2d7cd011db47"
 }
 ```
 
@@ -323,5 +335,5 @@ cd mcp_server && npm run build
 
 ---
 
-**Last Updated:** 2025-10-07  
+**Last Updated:** 2025-10-15  
 **Author:** Enhanced ADO MCP Team

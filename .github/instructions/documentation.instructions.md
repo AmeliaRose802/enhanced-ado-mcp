@@ -117,8 +117,14 @@ How users interact with this feature. Include:
 
 ### Configuration
 
-Parameters that can be set in `.ado-mcp-config.json`:
+Parameters that can be set via CLI arguments or optional `.ado-mcp-config.json`:
 
+**CLI Arguments:**
+```bash
+enhanced-ado-mcp <organization> <project> [--area-path "Project\\Team"]
+```
+
+**Optional Config File (`.ado-mcp-config.json`):**
 ```json
 {
   "featureName": {
