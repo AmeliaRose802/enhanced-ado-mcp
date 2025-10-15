@@ -39,8 +39,11 @@ The `assignment_distribution` shows who's currently working in the area path, an
 
 **Ask User For:**
 - Team capacity per person (hours/week available for sprint work)
+- **On-call assignments**: Who is on-call during the sprint? (Treat as 50% capacity)
+- **Vacation/PTO**: Who is taking time off and for how many days? (0% capacity for those days)
+- **Management roles**: Who is the engineering manager and product manager? (Exclude from work assignments)
 - Sprint goal (high-level objective for the sprint) - Optional
-- Sprint constraints (holidays, time off, deadlines) - Optional
+- Sprint constraints (other holidays, deadlines, dependencies) - Optional
 
 ## Your Task
 
@@ -57,7 +60,11 @@ Analyze the backlog and create a balanced sprint plan that:
 ### Step 1: Understand Team Capacity, Discover Members & Analyze Skills
 - Calculate available hours per team member (capacity - existing commitments)
 - Automatically identify skill sets and experience levels
-- Note any constraints (PTO, part-time, etc.)
+- **Apply capacity adjustments**:
+  - **On-call team members**: 50% of normal capacity (they need bandwidth for incidents)
+  - **Vacation/PTO**: 0% capacity for vacation days (calculate: `(days_off / 10_working_days) * weekly_hours`)
+  - **Manager & PM**: 0% capacity (exclude from sprint work assignments)
+- Note any other constraints (part-time, training, etc.)
 
 **Recommended Approach:**
 1. Query current active work with `wit-get-work-items-by-query-wiql` + `returnQueryHandle: true`
@@ -71,7 +78,11 @@ Analyze the backlog and create a balanced sprint plan that:
    - `analysisPeriodDays`: 90 (analyze last 3 months of work)
    - Extract skills from `workSummary.completed.workTypes` (shows % by work item type)
    - Extract experience level from `workSummary.completed.velocityPerWeek` and complexity patterns
-5. Only ask user for capacity constraints not visible in ADO (PTO, part-time schedules, hours per week)
+5. **Ask user for capacity constraints**:
+   - Base hours per week per person
+   - Who is on-call this sprint? (Apply 50% capacity multiplier)
+   - Who is on vacation and for how many days? (Calculate: `hours_per_week * (vacation_days / 10)` to deduct)
+   - Who is the engineering manager and PM? (Set capacity to 0, exclude from assignments)
 
 ### Step 2: Categorize Sprint-Ready Items
 - Query items in **Approved** state (these are sprint candidates)
@@ -102,7 +113,11 @@ Analyze the backlog and create a balanced sprint plan that:
 
 **Recommended Approach:**
 1. Use aggregated data from Step 1 & 2 (no additional API calls needed!)
-2. Calculate: `Team Member Capacity - Current Active Work = Available Hours`
+2. **Calculate adjusted capacity per person**:
+   - Base formula: `Base_Hours_Per_Week - Current_Active_Work = Available_Hours`
+   - **If on-call**: `Available_Hours * 0.5` (50% reduction for incident response)
+   - **If on vacation**: `Available_Hours - (hours_per_week * vacation_days / 10)` (deduct vacation time)
+   - **If manager or PM**: `Available_Hours = 0` (exclude from assignments entirely)
 3. Match Story Points to available hours (assume 1 SP ≈ 4-6 hours based on team norms)
 4. Prioritize items with:
    - High Priority field value
@@ -117,8 +132,11 @@ Analyze the backlog and create a balanced sprint plan that:
 - Confirm sprint goal is achievable
 
 **Validation Checks:**
-- Total assigned Story Points ≤ 85% of team capacity
-- Each team member: 75-90% capacity utilization
+- Total assigned Story Points ≤ 85% of **adjusted** team capacity (accounting for on-call, vacation, managers)
+- Each team member: 75-90% capacity utilization (of their adjusted capacity)
+- **No work assigned to managers or PMs**
+- **On-call team members**: Assigned lighter workload (max 50% of normal)
+- **Vacation days**: Properly accounted for in capacity calculations
 - High-priority items all assigned
 - No circular dependencies
 - Stretch goals clearly marked as optional
@@ -237,12 +255,12 @@ Return a markdown-formatted sprint plan with the following sections:
 ## Sprint Summary
 - **Total Items**: [count]
 - **Estimated Hours**: [total]
-- **Team Capacity**: [hours available]
+- **Team Capacity**: [hours available] (adjusted for on-call: [names], vacation: [names + days], managers: [names])
 - **Planned Utilization**: [percentage]%
 
 ## Team Assignments
 
-### [Team Member Name] - [X]h / [Y]h capacity ([Z]% utilized)
+### [Team Member Name] - [X]h / [Y]h capacity ([Z]% utilized) [🚨 ON-CALL | 🏖️ VACATION: X days | 👔 MANAGER]
 
 #### Committed Work
 1. **[#ID]({{workItemUrl}})** - [Title] `[Type]` • Priority [N] • [X]h
@@ -273,10 +291,11 @@ If capacity allows, consider:
 
 ## Guidelines
 
-- **Be realistic** - Don't overcommit the team (aim for 80-85% utilization)
+- **Be realistic** - Don't overcommit the team (aim for 80-85% utilization of **adjusted** capacity)
+- **Respect constraints** - On-call = 50% capacity, Vacation = 0% capacity for those days, Managers/PMs = no assignments
 - **Balance types** - Mix features, bugs, and tech debt appropriately
 - **Consider growth** - Assign some stretch items to help team members learn
-- **Flag risks early** - Call out dependencies, skill gaps, or capacity concerns
+- **Flag risks early** - Call out dependencies, skill gaps, or capacity concerns (especially understaffing)
 - **Stay focused** - Keep rationales brief (1-2 sentences max)
 - **Prioritize clarity** - Make it easy for the team to understand assignments
 

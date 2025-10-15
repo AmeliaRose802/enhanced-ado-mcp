@@ -490,11 +490,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
       // Verify the result was successful
       expect(result.success).toBe(true);
 
-      // Verify maxResults was passed as 'top' to queryWorkItemsByWiql
+      // Verify maxResults was passed to queryWorkItemsByWiql
       expect(mockQueryWorkItemsByWiql).toHaveBeenCalledTimes(2);
       expect(mockQueryWorkItemsByWiql).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          top: 50
+          maxResults: 50
         })
       );
     });

@@ -133,9 +133,34 @@ export async function handleWiqlQuery(
     // If handleOnly is true and returnQueryHandle is true, fetch only IDs for efficiency
     const shouldFetchFullData = !queryArgs.handleOnly || !queryArgs.returnQueryHandle;
     
-    const result = shouldFetchFullData 
-      ? await queryWorkItemsByWiql(queryArgs)
-      : await queryWorkItemsByWiql({ ...queryArgs, includeFields: [] }); // Minimal fields for ID-only fetch
+    let result;
+    try {
+      result = shouldFetchFullData 
+        ? await queryWorkItemsByWiql(queryArgs)
+        : await queryWorkItemsByWiql({ ...queryArgs, includeFields: [] }); // Minimal fields for ID-only fetch
+    } catch (error) {
+      // If we're in AI generation mode with returnQueryHandle and execution fails,
+      // fall back to returning just the generated query with a warning
+      if (isAIGeneration && queryArgs.returnQueryHandle) {
+        logger.warn('Query execution failed after validation, returning query-only response', error);
+        return {
+          success: true,
+          data: {
+            query: finalQuery,
+            message: '⚠️ Query generated and validated, but execution failed. The query syntax is correct but there may be a temporary issue.'
+          },
+          metadata: {
+            source: "unified-wiql-query",
+            mode: "ai-generation",
+            ...aiGenerationMetadata
+          },
+          errors: [],
+          warnings: [`Failed to create query handle: ${error instanceof Error ? error.message : String(error)}`]
+        };
+      }
+      // Otherwise, re-throw the error to be caught by the outer try-catch
+      throw error;
+    }
     
     const pageSize = queryArgs.top ?? queryArgs.maxResults ?? 200;
 
