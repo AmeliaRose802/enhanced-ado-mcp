@@ -23,10 +23,10 @@ describe('History Stripping Parameters', () => {
       expect(result.includeHistory).toBe(false);
     });
 
-    it('should default maxHistoryRevisions to 5', () => {
+    it('should default maxHistoryRevisions to 3', () => {
       const schema = workItemContextPackageSchema;
       const result = schema.parse({ workItemId: 123 });
-      expect(result.maxHistoryRevisions).toBe(5);
+      expect(result.maxHistoryRevisions).toBe(3);
     });
 
     it('should allow overriding includeHistory to true', () => {
@@ -64,27 +64,25 @@ describe('History Stripping Parameters', () => {
       // historyCount should not appear in parsed result
       expect('historyCount' in result).toBe(false);
       // maxHistoryRevisions should use default
-      expect(result.maxHistoryRevisions).toBe(5);
+      expect(result.maxHistoryRevisions).toBe(3);
     });
   });
 
   describe('Context Window Optimization', () => {
-    it('should describe history as disabled by default to save context', () => {
+    it('should describe history as optimized for context window efficiency', () => {
       const schema = workItemContextPackageSchema;
       const includeHistoryField = schema.shape.includeHistory;
       const description = includeHistoryField.description;
       
-      expect(description).toContain('40KB');
-      expect(description).toContain('disabled by default');
+      expect(description).toContain('Optimized for context window efficiency');
     });
 
-    it('should describe maxHistoryRevisions sorting behavior', () => {
+    it('should describe maxHistoryRevisions context optimization', () => {
       const schema = workItemContextPackageSchema;
       const maxHistoryField = schema.shape.maxHistoryRevisions;
       const description = maxHistoryField.description;
       
-      expect(description).toContain('sorted');
-      expect(description).toContain('descending');
+      expect(description).toContain('Default reduced to 3 for context window efficiency');
     });
   });
 
@@ -128,7 +126,7 @@ describe('History Stripping Parameters', () => {
       });
       
       expect(result.includeHistory).toBe(true);
-      expect(result.maxHistoryRevisions).toBe(5); // Default when not specified
+      expect(result.maxHistoryRevisions).toBe(3); // Default when not specified
     });
   });
 });

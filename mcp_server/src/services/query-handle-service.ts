@@ -88,8 +88,24 @@ type ItemSelector =
   | number[]  // Array of indices
   | SelectionCriteria;
 
+// Operation history tracking for undo functionality
+interface OperationHistoryItem {
+  operation: string;  // e.g., 'bulk-comment', 'bulk-update', 'bulk-assign'
+  timestamp: string;
+  itemsAffected: Array<{
+    workItemId: number;
+    changes: Record<string, any>;  // Stores previous values for rollback
+  }>;
+}
+
+interface OperationHistory {
+  queryHandle: string;
+  operations: OperationHistoryItem[];
+}
+
 class QueryHandleService {
   private handles: Map<string, QueryHandleData> = new Map();
+  private operationHistories: Map<string, OperationHistory> = new Map();
   private defaultTTL = 60 * 60 * 1000; // 1 hour in milliseconds
   private cleanupInterval: NodeJS.Timeout | null = null;
   private serverStartTime: Date = new Date();
@@ -664,9 +680,85 @@ class QueryHandleService {
    */
   clearAll(): void {
     this.handles.clear();
+    this.operationHistories.clear();
+  }
+
+  /**
+   * Record a bulk operation for undo tracking
+   * 
+   * @param queryHandle Query handle the operation was performed on
+   * @param operation Operation type (e.g., 'bulk-comment', 'bulk-update')
+   * @param itemsAffected Array of work items and their previous values
+   */
+  recordOperation(
+    queryHandle: string,
+    operation: string,
+    itemsAffected: Array<{ workItemId: number; changes: Record<string, any> }>
+  ): void {
+    let history = this.operationHistories.get(queryHandle);
+    
+    if (!history) {
+      history = {
+        queryHandle,
+        operations: []
+      };
+      this.operationHistories.set(queryHandle, history);
+    }
+
+    history.operations.push({
+      operation,
+      timestamp: new Date().toISOString(),
+      itemsAffected
+    });
+
+    logger.debug(`Recorded ${operation} operation on ${itemsAffected.length} items for handle ${queryHandle}`);
+  }
+
+  /**
+   * Get operation history for a query handle
+   * 
+   * @param queryHandle Query handle to get history for
+   * @returns Array of operations performed, or null if handle not found
+   */
+  getOperationHistory(queryHandle: string): OperationHistoryItem[] | null {
+    const history = this.operationHistories.get(queryHandle);
+    return history ? history.operations : null;
+  }
+
+  /**
+   * Remove the last operation from history (called after successful undo)
+   * 
+   * @param queryHandle Query handle to remove operation from
+   * @returns true if operation removed, false if no history found
+   */
+  removeLastOperation(queryHandle: string): boolean {
+    const history = this.operationHistories.get(queryHandle);
+    
+    if (!history || history.operations.length === 0) {
+      return false;
+    }
+
+    history.operations.pop();
+    logger.debug(`Removed last operation from history for handle ${queryHandle}`);
+    
+    // Clean up empty history
+    if (history.operations.length === 0) {
+      this.operationHistories.delete(queryHandle);
+    }
+    
+    return true;
+  }
+
+  /**
+   * Clear operation history for a query handle
+   * 
+   * @param queryHandle Query handle to clear history for
+   */
+  clearOperationHistory(queryHandle: string): void {
+    this.operationHistories.delete(queryHandle);
   }
 }
 
 // Export singleton instance
 export const queryHandleService = new QueryHandleService();
-export { QueryHandleData, SelectionCriteria, ItemContext, WorkItemContextData };
+export { QueryHandleData, SelectionCriteria, ItemContext, WorkItemContextData, OperationHistoryItem };

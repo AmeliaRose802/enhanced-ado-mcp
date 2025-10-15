@@ -226,6 +226,12 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleBulkLinkByQueryHandles(config, args);
   }
 
+  // Undo last bulk operation on query handle
+  if (name === 'wit-bulk-undo-by-query-handle') {
+    const { handleBulkUndoByQueryHandle } = await import('./handlers/bulk-operations/bulk-undo-by-query-handle.handler.js');
+    return await handleBulkUndoByQueryHandle(config, args);
+  }
+
   if (name === 'wit-analyze-by-query-handle') {
     return await handleAnalyzeByQueryHandle(config, args);
   }

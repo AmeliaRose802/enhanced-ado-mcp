@@ -20,9 +20,9 @@ describe('Constants', () => {
     });
 
     it('should have query operation names', () => {
-      expect(TOOL_NAMES.WIQL_QUERY).toBe('wit-get-work-items-by-query-wiql');
-      expect(TOOL_NAMES.GENERATE_WIQL_QUERY).toBe('wit-generate-wiql-query');
-      expect(TOOL_NAMES.ODATA_ANALYTICS).toBe('wit-odata-analytics-query');
+      expect(TOOL_NAMES.WIQL_QUERY).toBe('wit-wiql-query');
+      expect(TOOL_NAMES.ODATA_ANALYTICS).toBe('wit-query-analytics-odata');
+      expect(TOOL_NAMES.GENERATE_ODATA_QUERY).toBe('wit-generate-odata-query');
     });
 
     it('should have bulk operation names', () => {

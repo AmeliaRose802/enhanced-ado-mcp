@@ -452,6 +452,13 @@ export const linkWorkItemsByQueryHandlesSchema = z.object({
   ...orgProjectFields()
 });
 
+export const bulkUndoByQueryHandleSchema = z.object({
+  queryHandle: z.string().min(1, "Query handle is required"),
+  dryRun: optionalBool(true),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(10),
+  ...orgProjectFields()
+});
+
 // ============================================================================
 // AI-Powered Bulk Operations Schemas
 // ============================================================================

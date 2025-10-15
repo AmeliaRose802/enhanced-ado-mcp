@@ -151,6 +151,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
     const httpClient = new ADOHttpClient(org, proj);
 
     const results: Array<{ workItemId: number; success: boolean; error?: string }> = [];
+    const operationHistory: Array<{ workItemId: number; changes: Record<string, any> }> = [];
 
     for (const workItemId of selectedWorkItemIds) {
       try {
@@ -166,6 +167,7 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
         });
 
         results.push({ workItemId, success: true });
+        operationHistory.push({ workItemId, changes: { comment: finalComment } });
         logger.debug(`Added comment to work item ${workItemId}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -176,6 +178,11 @@ export async function handleBulkCommentByQueryHandle(config: ToolConfig, args: u
 
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
+
+    // Record operation for undo (only successful items)
+    if (operationHistory.length > 0) {
+      queryHandleService.recordOperation(queryHandle, 'bulk-comment', operationHistory);
+    }
 
     return {
       success: failureCount === 0,

@@ -118,14 +118,39 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
     const httpClient = new ADOHttpClient(org, proj);
 
     const results: Array<{ workItemId: number; success: boolean; error?: string }> = [];
+    const operationHistory: Array<{ workItemId: number; changes: Record<string, any> }> = [];
 
     for (const workItemId of selectedWorkItemIds) {
       try {
         const url = `wit/workItems/${workItemId}?api-version=7.1`;
         
+        // Get current values before update for undo tracking
+        const currentItemResponse = await httpClient.get<any>(`wit/workItems/${workItemId}?api-version=7.1`);
+        const currentItem = currentItemResponse.data;
+        const previousValues: Record<string, any> = {};
+        
+        for (const update of updates) {
+          if (update.op === 'replace' || update.op === 'add') {
+            const fieldName = update.path;
+            const currentValue = currentItem?.fields?.[fieldName.replace('/fields/', '')];
+            previousValues[fieldName] = {
+              from: currentValue,
+              to: update.value
+            };
+          } else if (update.op === 'remove') {
+            const fieldName = update.path;
+            const currentValue = currentItem?.fields?.[fieldName.replace('/fields/', '')];
+            previousValues[fieldName] = {
+              from: currentValue,
+              to: undefined
+            };
+          }
+        }
+        
         await httpClient.patch(url, updates);
 
         results.push({ workItemId, success: true });
+        operationHistory.push({ workItemId, changes: previousValues });
         logger.debug(`Updated work item ${workItemId}`);
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -136,6 +161,11 @@ export async function handleBulkUpdateByQueryHandle(config: ToolConfig, args: un
 
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
+
+    // Record operation for undo (only successful items)
+    if (operationHistory.length > 0) {
+      queryHandleService.recordOperation(queryHandle, 'bulk-update', operationHistory);
+    }
 
     // Enhanced error reporting with selection context
     if (failureCount > 0) {

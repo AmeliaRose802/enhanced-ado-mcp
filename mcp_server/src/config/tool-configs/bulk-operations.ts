@@ -6,7 +6,8 @@ import {
   bulkRemoveByQueryHandleSchema,
   bulkTransitionStateByQueryHandleSchema,
   bulkMoveToIterationByQueryHandleSchema,
-  linkWorkItemsByQueryHandlesSchema
+  linkWorkItemsByQueryHandlesSchema,
+  bulkUndoByQueryHandleSchema
 } from "../schemas.js";
 
 /**
@@ -225,6 +226,23 @@ export const bulkOperationsTools: ToolConfig[] = [
         maxPreviewItems: { type: "number", description: "Maximum link operations to preview (default 10)" }
       },
       required: ["sourceQueryHandle", "targetQueryHandle", "linkType"]
+    }
+  },
+  {
+    name: "wit-bulk-undo-by-query-handle",
+    description: "🔄 UNDO LAST OPERATION: Undo the last bulk operation performed on a query handle. Reverts comments, field updates, assignments, state transitions, and iteration moves. Supports dry-run mode to preview undo actions. NOTE: Comments cannot be deleted via ADO API, so a reversal comment is added instead.",
+    script: "",
+    schema: bulkUndoByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
+        dryRun: { type: "boolean", description: "Preview undo operation without making changes (default true)" },
+        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 10)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle"]
     }
   }
 ];
