@@ -6,34 +6,7 @@ This document describes the comprehensive test coverage added for new bulk opera
 
 ### Unit Tests (`test/unit/`)
 
-#### 1. unified-query-generator.test.ts
-Tests for the `wit-generate-query` tool that uses AI to choose between WIQL and OData formats.
-
-**Test Coverage:**
-- AI-powered format selection (WIQL vs OData)
-- Parameter forwarding to delegated handlers
-- Error handling (Azure CLI unavailable, sampling unavailable, malformed AI responses)
-- AI response parsing with different structures
-- Confidence score normalization
-- Default parameter handling
-- Result propagation from delegated handlers
-
-**Test Cases:** 13
-- ✅ Should choose WIQL for state-based queries
-- ✅ Should choose OData for aggregation queries
-- ✅ Should include confidence and reasoning
-- ✅ Should forward all query parameters
-- ✅ Should handle Azure CLI not available
-- ✅ Should handle sampling not available
-- ✅ Should handle invalid schema input
-- ✅ Should handle malformed AI response
-- ✅ Should handle AI response without required fields
-- ✅ Should handle different AI response structures
-- ✅ Should normalize confidence scores
-- ✅ Should use default values for optional parameters
-- ✅ Should propagate results from delegated handlers
-
-#### 2. bulk-transition-state.test.ts
+#### 1. bulk-transition-state.test.ts
 Tests for the `wit-bulk-transition-state-by-query-handle` tool.
 
 **Test Coverage:**
@@ -54,7 +27,7 @@ Tests for the `wit-bulk-transition-state-by-query-handle` tool.
 - ✅ Error handling (invalid handles, Azure CLI issues)
 - ✅ Edge cases (expired handles, duplicate states)
 
-#### 3. bulk-move-iteration.test.ts
+#### 2. bulk-move-iteration.test.ts
 Tests for the `wit-bulk-move-to-iteration-by-query-handle` tool.
 
 **Test Coverage:**
@@ -75,7 +48,7 @@ Tests for the `wit-bulk-move-to-iteration-by-query-handle` tool.
 - ✅ Error handling
 - ✅ Edge cases (expired handles, empty context)
 
-#### 4. bulk-link-work-items.test.ts
+#### 3. bulk-link-work-items.test.ts
 Tests for the `wit-link-work-items-by-query-handles` tool.
 
 **Test Coverage:**
@@ -103,7 +76,7 @@ Tests for the `wit-link-work-items-by-query-handles` tool.
 - ✅ Error handling
 - ✅ Edge cases (mismatched counts, self-references)
 
-#### 5. context-packages-by-handle.test.ts
+#### 4. context-packages-by-handle.test.ts
 Tests for the `wit-get-context-packages-by-query-handle` tool.
 
 **Test Coverage:**
@@ -131,7 +104,7 @@ Tests for the `wit-get-context-packages-by-query-handle` tool.
 
 ### Integration Tests (`test/integration/`)
 
-#### 6. bulk-operations-integration.test.ts
+#### 5. bulk-operations-integration.test.ts
 End-to-end integration tests for complete workflows.
 
 **Test Scenarios:**
@@ -298,7 +271,7 @@ When adding new tools or modifying existing ones:
 
 ---
 
-**Last Updated:** 2025-10-08
-**Test Files:** 6 (5 unit + 1 integration)
-**Test Cases:** 70+
+**Last Updated:** 2025-10-14
+**Test Files:** 5 (4 unit + 1 integration)
+**Test Cases:** 57+
 **Coverage Target:** >80%

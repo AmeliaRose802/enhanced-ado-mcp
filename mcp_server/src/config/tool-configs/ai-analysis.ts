@@ -4,7 +4,6 @@ import {
   aiAssignmentAnalyzerSchema,
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
-  generateWiqlQuerySchema,
   generateODataQuerySchema,
   unifiedQueryGeneratorSchema,
   toolDiscoverySchema
@@ -105,24 +104,6 @@ export const aiAnalysisTools: ToolConfig[] = [
         areaPath: { type: "string", description: "Area path to filter work items (uses config default if not provided)" }
       },
       required: ["iterationPath", "teamMembers"]
-    }
-  },
-  {
-    name: "wit-generate-wiql-query",
-    description: "🤖 AI-POWERED: Generate valid WIQL queries from natural language descriptions with iterative validation. Automatically tests and refines queries until they work correctly. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
-    script: "",
-    schema: generateWiqlQuerySchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        description: { type: "string", description: "Natural language description of what you want to find (e.g., 'all active bugs created in the last week')" },
-        maxIterations: { type: "number", description: "Maximum attempts to generate valid query (1-5, default 3)" },
-        includeExamples: { type: "boolean", description: "Include example patterns in prompt (default true)" },
-        testQuery: { type: "boolean", description: "Test query by executing it (default true)" },
-        areaPath: { type: "string", description: "Override default area path from config (automatically scopes queries to configured area)" },
-        iterationPath: { type: "string", description: "Override default iteration path from config" }
-      },
-      required: ["description"]
     }
   },
   {

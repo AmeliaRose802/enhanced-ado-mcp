@@ -23,7 +23,7 @@ async function testBasicWiqlQuery() {
   console.log("\n🧪 Testing basic WIQL query...");
   
   try {
-    const result = await executeTool("wit-query-wiql", {
+    const result = await executeTool("wit-wiql-query", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC"
     });
     
@@ -55,7 +55,7 @@ async function testPagination() {
   
   try {
     // Get first page with top=5
-    const page1 = await executeTool("wit-query-wiql", {
+    const page1 = await executeTool("wit-wiql-query", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 5,
       skip: 0
@@ -74,7 +74,7 @@ async function testPagination() {
     
     if (page1.data?.pagination?.hasMore) {
       // Get second page
-      const page2 = await executeTool("wit-query-wiql", {
+      const page2 = await executeTool("wit-wiql-query", {
         wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
         top: 5,
         skip: 5
@@ -118,7 +118,7 @@ async function testConditionalPagination() {
   try {
     // Test 1: Query with single result (totalCount <= top) - should omit pagination
     console.log("\n  Test 1: Single-page result without includePaginationDetails");
-    const singlePageResult = await executeTool("wit-query-wiql", {
+    const singlePageResult = await executeTool("wit-wiql-query", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 200,
       skip: 0,
@@ -156,7 +156,7 @@ async function testConditionalPagination() {
     
     // Test 2: Query with includePaginationDetails=true - should always include pagination
     console.log("\n  Test 2: Result with includePaginationDetails=true");
-    const forcedPaginationResult = await executeTool("wit-query-wiql", {
+    const forcedPaginationResult = await executeTool("wit-wiql-query", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 200,
       skip: 0,
@@ -183,7 +183,7 @@ async function testConditionalPagination() {
     
     // Test 3: Query with multi-page results - should include pagination
     console.log("\n  Test 3: Multi-page result (top=5)");
-    const multiPageResult = await executeTool("wit-query-wiql", {
+    const multiPageResult = await executeTool("wit-wiql-query", {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' ORDER BY [System.ChangedDate] DESC",
       top: 5,
       skip: 0,

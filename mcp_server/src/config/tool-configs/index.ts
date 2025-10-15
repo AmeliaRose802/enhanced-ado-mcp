@@ -34,7 +34,7 @@ export const AI_POWERED_TOOLS = [
   'wit-bulk-enhance-descriptions-by-query-handle',
   'wit-bulk-assign-story-points-by-query-handle',
   'wit-bulk-add-acceptance-criteria-by-query-handle',
-  'wit-generate-wiql-query',
+  'wit-wiql-query', // Unified: supports AI generation when 'description' parameter is used
   'wit-generate-odata-query',
   'wit-generate-query',
   'wit-discover-tools'

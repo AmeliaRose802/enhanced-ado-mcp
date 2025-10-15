@@ -103,7 +103,7 @@ export function detectHallucinatedIds(
 
   let suggestion: string | undefined;
   if (isLikelyHallucinated) {
-    suggestion = 'Use wit-get-work-items-by-query-wiql with returnQueryHandle=true, then pass the query handle to bulk operations instead of manual IDs.';
+    suggestion = 'Use wit-wiql-query with returnQueryHandle=true, then pass the query handle to bulk operations instead of manual IDs.';
   }
 
   if (isLikelyHallucinated) {

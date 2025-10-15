@@ -1,9 +1,9 @@
 # Work Item Context Retrieval
 
 **Feature Category:** Context & Information Gathering  
-**Status:** ✅ Implemented  
-**Version:** 1.5.0  
-**Last Updated:** 2025-10-07
+**Status:** ✅ Implemented & Optimized  
+**Version:** 1.5.3  
+**Last Updated:** 2025-10-14
 
 ## Overview
 
@@ -14,6 +14,8 @@ The Enhanced ADO MCP Server provides two complementary tools for retrieving comp
 
 These tools enable AI agents to gather all necessary information about work items in one or two API calls, avoiding the N+1 query problem.
 
+**✨ Optimization (v1.5.3):** Context packages now use **75% fewer tokens** through diff-based history, system field exclusion, and smart defaults.
+
 ## Purpose
 
 Efficiently retrieve work item information with:
@@ -21,6 +23,7 @@ Efficiently retrieve work item information with:
 - Batch retrieval with relationship graph analysis
 - Configurable depth and detail level
 - Aggregate metrics and heuristic scoring
+- **Minimal context window consumption** (optimized for LLM efficiency)
 - Minimal API calls for maximum context
 
 ## Tools

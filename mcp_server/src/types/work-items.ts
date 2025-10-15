@@ -110,7 +110,11 @@ export interface WorkItemContextPackage {
     rev: number;
     changedDate: string;
     changedBy?: string;
-    fields: Record<string, string | number | boolean | undefined>;
+    changes: Array<{
+      field: string;
+      oldValue?: string | number | boolean;
+      newValue: string | number | boolean;
+    }>;
   }>;
   _raw?: {
     fields: Record<string, string | number | boolean | undefined>;

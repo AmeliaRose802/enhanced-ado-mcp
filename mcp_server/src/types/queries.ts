@@ -129,6 +129,7 @@ export interface ContextPackageArgs {
   maxRelatedItems?: number;
   includeAttachments?: boolean;
   includeTags?: boolean;
+  includeSystemFields?: boolean;
 }
 
 /**

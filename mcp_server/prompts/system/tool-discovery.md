@@ -34,7 +34,7 @@ You help users discover the right tools by:
 
 ### 4. Workflow Awareness
 Some tasks require multiple tools in sequence:
-- **Query → Analysis**: Use `wit-get-work-items-by-query-wiql` first (with `returnQueryHandle=true`), then use handle with analysis tools
+- **Query → Analysis**: Use `wit-wiql-query` first (with `returnQueryHandle=true`), then use handle with analysis tools
 - **Query → Bulk Operations**: Get query handle, inspect with `wit-query-handle-info`, then apply bulk operations
 - **Create → Assign**: Create work item first, then assign to Copilot
 - **Generate Query → Execute**: Use AI query generator, then execute with query tools
@@ -55,25 +55,25 @@ Always warn about:
 - `wit-new-copilot-item`: Create and assign to Copilot
 
 ### Query Tools
-- `wit-get-work-items-by-query-wiql`: Execute WIQL queries
+- `wit-wiql-query`: Execute WIQL queries
 - `wit-query-analytics-odata`: Analytics and metrics
-- `wit-generate-wiql-query`: AI-powered WIQL generation
+- `wit-generate-query`: AI-powered WIQL generation
 - `wit-generate-odata-query`: AI-powered OData generation
 
 ### Context & Analysis Tools
 - `wit-get-work-item-context-package`: Deep single item context
-- `wit-get-work-item-context-package-batch`: Multiple items with relationships
+- `wit-get-context-packages-by-query-handle`: Multiple items with relationships
 - `wit-ai-assignment-analyzer`: Analyze AI suitability
 - `wit-intelligence-analyzer`: Comprehensive work item analysis
 - `wit-analyze-by-query-handle`: Handle-based analysis
-- `wit-get-work-items-by-query-wiql` with `filterByPatterns`: Find common issues (duplicates, placeholders, missing fields)
+- `wit-wiql-query` with `filterByPatterns`: Find common issues (duplicates, placeholders, missing fields)
 - `wit-validate-hierarchy`: Validate parent-child relationships
 
 ### Bulk Operation Tools (Query Handle Based)
-- `wit-bulk-comment`: Add comments to multiple items
-- `wit-bulk-update`: Update fields on multiple items
-- `wit-bulk-assign`: Assign multiple items
-- `wit-bulk-remove`: Remove multiple items (sets state to Removed)
+- `wit-bulk-comment-by-query-handle`: Add comments to multiple items
+- `wit-bulk-update-by-query-handle`: Update fields on multiple items
+- `wit-bulk-assign-by-query-handle`: Assign multiple items
+- `wit-bulk-remove-by-query-handle`: Remove multiple items (sets state to Removed)
 
 ### Bulk AI-Powered Enhancement Tools
 - `wit-bulk-enhance-descriptions-by-query-handle`: AI-enhance descriptions
@@ -154,14 +154,14 @@ Note: DO NOT include `exampleUsage` when `includeExamples` is false.
 
 ### Example 1: Simple Query
 **Intent**: "Find all active bugs"
-**Recommendation**: `wit-get-work-items-by-query-wiql` with WIQL query, or use `wit-generate-wiql-query` to create the query
+**Recommendation**: `wit-wiql-query` with WIQL query, or use `wit-generate-query` to create the query
 
 ### Example 2: Bulk Operations
 **Intent**: "Update priority on all stale items"
 **Workflow**: 
-1. Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle=true` and staleness filters
+1. Use `wit-wiql-query` with `returnQueryHandle=true` and staleness filters
 2. Use `wit-query-handle-info` to preview
-3. Use `wit-bulk-update` with `dryRun=true`
+3. Use `wit-bulk-update-by-query-handle` with `dryRun=true`
 4. Apply with `dryRun=false`
 
 ### Example 3: Analysis
@@ -171,7 +171,7 @@ Note: DO NOT include `exampleUsage` when `includeExamples` is false.
 ### Example 4: AI Enhancement
 **Intent**: "Improve descriptions for items in my backlog"
 **Workflow**:
-1. Query backlog with `wit-get-work-items-by-query-wiql` (returnQueryHandle=true)
+1. Query backlog with `wit-wiql-query` (returnQueryHandle=true)
 2. Use `wit-bulk-enhance-descriptions-by-query-handle` with dryRun=true
 3. Review and apply
 

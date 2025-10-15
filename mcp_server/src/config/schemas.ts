@@ -225,17 +225,39 @@ export const toolDiscoverySchema = z.object({
 // Query & Search Schemas
 // ============================================================================
 
+/**
+ * Unified WIQL Query Schema
+ * Supports both direct WIQL execution and AI-powered query generation
+ * Consolidates functionality into wit-wiql-query tool
+ */
 export const wiqlQuerySchema = z.object({
-  wiqlQuery: z.string().min(1, "WIQL query is required"),
-  includeFields: z.array(z.string()).optional(),
-  maxResults: z.number().int().min(1).max(1000).optional().default(200),
+  // Query Definition (provide ONE of these)
+  description: z.string().min(1).optional(), // Natural language for AI generation
+  wiqlQuery: z.string().min(1).optional(), // Direct WIQL query
+  
+  // AI Generation Options (only used with 'description')
+  includeExamples: optionalBool(true),
+  maxIterations: z.number().int().positive().min(1).max(5).optional().default(3),
+  testQuery: optionalBool(true),
+  
+  // Scope Configuration (auto-filled from config)
+  areaPath: optionalString(),
+  iterationPath: optionalString(),
+  
+  // Result Configuration
+  returnQueryHandle: optionalBool(true),
+  handleOnly: optionalBool(false),
+  maxResults: z.number().int().min(1).max(10000).optional().default(200),
   skip: z.number().int().min(0).optional().default(0),
-  top: z.number().int().min(1).max(1000).optional(),
+  top: z.number().int().positive().optional(), // Alias for maxResults
+  
+  // Data Enrichment
+  includeFields: z.array(z.string()).optional(),
   includeSubstantiveChange: optionalBool(false),
-  filterBySubstantiveChangeAfter: optionalString(),
-  filterBySubstantiveChangeBefore: optionalString(),
-  filterByDaysInactiveMin: optionalNumber(),
-  filterByDaysInactiveMax: optionalNumber(),
+  substantiveChangeHistoryCount: z.number().int().min(1).max(200).optional().default(50),
+  fetchFullPackages: optionalBool(false),
+  
+  // Filtering (applied post-query)
   filterByPatterns: z.array(z.enum([
     "duplicates",
     "placeholder_titles",
@@ -244,12 +266,20 @@ export const wiqlQuerySchema = z.object({
     "missing_description",
     "missing_acceptance_criteria"
   ])).optional(),
-  returnQueryHandle: optionalBool(true),
-  handleOnly: optionalBool(false),
-  fetchFullPackages: optionalBool(false),
+  filterByDaysInactiveMin: optionalNumber(),
+  filterByDaysInactiveMax: optionalNumber(),
+  filterBySubstantiveChangeAfter: optionalString(),
+  filterBySubstantiveChangeBefore: optionalString(),
+  
+  // Advanced Options
+  staleThresholdDays: optionalNumber(),
   includePaginationDetails: optionalBool(false),
+  
   ...orgProjectFields()
-});
+}).refine(
+  (data) => data.description || data.wiqlQuery,
+  { message: "Either 'description' (for AI generation) or 'wiqlQuery' (for direct execution) must be provided" }
+);
 
 export const odataAnalyticsQuerySchema = z.object({
   queryType: z.enum([
@@ -277,11 +307,6 @@ export const odataAnalyticsQuerySchema = z.object({
   iterationPath: optionalString(),
   computeCycleTime: optionalBool(false),
   ...orgProjectFields()
-});
-
-export const generateWiqlQuerySchema = z.object({
-  ...queryGeneratorFields(),
-  returnQueryHandle: optionalBool(false)
 });
 
 export const generateODataQuerySchema = z.object({
@@ -328,8 +353,8 @@ export const listQueryHandlesSchema = z.object({
 
 export const workItemContextPackageSchema = z.object({
   workItemId: workItemIdField(),
-  includeHistory: optionalBool(false).describe("Include work item revision history. Adds ~40KB per item with full history. disabled by default to save context window."),
-  maxHistoryRevisions: z.number().int().min(1).max(100).optional().default(5).describe("Maximum number of history revisions to include when includeHistory is true. Revisions are sorted by date descending (newest first)."),
+  includeHistory: optionalBool(false).describe("Include work item revision history with diff-based changes (only modified fields). Optimized for context window efficiency."),
+  maxHistoryRevisions: z.number().int().min(1).max(100).optional().default(3).describe("Maximum number of history revisions to include when includeHistory is true. Default reduced to 3 for context window efficiency."),
   includeComments: optionalBool(true),
   includeRelations: optionalBool(true),
   includeChildren: optionalBool(true),
@@ -337,10 +362,13 @@ export const workItemContextPackageSchema = z.object({
   includeLinkedPRsAndCommits: optionalBool(false),
   includeExtendedFields: optionalBool(false),
   includeHtml: optionalBool(false),
+  includeHtmlFields: optionalBool(false),
+  stripHtmlFormatting: optionalBool(true),
   maxChildDepth: z.number().int().min(1).max(5).optional().default(1),
   maxRelatedItems: z.number().int().min(1).max(100).optional().default(20),
   includeAttachments: optionalBool(false),
   includeTags: optionalBool(true),
+  includeSystemFields: optionalBool(false).describe("Include ADO system fields (WEF_*, watermarks, etc.). Excluded by default to reduce context window usage."),
   ...orgProjectFields()
 });
 
@@ -348,12 +376,13 @@ export const getContextPackagesByQueryHandleSchema = z.object({
   queryHandle: z.string().min(1, "Query handle is required"),
   itemSelector: itemSelectorSchema.optional().default("all"),
   includeHistory: optionalBool(false),
-  maxHistoryRevisions: z.number().int().min(1).max(100).optional().default(5),
+  maxHistoryRevisions: z.number().int().min(1).max(100).optional().default(3),
   includeComments: optionalBool(true),
   includeRelations: optionalBool(true),
   includeChildren: optionalBool(true),
   includeParent: optionalBool(true),
   includeExtendedFields: optionalBool(false),
+  includeSystemFields: optionalBool(false),
   maxPreviewItems: z.number().int().min(1).optional().default(10),
   ...orgProjectFields()
 });

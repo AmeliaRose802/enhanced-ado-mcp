@@ -16,13 +16,13 @@ import {
 export const bulkOperationsTools: ToolConfig[] = [
   {
     name: "wit-bulk-comment-by-query-handle",
-    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-get-work-items-by-query-wiql to eliminate ID hallucination risk. Supports template variables and dry-run mode. TEMPLATE VARIABLES: Use {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id} in comment text for per-item substitution when query handle includes staleness data.",
+    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-wiql-query to eliminate ID hallucination risk. Supports template variables and dry-run mode. TEMPLATE VARIABLES: Use {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id} in comment text for per-item substitution when query handle includes staleness data.",
     script: "",
     schema: bulkCommentByQueryHandleSchema,
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         comment: { type: "string", description: "Comment text to add to all work items (supports Markdown and template variables like {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id})" },
         dryRun: { type: "boolean", description: "Preview operation without making changes (default false) - shows template substitution examples" },
         organization: { type: "string", description: "Azure DevOps organization name" },
@@ -39,7 +39,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         updates: {
           type: "array",
           items: {
@@ -68,7 +68,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         assignTo: { type: "string", description: "User email or display name to assign work items to" },
         dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
@@ -85,7 +85,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         removeReason: { type: "string", description: "Optional reason for removing work items (added as comment before state change)" },
         dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
@@ -102,7 +102,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         targetState: { type: "string", description: "Target state to transition to (e.g., 'Resolved', 'Closed', 'Done')" },
         reason: { type: "string", description: "Reason for state transition (e.g., 'Fixed', 'Completed'). Required for some transitions." },
         comment: { type: "string", description: "Optional comment to add when transitioning state" },
@@ -138,7 +138,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         targetIterationPath: { type: "string", description: "Target iteration/sprint path (e.g., 'Project\\\\Sprint 11')" },
         comment: { type: "string", description: "Optional comment to add when moving to new iteration" },
         itemSelector: {
@@ -173,8 +173,8 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        sourceQueryHandle: { type: "string", description: "Source query handle from wit-get-work-items-by-query-wiql" },
-        targetQueryHandle: { type: "string", description: "Target query handle from wit-get-work-items-by-query-wiql" },
+        sourceQueryHandle: { type: "string", description: "Source query handle from wit-wiql-query" },
+        targetQueryHandle: { type: "string", description: "Target query handle from wit-wiql-query" },
         linkType: { 
           type: "string", 
           enum: ["Related", "Parent", "Child", "Predecessor", "Successor", "Affects", "Affected By"],

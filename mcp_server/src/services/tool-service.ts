@@ -13,9 +13,7 @@ import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
 import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
-import { handleGenerateWiqlQuery } from './handlers/query/generate-wiql-query.handler.js';
 import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.handler.js';
-import { handleUnifiedQueryGenerator } from './handlers/query/unified-query-generator.js';
 
 // Query handle handlers
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
@@ -27,7 +25,7 @@ import { handleBulkCommentByQueryHandle } from './handlers/bulk-operations/bulk-
 import { handleBulkUpdateByQueryHandle } from './handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
 import { handleBulkAssignByQueryHandle } from './handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
 import { handleBulkRemoveByQueryHandle } from './handlers/bulk-operations/bulk-remove-by-query-handle.handler.js';
-import { handleLinkWorkItemsByQueryHandles } from './handlers/bulk-operations/link-work-items-by-query-handles.handler.js';
+import { handleBulkLinkByQueryHandles } from './handlers/bulk-operations/bulk-link-handler.js';
 import { handleBulkTransitionState } from './handlers/bulk-operations/bulk-transition-handler.js';
 import { handleBulkMoveToIteration } from './handlers/bulk-operations/bulk-move-iteration-handler.js';
 
@@ -150,9 +148,9 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleCloneWorkItem(config, args);
   }
 
-  // Query work items using WIQL (Work Item Query Language)
-  if (name === 'wit-get-work-items-by-query-wiql') {
-    return await handleWiqlQuery(config, args);
+  // Unified WIQL query tool (supports both direct query and AI generation)
+  if (name === 'wit-wiql-query') {
+    return await handleWiqlQuery(config, args, serverInstance ?? undefined);
   }
 
   // Query Analytics using OData for aggregations and metrics
@@ -225,7 +223,7 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
 
   // Link work items using query handles
   if (name === 'wit-link-work-items-by-query-handles') {
-    return await handleLinkWorkItemsByQueryHandles(config, args);
+    return await handleBulkLinkByQueryHandles(config, args);
   }
 
   if (name === 'wit-analyze-by-query-handle') {
@@ -271,28 +269,12 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
     return await handleBulkAddAcceptanceCriteria(config, args, serverInstance);
   }
 
-  // AI-powered WIQL query generator
-  if (name === 'wit-generate-wiql-query') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleGenerateWiqlQuery(config, args, serverInstance);
-  }
-
   // AI-powered OData query generator
   if (name === 'wit-generate-odata-query') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
     return await handleGenerateODataQuery(config, args, serverInstance);
-  }
-
-  // AI-powered unified query generator (intelligently chooses WIQL or OData)
-  if (name === 'wit-generate-query') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleUnifiedQueryGenerator(config, args, serverInstance);
   }
 
   // All tools should be handled by the cases above

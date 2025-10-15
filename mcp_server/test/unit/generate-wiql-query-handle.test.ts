@@ -1,11 +1,11 @@
 /**
- * Generate WIQL Query Handler Tests - Query Handle Feature
+ * Unified WIQL Query Tool Tests - AI Generation Mode
  * 
- * Tests for the query handle functionality in the WIQL query generator
+ * Tests for the AI-powered query generation functionality of the unified wit-wiql-query tool
  */
 
-import { handleGenerateWiqlQuery } from '../../src/services/handlers/query/generate-wiql-query.handler.js';
-import { generateWiqlQuerySchema } from '../../src/config/schemas.js';
+import { handleWiqlQuery } from '../../src/services/handlers/query/wiql-query.handler.js';
+import { wiqlQuerySchema } from '../../src/config/schemas.js';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 // Mock configuration
@@ -62,12 +62,12 @@ jest.mock('../../src/services/ado-work-item-service.js', () => ({
 import { queryWorkItemsByWiql } from '../../src/services/ado-work-item-service.js';
 const mockQueryWorkItemsByWiql = queryWorkItemsByWiql as jest.MockedFunction<typeof queryWorkItemsByWiql>;
 
-describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
+describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle parameter', () => {
   const mockConfig = {
-    name: 'wit-ai-generate-wiql',
+    name: 'wit-wiql-query',
     description: 'Test',
     script: '',
-    schema: generateWiqlQuerySchema,
+    schema: wiqlQuerySchema,
     inputSchema: { type: 'object' as const }
   };
 
@@ -79,8 +79,65 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
     jest.clearAllMocks();
   });
 
-  describe('when returnQueryHandle is false (default)', () => {
+  afterAll(() => {
+    // Stop the query handle service cleanup interval to allow Jest to exit
+    queryHandleService.stopCleanup();
+  });
+
+  describe('Direct WIQL mode (wiqlQuery parameter)', () => {
+    it('should execute direct WIQL query without AI generation', async () => {
+      // Mock query execution
+      mockQueryWorkItemsByWiql.mockResolvedValueOnce({
+        workItems: [
+          {
+            id: 123,
+            title: 'Test Item',
+            state: 'Active',
+            type: 'Task',
+            url: 'http://test.com/123',
+            createdDate: '2025-01-01',
+            changedDate: '2025-01-02',
+            areaPath: 'Test\\Area',
+            iterationPath: 'Sprint 1',
+            assignedTo: 'user@test.com',
+            additionalFields: {}
+          }
+        ],
+        totalCount: 1,
+        count: 1,
+        query: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'',
+        skip: 0,
+        top: 200,
+        hasMore: false
+      });
+
+      const result = await handleWiqlQuery(
+        mockConfig,
+        {
+          wiqlQuery: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'',
+          organization: 'test-org',
+          project: 'test-project',
+          returnQueryHandle: true
+        },
+        mockServerInstance
+      );
+
+      expect(result.success).toBe(true);
+      expect((result.data as any).query_handle).toBeDefined();
+      expect((result.data as any).work_items).toBeDefined();
+      expect((result.data as any).work_items).toHaveLength(1);
+      
+      // Verify AI generation was NOT used (sampling client should not be called)
+      expect(mockSamplingClient.createMessage).not.toHaveBeenCalled();
+      
+      // Verify direct query execution
+      expect(mockQueryWorkItemsByWiql).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('AI Generation mode (description parameter) - when returnQueryHandle is false (default)', () => {
     it('should return only the generated query without creating a handle', async () => {
+      // NOTE: Using 'description' parameter triggers AI generation mode
       // Mock AI response
       mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = \'Active\'' }],
@@ -99,7 +156,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         hasMore: false
       });
 
-      const result = await handleGenerateWiqlQuery(
+      const result = await handleWiqlQuery(
         mockConfig,
         {
           description: 'Find all active work items',
@@ -117,8 +174,9 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
     });
   });
 
-  describe('when returnQueryHandle is true', () => {
+  describe('AI Generation mode (description parameter) - when returnQueryHandle is true', () => {
     it('should create a query handle and return work items', async () => {
+      // NOTE: Using 'description' parameter triggers AI generation mode
       // Mock AI response
       mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
@@ -181,7 +239,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         hasMore: false
       });
 
-      const result = await handleGenerateWiqlQuery(
+      const result = await handleWiqlQuery(
         mockConfig,
         {
           description: 'Find all active work items',
@@ -241,7 +299,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         hasMore: false
       });
 
-      const result = await handleGenerateWiqlQuery(
+      const result = await handleWiqlQuery(
         mockConfig,
         {
           description: 'Find non-existent items',
@@ -306,7 +364,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         hasMore: false
       });
 
-      const result = await handleGenerateWiqlQuery(
+      const result = await handleWiqlQuery(
         mockConfig,
         {
           description: 'Find active items',
@@ -353,7 +411,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       // Mock query execution for handle creation (second call - fails)
       mockQueryWorkItemsByWiql.mockRejectedValueOnce(new Error('Internal Server Error'));
 
-      const result = await handleGenerateWiqlQuery(
+      const result = await handleWiqlQuery(
         mockConfig,
         {
           description: 'Find active items',
@@ -368,7 +426,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
       expect((result.data as any).query).toBeDefined();
       expect((result.data as any).query_handle).toBeUndefined();
       expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings.some(w => w.includes('Failed to create query handle'))).toBe(true);
+      expect(result.warnings.some((w: string) => w.includes('Failed to create query handle'))).toBe(true);
     });
   });
 
@@ -417,7 +475,7 @@ describe('Generate WIQL Query Handler - returnQueryHandle parameter', () => {
         hasMore: false
       });
 
-      const result = await handleGenerateWiqlQuery(
+      const result = await handleWiqlQuery(
         mockConfig,
         {
           description: 'Find active items',

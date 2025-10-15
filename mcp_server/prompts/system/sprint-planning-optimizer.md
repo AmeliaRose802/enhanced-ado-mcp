@@ -45,7 +45,7 @@ customQuery: "$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and Co
 **Step 3: Get Story Points for Completed Work**
 Use WIQL to fetch completed items with Story Points:
 ```
-wit-get-work-items-by-query-wiql with:
+wit-wiql-query with:
 wiqlQuery: "[System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'Closed' AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - 42 AND [System.AssignedTo] <> ''"
 fields: ["System.Id", "System.Title", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "System.WorkItemType", "Microsoft.VSTS.Common.ClosedDate"]
 returnQueryHandle: true
@@ -96,7 +96,7 @@ Available Capacity = Buffer Adjustment - Current Active Work Load
 **Step 3: Check Current Work In Progress**
 Use WIQL for real-time active work:
 ```
-wit-get-work-items-by-query-wiql with:
+wit-wiql-query with:
 wiqlQuery: "[System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Active', 'Committed', 'Approved', 'In Review') AND [System.AssignedTo] <> ''"
 fields: ["System.Id", "System.Title", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "System.State", "System.WorkItemType", "System.Priority"]
 returnQueryHandle: true
@@ -133,7 +133,7 @@ Capacity Status:
 **Step 1: Fetch Top Backlog Items**
 Use WIQL to get prioritized backlog:
 ```
-wit-get-work-items-by-query-wiql with:
+wit-wiql-query with:
 wiqlQuery: "[System.AreaPath] UNDER '{{area_path}}' AND [System.State] = 'New' AND [System.AssignedTo] = '' ORDER BY [Microsoft.VSTS.Common.Priority], [Microsoft.VSTS.Common.StackRank]"
 top: {{include_backlog_top_n}}
 fields: ["System.Id", "System.Title", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.Tags", "System.Description"]
@@ -158,11 +158,12 @@ dryRun: false
 **Step 3: Analyze Work Item Requirements**
 For top items, use context batch to understand requirements:
 ```
-wit-get-work-item-context-package-batch with:
-workItemIds: [top 20-30 item IDs]
+wit-get-context-packages-by-query-handle with:
+queryHandle: [backlog handle from step 1]
 includeRelations: true
 includeFields: ["System.Tags", "System.Description", "Microsoft.VSTS.Common.AcceptanceCriteria"]
 includeStateCounts: false
+maxItems: 30
 ```
 
 **Step 4: Classify Work Items**
@@ -644,7 +645,7 @@ def score_assignment(item, member, current_assignments, capacity):
 - Velocity trend analysis over time
 - Work distribution patterns
 
-**Use WIQL (`wit-get-work-items-by-query-wiql`) for:**
+**Use WIQL (`wit-wiql-query`) for:**
 - Real-time active work with Story Points
 - Backlog queries with priority ordering
 - Current team member assignments
@@ -658,7 +659,7 @@ def score_assignment(item, member, current_assignments, capacity):
   - `dryRun: false` (apply automatically)
 
 **Use Context Tools (Selectively):**
-- `wit-get-work-item-context-package-batch` - Analyze top 20-30 backlog items for requirements
+- `wit-get-context-packages-by-query-handle` - Analyze top items from query handle for requirements
 - `wit-get-work-item-context-package` - Deep dive on complex/blocker items
 
 **Use AI/Sampling (via prompt execution):**

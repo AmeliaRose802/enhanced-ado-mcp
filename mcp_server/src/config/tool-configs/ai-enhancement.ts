@@ -18,7 +18,7 @@ export const aiEnhancementTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query (returnQueryHandle=true)" },
         itemSelector: {
           oneOf: [
             { type: "string", enum: ["all"], description: "Select all items" },
@@ -61,7 +61,7 @@ export const aiEnhancementTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query (returnQueryHandle=true)" },
         itemSelector: {
           oneOf: [
             { type: "string", enum: ["all"], description: "Select all items" },
@@ -100,7 +100,7 @@ export const aiEnhancementTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query (returnQueryHandle=true)" },
         itemSelector: {
           oneOf: [
             { type: "string", enum: ["all"], description: "Select all items" },

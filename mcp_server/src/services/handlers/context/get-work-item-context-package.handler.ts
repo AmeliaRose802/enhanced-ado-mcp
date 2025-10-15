@@ -9,6 +9,19 @@ interface CleanedFields {
   [key: string]: string | number | boolean | undefined;
 }
 
+interface FieldChange {
+  field: string;
+  oldValue?: string | number | boolean;
+  newValue: string | number | boolean;
+}
+
+interface OptimizedHistoryRevision {
+  rev: number;
+  changedDate: string;
+  changedBy?: string;
+  changes: FieldChange[];
+}
+
 interface SimplifiedWorkItem {
   id: number;
   title?: string;
@@ -52,15 +65,48 @@ interface ADORevisionsResponse {
 }
 
 /**
+ * System fields to exclude from history and context packages.
+ * These are ADO internal fields that don't provide value for AI analysis.
+ */
+const SYSTEM_FIELDS_TO_EXCLUDE = [
+  'System.AuthorizedDate',
+  'System.RevisedDate',
+  'System.Watermark',
+  'System.PersonId',
+  'System.AuthorizedAs',
+  'System.Rev',
+  'System.CommentCount',
+  'System.AreaId',
+  'System.NodeName',
+  'System.BoardColumnDone',
+  'Microsoft.VSTS.Common.BacklogPriority',
+  'Microsoft.VSTS.Common.StateChangeDate',
+];
+
+/**
+ * Check if field is a system/internal field that should be excluded.
+ */
+function isSystemField(fieldName: string): boolean {
+  // Exclude WEF (Work Item Extension Framework) fields
+  if (fieldName.startsWith('WEF_')) return true;
+  // Exclude explicitly listed system fields
+  if (SYSTEM_FIELDS_TO_EXCLUDE.includes(fieldName)) return true;
+  return false;
+}
+
+/**
  * Clean up verbose fields from work item data to reduce context window usage.
  * Simplifies user objects to just displayName and removes redundant metadata.
  */
-function cleanFields(fields: Record<string, unknown>): CleanedFields {
+function cleanFields(fields: Record<string, unknown>, includeSystemFields: boolean = false): CleanedFields {
   if (!fields || typeof fields !== 'object') return {};
   
   const cleaned: CleanedFields = {};
   
   for (const [key, value] of Object.entries(fields)) {
+    // Skip system fields unless explicitly requested
+    if (!includeSystemFields && isSystemField(key)) continue;
+    
     // Simplify user objects (System.CreatedBy, System.ChangedBy, System.AssignedTo, etc.)
     if (value && typeof value === 'object' && 'displayName' in value) {
       cleaned[key] = (value as {displayName: string}).displayName;
@@ -88,6 +134,47 @@ function stripHtml(html?: string): string | undefined {
     .replace(/&gt;/g, '>')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/**
+ * Compute changes between two revision field sets.
+ * Only includes fields that actually changed, reducing verbosity.
+ */
+function computeFieldChanges(
+  currentFields: CleanedFields,
+  previousFields: CleanedFields | null,
+  stripHtmlFormatting: boolean
+): FieldChange[] {
+  if (!previousFields) return []; // First revision has no changes
+  
+  const changes: FieldChange[] = [];
+  const allFields = new Set([...Object.keys(currentFields), ...Object.keys(previousFields)]);
+  
+  for (const field of allFields) {
+    const current = currentFields[field];
+    const previous = previousFields[field];
+    
+    // Skip if unchanged
+    if (current === previous) continue;
+    
+    // Strip HTML from description fields if requested
+    let oldValue = previous;
+    let newValue = current;
+    
+    if (stripHtmlFormatting && typeof newValue === 'string' && 
+        (field === 'System.Description' || field === 'Microsoft.VSTS.Common.AcceptanceCriteria')) {
+      oldValue = typeof oldValue === 'string' ? stripHtml(oldValue) : oldValue;
+      newValue = stripHtml(newValue);
+    }
+    
+    changes.push({
+      field,
+      oldValue: oldValue as string | number | boolean | undefined,
+      newValue: newValue as string | number | boolean
+    });
+  }
+  
+  return changes;
 }
 
 /**
@@ -122,7 +209,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     organization = cfg.azureDevOps.organization,
     project = cfg.azureDevOps.project,
     includeHistory = false,
-    maxHistoryRevisions = 5,
+    maxHistoryRevisions = 3,
     includeComments = true,
     includeRelations = true,
     includeChildren = true,
@@ -135,7 +222,8 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     maxChildDepth = 1,
     maxRelatedItems = 50,
     includeAttachments = false,
-    includeTags = true
+    includeTags = true,
+    includeSystemFields = false
   } = args;
 
   try {
@@ -265,24 +353,36 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       } catch (e) { logger.warn(`Failed to load comments for ${workItemId}`, e); }
     }
 
-    // History (recent revisions)
-    let history: Array<{rev: number; changedDate: string; changedBy?: string; fields: CleanedFields}> = [];
+    // History (recent revisions) - optimized to show only changed fields
+    let history: OptimizedHistoryRevision[] = [];
     if (includeHistory) {
       try {
         const hResponse = await httpClient.get<ADORevisionsResponse>(`wit/workItems/${workItemId}/revisions?$top=${maxHistoryRevisions}`);
         const hRes = hResponse.data;
-        history = (hRes.value || [])
+        const revisions = (hRes.value || [])
           .sort((a, b) => (b.rev || 0) - (a.rev || 0)) // Sort by revision number descending (newest first)
-          .slice(0, maxHistoryRevisions) // Limit to maxHistoryRevisions
-          .map((r) => {
-            const cleanedFields = cleanFields(r.fields || {});
-            return {
-              rev: r.rev || 0,
-              changedDate: typeof cleanedFields?.['System.ChangedDate'] === 'string' ? cleanedFields['System.ChangedDate'] : '',
-              changedBy: typeof cleanedFields?.['System.ChangedBy'] === 'string' ? cleanedFields['System.ChangedBy'] : undefined,
-              fields: cleanedFields
-            };
-          });
+          .slice(0, maxHistoryRevisions);
+        
+        // Build optimized history with only changed fields
+        for (let i = 0; i < revisions.length; i++) {
+          const current = revisions[i];
+          const previous = i < revisions.length - 1 ? revisions[i + 1] : null;
+          
+          const currentFields = cleanFields(current.fields || {}, includeSystemFields);
+          const previousFields = previous ? cleanFields(previous.fields || {}, includeSystemFields) : null;
+          
+          const changes = computeFieldChanges(currentFields, previousFields, stripHtmlFormatting);
+          
+          // Only include revisions with actual changes
+          if (changes.length > 0 || i === 0) { // Always include latest revision
+            history.push({
+              rev: current.rev || 0,
+              changedDate: typeof currentFields?.['System.ChangedDate'] === 'string' ? currentFields['System.ChangedDate'] : '',
+              changedBy: typeof currentFields?.['System.ChangedBy'] === 'string' ? currentFields['System.ChangedBy'] : undefined,
+              changes
+            });
+          }
+        }
       } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, e); }
     }
 
@@ -329,7 +429,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       attachments: includeAttachments ? attachments : undefined,
       comments,
       ...(includeHistory ? { history } : {}),
-      _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap) } : undefined
+      _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap, includeSystemFields) } : undefined
     };
 
     return buildSuccessResponse({ contextPackage: result }, { tool: 'wit-get-context' });

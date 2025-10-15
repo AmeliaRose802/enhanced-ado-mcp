@@ -46,7 +46,7 @@ export default {
     'hierarchy-validator-integration.test.ts',
     'ai-assignment-integration.test.ts',
     // Tests with import.meta issues (Jest limitation)
-    'unified-query-generator.test.ts',
+
     'ai-assignment-analyzer.test.ts',
     'sampling-feature.test.ts',
     'wiql-full-packages.test.ts',

@@ -15,11 +15,9 @@ export const TOOL_NAMES = {
   GET_CONTEXT_PACKAGES_BY_QUERY_HANDLE: 'wit-get-context-packages-by-query-handle',
   
   // Query Operations
-  WIQL_QUERY: 'wit-get-work-items-by-query-wiql',
-  GENERATE_WIQL_QUERY: 'wit-generate-wiql-query',
-  ODATA_ANALYTICS: 'wit-odata-analytics-query',
+  WIQL_QUERY: 'wit-wiql-query', // Unified: supports both direct WIQL and AI generation
+  ODATA_ANALYTICS: 'wit-query-analytics-odata',
   GENERATE_ODATA_QUERY: 'wit-generate-odata-query',
-  UNIFIED_QUERY_GENERATOR: 'wit-unified-query-generator',
   
   // Query Handle Operations
   LIST_QUERY_HANDLES: 'wit-list-query-handles',

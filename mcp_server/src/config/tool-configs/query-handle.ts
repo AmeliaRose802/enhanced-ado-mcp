@@ -20,7 +20,7 @@ export const queryHandleTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql (ensures analysis is based on real query results, not hallucinated IDs)" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query (ensures analysis is based on real query results, not hallucinated IDs)" },
         analysisType: { 
           type: "array", 
           items: { 
@@ -90,7 +90,7 @@ export const queryHandleTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle to get information about (from wit-get-work-items-by-query-wiql with returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle to get information about (from wit-wiql-query with returnQueryHandle=true)" },
         detailed: { type: "boolean", description: "Include detailed validation data and selection analysis (default false for concise output)" },
         includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
         includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" },
@@ -129,7 +129,7 @@ export const queryHandleTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-get-work-items-by-query-wiql with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
         itemSelector: {
           oneOf: [
             { type: "string", enum: ["all"], description: "Select all items" },
