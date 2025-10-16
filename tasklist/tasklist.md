@@ -9,4 +9,4 @@
 
 - Undo tool needs to allow undoing more then the most recent action. It should allow undoing all actions performed on the query handle
 
-- Add a prompt for sprint review. It should look at last n days and 
+- Add a prompt for sprint review. It should look at last n days (ask user how long) and review if planned work was completed. It should identify bottlenecks and oppertunities.

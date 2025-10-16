@@ -230,13 +230,14 @@ export const bulkOperationsTools: ToolConfig[] = [
   },
   {
     name: "wit-bulk-undo-by-query-handle",
-    description: "🔄 UNDO LAST OPERATION: Undo the last bulk operation performed on a query handle. Reverts comments, field updates, assignments, state transitions, and iteration moves. Supports dry-run mode to preview undo actions. NOTE: Comments cannot be deleted via ADO API, so a reversal comment is added instead.",
+    description: "🔄 UNDO OPERATIONS: Undo bulk operations performed on a query handle. Can undo just the last operation (default) or all operations (undoAll: true). Reverts comments, field updates, assignments, state transitions, and iteration moves. Supports dry-run mode to preview undo actions. NOTE: Comments cannot be deleted via ADO API, so a reversal comment is added instead.",
     script: "",
     schema: bulkUndoByQueryHandleSchema,
     inputSchema: {
       type: "object",
       properties: {
         queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
+        undoAll: { type: "boolean", description: "Undo all operations performed on this query handle (default: false, only undoes last operation)" },
         dryRun: { type: "boolean", description: "Preview undo operation without making changes (default true)" },
         maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 10)" },
         organization: { type: "string", description: "Azure DevOps organization name" },

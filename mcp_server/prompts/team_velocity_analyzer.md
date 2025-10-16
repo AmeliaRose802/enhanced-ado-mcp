@@ -29,7 +29,7 @@ You are a **Team Flow & Progress Analyst**. Produce a holistic, anonymized view 
 **OData:** `wit-query-analytics-odata` - Historical metrics, velocity trends, completion counts | ❌ NO StoryPoints or date arithmetic | ✅ WorkItemType, State, AssignedTo, CompletedDate | 5-15 min delayed | Use filters: {"Area/AreaPath": "{{area_path}}"} for exact match (contains() not supported in custom queries)
 **WIQL:** `wit-wiql-query` - Real-time state, `UNDER` hierarchy, StoryPoints, stale detection | ⚠️ Pagination: 200 default, use skip/top | **Always use `returnQueryHandle: true`** to enable query handle-based bulk operations
 **Context (Sparingly):** `wit-get-work-item-context-package` (single item only - use query handle analysis tools for bulk operations instead)
-**Pattern:** `wit-get-work-items-by-query-wiql` (with filterByPatterns), `wit-get-last-substantive-change`
+**Pattern:** `wit-wiql-query` (with filterByPatterns and returnQueryHandle), `wit-get-last-substantive-change`
 **Assignment:** `wit-ai-assignment-analyzer`
 
 **Analysis Steps:**

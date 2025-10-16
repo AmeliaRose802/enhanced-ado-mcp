@@ -2,10 +2,18 @@
 
 **Feature Category:** Bulk Operations  
 **Status:** ✅ Implemented  
-**Version:** 1.6.1  
-**Last Updated:** 2025-10-15
+**Version:** 1.7.0  
+**Last Updated:** 2025-10-16
 
 ## Recent Changes
+
+### Version 1.7.0 (2025-10-16)
+**Enhancement:** Added support for undoing all operations on a query handle:
+- New `undoAll` parameter (boolean, default: false) to undo all operations instead of just the last one
+- Operations undone in reverse chronological order (most recent first)
+- Backward compatible: existing calls with no `undoAll` parameter behave identically
+- New output fields: `undo_mode`, `operations_attempted`, `operations_undone`, `operations_summary`
+- Maintains backward compatible fields `operation_to_undo` and `operation_undone` when `undoAll=false`
 
 ### Version 1.6.1 (2025-10-15)
 **Bug Fix:** Query handle validation now properly distinguishes between:
@@ -16,7 +24,7 @@ Previously, the tool would incorrectly report "not found or expired" for valid h
 
 ## Overview
 
-The Enhanced ADO MCP Server provides an undo capability for bulk operations performed on query handles. This feature allows users to safely revert changes made to work items through bulk operations.
+The Enhanced ADO MCP Server provides an undo capability for bulk operations performed on query handles. This feature allows users to safely revert changes made to work items through bulk operations - either the last operation only or all operations performed on the handle.
 
 **Tool:** `wit-bulk-undo-by-query-handle`
 
@@ -28,6 +36,7 @@ Enable safe reversal of bulk operations with:
 - Dry-run mode to preview undo actions before execution
 - Preservation of previous values for accurate rollback
 - In-memory operation history (expires with query handle)
+- **NEW:** Ability to undo all operations on a query handle (not just the last one)
 
 ## Supported Operations
 
@@ -41,7 +50,7 @@ The following bulk operations can be undone:
 
 ## Tool: wit-bulk-undo-by-query-handle
 
-Undo the last bulk operation performed on a query handle.
+Undo bulk operations performed on a query handle (last operation or all operations).
 
 ### Input Parameters
 
@@ -49,6 +58,11 @@ Undo the last bulk operation performed on a query handle.
 - `queryHandle` (string) - Query handle from wit-wiql-query
 
 **Optional:**
+- `undoAll` (boolean) - Undo all operations performed on this query handle (default: false, only undoes last operation)
+- `dryRun` (boolean) - Preview undo operation without making changes (default true)
+- `maxPreviewItems` (number) - Maximum items to preview in dry-run (default 10, max 50)
+- `organization` (string) - Azure DevOps organization
+- `project` (string) - Azure DevOps project
 - `dryRun` (boolean) - Preview undo operation without making changes (default true)
 - `maxPreviewItems` (number) - Maximum items to preview in dry-run (default 10, max 50)
 - `organization` (string) - Azure DevOps organization

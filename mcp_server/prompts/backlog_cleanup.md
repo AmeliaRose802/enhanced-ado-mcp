@@ -3,7 +3,7 @@ name: backlog_cleanup
 description: Agressive backlog janitor
 version: 2.0
 arguments:
-  staleness_threshold_days: { type: number, required: true, description: "How old items do we call dead?" }
+  staleness_threshold_days: { type: number, required: true, description: "Number of days. Items inactive for this many days are considered stale." }
 ---
 
 # Backlog Cleanup & Quality Analysis

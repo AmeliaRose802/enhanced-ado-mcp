@@ -92,11 +92,11 @@ Analyze the backlog and create a balanced sprint plan that:
 - Estimate effort if not already estimated
 
 **Recommended Approach:**
-1. Query **Approved** items with `wit-generate-wiql-query` (natural language → WIQL)
-2. Execute with `wit-get-work-items-by-query-wiql` + `returnQueryHandle: true`
+1. Query **Approved** items with `wit-generate-query` (natural language → WIQL)
+2. Execute with `wit-wiql-query` + `returnQueryHandle: true`
 3. Use `wit-analyze-by-query-handle` with `analysisType: ["effort"]` to check Story Points coverage
 4. If gaps exist: Use `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` to get AI estimates
-5. Use `wit-query-handle-inspect` to preview staleness data for prioritization
+5. Use `wit-query-handle-info` to preview staleness data for prioritization
 
 **Why Query Handles?**
 - Prevents ID hallucination (no risk of assigning non-existent work items)
@@ -145,16 +145,16 @@ Analyze the backlog and create a balanced sprint plan that:
 
 ### Phase 1: Query & Analyze Team Context
 
-**Tool: `wit-generate-wiql-query`** - AI-powered query generation from natural language
+**Tool: `wit-generate-query`** - AI-powered query generation from natural language
 ```json
 {
   "description": "Get all Product Backlog Items and Bugs in Approved state, ordered by priority",
   "returnQueryHandle": true
 }
 ```
-Returns a validated WIQL query for sprint-ready items. Execute with `wit-get-work-items-by-query-wiql`.
+Returns a validated WIQL query for sprint-ready items. Execute with `wit-wiql-query`.
 
-**Tool: `wit-get-work-items-by-query-wiql`** - Execute WIQL with query handle
+**Tool: `wit-wiql-query`** - Execute WIQL with query handle
 ```json
 {
   "wiqlQuery": "[generated query]",
@@ -198,7 +198,7 @@ Returns aggregated team metrics: Story Points breakdown, estimation coverage, wo
 
 ### Phase 3: Query Current Active Work
 
-**Tool: `wit-get-work-items-by-query-wiql`** - Get team's current assignments
+**Tool: `wit-wiql-query`** - Get team's current assignments
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Committed', 'Active', 'In Progress', 'In Review')",
@@ -213,7 +213,7 @@ Then use `wit-analyze-by-query-handle` to get current workload distribution.
 
 If backlog items lack descriptions or acceptance criteria:
 
-**Tool: `wit-ai-bulk-enhance-descriptions`** - Generate descriptions with AI
+**Tool: `wit-bulk-enhance-descriptions-by-query-handle`** - Generate descriptions with AI
 ```json
 {
   "queryHandle": "qh_abc123...",
@@ -226,7 +226,7 @@ If backlog items lack descriptions or acceptance criteria:
 ```
 Use `returnFormat: "summary"` to save ~70% tokens (only shows counts and brief previews).
 
-**Tool: `wit-ai-bulk-acceptance-criteria`** - Generate testable criteria
+**Tool: `wit-bulk-add-acceptance-criteria-by-query-handle`** - Generate testable criteria
 ```json
 {
   "queryHandle": "qh_abc123...",
@@ -309,7 +309,7 @@ Use `wit-bulk-assign-story-points-by-query-handle` to:
 - No manual calculation needed!
 
 **2. Work Item Quality Analysis**
-Use `wit-get-work-items-by-query-wiql` with `filterByPatterns` to detect:
+Use `wit-wiql-query` with `filterByPatterns` to detect:
 - Items without descriptions: `filterByPatterns: ["missing_description"]`
 - Placeholder titles: `filterByPatterns: ["placeholder_titles"]`
 - Duplicate work items: `filterByPatterns: ["duplicates"]`
@@ -330,11 +330,11 @@ Use `wit-validate-hierarchy` to:
 
 **DO:**
 - ✅ Use `wit-analyze-by-query-handle` for aggregated metrics (saves tokens!)
-- ✅ Use `wit-query-handle-inspect` to preview staleness data before bulk operations
+- ✅ Use `wit-query-handle-info` to preview staleness data before bulk operations
 - ✅ Use `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` for AI estimates
 - ✅ Use `returnFormat: "summary"` for AI enhancement tools
 - ✅ Request `returnQueryHandle: true` on ALL WIQL queries (enables all bulk operations)
-- ✅ Use `wit-generate-wiql-query` to convert natural language to validated WIQL
+- ✅ Use `wit-generate-query` to convert natural language to validated WIQL
 
 **DON'T:**
 - ❌ Fetch all work items just to count Story Points (use analysis tools!)
@@ -346,11 +346,11 @@ Use `wit-validate-hierarchy` to:
 ### Query Handle Workflow Pattern
 
 **Every sprint planning session should:**
-1. Generate queries with `wit-generate-wiql-query` (natural language)
+1. Generate queries with `wit-generate-query` (natural language)
 2. Execute with `returnQueryHandle: true` (get handle)
 3. Analyze with `wit-analyze-by-query-handle` (aggregated metrics)
 4. Enhance with AI tools using handles (story points, descriptions)
-5. Preview with `wit-query-handle-inspect` or `wit-query-handle-select`
+5. Preview with `wit-query-handle-info` or `wit-select-items-from-query-handle`
 6. Output markdown plan (recommendations only)
 7. User implements with bulk operations (assignments, comments, updates)
 
@@ -358,7 +358,7 @@ Use `wit-validate-hierarchy` to:
 
 ### 1. Query Sprint-Ready Items (Natural Language → WIQL)
 ```json
-Tool: wit-generate-wiql-query
+Tool: wit-generate-query
 {
   "description": "Get all Approved Product Backlog Items and Bugs in Project\\Team area, ordered by priority descending",
   "returnQueryHandle": true
@@ -368,7 +368,7 @@ Returns validated WIQL query for items ready to be committed to the sprint.
 
 ### 2. Execute Query with Query Handle
 ```json
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-wiql-query
 {
   "wiqlQuery": "[generated from step 1]",
   "returnQueryHandle": true,
@@ -412,7 +412,7 @@ Now you have 100% effort coverage (15 manual + 8 AI = 23 total items) for accura
 
 ### 5. Query Current Sprint Work
 ```json
-Tool: wit-get-work-items-by-query-wiql
+Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project\\Team' AND [System.State] IN ('Committed', 'Active', 'In Progress', 'In Review')",
   "returnQueryHandle": true
@@ -520,7 +520,7 @@ User can then use:
 1. `wit-bulk-assign-by-query-handle` to assign selected items to team members
 2. `wit-bulk-update-by-query-handle` to move items from **Approved** → **Committed**
 3. `wit-bulk-comment-by-query-handle` to notify team of assignments
-4. `wit-update-work-item` for individual adjustments if needed
+4. Bulk operations handle individual adjustments as needed
 
 **Important:** Items in Approved state are sprint candidates. Once assigned and committed to the sprint, transition them to Committed state.
 
@@ -603,11 +603,11 @@ Tool: wit-bulk-update-by-query-handle
 - Active items: Dry-run first, then execute if estimates look good
 
 **Use Summary Formats:**
-- `wit-ai-bulk-enhance-descriptions` with `returnFormat: "summary"` - Saves ~70% tokens
+- `wit-bulk-enhance-descriptions-by-query-handle` with `returnFormat: "summary"` - Saves ~70% tokens
 - Only fetch full details when user specifically requests them
 
 **Query Handle Inspection:**
-- `wit-query-handle-inspect` with `includeExamples: false` - Saves ~300 tokens
+- `wit-query-handle-info` with `includeExamples: false` - Saves ~300 tokens
 - Only include examples if user needs to preview item selection
 
 ---
@@ -624,14 +624,14 @@ Tool: wit-bulk-update-by-query-handle
 
 | Goal | Tool | Key Parameters |
 |------|------|----------------|
-| Generate WIQL query | `wit-generate-wiql-query` | `description`, `returnQueryHandle: true` |
-| Execute query | `wit-get-work-items-by-query-wiql` | `wiqlQuery`, `returnQueryHandle: true`, `includeSubstantiveChange: true` |
+| Generate WIQL query | `wit-generate-query` | `description`, `returnQueryHandle: true` |
+| Execute query | `wit-wiql-query` | `wiqlQuery`, `returnQueryHandle: true`, `includeSubstantiveChange: true` |
 | Analyze effort | `wit-analyze-by-query-handle` | `queryHandle`, `analysisType: ["effort"]` |
 | Analyze workload | `wit-analyze-by-query-handle` | `queryHandle`, `analysisType: ["workload", "assignments"]` |
 | Discover skills | `wit-personal-workload-analyzer` | `assignedToEmail`, `analysisPeriodDays: 90` |
 | AI story points | `wit-bulk-assign-story-points-by-query-handle` | `queryHandle`, `scale: "fibonacci"`, `dryRun: true` |
-| Preview selection | `wit-query-handle-select` | `queryHandle`, `itemSelector`, `previewCount: 10` |
-| Check quality | `wit-get-work-items-by-query-wiql` | `wiqlQuery`, `filterByPatterns: ["placeholder_titles", "missing_description"]` |
+| Preview selection | `wit-select-items-from-query-handle` | `queryHandle`, `itemSelector`, `previewCount: 10` |
+| Check quality | `wit-wiql-query` | `wiqlQuery`, `filterByPatterns: ["placeholder_titles", "missing_description"]` |
 | Validate hierarchy | `wit-validate-hierarchy` | `areaPath`, `validateTypes: true`, `validateStates: true` |
 | AI assignment check | `wit-ai-assignment-analyzer` | `Title`, `Description`, `WorkItemType` |
 
@@ -643,31 +643,24 @@ For large backlogs (>200 items), use phased queries:
 
 **Phase 1: High-Priority Items**
 ```json
-wit-generate-wiql-query: "Get all Priority 1 and 2 Product Backlog Items in New or Approved state"
+wit-generate-query: "Get all Priority 1 and 2 Product Backlog Items in New or Approved state"
 ```
 
 **Phase 2: Medium-Priority Items**
 ```json
-wit-generate-wiql-query: "Get all Priority 3 Product Backlog Items in New or Approved state"
+wit-generate-query: "Get all Priority 3 Product Backlog Items in New or Approved state"
 ```
 
 Each phase gets its own query handle for targeted analysis and estimation.
 
 ### AI-Assisted Item Decomposition
 
-For large features in backlog:
-```json
-Tool: wit-feature-decomposer
-{
-  "Title": "Implement multi-factor authentication",
-  "Description": "[full feature description]",
-  "ParentWorkItemId": 12345,
-  "GenerateAcceptanceCriteria": true,
-  "AnalyzeAISuitability": true,
-  "AutoCreateWorkItems": false  // Preview first
-}
-```
-Returns: Broken-down tasks with dependencies, AI suitability scores, and execution order.
+For large features in backlog, manually break them down or use natural language descriptions to create sub-tasks. Consider:
+- Breaking features into smaller Product Backlog Items
+- Creating technical tasks for infrastructure/setup
+- Identifying dependencies between items
+- Estimating effort for each sub-item
+- Assigning AI-suitable vs human-required work appropriately
 
 ### Security & Compliance Items
 
@@ -700,7 +693,7 @@ Returns: Completed items per person per type (understand team strengths).
 **Before starting, discover available resources:**
 
 ```json
-Tool: wit-get-config
+Tool: wit-get-configuration
 {
   "section": "all"
 }
@@ -725,7 +718,7 @@ Re-run the WIQL query to get a fresh handle. Handles expire after 1 hour.
 Use `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` to fill gaps with AI estimates.
 
 ### "Items lack descriptions"
-Use `wit-ai-bulk-enhance-descriptions` with `returnFormat: "summary"` for quick preview, then execute if quality is good.
+Use `wit-bulk-enhance-descriptions-by-query-handle` with `returnFormat: "summary"` for quick preview, then execute if quality is good.
 
 ### "Too many items to analyze"
 Use `wit-analyze-by-query-handle` instead of fetching all items - it aggregates in-memory.

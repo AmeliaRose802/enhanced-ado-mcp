@@ -149,7 +149,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Configuration not initialized. CLI args must be set first.\\n" +
-        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>"
+        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>\\n" +
+        "Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
@@ -170,7 +171,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Organization is required.\\n" +
-        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>"
+        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>\\n" +
+        "Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
@@ -179,7 +181,9 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       "validate",
       "Project is required. Provide either:\\n" +
         "  1. Project as positional argument: enhanced-ado-msp <organization> <project>\\n" +
-        "  2. Area path that includes project: --area-path \"ProjectName\\\\Area\""
+        "     Example: enhanced-ado-msp MyOrganization MyProject\\n" +
+        "  2. Area path that includes project: --area-path \"ProjectName\\\\Area\"\\n" +
+        "     Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 

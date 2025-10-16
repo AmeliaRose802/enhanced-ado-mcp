@@ -32,7 +32,7 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
       return validation.error;
     }
 
-    const { queryHandle, dryRun, maxPreviewItems, organization, project } = validation.data;
+    const { queryHandle, undoAll, dryRun, maxPreviewItems, organization, project } = validation.data;
 
     // First verify the query handle exists in the registry
     const handleData = queryHandleService.getQueryData(queryHandle);
@@ -60,27 +60,43 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
       };
     }
 
-    // Get the last operation
-    const lastOperation = operationHistory[operationHistory.length - 1];
-    logger.info(`Undoing last operation: ${lastOperation.operation} (${lastOperation.itemsAffected.length} items affected)`);
+    // Determine which operations to undo
+    const operationsToUndo = undoAll ? [...operationHistory].reverse() : [operationHistory[operationHistory.length - 1]];
+    const operationCount = operationsToUndo.length;
+    
+    logger.info(`Undoing ${operationCount} operation(s) on query handle ${queryHandle}`);
 
     if (dryRun) {
       // Show preview of what will be undone
-      const previewLimit = Math.min(maxPreviewItems, lastOperation.itemsAffected.length);
-      const previewItems = lastOperation.itemsAffected.slice(0, previewLimit).map((item: { workItemId: number; changes: Record<string, any> }) => ({
-        work_item_id: item.workItemId,
-        operation_type: lastOperation.operation,
-        changes_to_revert: item.changes,
-        undo_actions: describeUndoActions(lastOperation.operation, item.changes)
-      }));
-
+      const allPreviewItems: any[] = [];
       const warnings: string[] = [];
-      if (lastOperation.operation === 'bulk-comment') {
-        warnings.push("Azure DevOps API does not support deleting comments. Undo will add a reversal comment instead.");
+      let totalItemsAffected = 0;
+      
+      for (const operation of operationsToUndo) {
+        totalItemsAffected += operation.itemsAffected.length;
+        
+        if (operation.operation === 'bulk-comment') {
+          warnings.push("Azure DevOps API does not support deleting comments. Undo will add reversal comments instead.");
+        }
+        
+        const previewLimit = Math.min(maxPreviewItems - allPreviewItems.length, operation.itemsAffected.length);
+        const previewItems = operation.itemsAffected.slice(0, previewLimit).map((item: { workItemId: number; changes: Record<string, any> }) => ({
+          work_item_id: item.workItemId,
+          operation_type: operation.operation,
+          operation_timestamp: operation.timestamp,
+          changes_to_revert: item.changes,
+          undo_actions: describeUndoActions(operation.operation, item.changes)
+        }));
+        
+        allPreviewItems.push(...previewItems);
+        
+        if (allPreviewItems.length >= maxPreviewItems) {
+          break;
+        }
       }
 
-      const previewMessage = lastOperation.itemsAffected.length > previewLimit 
-        ? `Showing ${previewLimit} of ${lastOperation.itemsAffected.length} items...` 
+      const previewMessage = totalItemsAffected > maxPreviewItems 
+        ? `Showing ${allPreviewItems.length} of ${totalItemsAffected} total items affected across ${operationCount} operation(s)...` 
         : undefined;
 
       return {
@@ -88,89 +104,131 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
         data: asToolData({
           dry_run: true,
           query_handle: queryHandle,
-          operation_to_undo: lastOperation.operation,
-          operation_timestamp: lastOperation.timestamp,
-          items_to_revert: lastOperation.itemsAffected.length,
-          preview_items: previewItems,
+          undo_mode: undoAll ? "all" : "last",
+          operations_to_undo: operationCount,
+          items_to_revert: totalItemsAffected,
+          // Backward compatibility: include single operation fields when undoing last
+          ...(undoAll ? {} : {
+            operation_to_undo: operationsToUndo[0].operation,
+            operation_timestamp: operationsToUndo[0].timestamp
+          }),
+          operations_summary: operationsToUndo.map(op => ({
+            operation: op.operation,
+            timestamp: op.timestamp,
+            items_affected: op.itemsAffected.length
+          })),
+          preview_items: allPreviewItems,
           preview_message: previewMessage,
-          summary: `DRY RUN: Would undo ${lastOperation.operation} on ${lastOperation.itemsAffected.length} work item(s)`
+          summary: `DRY RUN: Would undo ${operationCount} operation(s) affecting ${totalItemsAffected} work item(s)`
         }),
         metadata: { 
           source: "bulk-undo-by-query-handle",
-          dryRun: true
+          dryRun: true,
+          undoAll
         },
         errors: [],
-        warnings
+        warnings: [...new Set(warnings)] // deduplicate warnings
       };
     }
 
-    // Execute undo operation
+    // Execute undo operations (in reverse chronological order)
     const cfg = loadConfiguration();
     const org = organization || cfg.azureDevOps.organization;
     const proj = project || cfg.azureDevOps.project;
     const httpClient = new ADOHttpClient(org, proj);
 
-    const results: UndoResult[] = [];
+    const allResults: UndoResult[] = [];
+    let operationsUndone = 0;
 
-    for (const item of lastOperation.itemsAffected) {
-      try {
-        const undoActions = await performUndo(
-          item.workItemId,
-          lastOperation.operation,
-          item.changes,
-          httpClient
-        );
+    for (const operation of operationsToUndo) {
+      logger.info(`Undoing operation: ${operation.operation} (${operation.itemsAffected.length} items)`);
+      
+      for (const item of operation.itemsAffected) {
+        try {
+          const undoActions = await performUndo(
+            item.workItemId,
+            operation.operation,
+            item.changes,
+            httpClient
+          );
 
-        results.push({
-          workItemId: item.workItemId,
-          success: true,
-          operationType: lastOperation.operation,
-          actionsPerformed: undoActions
-        });
-        
-        logger.debug(`Undid operation on work item ${item.workItemId}`);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        results.push({
-          workItemId: item.workItemId,
-          success: false,
-          operationType: lastOperation.operation,
-          actionsPerformed: [],
-          error: errorMsg
-        });
-        logger.error(`Failed to undo operation on work item ${item.workItemId}:`, error);
+          allResults.push({
+            workItemId: item.workItemId,
+            success: true,
+            operationType: operation.operation,
+            actionsPerformed: undoActions
+          });
+          
+          logger.debug(`Undid ${operation.operation} on work item ${item.workItemId}`);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          allResults.push({
+            workItemId: item.workItemId,
+            success: false,
+            operationType: operation.operation,
+            actionsPerformed: [],
+            error: errorMsg
+          });
+          logger.error(`Failed to undo ${operation.operation} on work item ${item.workItemId}:`, error);
+        }
+      }
+      
+      // Remove operation from history only if all items in that operation succeeded
+      const operationResults = allResults.slice(-operation.itemsAffected.length);
+      const operationSuccess = operationResults.every(r => r.success);
+      
+      if (operationSuccess) {
+        queryHandleService.removeLastOperation(queryHandle);
+        operationsUndone++;
+        logger.info(`Successfully undid and removed operation ${operation.operation} from history`);
+      } else {
+        logger.warn(`Operation ${operation.operation} had failures, keeping in history`);
+        // Don't continue undoing if this operation failed
+        if (undoAll) {
+          logger.info(`Stopping undo process due to failures in operation ${operation.operation}`);
+          break;
+        }
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failureCount = results.filter(r => !r.success).length;
+    const successCount = allResults.filter(r => r.success).length;
+    const failureCount = allResults.filter(r => !r.success).length;
+    const totalItems = allResults.length;
 
-    // Remove the operation from history if all items succeeded
-    if (failureCount === 0) {
-      queryHandleService.removeLastOperation(queryHandle);
-      logger.info(`Successfully undid operation and removed from history for handle ${queryHandle}`);
-    }
+    const hasCommentOperations = operationsToUndo.some(op => op.operation === 'bulk-comment');
 
     return {
       success: failureCount === 0,
       data: asToolData({
         query_handle: queryHandle,
-        operation_undone: lastOperation.operation,
-        operation_timestamp: lastOperation.timestamp,
-        items_affected: lastOperation.itemsAffected.length,
+        undo_mode: undoAll ? "all" : "last",
+        operations_attempted: operationsToUndo.length,
+        operations_undone: operationsUndone,
+        items_affected: totalItems,
         successful: successCount,
         failed: failureCount,
-        results,
-        summary: `Successfully undid ${lastOperation.operation} on ${successCount} of ${lastOperation.itemsAffected.length} work items${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
+        // Backward compatibility: include single operation fields when undoing last
+        ...(undoAll ? {} : {
+          operation_undone: operationsToUndo[0].operation,
+          operation_timestamp: operationsToUndo[0].timestamp
+        }),
+        operations_summary: operationsToUndo.map(op => ({
+          operation: op.operation,
+          timestamp: op.timestamp,
+          items_affected: op.itemsAffected.length
+        })),
+        results: allResults,
+        summary: `Successfully undid ${operationsUndone} of ${operationsToUndo.length} operation(s), reverting ${successCount} of ${totalItems} work item change(s)${failureCount > 0 ? ` (${failureCount} failed)` : ''}`
       }),
       metadata: {
         source: "bulk-undo-by-query-handle",
-        operationType: lastOperation.operation
+        undoAll,
+        operationsUndone
       },
       errors: failureCount > 0 
-        ? results.filter(r => !r.success).map(r => `Work item ${r.workItemId}: ${r.error}`)
+        ? allResults.filter(r => !r.success).map(r => `Work item ${r.workItemId} (${r.operationType}): ${r.error}`)
         : [],
-      warnings: lastOperation.operation === 'bulk-comment' 
+      warnings: hasCommentOperations
         ? ["Comments cannot be deleted via ADO API. Added reversal comments instead."]
         : []
     };

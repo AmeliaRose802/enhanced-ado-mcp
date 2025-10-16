@@ -454,6 +454,7 @@ export const linkWorkItemsByQueryHandlesSchema = z.object({
 
 export const bulkUndoByQueryHandleSchema = z.object({
   queryHandle: z.string().min(1, "Query handle is required"),
+  undoAll: optionalBool(false).describe("Undo all operations performed on this query handle (default: false, only undoes last operation)"),
   dryRun: optionalBool(true),
   maxPreviewItems: z.number().int().min(1).max(50).optional().default(10),
   ...orgProjectFields()
