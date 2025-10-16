@@ -19,7 +19,7 @@ import { updateConfigFromCLI, ensureGitHubCopilotGuid, type CLIArguments } from 
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
-  version: "1.4.1"
+  version: "1.8.0"
 }, {
   capabilities: {
     tools: {},

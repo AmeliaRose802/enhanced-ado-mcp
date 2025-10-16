@@ -63,7 +63,7 @@ export async function handleHealthCheck(config: ToolConfig, args: unknown): Prom
       status: overallStatus,
       checks,
       uptime: metricsService.getUptime(),
-      version: '1.7.0',
+      version: '1.8.0',
       timestamp: new Date().toISOString()
     };
 
