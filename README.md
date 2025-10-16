@@ -34,8 +34,7 @@ AI-powered Azure DevOps work item management via Model Context Protocol.
 
 You'll be prompted for:
 - Organization name (e.g., `mycompany`)
-- Project name (e.g., `MyProject`)  
-- Area path (e.g., `MyProject\\MyTeam`)
+- Area path (e.g., `MyProject\\MyTeam`) - Project will be extracted automatically
 
 **Manual Configuration:**
 
@@ -45,11 +44,13 @@ Add to VS Code `settings.json`:
   "github.copilot.chat.mcp.servers": {
     "enhanced-ado-msp": {
       "command": "npx",
-      "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "YOUR_PROJECT", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
+      "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
     }
   }
 }
 ```
+
+**Note:** The project name is automatically extracted from the area path (first segment). You can also provide it explicitly:
 
 ---
 
@@ -60,6 +61,18 @@ Add to VS Code `settings.json`:
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 **Add this:**
+```json
+{
+  "mcpServers": {
+    "enhanced-ado-msp": {
+      "command": "npx",
+      "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
+    }
+  }
+}
+```
+
+**Alternate format (explicit project):**
 ```json
 {
   "mcpServers": {

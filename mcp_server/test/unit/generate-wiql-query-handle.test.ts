@@ -77,6 +77,9 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear cache between tests to prevent interference from caching
+    const { cacheService } = require('../../src/services/cache-service');
+    cacheService.clear();
   });
 
   afterAll(() => {

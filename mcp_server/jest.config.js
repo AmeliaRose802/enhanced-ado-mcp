@@ -45,8 +45,7 @@ export default {
     'configuration-discovery.test.ts',
     'hierarchy-validator-integration.test.ts',
     'ai-assignment-integration.test.ts',
-    // Tests with import.meta issues (Jest limitation)
-
+    // Tests with import.meta issues (Jest limitation with ES modules)
     'ai-assignment-analyzer.test.ts',
     'sampling-feature.test.ts',
     'wiql-full-packages.test.ts',

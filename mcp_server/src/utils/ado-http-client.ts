@@ -6,6 +6,8 @@
 
 import { getAzureDevOpsToken, clearTokenCache } from './ado-token.js';
 import { logger } from './logger.js';
+import { rateLimiter } from '../services/rate-limiter.js';
+import { metricsService } from '../services/metrics-service.js';
 import type { ADOErrorResponse } from '../types/index.js';
 
 /**
@@ -181,8 +183,19 @@ export class ADOHttpClient {
 
     logger.debug(`${method} ${urlObj.toString()}`);
 
+    // Apply rate limiting
+    await rateLimiter.throttle('ado-api');
+
+    // Track request metrics
+    const startTime = Date.now();
+    metricsService.increment('ado_api_request', 1, { method, endpoint: endpoint.split('?')[0] });
+
     try {
       const response = await fetch(urlObj.toString(), requestOptions);
+      
+      // Record response time
+      const duration = Date.now() - startTime;
+      metricsService.recordDuration('ado_api_duration', duration, { method, status: String(response.status) });
 
       // Extract response headers
       const responseHeaders: Record<string, string> = {};
@@ -240,6 +253,9 @@ export class ADOHttpClient {
         );
       }
 
+      // Track successful request
+      metricsService.increment('ado_api_success', 1, { method });
+
       return {
         data: responseData,
         status: response.status,
@@ -247,6 +263,12 @@ export class ADOHttpClient {
         headers: responseHeaders
       };
     } catch (error) {
+      // Track error
+      metricsService.increment('ado_api_error', 1, { 
+        method, 
+        error_type: error instanceof ADOHttpError ? String(error.status) : 'network'
+      });
+
       if (error instanceof ADOHttpError) {
         throw error;
       }

@@ -4,11 +4,13 @@ import { toolConfigs, isAIPoweredTool } from "../config/tool-configs/index.js";
 import { logger } from "../utils/logger.js";
 import { checkSamplingSupport } from "../utils/sampling-client.js";
 import { SamplingService } from "./sampling-service.js";
+import { metricsService } from "./metrics-service.js";
 // Core handlers
 import { handleGetConfiguration } from "./handlers/core/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
+import { handleHealthCheck } from './handlers/core/health-check.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -60,6 +62,31 @@ export function setServerInstance(server: MCPServer | MCPServerLike | null): voi
  * Execute a tool by name with the given arguments
  */
 export async function executeTool(name: string, args: unknown): Promise<ToolExecutionResult> {
+  const startTime = Date.now();
+  metricsService.increment('tool.execution.started', 1, { tool: name });
+  
+  try {
+    const result = await executeToolInternal(name, args);
+    
+    // Record successful execution metrics
+    const duration = Date.now() - startTime;
+    metricsService.recordDuration('tool.execution.duration', duration, { tool: name, success: String(result.success) });
+    metricsService.increment(result.success ? 'tool.execution.success' : 'tool.execution.error', 1, { tool: name });
+    
+    return result;
+  } catch (error) {
+    // Record error metrics
+    const duration = Date.now() - startTime;
+    metricsService.recordDuration('tool.execution.duration', duration, { tool: name, success: 'false' });
+    metricsService.increment('tool.execution.error', 1, { tool: name, error: 'exception' });
+    throw error;
+  }
+}
+
+/**
+ * Internal tool execution logic (without metrics tracking)
+ */
+async function executeToolInternal(name: string, args: unknown): Promise<ToolExecutionResult> {
   const config = toolConfigs.find(t => t.name === name);
   
   if (!config) {
@@ -86,6 +113,11 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   // Get prompts (useful for testing and specialized agent workflows)
   if (name === 'wit-get-prompts') {
     return await handleGetPrompts(args as Parameters<typeof handleGetPrompts>[0]);
+  }
+
+  // Health check
+  if (name === 'wit-health-check') {
+    return await handleHealthCheck(config, args);
   }
 
   // AI-powered intelligence analysis (uses sampling if available)

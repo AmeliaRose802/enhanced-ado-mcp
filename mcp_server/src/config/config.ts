@@ -20,6 +20,30 @@ import { findGitHubCopilotGuid } from "../services/ado-identity-service.js";
 export const AZURE_DEVOPS_RESOURCE_ID = "499b84ac-1321-427f-aa17-267ca6975798";
 
 // ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Extract project name from area path
+ * Azure DevOps area paths follow the format: ProjectName\Area\SubArea
+ * @param areaPath - The area path (e.g., "MyProject\\Team\\SubArea")
+ * @returns The project name (first segment) or null if invalid
+ */
+export function extractProjectFromAreaPath(areaPath: string): string | null {
+  if (!areaPath || typeof areaPath !== 'string') {
+    return null;
+  }
+  
+  const segments = areaPath.split('\\').filter(s => s.length > 0);
+  if (segments.length === 0) {
+    return null;
+  }
+  
+  // First segment is always the project name in Azure DevOps
+  return segments[0];
+}
+
+// ============================================================================
 // TypeScript Interfaces
 // ============================================================================
 
@@ -33,8 +57,8 @@ export const AZURE_DEVOPS_RESOURCE_ID = "499b84ac-1321-427f-aa17-267ca6975798";
 export interface CLIArguments {
   /** Azure DevOps organization name (required positional argument) */
   organization: string;
-  /** Azure DevOps project name (required positional argument) */
-  project: string;
+  /** Azure DevOps project name (optional if area-path is provided - will be extracted from area path) */
+  project?: string;
   /** Optional area path override (from --area-path or -a flag) */
   areaPath?: string;
   /** Optional GitHub Copilot user GUID (from --copilot-guid or -g flag) */
@@ -125,7 +149,37 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Configuration not initialized. CLI args must be set first.\\n" +
-        "Usage: enhanced-ado-msp <organization> <project> [options]"
+        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>"
+    );
+  }
+
+  // Determine project: use explicit project or extract from area path
+  let project = cliArgs.project;
+  if (!project && cliArgs.areaPath) {
+    const extractedProject = extractProjectFromAreaPath(cliArgs.areaPath);
+    if (extractedProject) {
+      project = extractedProject;
+      if (verbose) {
+        logger.info(`Extracted project name '${project}' from area path '${cliArgs.areaPath}'`);
+      }
+    }
+  }
+
+  // Validate we have both organization and project
+  if (!cliArgs.organization) {
+    throw formatConfigError(
+      "validate",
+      "Organization is required.\\n" +
+        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>"
+    );
+  }
+
+  if (!project) {
+    throw formatConfigError(
+      "validate",
+      "Project is required. Provide either:\\n" +
+        "  1. Project as positional argument: enhanced-ado-msp <organization> <project>\\n" +
+        "  2. Area path that includes project: --area-path \"ProjectName\\\\Area\""
     );
   }
 
@@ -133,7 +187,7 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
   const configData = {
     azureDevOps: {
       organization: cliArgs.organization,
-      project: cliArgs.project,
+      project: project,
       ...(cliArgs.areaPath && { areaPath: cliArgs.areaPath }),
     },
     gitRepository: {},

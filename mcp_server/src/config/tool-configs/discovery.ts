@@ -1,7 +1,8 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   getConfigurationSchema,
-  getPromptsSchema
+  getPromptsSchema,
+  healthCheckSchema
 } from "../schemas.js";
 
 /**
@@ -42,6 +43,30 @@ export const discoveryTools: ToolConfig[] = [
         args: { 
           type: "object", 
           description: "Arguments to fill in prompt template variables (merged with config defaults)" 
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "wit-health-check",
+    description: "Check health status of the MCP server, Azure DevOps connection, Azure CLI, and view performance metrics. Returns server uptime, connection status, and key metrics like API call rates and cache hit ratios.",
+    script: "",
+    schema: healthCheckSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        includeMetrics: {
+          type: "boolean",
+          description: "Include performance metrics in the response (default: true)"
+        },
+        includeADOStatus: {
+          type: "boolean",
+          description: "Check Azure DevOps connection status (default: true)"
+        },
+        includeAzureCLIStatus: {
+          type: "boolean",
+          description: "Check Azure CLI authentication status (default: true)"
         }
       },
       required: []

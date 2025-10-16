@@ -101,7 +101,7 @@ function getToolMetadata(tool: typeof toolConfigs[0]): { category: string; isAIP
  */
 function generateOpenAPISpec(): any {
 
-  const spec = {
+  const spec: any = {
     openapi: '3.0.0',
     info: {
       title: 'Enhanced ADO MCP Server API',

@@ -63,10 +63,23 @@ npm run test:coverage
 - Tokens cached automatically
 
 **Configuration:**
-- **CLI arguments** - Organization, project, area path (required)
+- **CLI arguments** - Organization (required), project (optional if area path provided), area path
+- **Automatic project extraction** - Project name extracted from area path if not provided explicitly
 - **Built-in defaults** - Work item type, priority, assignee, branch
 - **Auto-discovery** - GitHub Copilot GUID discovered automatically
 - **No config file needed** - All configuration via CLI arguments and auto-discovery
+
+**Usage Examples:**
+```bash
+# Minimal - project extracted from area path
+enhanced-ado-msp myorg --area-path "MyProject\\Team\\Area"
+
+# Explicit project name
+enhanced-ado-msp myorg myproject --area-path "MyProject\\Team"
+
+# Legacy format (still supported)
+enhanced-ado-msp myorg myproject
+```
 
 ## Important Files & Directories
 

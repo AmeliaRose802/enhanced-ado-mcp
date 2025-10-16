@@ -10,6 +10,8 @@ import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../
 import { logger } from "../../../utils/logger.js";
 import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
+import { cacheService } from "../../cache-service.js";
+import crypto from 'crypto';
 
 /**
  * Clean OData metadata from results to reduce response size
@@ -244,38 +246,55 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
     const baseUrl = `https://analytics.dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_odata/v4.0-preview`;
     const fullUrl = `${baseUrl}/WorkItems?${odataQuery}`;
     
-    // Get Azure DevOps token - Analytics API uses Bearer token auth
-    const token = getAzureDevOpsToken();
+    // Generate cache key based on full URL (includes org, project, and all query params)
+    const cacheKey = generateODataCacheKey(fullUrl);
     
-    // Execute the query with direct fetch - Analytics API doesn't use api-version parameter
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      }
-    });
+    // Check cache first
+    const cached = cacheService.get(cacheKey);
+    let data: ODataResponse;
+    
+    if (cached) {
+      logger.debug(`Cache hit for OData query: ${cacheKey.substring(0, 32)}...`);
+      data = cached as ODataResponse;
+    } else {
+      logger.debug(`Cache miss for OData query, executing: ${cacheKey.substring(0, 32)}...`);
+      
+      // Get Azure DevOps token - Analytics API uses Bearer token auth
+      const token = getAzureDevOpsToken();
+      
+      // Execute the query with direct fetch - Analytics API doesn't use api-version parameter
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error(`OData Analytics query failed: ${response.status} ${response.statusText} - ${errorText}`);
-      
-      // Provide helpful hints for common Analytics API errors
-      if (response.status === 401 || response.status === 403 || errorText.includes('TF400813')) {
-        throw new Error(
-          `Analytics API authorization error: ${response.status} ${response.statusText}\n` +
-          `The user account does not have permission to access Azure DevOps Analytics.\n` +
-          `Required permission: "View analytics" at the project level.\n` +
-          `Please contact your Azure DevOps administrator to grant Analytics access.\n` +
-          `Details: ${errorText}`
-        );
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error(`OData Analytics query failed: ${response.status} ${response.statusText} - ${errorText}`);
+        
+        // Provide helpful hints for common Analytics API errors
+        if (response.status === 401 || response.status === 403 || errorText.includes('TF400813')) {
+          throw new Error(
+            `Analytics API authorization error: ${response.status} ${response.statusText}\n` +
+            `The user account does not have permission to access Azure DevOps Analytics.\n` +
+            `Required permission: "View analytics" at the project level.\n` +
+            `Please contact your Azure DevOps administrator to grant Analytics access.\n` +
+            `Details: ${errorText}`
+          );
+        }
+        
+        throw new Error(`Analytics API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
+
+      data = await response.json() as ODataResponse;
       
-      throw new Error(`Analytics API error: ${response.status} ${response.statusText} - ${errorText}`);
+      // Cache the result for 5 minutes
+      cacheService.set(cacheKey, data, 5 * 60 * 1000);
     }
-
-    const data = await response.json() as ODataResponse;
     
     // Determine whether to include OData metadata (default: false)
     const includeOdataMetadata = queryArgs.includeOdataMetadata ?? false;
@@ -404,4 +423,23 @@ function generateSummary(queryType: string, count: number, results: Record<strin
     default:
       return `Query returned ${count} results`;
   }
+}
+
+/**
+ * Generate a cache key for an OData query
+ * Note: We cache the RAW API response, not the processed results.
+ * This is because the URL contains all query parameters, and processing
+ * parameters like includeOdataMetadata don't affect the API call.
+ * The cached response is processed based on parameters after retrieval.
+ */
+function generateODataCacheKey(fullUrl: string): string {
+  // Generate SHA256 hash of the URL
+  // The URL includes organization, project, and all $filter/$select params
+  // This ensures different queries get different cache entries
+  const hash = crypto
+    .createHash('sha256')
+    .update(fullUrl)
+    .digest('hex');
+  
+  return `odata:${hash}`;
 }

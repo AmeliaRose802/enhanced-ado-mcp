@@ -101,9 +101,9 @@ server.fallbackRequestHandler = async (request: any) => {
  */
 const argv = yargs(hideBin(process.argv))
   .scriptName("enhanced-ado-msp")
-  .usage("Usage: $0 <organization> <project> [options]")
+  .usage("Usage: $0 <organization> [project] --area-path <path> [options]\\n\\nNote: Project can be omitted if --area-path is provided (will be extracted automatically)")
   .version("1.2.2")
-  .command("$0 <organization> <project> [options]", "Enhanced ADO MCP Server", (yargs) => {
+  .command("$0 <organization> [project] [options]", "Enhanced ADO MCP Server", (yargs) => {
     yargs
       .positional("organization", {
         describe: "Azure DevOps organization name",
@@ -111,14 +111,14 @@ const argv = yargs(hideBin(process.argv))
         demandOption: true,
       })
       .positional("project", {
-        describe: "Azure DevOps project name",
+        describe: "Azure DevOps project name (optional if --area-path is provided)",
         type: "string", 
-        demandOption: true,
+        demandOption: false,
       });
   })
   .option("area-path", {
     alias: "a",
-    describe: "Default area path",
+    describe: "Default area path (e.g., 'MyProject\\\\TeamName\\\\Area'). Project will be extracted if not provided.",
     type: "string"
   })
   .option("verbose", {
@@ -127,6 +127,18 @@ const argv = yargs(hideBin(process.argv))
     type: "boolean",
     default: false
   })
+  .check((argv) => {
+    // Validate that either project is provided OR area-path is provided
+    if (!argv.project && !argv['area-path']) {
+      throw new Error('Either <project> or --area-path must be provided');
+    }
+    return true;
+  })
+  .example([
+    ['$0 myorg myproject', 'Start with explicit project name'],
+    ['$0 myorg --area-path "MyProject\\\\Team\\\\Area"', 'Start with area path (project extracted automatically)'],
+    ['$0 myorg myproject --area-path "MyProject\\\\Team"', 'Explicit project with area path']
+  ])
   .help()
   .parseSync();
 

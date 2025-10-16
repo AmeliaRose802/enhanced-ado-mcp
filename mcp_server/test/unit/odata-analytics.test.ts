@@ -66,6 +66,9 @@ describe('OData Analytics Handler - includeOdataMetadata parameter', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear cache between tests to prevent interference
+    const { cacheService } = require('../../src/services/cache-service');
+    cacheService.clear();
   });
 
   describe('when includeOdataMetadata is false (default)', () => {

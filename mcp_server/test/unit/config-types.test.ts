@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { 
   updateConfigFromCLI, 
   loadConfiguration,
+  extractProjectFromAreaPath,
   type CLIArguments,
   type MCPServerConfig 
 } from '../../src/config/config.js';
@@ -60,6 +61,54 @@ describe('Configuration Type Safety', () => {
       expect(minimalArgs.copilotGuid).toBeUndefined();
       expect(minimalArgs.verbose).toBeUndefined();
     });
+
+    it('should accept CLI arguments with area path but no project', () => {
+      const argsWithAreaPath: CLIArguments = {
+        organization: 'my-org',
+        areaPath: 'MyProject\\\\Team\\\\SubArea'
+      };
+
+      expect(argsWithAreaPath.organization).toBe('my-org');
+      expect(argsWithAreaPath.project).toBeUndefined();
+      expect(argsWithAreaPath.areaPath).toBe('MyProject\\\\Team\\\\SubArea');
+    });
+  });
+
+  describe('extractProjectFromAreaPath function', () => {
+    it('should extract project from simple area path', () => {
+      const project = extractProjectFromAreaPath('MyProject\\\\Team');
+      expect(project).toBe('MyProject');
+    });
+
+    it('should extract project from multi-level area path', () => {
+      const project = extractProjectFromAreaPath('MyProject\\\\Team\\\\SubTeam\\\\Component');
+      expect(project).toBe('MyProject');
+    });
+
+    it('should handle single segment (project only)', () => {
+      const project = extractProjectFromAreaPath('MyProject');
+      expect(project).toBe('MyProject');
+    });
+
+    it('should return null for empty string', () => {
+      const project = extractProjectFromAreaPath('');
+      expect(project).toBeNull();
+    });
+
+    it('should return null for null/undefined input', () => {
+      expect(extractProjectFromAreaPath(null as any)).toBeNull();
+      expect(extractProjectFromAreaPath(undefined as any)).toBeNull();
+    });
+
+    it('should handle area paths with spaces', () => {
+      const project = extractProjectFromAreaPath('My Project Name\\\\Team Alpha\\\\Sub Area');
+      expect(project).toBe('My Project Name');
+    });
+
+    it('should filter empty segments from malformed paths', () => {
+      const project = extractProjectFromAreaPath('\\\\MyProject\\\\\\\\Team');
+      expect(project).toBe('MyProject');
+    });
   });
 
   describe('updateConfigFromCLI function', () => {
@@ -89,6 +138,46 @@ describe('Configuration Type Safety', () => {
       expect(config.azureDevOps.organization).toBe('stored-org');
       expect(config.azureDevOps.project).toBe('stored-project');
       expect(config.azureDevOps.areaPath).toBe('stored-area');
+    });
+
+    it('should extract project from area path when project not provided', () => {
+      const args: CLIArguments = {
+        organization: 'my-org',
+        areaPath: 'ExtractedProject\\\\Team\\\\Area',
+        verbose: false
+      };
+
+      updateConfigFromCLI(args);
+
+      const config = loadConfiguration(true);
+      expect(config.azureDevOps.organization).toBe('my-org');
+      expect(config.azureDevOps.project).toBe('ExtractedProject');
+      expect(config.azureDevOps.areaPath).toBe('ExtractedProject\\\\Team\\\\Area');
+    });
+
+    it('should prefer explicit project over extracted project', () => {
+      const args: CLIArguments = {
+        organization: 'my-org',
+        project: 'ExplicitProject',
+        areaPath: 'AreaProject\\\\Team',
+        verbose: false
+      };
+
+      updateConfigFromCLI(args);
+
+      const config = loadConfiguration(true);
+      expect(config.azureDevOps.project).toBe('ExplicitProject');
+    });
+
+    it('should throw error if neither project nor area path provided', () => {
+      const args: CLIArguments = {
+        organization: 'my-org',
+        verbose: false
+      };
+
+      updateConfigFromCLI(args);
+
+      expect(() => loadConfiguration(true)).toThrow(/Project is required/);
     });
   });
 

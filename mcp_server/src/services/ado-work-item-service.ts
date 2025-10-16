@@ -486,8 +486,19 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
         }
       }
       
-      if (filterByPatterns?.includes('missing_description')) additionalFields['System.Description'] = wi.fields['System.Description'];
-      if (filterByPatterns?.includes('missing_acceptance_criteria')) additionalFields['Microsoft.VSTS.Common.AcceptanceCriteria'] = wi.fields['Microsoft.VSTS.Common.AcceptanceCriteria'];
+      // Ensure filter-required fields are available, but don't overwrite already processed fields
+      if (filterByPatterns?.includes('missing_description') && !('System.Description' in additionalFields)) {
+        const descValue = wi.fields['System.Description'];
+        additionalFields['System.Description'] = (typeof descValue === 'object' && descValue !== null && 'displayName' in descValue)
+          ? (descValue as { displayName: string }).displayName
+          : descValue;
+      }
+      if (filterByPatterns?.includes('missing_acceptance_criteria') && !('Microsoft.VSTS.Common.AcceptanceCriteria' in additionalFields)) {
+        const acValue = wi.fields['Microsoft.VSTS.Common.AcceptanceCriteria'];
+        additionalFields['Microsoft.VSTS.Common.AcceptanceCriteria'] = (typeof acValue === 'object' && acValue !== null && 'displayName' in acValue)
+          ? (acValue as { displayName: string }).displayName
+          : acValue;
+      }
       
       const workItem: WiqlWorkItemResult = {
         id: wi.id,
@@ -634,8 +645,10 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
       if (filterByPatterns.includes('missing_description')) {
         applyFilter('missing_description', wi => {
           const desc = wi.additionalFields?.['System.Description'];
+          // Return true for items to INCLUDE (items that have missing descriptions)
           if (desc === undefined || desc === null || desc === '') return true;
-          return String(desc).replace(/<[^>]*>/g, '').trim().length < 10;
+          const strippedDesc = String(desc).replace(/<[^>]*>/g, '').trim();
+          return strippedDesc.length < 10;
         });
       }
       

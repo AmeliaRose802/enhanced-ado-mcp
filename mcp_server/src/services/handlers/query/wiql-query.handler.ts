@@ -16,6 +16,8 @@ import { handleGetWorkItemContextPackage } from "../context/get-work-item-contex
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { extractWiqlQuery, cleanWiqlQuery } from "../../../utils/wiql-helpers.js";
 import { buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { cacheService } from "../../cache-service.js";
+import crypto from 'crypto';
 
 export async function handleWiqlQuery(
   config: ToolConfig, 
@@ -133,11 +135,34 @@ export async function handleWiqlQuery(
     // If handleOnly is true and returnQueryHandle is true, fetch only IDs for efficiency
     const shouldFetchFullData = !queryArgs.handleOnly || !queryArgs.returnQueryHandle;
     
-    let result;
+    // Generate cache key based on query parameters
+    const cacheKey = generateQueryCacheKey(queryArgs, shouldFetchFullData);
+    
+    let result: {
+      workItems: any[];
+      count: number;
+      query: string;
+      totalCount: number;
+      skip: number;
+      top: number;
+      hasMore: boolean;
+    };
+    
     try {
-      result = shouldFetchFullData 
-        ? await queryWorkItemsByWiql(queryArgs)
-        : await queryWorkItemsByWiql({ ...queryArgs, includeFields: [] }); // Minimal fields for ID-only fetch
+      // Check cache first
+      const cached = cacheService.get(cacheKey);
+      if (cached) {
+        logger.debug(`Cache hit for WIQL query: ${cacheKey.substring(0, 32)}...`);
+        result = cached as typeof result;
+      } else {
+        logger.debug(`Cache miss for WIQL query, executing: ${cacheKey.substring(0, 32)}...`);
+        result = shouldFetchFullData 
+          ? await queryWorkItemsByWiql(queryArgs)
+          : await queryWorkItemsByWiql({ ...queryArgs, includeFields: [] }); // Minimal fields for ID-only fetch
+        
+        // Cache the result for 5 minutes
+        cacheService.set(cacheKey, result, 5 * 60 * 1000);
+      }
     } catch (error) {
       // If we're in AI generation mode with returnQueryHandle and execution fails,
       // fall back to returning just the generated query with a warning
@@ -640,4 +665,30 @@ async function testWiqlQuery(
       error: parsedError
     };
   }
+}
+
+/**
+ * Generate a cache key for a WIQL query based on all relevant parameters
+ */
+function generateQueryCacheKey(queryArgs: any, shouldFetchFullData: boolean): string {
+  // Create a stable object with all cache-relevant parameters
+  const cacheObject = {
+    query: queryArgs.wiqlQuery,
+    organization: queryArgs.organization,
+    project: queryArgs.project,
+    top: queryArgs.top,
+    skip: queryArgs.skip,
+    includeFields: queryArgs.includeFields,
+    includeSubstantiveChange: queryArgs.includeSubstantiveChange,
+    substantiveChangeHistoryCount: queryArgs.substantiveChangeHistoryCount,
+    shouldFetchFullData
+  };
+  
+  // Generate SHA256 hash of the JSON representation
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(cacheObject))
+    .digest('hex');
+  
+  return `wiql:${hash}`;
 }

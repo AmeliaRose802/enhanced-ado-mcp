@@ -7,6 +7,8 @@
   WORK_ITEM_CONTEXT.md
 - Configuration & Discovery
   ANALYSIS_TOOLS.md
+- Automatic Project Extraction (New!)
+  automatic-project-extraction.md
 
 ## Utility & Testing
 - Get Prompts Tool (New!)
@@ -43,6 +45,8 @@
 ## Error Handling
 - Error Categorization System
   ERROR_CATEGORIZATION.md
+- Missing Description Filter Fix
+  missing-description-filter-fix.md
 
 ## AI-Powered Features
 - AI-Powered Features Overview
