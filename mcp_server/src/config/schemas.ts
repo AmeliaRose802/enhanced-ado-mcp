@@ -46,6 +46,7 @@ const queryGeneratorFields = () => ({
   testQuery: optionalBool(true),
   maxIterations: z.number().int().positive().optional().default(3),
   areaPath: optionalString(),
+  areaPathFilter: z.array(z.string()).optional(),
   iterationPath: optionalString(),
   returnQueryHandle: optionalBool(),
   maxResults: z.number().int().positive().optional().default(200),
@@ -242,6 +243,7 @@ export const wiqlQuerySchema = z.object({
   
   // Scope Configuration (auto-filled from config)
   areaPath: optionalString(),
+  areaPathFilter: z.array(z.string()).optional(),
   iterationPath: optionalString(),
   
   // Result Configuration
@@ -304,6 +306,7 @@ export const odataAnalyticsQuerySchema = z.object({
   includeMetadata: optionalBool(false),
   includeOdataMetadata: optionalBool(false),
   areaPath: optionalString(),
+  areaPathFilter: z.array(z.string()).optional(),
   iterationPath: optionalString(),
   computeCycleTime: optionalBool(false),
   ...orgProjectFields()

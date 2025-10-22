@@ -101,25 +101,22 @@ server.fallbackRequestHandler = async (request: any) => {
  */
 const argv = yargs(hideBin(process.argv))
   .scriptName("enhanced-ado-msp")
-  .usage("Usage: $0 <organization> [project] --area-path <path> [options]\\n\\nNote: Project can be omitted if --area-path is provided (will be extracted automatically)")
+  .usage("Usage: $0 <organization> --area-path <path> [options]\\n\\nProject name is automatically extracted from the area path. Multiple --area-path flags can be specified for multi-area support.")
   .version("1.2.2")
-  .command("$0 <organization> [project] [options]", "Enhanced ADO MCP Server", (yargs) => {
+  .command("$0 <organization> [options]", "Enhanced ADO MCP Server", (yargs) => {
     yargs
       .positional("organization", {
         describe: "Azure DevOps organization name",
         type: "string",
         demandOption: true,
-      })
-      .positional("project", {
-        describe: "Azure DevOps project name (optional if --area-path is provided)",
-        type: "string", 
-        demandOption: false,
       });
   })
   .option("area-path", {
     alias: "a",
-    describe: "Default area path (e.g., 'MyProject\\\\TeamName\\\\Area'). Project will be extracted if not provided.",
-    type: "string"
+    describe: "Default area path (e.g., 'MyProject\\\\TeamName\\\\Area'). Required. Can be specified multiple times for multi-area support. Project will be extracted automatically.",
+    type: "string",
+    array: true,
+    demandOption: true
   })
   .option("verbose", {
     alias: "v",
@@ -127,17 +124,10 @@ const argv = yargs(hideBin(process.argv))
     type: "boolean",
     default: false
   })
-  .check((argv) => {
-    // Validate that either project is provided OR area-path is provided
-    if (!argv.project && !argv['area-path']) {
-      throw new Error('Either <project> or --area-path must be provided');
-    }
-    return true;
-  })
   .example([
-    ['$0 myorg myproject', 'Start with explicit project name'],
     ['$0 myorg --area-path "MyProject\\\\Team\\\\Area"', 'Start with area path (project extracted automatically)'],
-    ['$0 myorg myproject --area-path "MyProject\\\\Team"', 'Explicit project with area path']
+    ['$0 myorg --area-path "ProjectA\\\\Team1" --area-path "ProjectA\\\\Team2"', 'Multi-area support (same project)'],
+    ['$0 myorg -a "MyProject\\\\Team"', 'Using short flag alias']
   ])
   .help()
   .parseSync();
@@ -147,7 +137,17 @@ const argv = yargs(hideBin(process.argv))
  */
 async function main() {
   try {
-    updateConfigFromCLI(argv as any as CLIArguments);
+    // Normalize area-path from yargs (can be string, array, or undefined)
+    const areaPathArg = argv['area-path'];
+    const normalizedArgs = {
+      ...argv,
+      areaPath: undefined, // Clear single value
+      areaPaths: Array.isArray(areaPathArg) 
+        ? areaPathArg 
+        : (areaPathArg ? [areaPathArg] : undefined)
+    };
+    
+    updateConfigFromCLI(normalizedArgs as any as CLIArguments);
 
     if (argv.verbose) {
       process.env.MCP_DEBUG = '1';

@@ -126,8 +126,7 @@ describe('Configuration Type Safety', () => {
     it('should properly store CLI arguments for later use', () => {
       const args: CLIArguments = {
         organization: 'stored-org',
-        project: 'stored-project',
-        areaPath: 'stored-area',
+        areaPath: 'stored-project\\\\stored-area',
         verbose: false
       };
 
@@ -137,7 +136,7 @@ describe('Configuration Type Safety', () => {
       const config = loadConfiguration(true);
       expect(config.azureDevOps.organization).toBe('stored-org');
       expect(config.azureDevOps.project).toBe('stored-project');
-      expect(config.azureDevOps.areaPath).toBe('stored-area');
+      expect(config.azureDevOps.areaPath).toBe('stored-project\\\\stored-area');
     });
 
     it('should extract project from area path when project not provided', () => {
@@ -155,19 +154,7 @@ describe('Configuration Type Safety', () => {
       expect(config.azureDevOps.areaPath).toBe('ExtractedProject\\\\Team\\\\Area');
     });
 
-    it('should prefer explicit project over extracted project', () => {
-      const args: CLIArguments = {
-        organization: 'my-org',
-        project: 'ExplicitProject',
-        areaPath: 'AreaProject\\\\Team',
-        verbose: false
-      };
 
-      updateConfigFromCLI(args);
-
-      const config = loadConfiguration(true);
-      expect(config.azureDevOps.project).toBe('ExplicitProject');
-    });
 
     it('should throw error if neither project nor area path provided', () => {
       const args: CLIArguments = {
@@ -186,7 +173,7 @@ describe('Configuration Type Safety', () => {
       // Setup valid CLI args before each test
       updateConfigFromCLI({
         organization: 'test-org',
-        project: 'test-project',
+        areaPath: 'test-project\\\\TestArea',
         verbose: false
       });
     });
@@ -220,7 +207,7 @@ describe('Configuration Type Safety', () => {
       
       updateConfigFromCLI({
         organization: 'test-org',
-        project: 'test-project',
+        areaPath: 'test-project\\\\Area',
         verbose: true
       });
 
@@ -291,7 +278,7 @@ describe('Configuration Type Safety', () => {
       
       const args: CLIArguments = {
         organization: 'test-org',
-        project: 'test-project'
+        areaPath: 'test-project\\\\Area'
       };
 
       updateConfigFromCLI(args);

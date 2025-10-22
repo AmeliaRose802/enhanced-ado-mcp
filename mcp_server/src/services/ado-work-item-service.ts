@@ -326,6 +326,7 @@ interface WiqlQueryArgs {
   computeMetrics?: boolean;
   staleThresholdDays?: number;
   filterByPatterns?: Array<'duplicates' | 'placeholder_titles' | 'unassigned_committed' | 'stale_automation' | 'missing_description' | 'missing_acceptance_criteria'>;
+  areaPathFilter?: string[];
 }
 
 const SUBSTANTIVE_FIELDS = [
@@ -338,6 +339,44 @@ const AUTOMATED_FIELDS = [
   'System.IterationPath', 'System.AreaPath', 'Microsoft.VSTS.Common.StackRank',
   'Microsoft.VSTS.Common.BacklogPriority', 'Microsoft.VSTS.Scheduling.StoryPoints'
 ];
+
+/**
+ * Inject area path filtering into WIQL query
+ * If query already contains [System.AreaPath] filtering, don't modify it
+ * Otherwise, add area path filtering to WHERE clause
+ */
+function injectAreaPathFilter(wiqlQuery: string, areaPaths: string[]): string {
+  if (!areaPaths || areaPaths.length === 0) {
+    return wiqlQuery;
+  }
+
+  // Check if query already has area path filtering
+  if (wiqlQuery.toUpperCase().includes('[SYSTEM.AREAPATH]')) {
+    logger.debug('Query already contains area path filtering, not injecting');
+    return wiqlQuery;
+  }
+
+  // Create area path conditions with UNDER clause for hierarchical matching
+  const areaPathConditions = areaPaths
+    .map(path => `[System.AreaPath] UNDER '${path.replace(/'/g, "''")}'`)
+    .join(' OR ');
+
+  // Find WHERE clause and inject area path filtering
+  const whereRegex = /\bWHERE\b/i;
+  if (whereRegex.test(wiqlQuery)) {
+    // Add area path condition at start of WHERE clause
+    return wiqlQuery.replace(whereRegex, `WHERE (${areaPathConditions}) AND`);
+  } else {
+    // No WHERE clause, add one before ORDER BY or at the end
+    const orderByRegex = /\bORDER BY\b/i;
+    if (orderByRegex.test(wiqlQuery)) {
+      return wiqlQuery.replace(orderByRegex, `WHERE (${areaPathConditions}) ORDER BY`);
+    } else {
+      // Add WHERE clause at the end
+      return `${wiqlQuery.trim()} WHERE (${areaPathConditions})`;
+    }
+  }
+}
 
 function daysBetween(dateString: string): number {
   return Math.floor((Date.now() - new Date(dateString).getTime()) / (1000 * 60 * 60 * 24));
@@ -426,7 +465,8 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     includeSubstantiveChange = false, substantiveChangeHistoryCount = 50,
     filterBySubstantiveChangeAfter, filterBySubstantiveChangeBefore,
     filterByDaysInactiveMin, filterByDaysInactiveMax,
-    computeMetrics = false, staleThresholdDays = 180, filterByPatterns
+    computeMetrics = false, staleThresholdDays = 180, filterByPatterns,
+    areaPathFilter
   } = args;
 
   const needsSubstantiveChange = includeSubstantiveChange ||
@@ -442,13 +482,23 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
   try {
     if (!organization?.trim()) throw new Error('Organization parameter is required');
     if (!project?.trim()) throw new Error('Project parameter is required');
-    logger.debug(`Executing WIQL query: ${wiqlQuery}`);
+
+    // Inject area path filtering if provided
+    const enhancedQuery = areaPathFilter && areaPathFilter.length > 0
+      ? injectAreaPathFilter(wiqlQuery, areaPathFilter)
+      : wiqlQuery;
+
+    if (areaPathFilter && areaPathFilter.length > 0) {
+      logger.debug(`Injected area path filter (${areaPathFilter.length} paths): ${areaPathFilter.join(', ')}`);
+    }
+    
+    logger.debug(`Executing WIQL query: ${enhancedQuery}`);
     logger.debug(`Target: ${organization}/${project}`);
     
-    const wiqlResult = await repository.executeWiql(wiqlQuery);
+    const wiqlResult = await repository.executeWiql(enhancedQuery);
 
     if (!wiqlResult.workItems?.length) {
-      return { workItems: [], count: 0, query: wiqlQuery, totalCount: 0, skip, top: pageSize, hasMore: false };
+      return { workItems: [], count: 0, query: enhancedQuery, totalCount: 0, skip, top: pageSize, hasMore: false };
     }
 
     const wiqlTotalCount = wiqlResult.workItems.length;
@@ -681,7 +731,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     return {
       workItems: paginatedWorkItems,
       count: paginatedWorkItems.length,
-      query: wiqlQuery,
+      query: enhancedQuery,
       totalCount: finalTotalCount,
       skip,
       top: pageSize,

@@ -57,10 +57,10 @@ export function extractProjectFromAreaPath(areaPath: string): string | null {
 export interface CLIArguments {
   /** Azure DevOps organization name (required positional argument) */
   organization: string;
-  /** Azure DevOps project name (optional if area-path is provided - will be extracted from area path) */
-  project?: string;
-  /** Optional area path override (from --area-path or -a flag) */
+  /** Optional area path override (from --area-path or -a flag) - DEPRECATED: Use areaPaths for multi-area support */
   areaPath?: string;
+  /** Array of area paths (from repeated --area-path flags) - REQUIRED, project extracted automatically */
+  areaPaths?: string[];
   /** Optional GitHub Copilot user GUID (from --copilot-guid or -g flag) */
   copilotGuid?: string;
   /** Enable verbose logging (from --verbose or -v flag, default: false) */
@@ -75,7 +75,10 @@ export interface AzureDevOpsConfig {
   defaultWorkItemType: "Task" | "Product Backlog Item" | "Bug" | "Feature" | "Epic" | "User Story";
   defaultPriority: number;
   defaultAssignedTo: string;
+  /** @deprecated Use areaPaths for multi-area support */
   areaPath?: string;
+  /** Array of configured area paths for multi-area support */
+  areaPaths?: string[];
   iterationPath?: string;
   inheritParentPaths: boolean;
 }
@@ -108,6 +111,7 @@ export const azureDevOpsConfigSchema = z.object({
   defaultPriority: z.number().int().min(1).max(10).default(2),
   defaultAssignedTo: z.string().min(1).default("@me"),
   areaPath: z.string().optional(),
+  areaPaths: z.array(z.string().min(1)).optional(),
   iterationPath: z.string().optional(),
   inheritParentPaths: z.boolean().default(true),
 });
@@ -149,19 +153,66 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Configuration not initialized. CLI args must be set first.\\n" +
-        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>\\n" +
+        "Usage: enhanced-ado-msp <organization> --area-path <path>\\n" +
         "Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
-  // Determine project: use explicit project or extract from area path
-  let project = cliArgs.project;
-  if (!project && cliArgs.areaPath) {
-    const extractedProject = extractProjectFromAreaPath(cliArgs.areaPath);
-    if (extractedProject) {
-      project = extractedProject;
+  // Normalize area paths: support both single areaPath and multiple areaPaths
+  let areaPaths: string[] = [];
+  if (cliArgs.areaPaths && cliArgs.areaPaths.length > 0) {
+    areaPaths = cliArgs.areaPaths;
+  } else if (cliArgs.areaPath) {
+    areaPaths = [cliArgs.areaPath];
+    if (verbose) {
+      logger.info('Single areaPath provided - normalized to areaPaths array for consistency');
+    }
+  }
+
+  // Validate area paths
+  if (areaPaths.length > 0) {
+    const emptyIndices = areaPaths.map((p, i) => (!p || p.trim() === '') ? i : -1).filter(i => i !== -1);
+    if (emptyIndices.length > 0) {
+      throw formatConfigError(
+        "validate",
+        `Area path cannot be empty at indices: ${emptyIndices.join(', ')}`
+      );
+    }
+
+    // Check for duplicates
+    const uniquePaths = new Set(areaPaths);
+    if (uniquePaths.size !== areaPaths.length) {
+      throw formatConfigError(
+        "validate",
+        `Duplicate area paths detected. Each area path must be unique.`
+      );
+    }
+  }
+
+  // Extract project from area paths (always required)
+  let project: string | undefined = undefined;
+  if (areaPaths.length > 0) {
+    // Extract projects from all area paths
+    const extractedProjects = new Set<string>();
+    for (const areaPath of areaPaths) {
+      const extractedProject = extractProjectFromAreaPath(areaPath);
+      if (extractedProject) {
+        extractedProjects.add(extractedProject);
+      }
+    }
+
+    if (extractedProjects.size > 1) {
+      throw formatConfigError(
+        "validate",
+        `Multiple projects detected in area paths: ${Array.from(extractedProjects).join(', ')}. ` +
+        `Please provide explicit project parameter when using area paths from different projects.`
+      );
+    }
+
+    if (extractedProjects.size === 1) {
+      project = Array.from(extractedProjects)[0];
       if (verbose) {
-        logger.info(`Extracted project name '${project}' from area path '${cliArgs.areaPath}'`);
+        logger.info(`Extracted project name '${project}' from area path(s)`);
       }
     }
   }
@@ -171,7 +222,7 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Organization is required.\\n" +
-        "Usage: enhanced-ado-msp <organization> [project] --area-path <path>\\n" +
+        "Usage: enhanced-ado-msp <organization> --area-path <path>\\n" +
         "Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
@@ -179,11 +230,9 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
   if (!project) {
     throw formatConfigError(
       "validate",
-      "Project is required. Provide either:\\n" +
-        "  1. Project as positional argument: enhanced-ado-msp <organization> <project>\\n" +
-        "     Example: enhanced-ado-msp MyOrganization MyProject\\n" +
-        "  2. Area path that includes project: --area-path \"ProjectName\\\\Area\"\\n" +
-        "     Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
+      "Project is required. Provide area path that includes project:\\n" +
+        "  Usage: enhanced-ado-msp <organization> --area-path \"ProjectName\\\\Area\"\\n" +
+        "  Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
@@ -192,7 +241,9 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     azureDevOps: {
       organization: cliArgs.organization,
       project: project,
+      // Include both for backward compatibility
       ...(cliArgs.areaPath && { areaPath: cliArgs.areaPath }),
+      ...(areaPaths.length > 0 && { areaPaths }),
     },
     gitRepository: {},
     gitHubCopilot: {
@@ -267,12 +318,20 @@ export function updateConfigFromCLI(args: CLIArguments): void {
  */
 export function getRequiredConfig() {
   const config = loadConfiguration();
+  
+  // Normalize area paths: if areaPaths is set, use it; otherwise fall back to single areaPath
+  const areaPaths = config.azureDevOps.areaPaths || 
+    (config.azureDevOps.areaPath ? [config.azureDevOps.areaPath] : []);
+  
   return {
     organization: config.azureDevOps.organization,
     project: config.azureDevOps.project,
     defaultWorkItemType: config.azureDevOps.defaultWorkItemType,
     defaultPriority: config.azureDevOps.defaultPriority,
-    defaultAreaPath: config.azureDevOps.areaPath,
+    /** @deprecated Use defaultAreaPaths instead */
+    defaultAreaPath: config.azureDevOps.areaPath || areaPaths[0],
+    /** Array of configured area paths */
+    defaultAreaPaths: areaPaths,
     defaultIterationPath: config.azureDevOps.iterationPath,
     gitRepository: {
       defaultBranch: config.gitRepository.defaultBranch,

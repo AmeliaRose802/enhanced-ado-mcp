@@ -19,9 +19,47 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
     const { getRequiredConfig } = await import('../../../config/config.js');
     const requiredConfig = getRequiredConfig();
     
+    // Get configured area paths (handle backward compatibility)
+    const configuredPaths = requiredConfig.defaultAreaPaths || [];
+    
+    // Validate area path when multiple configured
+    if (parsed.data.areaPath) {
+      if (configuredPaths.length > 1 && !configuredPaths.includes(parsed.data.areaPath)) {
+        return {
+          success: false,
+          data: null,
+          metadata: { source: "rest-api" },
+          errors: [
+            `Area path '${parsed.data.areaPath}' not in configured paths: ${configuredPaths.join(', ')}. ` +
+            `Please use one of the configured area paths.`
+          ],
+          warnings: []
+        };
+      }
+    }
+    
+    // Determine area path: explicit > default (warn if multiple configured)
+    let areaPath = parsed.data.areaPath;
+    if (!areaPath) {
+      if (configuredPaths.length > 1) {
+        return {
+          success: false,
+          data: null,
+          metadata: { source: "rest-api" },
+          errors: [
+            `Multiple area paths configured: ${configuredPaths.join(', ')}. ` +
+            `Please specify explicit 'areaPath' parameter when creating work items.`
+          ],
+          warnings: []
+        };
+      }
+      areaPath = requiredConfig.defaultAreaPath;
+    }
+    
     // Merge parsed data with config defaults
     const workItemData = {
       ...parsed.data,
+      areaPath,
       workItemType: parsed.data.workItemType || requiredConfig.defaultWorkItemType,
       organization: parsed.data.organization || requiredConfig.organization,
       project: parsed.data.project || requiredConfig.project,
@@ -31,6 +69,11 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
     logger.debug(`Creating work item with REST API: ${workItemData.title} (type: ${workItemData.workItemType})`);
     
     const result = await createWorkItem(workItemData);
+    
+    const warnings: string[] = [];
+    if (configuredPaths.length > 1 && !parsed.data.areaPath) {
+      warnings.push(`Used first configured area path: ${areaPath}. Consider specifying explicit areaPath for clarity.`);
+    }
     
     return {
       success: true,
@@ -43,7 +86,7 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
         parentLinked: result.parent_linked
       },
       errors: [],
-      warnings: []
+      warnings
     };
   } catch (error) {
     return {

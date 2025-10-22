@@ -28,29 +28,87 @@ AI-powered Azure DevOps work item management via Model Context Protocol.
 
 **One-Click Install:**
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20Project%5C%5CTeam)%22%7D%5D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
 
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install-24bfa5?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20Project%5C%5CTeam)%22%7D%5D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install-24bfa5?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
 
-You'll be prompted for:
-- Organization name (e.g., `mycompany`)
-- Area path (e.g., `MyProject\\MyTeam`) - Project will be extracted automatically
+**VS Code will prompt you for:**
+1. **Organization name** (e.g., `mycompany`)
+2. **Area path** (e.g., `MyProject\Team\Area`)
+
+The project name is **automatically extracted** from your area path (the first part before `\`).
+
+> 💡 **Example:** If you enter `MyProject\Engineering\Backend` as the area path, the project will be set to `MyProject`
 
 **Manual Configuration:**
 
 Add to VS Code `settings.json`:
+
+**Step 1:** Press `Ctrl+Shift+P` (Windows/Linux) or `Cmd+Shift+P` (Mac)  
+**Step 2:** Type "Preferences: Open User Settings (JSON)"  
+**Step 3:** Add this configuration:
+
 ```json
 {
   "github.copilot.chat.mcp.servers": {
     "enhanced-ado-msp": {
       "command": "npx",
-      "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "YOUR_ORG",
+        "--area-path",
+        "YOUR_PROJECT\\YOUR_TEAM"
+      ]
     }
   }
 }
 ```
 
-**Note:** The project name is automatically extracted from the area path (first segment). You can also provide it explicitly:
+**Step 4:** Replace placeholders:
+- `YOUR_ORG` → Your organization name (e.g., `contoso`)
+- `YOUR_PROJECT\\YOUR_TEAM` → Your area path (e.g., `MyProject\Engineering\Backend`)
+
+**Step 5:** Reload VS Code (`Ctrl+Shift+P` → "Developer: Reload Window")
+
+**Real Example:**
+```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "enhanced-ado-msp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "contoso",
+        "--area-path",
+        "ContosoApp\\Engineering\\Backend"
+      ]
+    }
+  }
+}
+```
+
+**Multi-Team Setup:**
+```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "enhanced-ado-msp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "contoso",
+        "--area-path", "ContosoApp\\Engineering\\Frontend",
+        "--area-path", "ContosoApp\\Engineering\\Backend",
+        "--area-path", "ContosoApp\\DevOps"
+      ]
+    }
+  }
+}
+```
+
+**Note:** The project name is automatically extracted from the area path (first segment before `\\`).
 
 ---
 
@@ -72,13 +130,19 @@ Add to VS Code `settings.json`:
 }
 ```
 
-**Alternate format (explicit project):**
+**Multi-area support (optional):**
 ```json
 {
   "mcpServers": {
     "enhanced-ado-msp": {
       "command": "npx",
-      "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "YOUR_PROJECT", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
+      "args": [
+        "-y", 
+        "enhanced-ado-mcp-server", 
+        "YOUR_ORG", 
+        "--area-path", "YOUR_PROJECT\\TEAM_A",
+        "--area-path", "YOUR_PROJECT\\TEAM_B"
+      ]
     }
   }
 }

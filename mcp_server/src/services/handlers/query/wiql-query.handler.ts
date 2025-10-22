@@ -35,11 +35,19 @@ export async function handleWiqlQuery(
     
     // Determine if this is AI generation or direct execution
     const isAIGeneration = !!parsed.description && !parsed.wiqlQuery;
+    
+    // Resolve area path filter: explicit > config default
+    // Handle case where defaultAreaPaths may not be defined (backward compatibility)
+    const defaultAreaPaths = requiredConfig.defaultAreaPaths || [];
+    const areaPathFilter = parsed.areaPathFilter || 
+      (defaultAreaPaths.length > 0 ? defaultAreaPaths : undefined);
+    
     const queryArgs = {
       ...parsed,
       organization: parsed.organization || requiredConfig.organization,
       project: parsed.project || requiredConfig.project,
       areaPath: parsed.areaPath || requiredConfig.defaultAreaPath,
+      areaPathFilter,
       iterationPath: parsed.iterationPath || requiredConfig.defaultIterationPath
     };
 
