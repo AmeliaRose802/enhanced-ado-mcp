@@ -105,8 +105,12 @@ AI-powered tool discovery for finding the right tools:
 - Common usage patterns
 - Workflow recommendations
 - Filter by category
+- **AI vs Deterministic tool selection** - Decision matrix for choosing between AI-powered and rule-based tools
+- Cost/speed/accuracy tradeoffs
+- Tool comparison examples (query generation, analysis, bulk operations)
+- Best practices and hybrid approaches
 
-**Use when:** Agent is unsure which tool to use or wants to explore capabilities with natural language
+**Use when:** Agent is unsure which tool to use or wants to explore capabilities with natural language, or needs guidance on AI vs deterministic tool selection
 
 ### 9. Handle-First Analysis Guide (`handle-first-analysis-guide.md`)
 **URI:** `ado://docs/handle-first-analysis-guide`
@@ -251,6 +255,59 @@ Returns:
 - ✅ Complex decision making required
 - ✅ Generating recommendations
 - ✅ Work item enhancement
+
+## Choosing Between AI and Deterministic Tools
+
+When selecting tools, consider this decision framework:
+
+### Use AI-Powered Tools When:
+- **Natural Language Input**: User describes needs in plain language
+- **Subjective Analysis**: Questions like "Is this suitable for AI assignment?"
+- **Content Generation**: Creating unique descriptions, acceptance criteria, or estimates
+- **Complex Queries**: Multi-condition queries with date arithmetic or custom fields
+- **Quality Assessment**: Evaluating completeness, readiness, or suitability
+
+**Tradeoffs:**
+- ⏱️ Slower (2-8 seconds per operation)
+- 💰 Moderate-High cost (uses LLM tokens/VS Code quota)
+- 🎯 85-95% accuracy (may require iteration/review)
+- 🧠 High context awareness and flexibility
+- 🔌 Requires VS Code Language Model API access
+
+### Use Deterministic (Rule-Based) Tools When:
+- **Known Syntax**: You already know the exact query or update syntax
+- **Objective Validation**: Rule-based checks (types, states, relationships)
+- **Bulk Operations**: Applying fixed updates to many items
+- **Speed Critical**: Need instant results (<1 second)
+- **Cost Sensitive**: Avoiding LLM token usage
+- **100% Accuracy Required**: No tolerance for variance
+
+**Tradeoffs:**
+- ⚡ Fast (<1 second)
+- 💰 Free (no LLM costs)
+- 🎯 100% accuracy for rule-based operations
+- 🔒 No context awareness (literal only)
+- 📏 Limited to predefined rules
+- ✅ Works offline, no API dependencies
+
+### Tool Comparison Examples:
+
+| Task | AI Tool | Deterministic Tool | Recommendation |
+|------|---------|-------------------|----------------|
+| **Query from description** | `wit-ai-generate-wiql` (2-5s, 85-95%) | `wit-get-work-items-by-query-wiql` (instant, 100%) | AI if unknown syntax, Deterministic if known |
+| **Suitability analysis** | `wit-ai-assignment-analyzer` (3-8s, subjective) | `wit-validate-hierarchy` (instant, objective) | AI for "should I?", Deterministic for "can I?" |
+| **Content generation** | `wit-bulk-enhance-descriptions` (2-5s/item, unique) | `wit-bulk-update-by-query-handle` (instant, template) | AI for rich content, Deterministic for fixed values |
+| **Pattern detection** | `wit-ai-intelligence` (complex patterns) | `wit-analyze-patterns` (known patterns) | AI for discovery, Deterministic for validation |
+
+### Hybrid Approach (Recommended):
+Combine both for optimal results:
+1. **AI Tool**: Generate complex query from description (`wit-ai-generate-wiql`)
+2. **Deterministic**: Execute query with handle (`wit-get-work-items-by-query-wiql`)
+3. **Deterministic**: Preview selection (`wit-query-handle-select`)
+4. **AI Tool**: Enhance descriptions for subset (`wit-bulk-enhance-descriptions`)
+5. **Deterministic**: Apply fixed updates to all (`wit-bulk-update-by-query-handle`)
+
+**See `tool-discovery-guide.md` for detailed AI vs Deterministic decision matrix and examples.**
 
 ## Updating Resources
 
