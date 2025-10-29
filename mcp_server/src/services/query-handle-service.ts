@@ -10,9 +10,10 @@ import { logger } from '../utils/logger.js';
  * 
  * Key features:
  * - Generate unique handles for query results
- * - Store work item IDs with expiration (default 1 hour)
+ * - Store work item IDs with configurable expiration (default 30 minutes, max 2 hours)
  * - Retrieve work item IDs by handle
  * - Automatic cleanup of expired handles
+ * - Expiration warnings when handle is close to expiring
  */
 
 /**
@@ -106,14 +107,17 @@ interface OperationHistory {
 class QueryHandleService {
   private handles: Map<string, QueryHandleData> = new Map();
   private operationHistories: Map<string, OperationHistory> = new Map();
-  private defaultTTL = 60 * 60 * 1000; // 1 hour in milliseconds
+  private defaultTTL = 30 * 60 * 1000; // 30 minutes in milliseconds (configurable)
+  private maxTTL = 2 * 60 * 60 * 1000; // 2 hours maximum
+  private warningThreshold = 5 * 60 * 1000; // Warn when 5 minutes remain
   private cleanupInterval: NodeJS.Timeout | null = null;
   private serverStartTime: Date = new Date();
 
   constructor() {
-    // Start automatic cleanup every 5 minutes
+    // Start automatic cleanup every 10 minutes
     this.startCleanup();
     logger.info(`Query Handle Service initialized at ${this.serverStartTime.toISOString()}`);
+    logger.info(`Query handle expiration: ${this.defaultTTL / 60000} minutes (max: ${this.maxTTL / 60000} minutes)`);
   }
 
   /**
@@ -213,6 +217,13 @@ class QueryHandleService {
       return null;
     }
 
+    // Warn if expiring soon
+    const timeUntilExpiry = data.expiresAt.getTime() - now.getTime();
+    if (timeUntilExpiry < this.warningThreshold) {
+      const minutesRemaining = Math.floor(timeUntilExpiry / (1000 * 60));
+      logger.warn(`Query handle '${handle}' will expire in ${minutesRemaining} minute(s). Consider refreshing if needed for longer workflows.`);
+    }
+
     return data.workItemIds;
   }
 
@@ -251,6 +262,39 @@ class QueryHandleService {
       return null;
     }
     return data.workItemContext.get(workItemId) || null;
+  }
+
+  /**
+   * Refresh/extend the expiration of a query handle
+   * Useful for long-running workflows that need to keep the handle active
+   * 
+   * @param handle Query handle to refresh
+   * @param extensionMinutes Minutes to extend (default: 30, max: 120)
+   * @returns True if refreshed, false if handle not found or already expired
+   */
+  refreshHandle(handle: string, extensionMinutes: number = 30): boolean {
+    const data = this.handles.get(handle);
+    
+    if (!data) {
+      logger.warn(`Cannot refresh query handle '${handle}' - not found`);
+      return false;
+    }
+
+    const now = new Date();
+    if (now > data.expiresAt) {
+      logger.warn(`Cannot refresh query handle '${handle}' - already expired`);
+      this.handles.delete(handle);
+      return false;
+    }
+
+    // Calculate new expiration (max 2 hours from now)
+    const extensionMs = Math.min(extensionMinutes * 60 * 1000, this.maxTTL);
+    const newExpiry = new Date(now.getTime() + extensionMs);
+    
+    data.expiresAt = newExpiry;
+    logger.info(`Query handle '${handle}' refreshed. New expiration: ${newExpiry.toISOString()}`);
+    
+    return true;
   }
 
   /**

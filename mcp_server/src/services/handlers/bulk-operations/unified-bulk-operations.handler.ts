@@ -906,17 +906,98 @@ async function executeEnhanceDescriptionsAction(
     };
   }
 
-  // TODO: Implement actual AI enhancement logic
-  // For now, return stub indicating implementation needed
+  // Implement actual AI enhancement logic
+  let succeeded = 0;
+  let failed = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  for (const workItemId of workItemIds) {
+    try {
+      // Fetch work item details
+      const workItem = await httpClient.get<any>(`wit/workitems/${workItemId}?api-version=7.1`);
+      const fields = workItem.data.fields;
+      
+      const title = fields['System.Title'] as string;
+      const description = (fields['System.Description'] as string) || '';
+      const workItemType = fields['System.WorkItemType'] as string;
+      const state = fields['System.State'] as string;
+      const tags = (fields['System.Tags'] as string) || '';
+
+      // Skip completed items
+      if (['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        skipped++;
+        warnings.push(`Work item ${workItemId}: Skipped (${state} state)`);
+        continue;
+      }
+
+      // Prepare AI prompt
+      const userContent = `
+Work Item: ${title}
+Type: ${workItemType}
+Current Description: ${description || '(empty)'}
+Tags: ${tags}
+Enhancement Style: ${action.enhancementStyle || 'detailed'}
+
+Build upon and improve the existing description.
+`;
+
+      // Call AI with timeout
+      const aiResult = await samplingClient.createMessage({
+        systemPromptName: 'description-enhancer',
+        userContent,
+        maxTokens: action.enhancementStyle === 'concise' ? 200 : 400,
+        temperature: 0.4
+      });
+
+      const responseText = samplingClient.extractResponseText(aiResult as { content: { text: string } });
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        failed++;
+        errors.push(`Work item ${workItemId}: AI failed to generate valid JSON response`);
+        continue;
+      }
+
+      const jsonData = JSON.parse(jsonMatch[0]);
+      
+      if (!jsonData.enhancedDescription) {
+        failed++;
+        errors.push(`Work item ${workItemId}: AI did not provide enhanced description`);
+        continue;
+      }
+
+      const enhancedDescription = description 
+        ? `${description}\n\n---\n\n${jsonData.enhancedDescription}`
+        : jsonData.enhancedDescription;
+
+      // Update work item
+      const updates = [
+        {
+          op: 'add',
+          path: '/fields/System.Description',
+          value: enhancedDescription
+        }
+      ];
+
+      await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
+      succeeded++;
+    } catch (error) {
+      failed++;
+      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   return {
     action,
-    success: false,
+    success: failed === 0,
     itemsAffected: workItemIds.length,
-    itemsSucceeded: 0,
-    itemsFailed: workItemIds.length,
-    errors: ["AI description enhancement implementation pending"],
-    warnings: [],
-    summary: "AI enhancement action not yet fully implemented"
+    itemsSucceeded: succeeded,
+    itemsFailed: failed,
+    errors,
+    warnings,
+    summary: `Enhanced ${succeeded} descriptions (${skipped} skipped, ${failed} failed)`
   };
 }
 
@@ -973,16 +1054,109 @@ async function executeAssignStoryPointsAction(
     };
   }
 
-  // TODO: Implement actual AI story point estimation logic
+  // Implement actual AI story point estimation logic
+  let succeeded = 0;
+  let failed = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  for (const workItemId of workItemIds) {
+    try {
+      // Fetch work item details
+      const workItem = await httpClient.get<any>(`wit/workitems/${workItemId}?api-version=7.1`);
+      const fields = workItem.data.fields;
+      
+      const title = fields['System.Title'] as string;
+      const description = (fields['System.Description'] as string) || '';
+      const workItemType = fields['System.WorkItemType'] as string;
+      const state = fields['System.State'] as string;
+      const existingEffort = fields['Microsoft.VSTS.Scheduling.Effort'] || fields['Microsoft.VSTS.Scheduling.StoryPoints'];
+
+      // Skip completed items
+      if (['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        skipped++;
+        warnings.push(`Work item ${workItemId}: Skipped (${state} state)`);
+        continue;
+      }
+
+      // Skip items with existing effort unless override
+      if (existingEffort && !action.overwriteExisting) {
+        skipped++;
+        warnings.push(`Work item ${workItemId}: Skipped (already has effort: ${existingEffort})`);
+        continue;
+      }
+
+      // Prepare AI prompt
+      const userContent = `
+Work Item: ${title}
+Type: ${workItemType}
+Description: ${description || '(no description provided)'}
+Estimation Scale: ${action.estimationScale || 'fibonacci'}
+
+Analyze the work and provide a story point estimate.
+`;
+
+      // Call AI
+      const aiResult = await samplingClient.createMessage({
+        systemPromptName: 'story-point-estimator',
+        userContent,
+        maxTokens: 300,
+        temperature: 0.3
+      });
+
+      const responseText = samplingClient.extractResponseText(aiResult as { content: { text: string } });
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        failed++;
+        errors.push(`Work item ${workItemId}: AI failed to generate valid JSON response`);
+        continue;
+      }
+
+      const jsonData = JSON.parse(jsonMatch[0]);
+      
+      if (jsonData.storyPoints === undefined) {
+        failed++;
+        errors.push(`Work item ${workItemId}: AI did not provide story point estimate`);
+        continue;
+      }
+
+      // Check if decomposition suggested
+      if (jsonData.suggestDecomposition) {
+        warnings.push(`Work item ${workItemId}: AI suggests decomposition - ${jsonData.decompositionReason || 'item too large'}`);
+      }
+
+      // Update work item with story points
+      const effortField = workItemType === 'User Story' || workItemType === 'Product Backlog Item'
+        ? 'Microsoft.VSTS.Scheduling.StoryPoints'
+        : 'Microsoft.VSTS.Scheduling.Effort';
+
+      const updates = [
+        {
+          op: 'add',
+          path: `/fields/${effortField}`,
+          value: jsonData.storyPoints
+        }
+      ];
+
+      await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
+      succeeded++;
+    } catch (error) {
+      failed++;
+      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   return {
     action,
-    success: false,
+    success: failed === 0,
     itemsAffected: workItemIds.length,
-    itemsSucceeded: 0,
-    itemsFailed: workItemIds.length,
-    errors: ["AI story point assignment implementation pending"],
-    warnings: [],
-    summary: "AI story point action not yet fully implemented"
+    itemsSucceeded: succeeded,
+    itemsFailed: failed,
+    errors,
+    warnings,
+    summary: `Assigned story points to ${succeeded} items (${skipped} skipped, ${failed} failed)`
   };
 }
 
@@ -1039,15 +1213,118 @@ async function executeAddAcceptanceCriteriaAction(
     };
   }
 
-  // TODO: Implement actual AI acceptance criteria generation logic
+  // Implement actual AI acceptance criteria generation logic
+  let succeeded = 0;
+  let failed = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  for (const workItemId of workItemIds) {
+    try {
+      // Fetch work item details
+      const workItem = await httpClient.get<any>(`wit/workitems/${workItemId}?api-version=7.1`);
+      const fields = workItem.data.fields;
+      
+      const title = fields['System.Title'] as string;
+      const description = (fields['System.Description'] as string) || '';
+      const workItemType = fields['System.WorkItemType'] as string;
+      const state = fields['System.State'] as string;
+      const existingCriteria = (fields['Microsoft.VSTS.Common.AcceptanceCriteria'] as string) || '';
+
+      // Skip completed items
+      if (['Done', 'Completed', 'Closed', 'Resolved', 'Removed'].includes(state)) {
+        skipped++;
+        warnings.push(`Work item ${workItemId}: Skipped (${state} state)`);
+        continue;
+      }
+
+      // Prepare AI prompt
+      const userContent = `
+Work Item: ${title}
+Type: ${workItemType}
+Description: ${description || '(no description provided)'}
+Existing Criteria: ${existingCriteria || '(none)'}
+Criteria Format: ${action.criteriaFormat || 'gherkin'}
+Min Criteria: ${action.minCriteria || 3}
+Max Criteria: ${action.maxCriteria || 7}
+
+${existingCriteria ? 'Add to existing acceptance criteria without duplicating.' : 'Generate new acceptance criteria.'}
+`;
+
+      // Call AI
+      const aiResult = await samplingClient.createMessage({
+        systemPromptName: 'acceptance-criteria-generator',
+        userContent,
+        maxTokens: 400,
+        temperature: 0.3
+      });
+
+      const responseText = samplingClient.extractResponseText(aiResult as { content: { text: string } });
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      
+      if (!jsonMatch) {
+        failed++;
+        errors.push(`Work item ${workItemId}: AI failed to generate valid JSON response`);
+        continue;
+      }
+
+      const jsonData = JSON.parse(jsonMatch[0]);
+      
+      if (!jsonData.acceptanceCriteria || jsonData.acceptanceCriteria.length === 0) {
+        failed++;
+        errors.push(`Work item ${workItemId}: AI did not provide acceptance criteria`);
+        continue;
+      }
+
+      // Check for insufficient info warning
+      if (jsonData.insufficientInfo) {
+        warnings.push(`Work item ${workItemId}: ${jsonData.missingContext || 'Insufficient information for quality criteria'}`);
+      }
+
+      // Format criteria based on format type
+      let formattedCriteria: string;
+      const criteriaFormat = action.criteriaFormat || 'gherkin';
+      
+      if (criteriaFormat === 'gherkin') {
+        formattedCriteria = jsonData.acceptanceCriteria.join('\n\n');
+      } else if (criteriaFormat === 'checklist') {
+        formattedCriteria = jsonData.acceptanceCriteria.map((c: string) => `- [ ] ${c}`).join('\n');
+      } else {
+        formattedCriteria = jsonData.acceptanceCriteria.join('\n\n');
+      }
+
+      // Combine with existing criteria if present
+      const finalCriteria = existingCriteria
+        ? `${existingCriteria}\n\n---\n\n${formattedCriteria}`
+        : formattedCriteria;
+
+      // Update work item
+      const updates = [
+        {
+          op: 'add',
+          path: '/fields/Microsoft.VSTS.Common.AcceptanceCriteria',
+          value: finalCriteria
+        }
+      ];
+
+      await httpClient.patch(`wit/workitems/${workItemId}?api-version=7.1`, updates);
+      succeeded++;
+    } catch (error) {
+      failed++;
+      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   return {
     action,
-    success: false,
+    success: failed === 0,
     itemsAffected: workItemIds.length,
-    itemsSucceeded: 0,
-    itemsFailed: workItemIds.length,
-    errors: ["AI acceptance criteria generation implementation pending"],
-    warnings: [],
-    summary: "AI acceptance criteria action not yet fully implemented"
+    itemsSucceeded: succeeded,
+    itemsFailed: failed,
+    errors,
+    warnings,
+    summary: `Added acceptance criteria to ${succeeded} items (${skipped} skipped, ${failed} failed)`
   };
 }
+
