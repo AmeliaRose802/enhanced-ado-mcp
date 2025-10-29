@@ -17,6 +17,7 @@ import { loadConfiguration } from "../../../config/config.js";
 import { getTokenProvider } from '../../../utils/token-provider.js';
 import { unifiedBulkOperationsSchema } from "../../../config/schemas.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
+import { processBatch } from "../../../utils/batch-processor.js";
 
 type BulkAction = z.infer<typeof unifiedBulkOperationsSchema>['actions'][number];
 
@@ -49,6 +50,7 @@ export async function handleUnifiedBulkOperations(
       itemSelector, 
       dryRun, 
       maxPreviewItems, 
+      concurrency,
       stopOnError, 
       organization, 
       project 
@@ -113,6 +115,7 @@ export async function handleUnifiedBulkOperations(
           proj,
           queryHandle,
           dryRun || false,
+          concurrency || 5,
           maxPreviewItems,
           server
         );
@@ -222,46 +225,47 @@ async function executeAction(
   project: string,
   queryHandle: string,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number,
   server?: MCPServer | MCPServerLike
 ): Promise<ActionResult> {
   
   switch (action.type) {
     case "comment":
-      return await executeCommentAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeCommentAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "update":
-      return await executeUpdateAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeUpdateAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "assign":
-      return await executeAssignAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeAssignAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "remove":
-      return await executeRemoveAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeRemoveAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "transition-state":
-      return await executeTransitionStateAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeTransitionStateAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "move-iteration":
-      return await executeMoveIterationAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeMoveIterationAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "change-type":
-      return await executeChangeTypeAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeChangeTypeAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "add-tag":
-      return await executeAddTagAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeAddTagAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "remove-tag":
-      return await executeRemoveTagAction(action, workItemIds, httpClient, dryRun, maxPreviewItems);
+      return await executeRemoveTagAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
     
     case "enhance-descriptions":
-      return await executeEnhanceDescriptionsAction(action, workItemIds, httpClient, dryRun, maxPreviewItems, server);
+      return await executeEnhanceDescriptionsAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems, server);
     
     case "assign-story-points":
-      return await executeAssignStoryPointsAction(action, workItemIds, httpClient, dryRun, maxPreviewItems, server);
+      return await executeAssignStoryPointsAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems, server);
     
     case "add-acceptance-criteria":
-      return await executeAddAcceptanceCriteriaAction(action, workItemIds, httpClient, dryRun, maxPreviewItems, server);
+      return await executeAddAcceptanceCriteriaAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems, server);
     
     default:
       throw new Error(`Unknown action type: ${(action as any).type}`);
@@ -276,6 +280,7 @@ async function executeCommentAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -297,18 +302,31 @@ async function executeCommentAction(
   let failed = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       const url = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
       await httpClient.post(url, {
         text: action.comment,
         format: 1  // 1 = Markdown, 0 = PlainText
       });
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk comment progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -331,6 +349,7 @@ async function executeUpdateAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -352,15 +371,28 @@ async function executeUpdateAction(
   let failed = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       const url = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
       await httpClient.patch(url, action.updates);
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk update progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -383,6 +415,7 @@ async function executeAssignAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -403,8 +436,10 @@ async function executeAssignAction(
   let failed = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       const url = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
       await httpClient.patch(url, [
         { op: "replace", path: "/fields/System.AssignedTo", value: action.assignTo }
@@ -418,11 +453,22 @@ async function executeAssignAction(
         });
       }
       
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk assign progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -445,6 +491,7 @@ async function executeRemoveAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -465,8 +512,10 @@ async function executeRemoveAction(
   let failed = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       // Add comment if provided
       if (action.removeReason) {
         const commentUrl = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
@@ -482,11 +531,22 @@ async function executeRemoveAction(
         { op: "replace", path: "/fields/System.State", value: "Removed" }
       ]);
       
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk remove progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -509,6 +569,7 @@ async function executeTransitionStateAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -530,8 +591,10 @@ async function executeTransitionStateAction(
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       const updates: any[] = [
         { op: "replace", path: "/fields/System.State", value: action.targetState }
       ];
@@ -551,14 +614,27 @@ async function executeTransitionStateAction(
         });
       }
       
-      succeeded++;
-    } catch (error) {
-      if (action.skipInvalidTransitions) {
-        skipped++;
-      } else {
-        failed++;
-        errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      stopOnError: !action.skipInvalidTransitions,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk transition-state progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
       }
+    }
+  );
+
+  succeeded = results.successCount;
+  
+  // Handle skipInvalidTransitions
+  if (action.skipInvalidTransitions) {
+    skipped = results.failureCount;
+  } else {
+    failed = results.failureCount;
+    // Collect error messages
+    for (const failedItem of results.failed) {
+      errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
     }
   }
 
@@ -583,6 +659,7 @@ async function executeMoveIterationAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -603,8 +680,10 @@ async function executeMoveIterationAction(
   let failed = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       const url = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
       await httpClient.patch(url, [
         { op: "replace", path: "/fields/System.IterationPath", value: action.targetIterationPath }
@@ -618,11 +697,22 @@ async function executeMoveIterationAction(
         });
       }
       
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk move-iteration progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -645,6 +735,7 @@ async function executeChangeTypeAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -666,8 +757,10 @@ async function executeChangeTypeAction(
   let skipped = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       // Change work item type using PATCH operation
       const typeChangePatch = [
         {
@@ -694,15 +787,29 @@ async function executeChangeTypeAction(
       const patchUrl = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
       await httpClient.patch(patchUrl, typeChangePatch);
       
-      succeeded++;
-    } catch (error) {
-      if (action.skipInvalidChanges) {
-        skipped++;
-        errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)} (skipped)`);
-      } else {
-        failed++;
-        errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      stopOnError: !action.skipInvalidChanges,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk change-type progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
       }
+    }
+  );
+
+  succeeded = results.successCount;
+  
+  // Handle skipInvalidChanges
+  if (action.skipInvalidChanges) {
+    skipped = results.failureCount;
+    for (const failedItem of results.failed) {
+      errors.push(`Work item ${failedItem.item}: ${failedItem.error} (skipped)`);
+    }
+  } else {
+    failed = results.failureCount;
+    for (const failedItem of results.failed) {
+      errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
     }
   }
 
@@ -727,6 +834,7 @@ async function executeAddTagAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -747,8 +855,10 @@ async function executeAddTagAction(
   let failed = 0;
   const errors: string[] = [];
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       // Get current tags
       const getUrl = `wit/workItems/${workItemId}?fields=System.Tags&api-version=7.1-preview.3`;
       const response = await httpClient.get<any>(getUrl);
@@ -768,11 +878,22 @@ async function executeAddTagAction(
         { op: "replace", path: "/fields/System.Tags", value: newTags }
       ]);
       
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk add-tag progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -795,6 +916,7 @@ async function executeRemoveTagAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number
 ): Promise<ActionResult> {
   
@@ -816,8 +938,10 @@ async function executeRemoveTagAction(
   const errors: string[] = [];
   const tagsToRemove = new Set(action.tags.split(";").map(t => t.trim()).filter(Boolean));
 
-  for (const workItemId of workItemIds) {
-    try {
+  // Process work items in parallel with controlled concurrency
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
       // Get current tags
       const getUrl = `wit/workItems/${workItemId}?fields=System.Tags&api-version=7.1-preview.3`;
       const response = await httpClient.get<any>(getUrl);
@@ -834,11 +958,22 @@ async function executeRemoveTagAction(
         { op: "replace", path: "/fields/System.Tags", value: newTags }
       ]);
       
-      succeeded++;
-    } catch (error) {
-      failed++;
-      errors.push(`Work item ${workItemId}: ${error instanceof Error ? error.message : String(error)}`);
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk remove-tag progress: ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
     }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  // Collect error messages
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
   }
 
   return {
@@ -861,6 +996,7 @@ async function executeEnhanceDescriptionsAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number,
   server?: MCPServer | MCPServerLike
 ): Promise<ActionResult> {
@@ -1009,6 +1145,7 @@ async function executeAssignStoryPointsAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number,
   server?: MCPServer | MCPServerLike
 ): Promise<ActionResult> {
@@ -1168,6 +1305,7 @@ async function executeAddAcceptanceCriteriaAction(
   workItemIds: number[],
   httpClient: ADOHttpClient,
   dryRun: boolean,
+  concurrency: number,
   maxPreviewItems?: number,
   server?: MCPServer | MCPServerLike
 ): Promise<ActionResult> {

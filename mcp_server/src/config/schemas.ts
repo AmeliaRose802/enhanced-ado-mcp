@@ -62,6 +62,7 @@ const bulkOperationFields = (defaultPreview: number = 10) => ({
   itemSelector: itemSelectorSchema.optional().default("all"),
   dryRun: optionalBool(true),
   maxPreviewItems: z.number().int().min(1).max(50).optional().default(defaultPreview),
+  concurrency: z.number().int().min(1).max(20).optional().default(5).describe("Number of concurrent operations (default: 5, max: 20)"),
   ...orgProjectFields()
 });
 
@@ -569,6 +570,7 @@ export const unifiedBulkOperationsSchema = z.object({
   itemSelector: itemSelectorSchema.optional().default("all"),
   dryRun: optionalBool(true),
   maxPreviewItems: z.number().int().min(1).max(50).optional().default(10),
+  concurrency: z.number().int().min(1).max(20).optional().default(5).describe("Number of concurrent operations (default: 5, max: 20)"),
   stopOnError: optionalBool(true).describe("Stop executing actions if one fails (default: true)"),
   ...orgProjectFields()
 });
