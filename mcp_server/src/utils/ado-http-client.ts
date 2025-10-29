@@ -4,7 +4,6 @@
  * Uses Node.js native fetch (available since Node 18)
  */
 
-import { getAzureDevOpsToken, clearTokenCache } from './ado-token.js';
 import { logger } from './logger.js';
 import { rateLimiter } from '../services/rate-limiter.js';
 import { metricsService } from '../services/metrics-service.js';
@@ -53,15 +52,19 @@ export class ADOHttpError extends Error {
 export class ADOHttpClient {
   private baseUrl: string;
   private organization: string;
-  private token: string;
+  private tokenProvider: () => Promise<string>;
   private defaultTimeout: number = 30000; // 30 seconds
 
-  constructor(organization: string, project?: string) {
+  constructor(
+    organization: string,
+    tokenProvider: () => Promise<string>,
+    project?: string
+  ) {
     this.organization = organization;
+    this.tokenProvider = tokenProvider;
     this.baseUrl = project
       ? `https://dev.azure.com/${organization}/${project}/_apis`
       : `https://dev.azure.com/${organization}/_apis`;
-    this.token = getAzureDevOpsToken(); // Token retrieval doesn't need organization param
   }
 
   /**
@@ -145,15 +148,14 @@ export class ADOHttpClient {
     
     logger.debug(`[HTTP] Full URL: ${urlObj.toString()}, Org: "${this.organization}"`);
 
-    // Refresh token if this is not already a retry
-    if (!_isRetry) {
-      this.token = getAzureDevOpsToken();
-    }
+    // Get fresh token from provider
+    const token = await this.tokenProvider();
 
     // Build headers
     const requestHeaders: Record<string, string> = {
-      'Authorization': `Bearer ${this.token}`,
+      'Authorization': `Bearer ${token}`,
       'Accept': 'application/json',
+      'X-TFS-FedAuthRedirect': 'Suppress',  // Suppress federated auth redirects - returns 401/403 instead of 302 (required for DoD/Gov clouds)
       ...headers
     };
 
@@ -203,13 +205,9 @@ export class ADOHttpClient {
         responseHeaders[key] = value;
       });
 
-      // Handle 401 Unauthorized - token may have expired
-      if (response.status === 401 && !_isRetry) {
-        logger.info('Received 401 Unauthorized, refreshing token and retrying...');
-        // Clear cached token to force fresh retrieval
-        clearTokenCache();
-        // Retry the request once with fresh token
-        return this.request<T>(endpoint, { ...options, _isRetry: true });
+      // Handle 401 Unauthorized - log for debugging
+      if (response.status === 401) {
+        logger.warn('Received 401 Unauthorized - authentication may have failed');
       }
 
       // Read response body
@@ -301,6 +299,10 @@ export class ADOHttpClient {
 /**
  * Helper function to create an HTTP client for a specific org/project
  */
-export function createADOHttpClient(organization: string, project?: string): ADOHttpClient {
-  return new ADOHttpClient(organization, project);
+export function createADOHttpClient(
+  organization: string,
+  tokenProvider: () => Promise<string>,
+  project?: string
+): ADOHttpClient {
+  return new ADOHttpClient(organization, tokenProvider, project);
 }

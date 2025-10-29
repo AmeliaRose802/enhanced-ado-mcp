@@ -2,6 +2,7 @@
  * Cache Service Unit Tests
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { CacheService } from '../../src/services/cache-service.js';
 
 describe('CacheService', () => {

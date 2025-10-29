@@ -45,7 +45,7 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
         handle_lifetime: "1 hour (default)",
         cleanup_frequency: "Every 5 minutes",
         max_recommended: "Keep under 10 active handles for performance",
-        usage_tip: "Use wit-query-handle-validate to check specific handle status"
+        usage_tip: "Use wit-query-handle-info to check specific handle status"
       }
     };
 

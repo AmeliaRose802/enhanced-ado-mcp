@@ -1,6 +1,7 @@
 /**
  * Integration test for wit-hierarchy-validator tool
  */
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool, setServerInstance } from '../../src/services/tool-service.js';
 
 // Mock server for testing

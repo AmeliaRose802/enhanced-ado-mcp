@@ -3,17 +3,24 @@
  * Validates that all bulk operations respect the preview item limit in dry-run mode
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkAssignByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkRemoveByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-remove-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkUpdateByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkCommentByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   bulkAssignByQueryHandleSchema,
   bulkRemoveByQueryHandleSchema,
   bulkUpdateByQueryHandleSchema,
   bulkCommentByQueryHandleSchema
 } from '../../src/config/schemas.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ToolConfig } from '../../src/types/index.js';
 
 // Mock the dependencies

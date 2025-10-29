@@ -68,7 +68,7 @@ Enable the Enhanced ADO MCP Server to support multiple area paths simultaneously
 #### Option 1: Array-Based Configuration (Recommended)
 ```bash
 # Multiple area paths via repeated CLI argument
-enhanced-ado-msp MyOrg --area-path "ProjectA\\TeamAlpha" --area-path "ProjectB\\TeamBeta" --area-path "ProjectA\\TeamGamma"
+enhanced-ado-mcp MyOrg --area-path "ProjectA\\TeamAlpha" --area-path "ProjectB\\TeamBeta" --area-path "ProjectA\\TeamGamma"
 
 # Or via configuration file
 {
@@ -86,8 +86,8 @@ enhanced-ado-msp MyOrg --area-path "ProjectA\\TeamAlpha" --area-path "ProjectB\\
 #### Option 2: Wildcard/Pattern Support
 ```bash
 # Wildcard support for hierarchical selection
-enhanced-ado-msp MyOrg --area-path "ProjectA\\*"  # All areas under ProjectA
-enhanced-ado-msp MyOrg --area-path "ProjectA\\Team*"  # Pattern matching
+enhanced-ado-mcp MyOrg --area-path "ProjectA\\*"  # All areas under ProjectA
+enhanced-ado-mcp MyOrg --area-path "ProjectA\\Team*"  # Pattern matching
 ```
 
 ### Tool Behavior Changes

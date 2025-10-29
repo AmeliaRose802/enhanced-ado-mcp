@@ -7,6 +7,7 @@
 
 import { logger } from '../utils/logger.js';
 import { createADOHttpClient, ADOHttpClient } from '../utils/ado-http-client.js';
+import { getTokenProvider } from '../utils/token-provider.js';
 import type { 
   ADOWorkItem, 
   ADORepository, 
@@ -28,7 +29,7 @@ export class WorkItemRepository {
   constructor(organization: string, project: string) {
     this.organization = organization;
     this.project = project;
-    this.httpClient = createADOHttpClient(organization, project);
+    this.httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   }
 
   /**

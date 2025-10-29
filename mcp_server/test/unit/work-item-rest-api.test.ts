@@ -3,7 +3,9 @@
  * Test for the REST API-based work item creation
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool } from "../../src/services/tool-service.js";
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { logger } from "../../src/utils/logger.js";
 
 async function testCreateWorkItemBasic() {

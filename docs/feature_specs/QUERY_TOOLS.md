@@ -63,7 +63,15 @@ Enable flexible work item querying with:
 
 #### Handle-Only Mode (New in v1.5.1)
 
-When `handleOnly: true` is combined with `returnQueryHandle: true`, the tool returns **only the query handle and count** without fetching full work item details. This is highly efficient for workflows where:
+When `handleOnly: true` is combined with `returnQueryHandle: true`, the tool returns **only the query handle and count** without including work item data in the response. However, full work item context is **still fetched and stored** in the query handle for later retrieval.
+
+**Key Behavior:**
+- Work item data IS fetched from Azure DevOps (to populate handle context)
+- Work item data IS NOT returned in the response (only handle + count)
+- Handle contains full context data for later retrieval via `wit-query-handle-get-items`
+- This prevents "unknown" data issues when using the handle later
+
+**This mode is efficient for workflows where:**
 
 - You need to perform bulk operations without previewing items
 - You have a large result set and don't need immediate details
@@ -71,10 +79,10 @@ When `handleOnly: true` is combined with `returnQueryHandle: true`, the tool ret
 - You'll analyze items later using `wit-query-handle-get-items`
 
 **Benefits:**
-- **Faster execution** - Skips work item detail fetching
-- **Reduced API calls** - Only executes WIQL, doesn't fetch work item details
-- **Smaller response** - Only returns handle and count
+- **Smaller response** - Only returns handle and count (not full work item array)
 - **Lower token usage** - Minimal response payload for LLMs
+- **Full context preserved** - Handle contains complete work item data for later operations
+- **No "unknown" data** - Handle can be used immediately for informed operations
 
 **Use Cases:**
 - Backlog cleanup workflows (get counts before reviewing)

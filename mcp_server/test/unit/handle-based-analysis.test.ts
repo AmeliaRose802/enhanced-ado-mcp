@@ -2,9 +2,13 @@
  * Tests for new handle-based analysis tools
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleAnalyzeByQueryHandle } from '../../src/services/handlers/ai-powered/analyze-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleListQueryHandles } from '../../src/services/handlers/query-handles/list-query-handles.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { analyzeByQueryHandleSchema, listQueryHandlesSchema } from '../../src/config/schemas.js';
 
 // Mock configuration
@@ -30,6 +34,12 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
     isAvailable: true,
     isLoggedIn: true
   }))
+}));
+
+// Mock token provider
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
 }));
 
 // Mock ADO HTTP Client

@@ -16,6 +16,7 @@ import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { extractJSON, getStringOrDefault, getNumberOrDefault } from '../../../utils/ai-helpers.js';
+import { getTokenProvider } from '../../../utils/token-provider.js';
 
 interface EnhancementResult {
   workItemId: number;
@@ -169,7 +170,7 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
     const cfg = loadConfiguration();
     const org = organization || cfg.azureDevOps.organization;
     const proj = project || cfg.azureDevOps.project;
-    const httpClient = new ADOHttpClient(org, proj);
+    const httpClient = new ADOHttpClient(org, getTokenProvider(), proj);
 
     const results: EnhancementResult[] = [];
 

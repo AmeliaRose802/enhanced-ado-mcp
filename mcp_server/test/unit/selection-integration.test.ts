@@ -5,11 +5,17 @@
  * query → selection → bulk operation.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleSelectItemsFromQueryHandle } from '../../src/services/handlers/query-handles/select-items-from-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkCommentByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkAssignByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkUpdateByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   selectItemsFromQueryHandleSchema,
   bulkCommentByQueryHandleSchema,

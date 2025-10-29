@@ -5,9 +5,16 @@
  * validate, inspect, and select functionality.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleQueryHandleInfo } from '../../src/services/handlers/query-handles/query-handle-info-handler.js';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 import { z } from 'zod';
+
+// Mock token provider
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
+}));
 
 // Mock configuration
 jest.mock('../../src/config/config.js', () => ({
@@ -35,18 +42,20 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
 }));
 
 // Mock ADO HTTP Client
+const mockGet = jest.fn<any>().mockResolvedValue({
+  data: {
+    id: 123,
+    fields: {
+      'System.Title': 'Test Item',
+      'System.WorkItemType': 'Task',
+      'System.State': 'Active'
+    }
+  }
+});
+
 jest.mock('../../src/utils/ado-http-client.js', () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
-    get: jest.fn().mockResolvedValue({
-      data: {
-        id: 123,
-        fields: {
-          'System.Title': 'Test Item',
-          'System.WorkItemType': 'Task',
-          'System.State': 'Active'
-        }
-      }
-    })
+    get: mockGet
   }))
 }));
 

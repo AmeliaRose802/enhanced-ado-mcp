@@ -17,14 +17,24 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
   const quarter = Math.floor(month / 3) + 1;
   const semester = `Q${quarter}`;
   
-  // Calculate date ranges based on analysis_period_days parameter
-  const analysisPeriodDays = typeof args.analysis_period_days === 'number' ? args.analysis_period_days : 90;
+  // Calculate date ranges based on analysis_period_days OR lookback_days parameter
+  // Different prompts use different names for the same concept
+  const analysisPeriodDays = typeof args.analysis_period_days === 'number' 
+    ? args.analysis_period_days 
+    : typeof args.lookback_days === 'number'
+    ? args.lookback_days
+    : 90;
   const endDate = new Date();
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - analysisPeriodDays);
   
   // Format dates as YYYY-MM-DD for OData queries
   const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+  
+  // Format dates as YYYY-MM-DD for OData ISO format (used in date comparisons)
+  const formatDateISO = (date: Date): string => {
     return date.toISOString().split('T')[0];
   };
   
@@ -85,15 +95,21 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     // Date range variables (auto-calculated)
     start_date: formatDate(startDate),
     end_date: formatDate(endDate),
+    start_date_iso: formatDateISO(startDate),
+    end_date_iso: formatDateISO(endDate),
     today: formatDate(now),
     analysis_period_days: analysisPeriodDays,
+    lookback_days: analysisPeriodDays,  // Alias for sprint_review prompt compatibility
     
     // Computed values
     semester: semester,
     max_age_days: 180,
     include_child_areas: true,
     max_items: 50,
-    dry_run: true
+    dry_run: true,
+    
+    // URL templates for work item links
+    work_item_url_template: `https://dev.azure.com/${config.azureDevOps.organization}/${config.azureDevOps.project}/_workitems/edit/{id}`
   };
 }
 

@@ -5,6 +5,7 @@
  * while maintaining all other tool discovery features.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { toolDiscoverySchema } from '../../src/config/schemas.js';
 
 // Mock the sampling client

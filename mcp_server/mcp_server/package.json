@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "enhanced-ado-mcp-server": "file:.."
+  }
+}

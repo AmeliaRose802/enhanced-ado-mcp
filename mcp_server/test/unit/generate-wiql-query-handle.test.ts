@@ -4,8 +4,11 @@
  * Tests for the AI-powered query generation functionality of the unified wit-wiql-query tool
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleWiqlQuery } from '../../src/services/handlers/query/wiql-query.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { wiqlQuerySchema } from '../../src/config/schemas.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 // Mock configuration
@@ -59,6 +62,7 @@ jest.mock('../../src/services/ado-work-item-service.js', () => ({
   queryWorkItemsByWiql: jest.fn()
 }));
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryWorkItemsByWiql } from '../../src/services/ado-work-item-service.js';
 const mockQueryWorkItemsByWiql = queryWorkItemsByWiql as jest.MockedFunction<typeof queryWorkItemsByWiql>;
 
@@ -500,6 +504,131 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
           maxResults: 50
         })
       );
+    });
+  });
+
+  describe('handleOnly mode', () => {
+    it('should fetch full data for handle context even when handleOnly is true', async () => {
+      // Mock AI generation
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
+        role: 'assistant',
+        content: [{
+          type: 'text',
+          text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"'
+        }]
+      });
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"');
+
+      // Mock query execution for validation
+      mockQueryWorkItemsByWiql.mockResolvedValueOnce({
+        workItems: [
+          { id: 111, title: 'First', type: 'Task', state: 'Active', url: 'http://test.com/111', createdDate: '2025-01-01', changedDate: '2025-01-02', areaPath: 'Test\\Area', iterationPath: 'Sprint 1', assignedTo: 'user1@test.com', additionalFields: {} },
+          { id: 222, title: 'Second', type: 'Bug', state: 'Active', url: 'http://test.com/222', createdDate: '2025-01-03', changedDate: '2025-01-04', areaPath: 'Test\\Area', iterationPath: 'Sprint 2', assignedTo: 'user2@test.com', additionalFields: {} }
+        ],
+        totalCount: 2,
+        count: 2,
+        query: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"',
+        skip: 0,
+        top: 10,
+        hasMore: false
+      });
+
+      // Mock query execution for handle creation - with FULL work item data
+      mockQueryWorkItemsByWiql.mockResolvedValueOnce({
+        workItems: [
+          {
+            id: 111,
+            title: 'First Work Item',
+            state: 'Active',
+            type: 'Task',
+            url: 'http://test.com/111',
+            createdDate: '2025-01-01',
+            changedDate: '2025-01-02',
+            areaPath: 'Test\\Area',
+            iterationPath: 'Sprint 1',
+            assignedTo: 'user1@test.com',
+            additionalFields: { 'System.Tags': 'tag1; tag2' }
+          },
+          {
+            id: 222,
+            title: 'Second Work Item',
+            state: 'Active',
+            type: 'Bug',
+            url: 'http://test.com/222',
+            createdDate: '2025-01-03',
+            changedDate: '2025-01-04',
+            areaPath: 'Test\\Area',
+            iterationPath: 'Sprint 2',
+            assignedTo: 'user2@test.com',
+            additionalFields: { 'System.Tags': 'critical' }
+          }
+        ],
+        totalCount: 2,
+        count: 2,
+        query: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"',
+        skip: 0,
+        top: 50,
+        hasMore: false
+      });
+
+      const result = await handleWiqlQuery(
+        mockConfig,
+        {
+          description: 'Find active items',
+          organization: 'test-org',
+          project: 'test-project',
+          returnQueryHandle: true,
+          handleOnly: true  // This is the key parameter
+        },
+        mockServerInstance
+      );
+
+      // Verify the result was successful
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      
+      // Result should NOT contain work_items (handleOnly mode)
+      expect((result.data as any).work_items).toBeUndefined();
+      
+      // But should contain handle and count
+      expect((result.data as any).query_handle).toBeDefined();
+      expect((result.data as any).work_item_count).toBe(2);
+      
+      const handle = (result.data as any).query_handle;
+
+      // Verify full data was fetched (not minimal fields)
+      expect(mockQueryWorkItemsByWiql).toHaveBeenCalledTimes(2);
+      // The second call should have includeFields from the original args (not empty array)
+      expect(mockQueryWorkItemsByWiql).toHaveBeenLastCalledWith(
+        expect.not.objectContaining({
+          includeFields: []
+        })
+      );
+
+      // NOW THE KEY TEST: Verify the handle has context data stored
+      const handleData = queryHandleService.getQueryData(handle);
+      expect(handleData).not.toBeNull();
+      expect(handleData?.workItemIds).toEqual([111, 222]);
+      
+      // Verify workItemContext (Map) was populated with full work item data
+      expect(handleData?.workItemContext).toBeDefined();
+      expect(handleData?.workItemContext?.size).toBe(2);
+      
+      const item1Context = handleData?.workItemContext?.get(111);
+      expect(item1Context).toBeDefined();
+      expect(item1Context?.title).toBe('First Work Item');
+      expect(item1Context?.state).toBe('Active');
+      expect(item1Context?.type).toBe('Task');
+      expect(item1Context?.assignedTo).toBe('user1@test.com');
+      expect(item1Context?.tags).toBe('tag1; tag2');
+      
+      const item2Context = handleData?.workItemContext?.get(222);
+      expect(item2Context).toBeDefined();
+      expect(item2Context?.title).toBe('Second Work Item');
+      expect(item2Context?.state).toBe('Active');
+      expect(item2Context?.type).toBe('Bug');
+      expect(item2Context?.assignedTo).toBe('user2@test.com');
+      expect(item2Context?.tags).toBe('critical');
     });
   });
 });

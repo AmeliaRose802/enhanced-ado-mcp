@@ -12,7 +12,8 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
-import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { ADOHttpClient } from '../../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../../utils/token-provider.js';
 import { loadConfiguration } from "../../../config/config.js";
 
 /**
@@ -493,7 +494,7 @@ export async function handleBulkLinkByQueryHandles(
     const cfg = loadConfiguration();
     const org = organization || cfg.azureDevOps.organization;
     const proj = project || cfg.azureDevOps.project;
-    const httpClient = new ADOHttpClient(org, proj);
+    const httpClient = new ADOHttpClient(org, getTokenProvider(), proj);
 
     const results: LinkResult[] = [];
 

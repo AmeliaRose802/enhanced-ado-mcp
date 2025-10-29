@@ -3,7 +3,9 @@
  * Test for the new Work Item Intelligence Analyzer with AI Sampling
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool, setServerInstance } from "../../src/services/tool-service.js";
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { logger } from "../../src/utils/logger.js";
 
 // Mock server with sampling capabilities for testing

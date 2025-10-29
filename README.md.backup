@@ -34,7 +34,7 @@ AI-powered Azure DevOps work item management via Model Context Protocol.
 
 **One-Click Install:**
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20Project%5C%5CTeam)%22%7D%5D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22%24%7Binput%3Aado_project%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22ado_project%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20project%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20Project%5C%5CTeam)%22%7D%5D)
 
 You'll be prompted for:
 - Organization name (e.g., `mycompany`)
@@ -47,7 +47,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "github.copilot.chat.mcp.servers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "YOUR_PROJECT", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
     }
@@ -57,7 +57,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "mcpServers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": [
         "-y",
@@ -82,8 +82,8 @@ Add to VS Code `settings.json`:
 ```json
 {
   "mcpServers": {
-    "enhanced-ado-msp": {
-      "command": "enhanced-ado-msp",
+    "enhanced-ado-mcp": {
+      "command": "enhanced-ado-mcp",
       "args": [
         "YOUR_ORG",
         "YOUR_PROJECT",
@@ -113,7 +113,7 @@ This MCP server includes **AI-powered analysis tools** that leverage VS Code's l
 
 1. Open Command Palette (`F1` or `Ctrl+Shift+P` / `Cmd+Shift+P`)
 2. Type **"MCP"** and select **"MCP: List Servers"**
-3. Find **"enhanced-ado-msp"** in the list
+3. Find **"enhanced-ado-mcp"** in the list
 4. Click on the server name
 5. Select **"Configure Model Access"**
 6. In the model selection dialog, **check ALL free models** (any model showing **0x** tokens):
@@ -129,7 +129,7 @@ This MCP server includes **AI-powered analysis tools** that leverage VS Code's l
 
 When you first use an AI-powered tool (tools 5-8 below), VS Code will prompt you to grant language model access:
 
-1. VS Code will show a permission dialog asking: **"Allow [enhanced-ado-msp] to access language models?"**
+1. VS Code will show a permission dialog asking: **"Allow [enhanced-ado-mcp] to access language models?"**
 2. Click **"Allow"** to grant access
 3. The permission is remembered for future requests
 
@@ -169,7 +169,7 @@ You can verify if your MCP server has language model access:
 1. **Via VS Code UI:**
    - Open Command Palette (`F1`)
    - Run **"MCP: List Servers"**
-   - Select **"enhanced-ado-msp"**
+   - Select **"enhanced-ado-mcp"**
    - Check if models are listed and accessible
 
 2. **Via API (programmatic):**
@@ -1224,7 +1224,7 @@ wit-list-area-paths --project "YourProject"
 # Then use with explicit area path
 
 # Or configure server with default area path
-enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "YourProject\\YourTeam"
+enhanced-ado-mcp YOUR_ORG YOUR_PROJECT --area-path "YourProject\\YourTeam"
 ```
 
 #### Work Item Type Configuration Error ($undefined in path)
@@ -1250,7 +1250,7 @@ Work item type was not provided and no default was configured.
 }
 
 // Or configure default at server startup
-enhanced-ado-msp YOUR_ORG YOUR_PROJECT --area-path "Project\\Team"
+enhanced-ado-mcp YOUR_ORG YOUR_PROJECT --area-path "Project\\Team"
 ```
 
 The server will now properly default to "Product Backlog Item" if not specified.
@@ -1294,7 +1294,7 @@ $env:MCP_DEBUG=1    # PowerShell
 # Or in VS Code settings.json
 {
   "mcpServers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "env": {
         "MCP_DEBUG": "1"
       }

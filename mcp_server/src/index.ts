@@ -15,7 +15,10 @@ import { checkSamplingSupport } from "./utils/sampling-client.js";
 import { listResources, getResourceContent } from "./services/resource-service.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { updateConfigFromCLI, ensureGitHubCopilotGuid, type CLIArguments } from "./config/config.js";
+import { updateConfigFromCLI, ensureGitHubCopilotGuid, loadConfiguration, type CLIArguments } from "./config/config.js";
+import { createAuthenticator, getDefaultAuthType } from "./utils/ado-token.js";
+import { getOrgTenant } from "./utils/org-tenants.js";
+import { setTokenProvider } from "./utils/token-provider.js";
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
@@ -100,7 +103,7 @@ server.fallbackRequestHandler = async (request: any) => {
  * Parse command line arguments
  */
 const argv = yargs(hideBin(process.argv))
-  .scriptName("enhanced-ado-msp")
+  .scriptName("enhanced-ado-mcp")
   .usage("Usage: $0 <organization> --area-path <path> [options]\\n\\nProject name is automatically extracted from the area path. Multiple --area-path flags can be specified for multi-area support.")
   .version("1.2.2")
   .command("$0 <organization> [options]", "Enhanced ADO MCP Server", (yargs) => {
@@ -124,10 +127,24 @@ const argv = yargs(hideBin(process.argv))
     type: "boolean",
     default: false
   })
+  .option("authentication", {
+    alias: "auth",
+    describe: "Authentication type: 'interactive' (OAuth browser), 'azcli' (Azure CLI), or 'env' (environment/managed identity)",
+    type: "string",
+    choices: ["interactive", "azcli", "env"],
+    default: getDefaultAuthType()
+  })
+  .option("tenant", {
+    alias: "t",
+    describe: "Azure tenant ID (optional, for multi-tenant scenarios)",
+    type: "string"
+  })
   .example([
-    ['$0 myorg --area-path "MyProject\\\\Team\\\\Area"', 'Start with area path (project extracted automatically)'],
-    ['$0 myorg --area-path "ProjectA\\\\Team1" --area-path "ProjectA\\\\Team2"', 'Multi-area support (same project)'],
-    ['$0 myorg -a "MyProject\\\\Team"', 'Using short flag alias']
+    ['$0 myorg --area-path "MyProject\\Team\\Area"', 'Start with area path (project extracted automatically)'],
+    ['$0 myorg --area-path "ProjectA\\Team1" --area-path "ProjectA\\Team2"', 'Multi-area support (same project)'],
+    ['$0 myorg -a "MyProject\\Team"', 'Using short flag alias'],
+    ['$0 myorg -a "MyProject\\Team" --authentication azcli', 'Use Azure CLI authentication'],
+    ['$0 myorg -a "MyProject\\Team" --tenant <tenant-id>', 'Specify tenant for multi-tenant scenarios']
   ])
   .help()
   .parseSync();
@@ -153,12 +170,33 @@ async function main() {
       process.env.MCP_DEBUG = '1';
     }
 
+    // Get config to access organization
+    const config = loadConfiguration();
+    const organization = config.azureDevOps.organization;
+
+    // Discover tenant ID if not provided
+    const discoveredTenantId = await getOrgTenant(organization);
+    const tenantId = normalizedArgs.tenant || discoveredTenantId;
+
+    if (tenantId) {
+      logger.info(`Using tenant ID: ${tenantId}`);
+    }
+
+    // Create token provider
+    const tokenProvider = createAuthenticator(
+      (normalizedArgs.authentication as any) || getDefaultAuthType(),
+      tenantId
+    );
+
+    // Initialize global token provider for services
+    setTokenProvider(tokenProvider);
+
     // Automatically look up GitHub Copilot GUID if not provided
     await ensureGitHubCopilotGuid();
 
     const useHybrid = process.env.MCP_HYBRID === "1";
     
-    logger.info(`enhanced-ado-msp MCP server starting (${useHybrid ? "hybrid" : "stdio"})`);
+    logger.info(`enhanced-ado-mcp MCP server starting (${useHybrid ? "hybrid" : "stdio"})`);
     
     // Set server instance with type assertion to handle SDK generic complexity
     setServerInstance(server as any);

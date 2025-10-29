@@ -2,10 +2,37 @@
  * Azure DevOps Identity Service
  * 
  * Provides utility functions for looking up user identities in Azure DevOps
+ * 
+ * NOTE: This service uses Azure CLI authentication instead of the main OAuth provider
+ * because the IdentityPicker API (preview) requires different permissions than
+ * the standard Azure DevOps REST APIs.
  */
 
+import { AzureCliCredential } from '@azure/identity';
 import { logger } from '../utils/logger.js';
 import { createADOHttpClient } from '../utils/ado-http-client.js';
+
+/**
+ * Create a token provider specifically for identity operations
+ * Uses Azure CLI credentials which have broader permissions for IdentityPicker API
+ */
+function createIdentityTokenProvider(): () => Promise<string> {
+  const credential = new AzureCliCredential();
+  const scopes = ['499b84ac-1321-427f-aa17-267ca6975798/.default'];
+  
+  return async () => {
+    try {
+      const result = await credential.getToken(scopes);
+      if (!result) {
+        throw new Error('Failed to obtain token from Azure CLI');
+      }
+      return result.token;
+    } catch (error) {
+      logger.error('Azure CLI authentication failed. Please ensure you are logged in with: az login');
+      throw error;
+    }
+  };
+}
 
 interface IdentityDescriptor {
   value: string;
@@ -52,7 +79,8 @@ export async function searchIdentities(
   organization: string,
   searchFilter: string
 ): Promise<Identity[]> {
-  const client = createADOHttpClient(organization);
+  // Use Azure CLI auth for identity operations (has necessary permissions for IdentityPicker API)
+  const client = createADOHttpClient(organization, createIdentityTokenProvider());
   
   try {
     // Use the Identity Search API
@@ -79,10 +107,11 @@ export async function searchIdentities(
     
     return identities;
   } catch (error) {
-    logger.error('Failed to search identities:', error);
-    throw new Error(`Failed to search identities: ${error instanceof Error ? error.message : String(error)}`);
+    logger.warn('Failed to search identities:', error);
+    return []; // Return empty array instead of throwing
   }
 }
+
 
 /**
  * Resolve an identity descriptor to get the full identity details including the correct format for assignments
@@ -94,7 +123,8 @@ async function resolveIdentityDescriptor(
   organization: string,
   subjectDescriptor: string
 ): Promise<any> {
-  const client = createADOHttpClient(organization);
+  // Use Azure CLI auth for identity operations
+  const client = createADOHttpClient(organization, createIdentityTokenProvider());
   
   try {
     // Use Graph API's subject lookup which returns the correct identity format
@@ -137,7 +167,8 @@ export async function findGitHubCopilotGuid(organization: string): Promise<strin
     }
     
     if (identities.length === 0) {
-      logger.warn('No GitHub Copilot identity found. Use --copilot-guid to manually specify the GUID.');
+      logger.warn('No GitHub Copilot identity found.');
+      logger.warn('Please manually specify the GUID with --copilot-guid flag');
       return null;
     }
     
@@ -163,24 +194,28 @@ export async function findGitHubCopilotGuid(organization: string): Promise<strin
     const identityValue = copilotIdentity.samAccountName || copilotIdentity.signInAddress;
     
     if (!identityValue) {
-      logger.error(`Found GitHub Copilot identity but missing samAccountName/signInAddress fields`);
-      logger.info(`Available fields: ${JSON.stringify(copilotIdentity, null, 2)}`);
-      throw new Error(`GitHub Copilot identity missing required fields for assignment`);
+      logger.warn(`Found GitHub Copilot identity but missing samAccountName/signInAddress fields`);
+      logger.warn('Please manually specify the GUID with --copilot-guid flag');
+      logger.debug(`Available fields: ${JSON.stringify(copilotIdentity, null, 2)}`);
+      return null;
     }
     
     // Validate format (should be userId@directoryGuid)
     if (!identityValue.includes('@')) {
-      logger.error(`Identity value "${identityValue}" is not in expected format (userId@directoryGuid)`);
-      throw new Error(`Invalid GitHub Copilot identity format`);
+      logger.warn(`Identity value "${identityValue}" is not in expected format (userId@directoryGuid)`);
+      logger.warn('Please manually specify the GUID with --copilot-guid flag');
+      return null;
     }
     
     logger.info(`✓ Found GitHub Copilot identity: "${copilotIdentity.displayName}" (${identityValue})`);
     return identityValue;
   } catch (error) {
-    logger.error('Failed to find GitHub Copilot GUID:', error);
+    logger.warn('Failed to find GitHub Copilot GUID:', error);
+    logger.warn('Please manually specify the GUID with --copilot-guid flag');
     return null;
   }
 }
+
 
 /**
  * Get identity details by ID
@@ -192,7 +227,8 @@ export async function getIdentityById(
   organization: string,
   identityId: string
 ): Promise<Identity | null> {
-  const client = createADOHttpClient(organization);
+  // Use Azure CLI auth for identity operations
+  const client = createADOHttpClient(organization, createIdentityTokenProvider());
   
   try {
     logger.debug(`Getting identity details for: ${identityId}`);

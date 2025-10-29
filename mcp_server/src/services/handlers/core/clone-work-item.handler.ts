@@ -10,6 +10,7 @@ import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import type { ADOFieldOperation, ADOWorkItem } from "../../../types/index.js";
+import { queryHandleService } from "../../query-handle-service.js";
 
 interface CloneWorkItemArgs {
   sourceWorkItemId: number;
@@ -173,6 +174,24 @@ export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Pr
       warnings.push("Child cloning is not yet implemented");
     }
 
+    // Create query handle for the newly cloned work item
+    const queryHandle = queryHandleService.storeQuery(
+      [clonedItem.id],
+      `SELECT [System.Id] FROM WorkItems WHERE [System.Id] = ${clonedItem.id}`,
+      {
+        project: targetProj,
+        queryType: 'single-item'
+      },
+      undefined, // Use default TTL
+      new Map([[clonedItem.id, {
+        title: clonedItem.fields['System.Title'] as string,
+        state: clonedItem.fields['System.State'] as string,
+        type: clonedItem.fields['System.WorkItemType'] as string
+      }]])
+    );
+    
+    logger.debug(`Created query handle ${queryHandle} for cloned work item ${clonedItem.id}`);
+
     const result = buildSuccessResponse(
       {
         clonedWorkItem: {
@@ -187,12 +206,14 @@ export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Pr
           title: sourceItem.fields['System.Title'],
           url: `https://dev.azure.com/${organization}/${project}/_workitems/edit/${sourceWorkItemId}`
         },
-        linkedToSource: linkToSource
+        linkedToSource: linkToSource,
+        query_handle: queryHandle
       },
       { 
         source: "clone-work-item",
         clonedId: clonedItem.id,
-        sourceId: sourceWorkItemId
+        sourceId: sourceWorkItemId,
+        queryHandle
       }
     );
     

@@ -2,7 +2,9 @@
  * Test new configuration and discovery tools
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool } from '../../src/services/tool-service.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { loadConfiguration, updateConfigFromCLI } from '../../src/config/config.js';
 
 async function testConfigurationTools() {

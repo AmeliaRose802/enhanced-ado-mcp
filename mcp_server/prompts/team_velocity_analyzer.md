@@ -72,7 +72,7 @@ You are a **Team Flow & Progress Analyst**. Produce a holistic, anonymized view 
 6. **Backlog Counts:** Custom OData with `$apply=filter(contains(Area/AreaPath, '{{area_path_simple_substring}}') and State eq 'New')/groupby((WorkItemType), aggregate($count as Count))`
 8. **Unassigned Backlog:** WIQL `SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.AssignedTo] = '' AND [System.State] = 'New'` with `returnQueryHandle: true`. **Use `wit-analyze-by-query-handle` for counts.** (OData AssignedTo eq null is unreliable)
 
-**Key OData Pattern:** Area path filtering with `contains()` MUST be inside `$apply/filter()`, NOT in a separate `$filter` clause. Pattern: `$apply=filter(contains(Area/AreaPath, '{{area_path_substring}}') and ...)/groupby(...)` where {{area_path_substring}} is a pre-extracted substring like 'Azure Host Gateway'
+**Key OData Pattern:** Area path filtering with `contains()` MUST be inside `$apply/filter()`, NOT in a separate `$filter` clause. Pattern: `$apply=filter(contains(Area/AreaPath, '{{area_substring}}') and ...)/groupby(...)` where {{area_substring}} is a pre-extracted substring like 'Azure Host Gateway'
 
 **Pagination Pattern (WIQL):**
 - Always request with `returnQueryHandle: true`.

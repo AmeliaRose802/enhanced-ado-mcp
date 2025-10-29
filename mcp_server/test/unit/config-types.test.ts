@@ -4,7 +4,9 @@
  * Tests that 'any' types have been properly replaced with typed interfaces
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   updateConfigFromCLI, 
   loadConfiguration,
@@ -33,7 +35,7 @@ describe('Configuration Type Safety', () => {
         verbose: true,
         // yargs adds these properties
         _: [],
-        $0: 'enhanced-ado-msp',
+        $0: 'enhanced-ado-mcp',
         'area-path': 'test-area',
         'copilot-guid': 'test-guid-123',
         a: 'test-area',

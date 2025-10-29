@@ -4,8 +4,11 @@
  * Tests for the query handle functionality in the OData query generator
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleGenerateODataQuery } from '../../src/services/handlers/query/generate-odata-query.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { generateODataQuerySchema } from '../../src/config/schemas.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 // Mock configuration
@@ -44,8 +47,9 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
 }));
 
 // Mock Azure DevOps token
-jest.mock('../../src/utils/ado-token.js', () => ({
-  getAzureDevOpsToken: jest.fn(() => 'mock-token')
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
 }));
 
 // Mock fetch globally

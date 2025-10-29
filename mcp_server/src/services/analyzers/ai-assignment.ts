@@ -7,6 +7,7 @@ import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableRespo
 import { extractJSON } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../utils/token-provider.js';
 import type { ADOWorkItem } from '../../types/index.js';
 
 /** Internal analysis input structure */
@@ -33,7 +34,7 @@ async function getWorkItem(
   project: string,
   workItemId: number
 ): Promise<ADOWorkItem> {
-  const httpClient = createADOHttpClient(organization, project);
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   const response = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}`);
   return response.data;
 }

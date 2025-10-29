@@ -6,9 +6,13 @@
  * that retrieves full context packages for multiple work items.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleGetContextPackagesByQueryHandle } from '../../src/services/handlers/context/get-context-packages-by-query-handle.handler';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { getContextPackagesByQueryHandleSchema } from '../../src/config/schemas';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ToolConfig } from '../../src/types/index';
 
 // Mock dependencies

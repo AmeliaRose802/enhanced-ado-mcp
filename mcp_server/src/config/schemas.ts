@@ -47,6 +47,7 @@ const queryGeneratorFields = () => ({
   maxIterations: z.number().int().positive().optional().default(3),
   areaPath: optionalString(),
   areaPathFilter: z.array(z.string()).optional(),
+  useDefaultAreaPaths: optionalBool(true),
   iterationPath: optionalString(),
   returnQueryHandle: optionalBool(),
   maxResults: z.number().int().positive().optional().default(200),
@@ -152,6 +153,21 @@ export const extractSecurityLinksSchema = z.object({
   ...orgProjectFields()
 });
 
+export const intelligentParentFinderSchema = z.object({
+  childQueryHandle: z.string().describe('Query handle containing child work items that need parents'),
+  dryRun: optionalBool(false),
+  areaPath: optionalString(),
+  includeSubAreas: optionalBool(false), // Default to false - enforces same area path requirement
+  maxParentCandidates: z.number().int().min(3).max(50).optional().default(20),
+  maxRecommendations: z.number().int().min(1).max(5).optional().default(3),
+  parentWorkItemTypes: z.array(z.string()).optional(),
+  searchScope: z.enum(["area", "project", "iteration"]).optional().default("area"),
+  iterationPath: optionalString(),
+  requireActiveParents: optionalBool(true),
+  confidenceThreshold: z.number().min(0).max(1).optional().default(0.5),
+  ...orgProjectFields()
+});
+
 export const workItemIntelligenceSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: optionalString(),
@@ -187,12 +203,14 @@ export const sprintPlanningAnalyzerSchema = z.object({
 });
 
 export const validateHierarchyFastSchema = z.object({
-  workItemIds: z.array(z.number()).optional(),
+  queryHandle: optionalString(),
   areaPath: optionalString(),
   maxResults: z.number().int().min(1).max(2000).optional().default(500),
   includeSubAreas: optionalBool(true),
   validateTypes: optionalBool(true),
   validateStates: optionalBool(true),
+  returnQueryHandles: optionalBool(true).describe("Create query handles for each violation type (enables bulk operations on violation groups)"),
+  includeViolationDetails: optionalBool(false).describe("Include full violation details in response (can be large, defaults to false to save tokens)"),
   ...orgProjectFields()
 });
 
@@ -244,6 +262,7 @@ export const wiqlQuerySchema = z.object({
   // Scope Configuration (auto-filled from config)
   areaPath: optionalString(),
   areaPathFilter: z.array(z.string()).optional(),
+  useDefaultAreaPaths: optionalBool(true), // Control whether to use default area paths from config
   iterationPath: optionalString(),
   
   // Result Configuration
@@ -307,6 +326,7 @@ export const odataAnalyticsQuerySchema = z.object({
   includeOdataMetadata: optionalBool(false),
   areaPath: optionalString(),
   areaPathFilter: z.array(z.string()).optional(),
+  useDefaultAreaPaths: optionalBool(true),
   iterationPath: optionalString(),
   computeCycleTime: optionalBool(false),
   ...orgProjectFields()
@@ -324,13 +344,6 @@ export const unifiedQueryGeneratorSchema = z.object({
 // ============================================================================
 // Query Handle Operations Schemas
 // ============================================================================
-
-export const selectItemsFromQueryHandleSchema = z.object({
-  queryHandle: z.string().min(1, "Query handle is required"),
-  itemSelector: itemSelectorSchema.optional().default("all"),
-  previewCount: z.number().int().min(1).optional().default(10),
-  ...orgProjectFields()
-});
 
 export const queryHandleInfoSchema = z.object({
   queryHandle: z.string().min(1, "Query handle is required"),
@@ -441,6 +454,15 @@ export const bulkMoveToIterationByQueryHandleSchema = z.object({
   ...bulkOperationFields()
 });
 
+export const bulkChangeTypeByQueryHandleSchema = z.object({
+  targetType: z.string().min(1, "Target work item type is required"),
+  validateTypeChanges: optionalBool(true),
+  skipInvalidChanges: optionalBool(true),
+  preserveFields: optionalBool(true),
+  comment: optionalString(),
+  ...bulkOperationFields()
+});
+
 export const linkWorkItemsByQueryHandlesSchema = z.object({
   sourceQueryHandle: z.string().min(1, "Source query handle is required"),
   targetQueryHandle: z.string().min(1, "Target query handle is required"),
@@ -460,6 +482,94 @@ export const bulkUndoByQueryHandleSchema = z.object({
   undoAll: optionalBool(false).describe("Undo all operations performed on this query handle (default: false, only undoes last operation)"),
   dryRun: optionalBool(true),
   maxPreviewItems: z.number().int().min(1).max(50).optional().default(10),
+  ...orgProjectFields()
+});
+
+// ============================================================================
+// Unified Bulk Operations Schema
+// ============================================================================
+
+const bulkActionSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("comment"),
+    comment: z.string().min(1, "Comment text is required")
+  }),
+  z.object({
+    type: z.literal("update"),
+    updates: z.array(z.object({
+      op: z.enum(["add", "replace", "remove"]),
+      path: z.string(),
+      value: z.any().optional()
+    })).min(1, "At least one update operation required")
+  }),
+  z.object({
+    type: z.literal("assign"),
+    assignTo: z.string().min(1, "Assignee is required"),
+    comment: optionalString()
+  }),
+  z.object({
+    type: z.literal("remove"),
+    removeReason: optionalString()
+  }),
+  z.object({
+    type: z.literal("transition-state"),
+    targetState: z.string().min(1, "Target state is required"),
+    reason: optionalString(),
+    comment: optionalString(),
+    validateTransitions: optionalBool(true),
+    skipInvalidTransitions: optionalBool(true)
+  }),
+  z.object({
+    type: z.literal("move-iteration"),
+    targetIterationPath: z.string().min(1, "Target iteration path is required"),
+    comment: optionalString(),
+    updateChildItems: optionalBool(false)
+  }),
+  z.object({
+    type: z.literal("change-type"),
+    targetType: z.string().min(1, "Target work item type is required"),
+    validateTypeChanges: optionalBool(true),
+    skipInvalidChanges: optionalBool(true),
+    preserveFields: optionalBool(true),
+    comment: optionalString()
+  }),
+  z.object({
+    type: z.literal("add-tag"),
+    tags: z.string().min(1, "At least one tag is required")
+  }),
+  z.object({
+    type: z.literal("remove-tag"),
+    tags: z.string().min(1, "At least one tag to remove is required")
+  }),
+  // AI-Powered Enhancement Actions
+  z.object({
+    type: z.literal("enhance-descriptions"),
+    enhancementStyle: z.enum(["concise", "detailed", "technical", "business"]).optional().default("detailed"),
+    preserveOriginal: optionalBool(false).describe("Append to existing description instead of replacing"),
+    minConfidenceScore: z.number().min(0).max(1).optional().default(0.6).describe("Minimum confidence to apply enhancement")
+  }),
+  z.object({
+    type: z.literal("assign-story-points"),
+    estimationScale: z.enum(["fibonacci", "powers-of-2", "linear", "t-shirt"]).optional().default("fibonacci"),
+    includeReasoning: optionalBool(true).describe("Add estimation reasoning as comment"),
+    overwriteExisting: optionalBool(false).describe("Overwrite existing story points")
+  }),
+  z.object({
+    type: z.literal("add-acceptance-criteria"),
+    criteriaFormat: z.enum(["gherkin", "checklist", "user-story"]).optional().default("gherkin"),
+    minCriteria: z.number().int().min(1).max(10).optional().default(3),
+    maxCriteria: z.number().int().min(1).max(20).optional().default(7),
+    appendToExisting: optionalBool(false).describe("Append to existing acceptance criteria")
+  })
+]);
+
+export const unifiedBulkOperationsSchema = z.object({
+  queryHandle: z.string().min(1, "Query handle is required"),
+  actions: z.array(bulkActionSchema).min(1, "At least one action is required"),
+  itemSelector: itemSelectorSchema.optional().default("all"),
+  dryRun: optionalBool(true),
+  maxPreviewItems: z.number().int().min(1).max(50).optional().default(10),
+  stopOnError: optionalBool(true).describe("Stop executing actions if one fails (default: true)"),
   ...orgProjectFields()
 });
 

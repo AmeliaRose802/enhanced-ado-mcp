@@ -1,12 +1,12 @@
 {
   "name": "enhanced-ado-mcp-server",
-  "version": "1.9.0",
+  "version": "1.10.1",
   "private": false,
   "type": "module",
   "description": "Enhanced ADO MCP Server - Azure DevOps work item management via Model Context Protocol with AI-powered tools, REST API integration, and intelligent automation",
   "main": "dist/index.js",
   "bin": {
-    "enhanced-ado-msp": "./dist/index.js"
+    "enhanced-ado-mcp": "./dist/index.js"
   },
   "homepage": "https://github.com/AmeliaRose802/enhanced-ado-mcp",
   "repository": {
@@ -78,7 +78,10 @@
   },
   "preferGlobal": false,
   "dependencies": {
+    "@azure/identity": "^4.13.0",
+    "@azure/msal-node": "^2.16.3",
     "@modelcontextprotocol/sdk": "^0.6.1",
+    "open": "^10.2.0",
     "yargs": "^17.7.2",
     "zod": "^3.23.8"
   },

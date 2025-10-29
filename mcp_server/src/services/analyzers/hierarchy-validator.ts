@@ -20,6 +20,7 @@ import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../utils/token-provider.js';
 
 export class HierarchyValidatorAnalyzer {
   private samplingClient: SamplingClient;
@@ -129,7 +130,7 @@ export class HierarchyValidatorAnalyzer {
     maxItems?: number
   ): Promise<number[]> {
     try {
-      const httpClient = createADOHttpClient(organization, project);
+      const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
       const allChildIds: Set<number> = new Set();
       
       // Query children for each parent
@@ -229,7 +230,7 @@ export class HierarchyValidatorAnalyzer {
     excludeStates?: string[]
   ): Promise<number[]> {
     try {
-      const httpClient = createADOHttpClient(organization, project);
+      const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
       
       // Build WIQL query (escape area path for WIQL)
       const escapedAreaPath = escapeAreaPath(areaPath);
@@ -277,7 +278,7 @@ export class HierarchyValidatorAnalyzer {
     workItemIds: number[]
   ): Promise<WorkItemHierarchyInfo[]> {
     try {
-      const httpClient = createADOHttpClient(organization, project);
+      const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
       const ids = workItemIds.join(',');
       
       // Note: Cannot use fields parameter with $expand=relations, so we get all fields

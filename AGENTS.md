@@ -72,13 +72,13 @@ npm run test:coverage
 **Usage Examples:**
 ```bash
 # Single area path - project extracted automatically
-enhanced-ado-msp myorg --area-path "MyProject\\Team\\Area"
+enhanced-ado-mcp myorg --area-path "MyProject\\Team\\Area"
 
 # Multiple area paths (multi-area support)
-enhanced-ado-msp myorg --area-path "ProjectA\\Team1" --area-path "ProjectA\\Team2"
+enhanced-ado-mcp myorg --area-path "ProjectA\\Team1" --area-path "ProjectA\\Team2"
 
 # Short flag alias
-enhanced-ado-msp myorg -a "MyProject\\Team"
+enhanced-ado-mcp myorg -a "MyProject\\Team"
 ```
 
 ## Important Files & Directories

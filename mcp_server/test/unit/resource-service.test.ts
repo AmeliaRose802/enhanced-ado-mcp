@@ -2,6 +2,7 @@
  * Resource Service Test
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { listResources, getResourceContent, resourceExists } from '../../src/services/resource-service';
 
 describe('Resource Service', () => {

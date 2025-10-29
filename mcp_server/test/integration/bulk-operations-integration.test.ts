@@ -18,6 +18,12 @@ import {
   getContextPackagesByQueryHandleSchema
 } from '../../src/config/schemas';
 
+// Mock token provider
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
+}));
+
 // Mock configuration
 jest.mock('../../src/config/config', () => ({
   loadConfiguration: jest.fn(() => ({

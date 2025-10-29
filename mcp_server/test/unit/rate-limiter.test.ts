@@ -2,6 +2,7 @@
  * Rate Limiter Unit Tests
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { RateLimiter } from '../../src/services/rate-limiter.js';
 
 describe('RateLimiter', () => {

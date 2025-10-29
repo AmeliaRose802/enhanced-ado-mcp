@@ -16,31 +16,25 @@ import { handleHealthCheck } from './handlers/core/health-check.handler.js';
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
 import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
 import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.handler.js';
-import { handleUnifiedQueryGenerator } from './handlers/query/unified-query-generator.handler.js';
+// handleUnifiedQueryGenerator removed - wit-generate-query tool deprecated (non-functional)
 
 // Query handle handlers
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
-import { handleSelectItemsFromQueryHandle } from './handlers/query-handles/select-items-from-query-handle.handler.js';
 import { handleQueryHandleInfo } from './handlers/query-handles/query-handle-info-handler.js';
 
 // Bulk operation handlers
-import { handleBulkCommentByQueryHandle } from './handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
-import { handleBulkUpdateByQueryHandle } from './handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
-import { handleBulkAssignByQueryHandle } from './handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
-import { handleBulkRemoveByQueryHandle } from './handlers/bulk-operations/bulk-remove-by-query-handle.handler.js';
 import { handleBulkLinkByQueryHandles } from './handlers/bulk-operations/bulk-link-handler.js';
-import { handleBulkTransitionState } from './handlers/bulk-operations/bulk-transition-handler.js';
-import { handleBulkMoveToIteration } from './handlers/bulk-operations/bulk-move-iteration-handler.js';
+import { handleUnifiedBulkOperations } from './handlers/bulk-operations/unified-bulk-operations.handler.js';
 
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
-import { handleBulkEnhanceDescriptions } from './handlers/ai-powered/bulk-enhance-descriptions.handler.js';
-import { handleBulkAssignStoryPoints } from './handlers/ai-powered/bulk-assign-story-points.handler.js';
-import { handleBulkAddAcceptanceCriteria } from './handlers/ai-powered/bulk-add-acceptance-criteria.handler.js';
+// NOTE: AI enhancement handlers (enhance-descriptions, assign-story-points, add-acceptance-criteria)
+// are now consolidated into unified-bulk-operations.handler.ts
 
 // Analysis handlers
 import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
 import { handleValidateHierarchy } from './handlers/analysis/validate-hierarchy.handler.js';
+import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-parent-finder.handler.js';
 
 // Integration handlers
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
@@ -229,29 +223,24 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleValidateHierarchy(config, args);
   }
 
+  // AI-powered intelligent parent finder
+  if (name === 'wit-find-parent-item-intelligent') {
+    if (!serverInstance) {
+      return {
+        success: false,
+        data: null,
+        errors: ['VS Code sampling support not available'],
+        warnings: [],
+        metadata: { requiresSampling: true }
+      };
+    }
+    const samplingService = new SamplingService(serverInstance);
+    return await handleIntelligentParentFinder(config, args, samplingService);
+  }
+
   // Bulk operations using query handles (eliminates ID hallucination)
-  if (name === 'wit-bulk-comment-by-query-handle') {
-    return await handleBulkCommentByQueryHandle(config, args);
-  }
-
-  if (name === 'wit-bulk-update-by-query-handle') {
-    return await handleBulkUpdateByQueryHandle(config, args);
-  }
-
-  if (name === 'wit-bulk-assign-by-query-handle') {
-    return await handleBulkAssignByQueryHandle(config, args);
-  }
-
-  if (name === 'wit-bulk-remove-by-query-handle') {
-    return await handleBulkRemoveByQueryHandle(config, args);
-  }
-
-  if (name === 'wit-bulk-transition-state-by-query-handle') {
-    return await handleBulkTransitionState(config, args);
-  }
-
-  if (name === 'wit-bulk-move-to-iteration-by-query-handle') {
-    return await handleBulkMoveToIteration(config, args);
+  if (name === 'wit-unified-bulk-operations-by-query-handle') {
+    return await handleUnifiedBulkOperations(config, args, serverInstance || undefined);
   }
 
   // Link work items using query handles
@@ -273,10 +262,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleListQueryHandles(config, args);
   }
 
-  if (name === 'wit-select-items-from-query-handle') {
-    return await handleSelectItemsFromQueryHandle(config, args);
-  }
-
   if (name === 'wit-query-handle-info') {
     return await handleQueryHandleInfo(config, args);
   }
@@ -286,27 +271,8 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleGetContextPackagesByQueryHandle(config, args);
   }
 
-  // Bulk intelligent enhancement tools (AI-powered)
-  if (name === 'wit-bulk-enhance-descriptions-by-query-handle') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleBulkEnhanceDescriptions(config, args, serverInstance);
-  }
-
-  if (name === 'wit-bulk-assign-story-points-by-query-handle') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleBulkAssignStoryPoints(config, args, serverInstance);
-  }
-
-  if (name === 'wit-bulk-add-acceptance-criteria-by-query-handle') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleBulkAddAcceptanceCriteria(config, args, serverInstance);
-  }
+  // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)
+  // are now consolidated into wit-unified-bulk-operations-by-query-handle as actions
 
   // AI-powered OData query generator
   if (name === 'wit-generate-odata-query') {
@@ -316,13 +282,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleGenerateODataQuery(config, args, serverInstance);
   }
 
-  // AI-powered unified query generator (intelligently selects WIQL or OData)
-  if (name === 'wit-generate-query') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleUnifiedQueryGenerator(config, args, serverInstance);
-  }
+  // wit-generate-query removed - tool was non-functional and deprecated
 
   // All tools should be handled by the cases above
   // PowerShell script execution has been fully deprecated

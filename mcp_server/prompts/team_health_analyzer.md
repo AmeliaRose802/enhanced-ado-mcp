@@ -8,7 +8,7 @@ arguments:
 ---
 
 # 🚀 EXECUTION DIRECTIVE
-Execute immediately. Variables like `{{areaPath}}`, `{{start_date}}`, `{{end_date}}`, `{{today}}` are PRE-FILLED - use as-is.
+Execute immediately. Variables like `{{area_path}}`, `{{start_date}}`, `{{end_date}}`, `{{today}}` are PRE-FILLED - use as-is.
 
 You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown report with:
 1. Team aggregates (velocity, WIP, weighted load, cycle time, aging, work mix, estimation quality, specialization)
@@ -164,7 +164,7 @@ Each: Category, Priority, Action, Rationale, Owner, Timeframe, Success Metric.
 # 📊 Team Health & Flow Report
 
 ## Executive Summary
-**Area Path:** `{{areaPath}}`  
+**Area Path:** `{{area_path}}`  
 **Analysis Period:** {{analysis_period_days}} days ({{start_date}} to {{end_date}})  
 **Team Size:** X members  
 **Overall Health Score:** XX/100 🟢/🟡/🔴  

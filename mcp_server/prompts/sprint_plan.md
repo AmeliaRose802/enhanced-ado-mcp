@@ -263,10 +263,10 @@ Return a markdown-formatted sprint plan with the following sections:
 ### [Team Member Name] - [X]h / [Y]h capacity ([Z]% utilized) [🚨 ON-CALL | 🏖️ VACATION: X days | 👔 MANAGER]
 
 #### Committed Work
-1. **[#ID]({{workItemUrl}})** - [Title] `[Type]` • Priority [N] • [X]h
+1. **[#ID](<work-item-url>)** - [Title] `[Type]` • Priority [N] • [X]h
    - *Why*: [1-2 sentence rationale]
 
-2. **[#ID]({{workItemUrl}})** - [Title] `[Type]` • Priority [N] • [X]h
+2. **[#ID](<work-item-url>)** - [Title] `[Type]` • Priority [N] • [X]h
    - *Why*: [1-2 sentence rationale]
 
 ### [Team Member Name] - [X]h / [Y]h capacity ([Z]% utilized)
@@ -276,7 +276,7 @@ Return a markdown-formatted sprint plan with the following sections:
 
 If capacity allows, consider:
 
-- **[#ID]({{workItemUrl}})** - [Title] ([Suggested Owner]) - [Why this is optional]
+- **[#ID](<work-item-url>)** - [Title] ([Suggested Owner]) - [Why this is optional]
 
 ## Risks & Concerns
 

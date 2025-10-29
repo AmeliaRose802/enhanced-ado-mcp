@@ -5,6 +5,7 @@
  * Tests WIQL injection and filtering for multi-area path queries
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { describe, it, expect } from '@jest/globals';
 
 describe('Area Path Filtering in WIQL Queries', () => {

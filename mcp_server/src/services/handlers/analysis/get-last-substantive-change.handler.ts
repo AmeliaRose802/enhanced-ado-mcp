@@ -8,6 +8,7 @@
 
 import { logger } from '../../../utils/logger.js';
 import { createADOHttpClient } from '../../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../../utils/token-provider.js';
 import { loadConfiguration } from '../../../config/config.js';
 import type { ADOWorkItem, ADOApiResponse, ADOWorkItemRevision } from '../../../types/index.js';
 
@@ -173,7 +174,7 @@ export async function getLastSubstantiveChange(
   const automatedPatterns = args.automatedPatterns || DEFAULT_AUTOMATION_PATTERNS;
   
   try {
-    const httpClient = createADOHttpClient(organization, project);
+    const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
     
     // Get work item to extract created date
     const wiResponse = await httpClient.get<ADOWorkItem>(`wit/workItems/${args.workItemId}?$expand=none`);

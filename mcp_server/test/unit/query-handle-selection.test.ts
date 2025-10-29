@@ -3,6 +3,7 @@
  * Tests end-to-end item selection patterns to ensure criteria-based selection works correctly
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 describe('Query Handle Selection Integration Tests', () => {

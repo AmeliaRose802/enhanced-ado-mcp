@@ -3,6 +3,7 @@
  * Test for WIQL query filtering by missing description and acceptance criteria
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool } from "../../src/services/tool-service.js";
 
 async function testFilterByMissingDescription() {

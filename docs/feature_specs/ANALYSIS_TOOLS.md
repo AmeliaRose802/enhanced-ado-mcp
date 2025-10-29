@@ -118,15 +118,18 @@ Fast, rule-based validation of work item hierarchy.
 
 #### Input Parameters
 
-**Optional:**
+**Optional (provide one of: queryHandle, workItemIds, or areaPath):**
+- `queryHandle` (string) - Query handle from `wit-wiql-query` with `returnQueryHandle=true`
 - `workItemIds` (array of numbers) - Specific IDs to validate
-- `areaPath` (string) - Area path to validate (if workItemIds not provided)
+- `areaPath` (string) - Area path to validate
 - `organization` (string) - Azure DevOps organization
 - `project` (string) - Azure DevOps project
 - `maxResults` (number) - Max items when using areaPath (default 500)
 - `includeSubAreas` (boolean) - Include child area paths (default true)
 - `validateTypes` (boolean) - Validate parent-child type relationships (default true)
 - `validateStates` (boolean) - Validate state consistency (default true)
+
+**Note:** Query handles enable safe bulk validation without risk of ID hallucination. The handle must be obtained from a prior `wit-wiql-query` call with `returnQueryHandle=true`.
 
 #### Output Format
 
@@ -171,13 +174,34 @@ Fast, rule-based validation of work item hierarchy.
 
 #### Examples
 
-**Example: Validate Area Hierarchy**
+**Example 1: Validate Using Query Handle (Recommended)**
+```json
+{
+  "queryHandle": "qh_abc123def456"
+}
+```
+
+This approach:
+- Prevents ID hallucination by using stored query results
+- Works with any WIQL query result
+- Safe for bulk hierarchy validation
+
+**Example 2: Validate Area Hierarchy**
 ```json
 {
   "areaPath": "Project\\Team",
   "validateTypes": true,
   "validateStates": true,
   "includeSubAreas": true
+}
+```
+
+**Example 3: Validate Specific Work Items**
+```json
+{
+  "workItemIds": [12345, 12346, 12347],
+  "validateTypes": true,
+  "validateStates": true
 }
 ```
 

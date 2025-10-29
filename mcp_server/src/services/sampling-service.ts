@@ -32,6 +32,10 @@ export class SamplingService {
     this.toolDiscoveryAnalyzer = new ToolDiscoveryAnalyzer(server);
   }
 
+  getServer(): MCPServer | MCPServerLike {
+    return this.server;
+  }
+
   async analyzeWorkItem(args: WorkItemIntelligenceArgs): Promise<ToolExecutionResult> {
     return this.workItemAnalyzer.analyze(args);
   }

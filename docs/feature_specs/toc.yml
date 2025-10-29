@@ -35,6 +35,8 @@
 ## Bulk Operations
 - Bulk Operations
   BULK_OPERATIONS.md
+- Bulk Change Work Item Type (New!)
+  BULK_CHANGE_TYPE.md
 - Bulk AI Enhancement
   BULK_AI_ENHANCEMENT.md
 - Bulk Undo Operations (New!)
@@ -43,6 +45,8 @@
 ## Analysis & Validation
 - Analysis & Validation Tools
   ANALYSIS_TOOLS.md
+- Hierarchy Analysis with Query Handles (New!)
+  HIERARCHY_ANALYSIS_WITH_HANDLES.md
 
 ## Error Handling
 - Error Categorization System

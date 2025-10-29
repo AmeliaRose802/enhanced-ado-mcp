@@ -2,12 +2,19 @@
  * Tests for Get Last Substantive Change Handler
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { getLastSubstantiveChange } from '../../src/services/handlers/analysis/get-last-substantive-change.handler';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { createADOHttpClient } from '../../src/utils/ado-http-client';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { loadConfiguration } from '../../src/config/config';
 
 jest.mock('../../src/utils/ado-http-client');
 jest.mock('../../src/config/config');
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
+}));
 
 describe('Get Last Substantive Change Handler', () => {
   const mockHttpClient = {
@@ -548,7 +555,7 @@ describe('Get Last Substantive Change Handler', () => {
         project: 'custom-project'
       });
 
-      expect(createADOHttpClient).toHaveBeenCalledWith('custom-org', 'custom-project');
+      expect(createADOHttpClient).toHaveBeenCalledWith('custom-org', expect.any(Function), 'custom-project');
     });
   });
 

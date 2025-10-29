@@ -2,6 +2,7 @@
  * Metrics Service Unit Tests
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { MetricsService } from '../../src/services/metrics-service.js';
 
 describe('MetricsService', () => {

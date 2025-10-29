@@ -5,7 +5,9 @@
  * This test file demonstrates how to use the test fixtures and factories.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import {
   createWorkItem,
   createTask,
@@ -18,6 +20,7 @@ import {
   createMultipleWorkItems,
   createContextMap
 } from '../factories/work-item-factory.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import {
   createQueryHandle,
   createWiqlResult,
@@ -25,6 +28,7 @@ import {
   createODataQuery,
   cleanupQueryHandles
 } from '../factories/query-factory.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import {
   createSuccessResult,
   createErrorResult,
@@ -32,12 +36,14 @@ import {
   createWorkItemsBatch,
   createBulkOperationResult
 } from '../factories/response-factory.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import {
   PBI_WORK_ITEM,
   BUG_WORK_ITEM,
   TASK_WORK_ITEM,
   TEST_IDENTITY
 } from '../fixtures/work-items.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import {
   BASIC_WIQL_QUERY,
   FLAT_WIQL_RESULT

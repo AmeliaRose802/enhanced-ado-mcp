@@ -8,6 +8,7 @@
  * 4. includeSystemFields parameter works
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { workItemContextPackageSchema } from '../../src/config/schemas.js';
 
 describe('Context Package Optimization', () => {

@@ -36,7 +36,7 @@ export const AI_POWERED_TOOLS = [
   'wit-bulk-add-acceptance-criteria-by-query-handle',
   'wit-wiql-query', // Unified: supports AI generation when 'description' parameter is used
   'wit-generate-odata-query',
-  'wit-generate-query',
+  // 'wit-generate-query' removed - tool was non-functional and deprecated
   'wit-discover-tools'
 ];
 

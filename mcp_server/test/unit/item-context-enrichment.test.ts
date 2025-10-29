@@ -9,6 +9,7 @@
  * - Tags parsing from System.Tags field
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 describe('Item Context Enrichment', () => {

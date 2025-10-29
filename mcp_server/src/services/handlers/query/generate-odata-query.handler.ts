@@ -11,7 +11,7 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
-import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
+import { getTokenProvider } from '../../../utils/token-provider.js';
 import { queryHandleService } from "../../query-handle-service.js";
 import { getRequiredConfig } from "../../../config/config.js";
 
@@ -23,6 +23,8 @@ interface GenerateODataQueryArgs {
   includeExamples?: boolean;
   testQuery?: boolean;
   areaPath?: string;
+  areaPathFilter?: string[];
+  useDefaultAreaPaths?: boolean;
   iterationPath?: string;
   returnQueryHandle?: boolean;
   maxResults?: number;
@@ -56,14 +58,23 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
       includeExamples = true,
       testQuery = true,
       areaPath = requiredConfig.defaultAreaPath,
+      areaPathFilter,
+      useDefaultAreaPaths = true,
       iterationPath = requiredConfig.defaultIterationPath,
       returnQueryHandle = true,
       maxResults = 200,
       includeFields = []
     } = parsed.data as GenerateODataQueryArgs;
 
+    // Resolve area path filter with new useDefaultAreaPaths flag
+    const defaultAreaPaths = requiredConfig.defaultAreaPaths || [];
+    const resolvedAreaPathFilter = areaPathFilter || 
+      (useDefaultAreaPaths && defaultAreaPaths.length > 0 ? defaultAreaPaths : undefined);
+
     logger.info(`Generating OData query from description: "${description}"`);
-    if (areaPath) {
+    if (resolvedAreaPathFilter && resolvedAreaPathFilter.length > 0) {
+      logger.debug(`Using area path filter for query context: ${resolvedAreaPathFilter.join(', ')}`);
+    } else if (areaPath) {
       logger.debug(`Using area path for query context: ${areaPath}`);
     }
     if (iterationPath) {
@@ -184,7 +195,7 @@ export async function handleGenerateODataQuery(config: ToolConfig, args: unknown
         logger.info(`Executing OData query to create query handle (maxResults: ${maxResults})...`);
         
         // Execute the query with proper fields selection
-        const token = await getAzureDevOpsToken();
+        const token = await getTokenProvider()();
         const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
         
         // Build the full query with $top and $select
@@ -495,7 +506,7 @@ async function testODataQuery(
   project: string
 ): Promise<{ success: boolean; error?: string; resultCount?: number; sampleResults?: Array<Record<string, unknown>> }> {
   try {
-    const token = await getAzureDevOpsToken();
+    const token = await getTokenProvider()();
     const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
     const url = `${baseUrl}?${query}${query.includes('$top') ? '' : '&$top=5'}`;
 

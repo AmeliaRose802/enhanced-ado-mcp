@@ -1,55 +1,160 @@
 /**
- * Azure DevOps Token Utility
+ * Azure DevOps Authentication
  * 
- * Centralized token management for Azure DevOps API access
+ * Multi-mode authentication supporting OAuth (interactive), Azure CLI, and environment credentials.
+ * Based on Microsoft's Azure DevOps MCP server authentication approach.
+ * Implementation synchronized with https://github.com/microsoft/azure-devops-mcp/blob/main/src/auth.ts
  */
 
-import { execSync } from 'child_process';
-import { AZURE_DEVOPS_RESOURCE_ID } from '../config/config.js';
+import {
+  AzureCliCredential,
+  ChainedTokenCredential,
+  DefaultAzureCredential,
+  TokenCredential
+} from '@azure/identity';
+import {
+  AccountInfo,
+  AuthenticationResult,
+  PublicClientApplication
+} from '@azure/msal-node';
+import open from 'open';
+import { logger } from './logger.js';
 
-// Token cache to avoid repeated CLI calls
-interface TokenCache {
-  token: string;
-  expiresAt: number;
-}
-
-let tokenCache: TokenCache | null = null;
+// Azure DevOps OAuth scope - must match Microsoft's implementation exactly
+const scopes = ['499b84ac-1321-427f-aa17-267ca6975798/.default'];
 
 /**
- * Get Azure DevOps access token using Azure CLI with caching
- * Tokens are cached for 55 minutes (with 5 minute buffer before expiry)
- * @throws Error if Azure CLI is not installed or user is not logged in
+ * Authentication type
  */
-export function getAzureDevOpsToken(): string {
-  // Check cache first
-  const now = Date.now();
-  if (tokenCache && tokenCache.expiresAt > now) {
-    return tokenCache.token;
+export type AuthenticationType = 'interactive' | 'azcli' | 'env';
+
+/**
+ * OAuth Authenticator using MSAL
+ * Provides interactive browser-based authentication
+ * 
+ * Implementation matches microsoft/azure-devops-mcp exactly to ensure compatibility
+ */
+class OAuthAuthenticator {
+  static clientId = '0d50963b-7bb9-4fe7-94c7-a99af00b5136';
+  static defaultAuthority = 'https://login.microsoftonline.com/common';
+  static zeroTenantId = '00000000-0000-0000-0000-000000000000';
+
+  private accountId: AccountInfo | null;
+  private publicClientApp: PublicClientApplication;
+
+  constructor(tenantId?: string) {
+    this.accountId = null;
+
+    let authority = OAuthAuthenticator.defaultAuthority;
+    if (tenantId && tenantId !== OAuthAuthenticator.zeroTenantId) {
+      authority = `https://login.microsoftonline.com/${tenantId}`;
+    }
+
+    this.publicClientApp = new PublicClientApplication({
+      auth: {
+        clientId: OAuthAuthenticator.clientId,
+        authority
+      }
+    });
   }
 
-  try {
-    // Use --only-show-errors to suppress browser prompts and warnings
-    const result = execSync(
-      `az account get-access-token --resource ${AZURE_DEVOPS_RESOURCE_ID} --query accessToken -o tsv --only-show-errors`,
-      { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-    );
-    const token = result.trim();
-    
-    // Cache token for 55 minutes (tokens typically valid for 1 hour)
-    tokenCache = {
-      token,
-      expiresAt: now + (55 * 60 * 1000) // 55 minutes
-    };
-    
-    return token;
-  } catch (err) {
-    throw new Error('Failed to get Azure DevOps token. Ensure you are logged in with az login (non-interactive)');
+  public async getToken(): Promise<string> {
+    let authResult: AuthenticationResult | null = null;
+
+    // Try silent authentication first if we have an account
+    if (this.accountId) {
+      try {
+        authResult = await this.publicClientApp.acquireTokenSilent({
+          scopes,
+          account: this.accountId
+        });
+      } catch (error) {
+        authResult = null;
+      }
+    }
+
+    // Interactive authentication if silent failed or no account
+    if (!authResult) {
+      authResult = await this.publicClientApp.acquireTokenInteractive({
+        scopes,
+        openBrowser: async (url) => {
+          open(url);
+        }
+      });
+      this.accountId = authResult.account;
+    }
+
+    if (!authResult.accessToken) {
+      throw new Error('Failed to obtain Azure DevOps OAuth token.');
+    }
+
+    return authResult.accessToken;
   }
 }
 
 /**
- * Clear the token cache (useful for testing or forcing refresh)
+ * Create an authenticator function based on authentication type
+ * 
+ * Matches microsoft/azure-devops-mcp implementation exactly
+ * 
+ * @param type - Authentication type: 'interactive', 'azcli', or 'env'
+ * @param tenantId - Optional tenant ID for multi-tenant scenarios
+ * @returns Function that returns a Promise resolving to an access token
  */
-export function clearTokenCache(): void {
-  tokenCache = null;
+export function createAuthenticator(
+  type: AuthenticationType,
+  tenantId?: string
+): () => Promise<string> {
+  logger.info(`Creating authenticator: type=${type}, tenantId=${tenantId || 'none'}`);
+
+  switch (type) {
+    case 'azcli':
+    case 'env': {
+      // Set environment variable to prefer Azure CLI for 'azcli' mode
+      if (type !== 'env') {
+        process.env.AZURE_TOKEN_CREDENTIALS = 'dev';
+      }
+
+      let credential: TokenCredential = new DefaultAzureCredential(); // CodeQL [SM05138] resolved by explicitly setting AZURE_TOKEN_CREDENTIALS
+
+      // For multi-tenant scenarios, chain Azure CLI credential with specific tenant
+      if (tenantId) {
+        const azureCliCredential = new AzureCliCredential({ tenantId });
+        credential = new ChainedTokenCredential(azureCliCredential, credential);
+      }
+
+      return async () => {
+        const result = await credential.getToken(scopes);
+        if (!result) {
+          throw new Error(
+            'Failed to obtain Azure DevOps token. Ensure you have Azure CLI logged or use interactive type of authentication.'
+          );
+        }
+        return result.token;
+      };
+    }
+
+    case 'interactive':
+    default: {
+      const authenticator = new OAuthAuthenticator(tenantId);
+      return () => {
+        return authenticator.getToken();
+      };
+    }
+  }
+}
+
+/**
+ * Detect if running in GitHub Codespaces
+ * In Codespaces, default to Azure CLI authentication
+ */
+export function isGitHubCodespaceEnv(): boolean {
+  return process.env.CODESPACES === 'true';
+}
+
+/**
+ * Get default authentication type based on environment
+ */
+export function getDefaultAuthType(): AuthenticationType {
+  return isGitHubCodespaceEnv() ? 'azcli' : 'interactive';
 }

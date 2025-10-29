@@ -2,13 +2,15 @@
  * Unit tests for WorkItemRepository
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { WorkItemRepository } from '../../src/repositories/work-item.repository.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult } from '../../src/types/index.js';
 
-// Mock the ado-token module
-jest.mock('../../src/utils/ado-token.js', () => ({
-  getAzureDevOpsToken: jest.fn(() => 'mock-token'),
-  clearTokenCache: jest.fn()
+// Mock the token provider module
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
 }));
 
 describe('WorkItemRepository', () => {

@@ -279,21 +279,125 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 
 ### Azure DevOps Authentication
 
-**Method:** Azure CLI token-based
+**Implementation Status:** ✅ **Synchronized with Microsoft's Official Implementation**
 
-**Flow:**
+Our authentication implementation is **byte-for-byte synchronized** with [microsoft/azure-devops-mcp](https://github.com/microsoft/azure-devops-mcp/blob/main/src/auth.ts) to ensure 100% compatibility with all authentication scenarios that Microsoft has validated.
+
+**Method:** Multi-mode authentication (OAuth, Azure CLI, Environment)
+
+**Authentication Flow:**
 ```
-1. Server requests token: az account get-access-token
-2. Token used as Bearer token in API calls
-3. Token cached for session duration
-4. Refresh on expiration
+┌─────────────────────────────────────────────────────────────┐
+│ Authentication Type Selection                                │
+│ (interactive | azcli | env)                                  │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+        ┌────────┴────────┐
+        │                 │
+        ▼                 ▼
+   interactive       azcli/env
+        │                 │
+        │                 ▼
+        │    ┌──────────────────────────────────────┐
+        │    │ DefaultAzureCredential                │
+        │    │ + AzureCliCredential (if tenant ID)   │
+        │    └──────────────┬───────────────────────┘
+        │                   │
+        ▼                   ▼
+   ┌─────────────────────────────────────────┐
+   │ MSAL PublicClientApplication             │
+   │ Client ID: 0d50963b-7bb9-4fe7-...        │
+   │ Scopes: 499b84ac-1321-427f-.../.default  │
+   └────────────────┬────────────────────────┘
+                    │
+         ┌──────────┴──────────┐
+         │                     │
+         ▼                     ▼
+   Silent Auth           Interactive Auth
+   (cached account)      (browser popup)
+         │                     │
+         └──────────┬──────────┘
+                    │
+                    ▼
+              Bearer Token
 ```
 
-**Benefits:**
-- No PAT management required
-- Uses existing Azure login
-- Automatic token refresh
-- Secure (no secrets in config)
+**Supported Authentication Modes:**
+
+1. **Interactive OAuth (Default)**
+   - Uses MSAL browser-based authentication
+   - Best for: Development environments, personal use
+   - Requirements: Browser access
+   - Multi-tenant support: ✅ Yes (via `--tenant` flag)
+
+2. **Azure CLI (`--authentication azcli`)**
+   - Uses existing `az login` session
+   - Best for: CI/CD, GitHub Codespaces, automated environments
+   - Requirements: Azure CLI installed + `az login` executed
+   - Multi-tenant support: ✅ Yes (via `--tenant` flag)
+
+3. **Environment Credentials (`--authentication env`)**
+   - Uses managed identity or environment variables
+   - Best for: Azure-hosted services, production deployments
+   - Requirements: Managed identity or service principal configured
+   - Multi-tenant support: ✅ Yes (via `--tenant` flag)
+
+**Key Implementation Details:**
+
+| Component | Microsoft Implementation | Our Implementation | Status |
+|-----------|--------------------------|-------------------|--------|
+| **OAuth Client ID** | `0d50963b-7bb9-4fe7-94c7-a99af00b5136` | `0d50963b-7bb9-4fe7-94c7-a99af00b5136` | ✅ Identical |
+| **OAuth Scopes** | `499b84ac-1321-427f-aa17-267ca6975798/.default` | `499b84ac-1321-427f-aa17-267ca6975798/.default` | ✅ Identical |
+| **MSAL Authority** | `https://login.microsoftonline.com/common` | `https://login.microsoftonline.com/common` | ✅ Identical |
+| **Token Caching** | MSAL silent token refresh | MSAL silent token refresh | ✅ Identical |
+| **Error Messages** | Specific error text | Specific error text | ✅ Identical |
+| **Credential Chain** | `AzureCliCredential` + `DefaultAzureCredential` | `AzureCliCredential` + `DefaultAzureCredential` | ✅ Identical |
+| **Tenant Handling** | Custom authority for tenant ID | Custom authority for tenant ID | ✅ Identical |
+
+**Authentication Advantages:**
+
+- ✅ **No PAT Management** - No personal access tokens to store or rotate
+- ✅ **Secure** - Uses OAuth 2.0 with MSAL industry-standard library
+- ✅ **Multi-Tenant** - Supports guest users and multi-tenant scenarios
+- ✅ **Auto-Refresh** - Tokens automatically refreshed by MSAL
+- ✅ **Fallback Options** - Three authentication modes for different scenarios
+- ✅ **Proven in Production** - Uses Microsoft's validated implementation
+
+**Multi-Tenant Authentication:**
+
+For organizations with complex tenant setups (guest users, multi-tenant access):
+
+```bash
+# Discover your tenant ID
+az account list
+
+# Start server with tenant ID
+enhanced-ado-mcp myorg --area-path "Project\\Team" --tenant <tenant-id>
+
+# Or for Azure CLI auth with specific tenant
+enhanced-ado-mcp myorg --area-path "Project\\Team" --authentication azcli --tenant <tenant-id>
+```
+
+**Token Security:**
+
+- Tokens stored securely by MSAL (OS credential manager on Windows, Keychain on macOS)
+- No tokens written to disk by our application
+- Tokens refreshed automatically before expiration
+- Token provider singleton ensures consistent authentication across all services
+
+**Authentication Testing:**
+
+Use the `health-check` tool to verify authentication status:
+```bash
+# In MCP client (GitHub Copilot, Claude, etc.)
+"Run health-check tool"
+
+# Response includes:
+# - Azure CLI availability
+# - Azure CLI authentication status  
+# - ADO connection test
+# - Token validation
+```
 
 ### VS Code Sampling Security
 

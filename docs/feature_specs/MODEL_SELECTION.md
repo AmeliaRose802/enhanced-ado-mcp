@@ -127,7 +127,7 @@ Based on your GitHub Copilot subscription, you may have access to:
 
 1. **Open Command Palette** (`F1` or `Ctrl+Shift+P` / `Cmd+Shift+P`)
 2. Type **"MCP"** and select **"MCP: List Servers"**
-3. Find **"enhanced-ado-msp"** in the server list
+3. Find **"enhanced-ado-mcp"** in the server list
 4. Click on the server name
 5. Select **"Configure Model Access"**
 6. In the model selection dialog, **check ALL free models** (any model showing **0x** tokens):
@@ -155,7 +155,7 @@ After configuration, verify access by:
 1. **Via VS Code UI:**
    - Open Command Palette (`F1`)
    - Run **"MCP: List Servers"**
-   - Select **"enhanced-ado-msp"**
+   - Select **"enhanced-ado-mcp"**
    - Check that models are listed with green checkmarks
 
 2. **Via Tool Execution:**

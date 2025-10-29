@@ -6,6 +6,7 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/inde
 import { createWorkItem } from "../../ado-work-item-service.js";
 import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
+import { queryHandleService } from "../../query-handle-service.js";
 
 export async function handleCreateNewItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -75,15 +76,35 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
       warnings.push(`Used first configured area path: ${areaPath}. Consider specifying explicit areaPath for clarity.`);
     }
     
+    // Create query handle for the newly created work item
+    const queryHandle = queryHandleService.storeQuery(
+      [result.id],
+      `SELECT [System.Id] FROM WorkItems WHERE [System.Id] = ${result.id}`,
+      {
+        project: workItemData.project,
+        queryType: 'single-item'
+      },
+      undefined, // Use default TTL
+      new Map([[result.id, {
+        title: result.title,
+        state: result.state,
+        type: result.type
+      }]])
+    );
+    
+    logger.debug(`Created query handle ${queryHandle} for new work item ${result.id}`);
+    
     return {
       success: true,
       data: asToolData({
-        work_item: result
+        work_item: result,
+        query_handle: queryHandle
       }),
       metadata: { 
         source: "rest-api",
         workItemId: result.id,
-        parentLinked: result.parent_linked
+        parentLinked: result.parent_linked,
+        queryHandle
       },
       errors: [],
       warnings

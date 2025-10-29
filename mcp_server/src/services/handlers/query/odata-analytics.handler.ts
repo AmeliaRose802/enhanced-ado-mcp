@@ -8,7 +8,7 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
-import { getAzureDevOpsToken } from "../../../utils/ado-token.js";
+import { getTokenProvider } from '../../../utils/token-provider.js';
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
 import { cacheService } from "../../cache-service.js";
 import crypto from 'crypto';
@@ -260,7 +260,7 @@ export async function handleODataAnalytics(config: ToolConfig, args: unknown): P
       logger.debug(`Cache miss for OData query, executing: ${cacheKey.substring(0, 32)}...`);
       
       // Get Azure DevOps token - Analytics API uses Bearer token auth
-      const token = getAzureDevOpsToken();
+      const token = await getTokenProvider()();
       
       // Execute the query with direct fetch - Analytics API doesn't use api-version parameter
       const response = await fetch(fullUrl, {

@@ -2,6 +2,8 @@
  * Tests for wit-analyze-hierarchy tool validation rules
  */
 
+import { describe, it, expect } from '@jest/globals';
+
 describe('Hierarchy Validation Rules', () => {
   // Valid parent-child type relationships
   const VALID_CHILD_TYPES: Record<string, string[]> = {

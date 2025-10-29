@@ -1,7 +1,7 @@
 import { logger } from '../utils/logger.js';
-import { getAzureDevOpsToken as getToken } from '../utils/ado-token.js';
 import type { ADOWorkItem, ADOWorkItemRevision, ADOApiResponse, ADOFieldOperation } from '../types/index.js';
 import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
+import { getTokenProvider } from '../utils/token-provider.js';
 import { createWorkItemRepository } from '../repositories/work-item.repository.js';
 
 interface CreateWorkItemArgs {
@@ -477,7 +477,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
 
   const pageSize = top ?? maxResults;
   const repository = createWorkItemRepository(organization, project);
-  const httpClient = createADOHttpClient(organization, project);
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   
   try {
     if (!organization?.trim()) throw new Error('Organization parameter is required');

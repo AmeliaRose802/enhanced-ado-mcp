@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "node",
       "args": [
         "${workspaceFolder}/mcp_server/dist/index.js"
@@ -12,7 +12,7 @@
     }
   },
   "chat.mcp.serverSampling": {
-    "ADO-Work-Item-MSP/.vscode/mcp.json: enhanced-ado-msp": {
+    "ADO-Work-Item-MSP/.vscode/mcp.json: enhanced-ado-mcp": {
       "allowedDuringChat": true,
       "allowedModels": [
         "copilot/gpt-4.1",

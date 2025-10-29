@@ -13,6 +13,7 @@ import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
+import { getTokenProvider } from '../../../utils/token-provider.js';
 
 // Type definitions for analysis results
 interface EffortAnalysisResult {
@@ -183,7 +184,7 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
     const cfg = loadConfiguration();
     const org = organization || cfg.azureDevOps.organization;
     const proj = project || cfg.azureDevOps.project;
-    const httpClient = new ADOHttpClient(org, proj);
+    const httpClient = new ADOHttpClient(org, getTokenProvider(), proj);
 
     const analysis: WorkItemAnalysis = {
       query_handle: queryHandle,

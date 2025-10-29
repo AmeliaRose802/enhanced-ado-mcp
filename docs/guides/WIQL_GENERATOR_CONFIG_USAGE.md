@@ -9,7 +9,7 @@ The `wit-ai-generate-wiql` tool automatically uses the configured area path from
 ### Configuration
 When you start the MCP server with an area path:
 ```bash
-enhanced-ado-msp MyOrg MyProject --area-path "MyProject\TeamAlpha"
+enhanced-ado-mcp MyOrg MyProject --area-path "MyProject\TeamAlpha"
 ```
 
 The area path is stored in the server configuration and automatically used by the WIQL generator.

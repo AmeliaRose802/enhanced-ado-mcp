@@ -24,15 +24,10 @@ export const TOOL_NAMES = {
   SELECT_ITEMS_FROM_QUERY_HANDLE: 'wit-select-items-from-query-handle',
   QUERY_HANDLE_INFO: 'wit-query-handle-info',
   
-  // Bulk Operations
-  BULK_ASSIGN_BY_QUERY_HANDLE: 'wit-bulk-assign-by-query-handle',
-  BULK_UPDATE_BY_QUERY_HANDLE: 'wit-bulk-update-by-query-handle',
-  BULK_COMMENT_BY_QUERY_HANDLE: 'wit-bulk-comment-by-query-handle',
-  BULK_REMOVE_BY_QUERY_HANDLE: 'wit-bulk-remove-by-query-handle',
-  BULK_TRANSITION_STATE: 'wit-bulk-transition-state',
-  BULK_MOVE_ITERATION: 'wit-bulk-move-iteration',
-  BULK_LINK_WORK_ITEMS: 'wit-bulk-link-work-items',
+  // Bulk Operations (unified tool consolidates most operations)
+  UNIFIED_BULK_OPERATIONS: 'wit-unified-bulk-operations-by-query-handle',
   LINK_WORK_ITEMS_BY_QUERY_HANDLES: 'wit-link-work-items-by-query-handles',
+  BULK_UNDO: 'wit-bulk-undo-by-query-handle',
   
   // AI-Powered Operations
   BULK_ENHANCE_DESCRIPTIONS: 'wit-bulk-enhance-descriptions',

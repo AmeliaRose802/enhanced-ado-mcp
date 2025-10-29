@@ -1,7 +1,9 @@
 /**
  * Integration test for wit-ai-assignment tool
  */
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool, setServerInstance } from '../../src/services/tool-service.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { AIAssignmentResult } from '../../src/types/index.js';
 
 // Mock server for testing

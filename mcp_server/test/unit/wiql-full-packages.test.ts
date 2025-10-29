@@ -3,6 +3,7 @@
  * Test for the WIQL query tool with fetchFullPackages flag
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool } from "../../src/services/tool-service.js";
 
 async function testFetchFullPackages() {

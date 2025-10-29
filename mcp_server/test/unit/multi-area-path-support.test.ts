@@ -5,7 +5,9 @@
  * Tests the configuration, validation, and query filtering for multiple area paths
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   updateConfigFromCLI, 
   loadConfiguration,

@@ -11,9 +11,10 @@ import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "../../../utils/logger.js";
 import { escapeAreaPath } from "../../../utils/work-item-parser.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { queryHandleService } from "../../query-handle-service.js";
 
 interface ValidateHierarchyArgs {
-  workItemIds?: number[];
+  queryHandle?: string;
   areaPath?: string;
   organization?: string;
   project?: string;
@@ -21,6 +22,8 @@ interface ValidateHierarchyArgs {
   includeSubAreas?: boolean;
   validateTypes?: boolean;
   validateStates?: boolean;
+  returnQueryHandles?: boolean;
+  includeViolationDetails?: boolean;
 }
 
 interface HierarchyViolation {
@@ -138,11 +141,13 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
     };
 
     const {
-      workItemIds,
+      queryHandle,
       maxResults = 500,
       includeSubAreas = true,
       validateTypes = true,
-      validateStates = true
+      validateStates = true,
+      returnQueryHandles = true,
+      includeViolationDetails = false
     } = validationArgs;
     
     // Set for error handling
@@ -150,18 +155,27 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
     project = validationArgs.project;
     areaPath = validationArgs.areaPath;
 
-    logger.info(`Validating hierarchy in organization="${organization}", project="${project}", areaPath="${areaPath || 'none'}" (types=${validateTypes}, states=${validateStates})`);
+    logger.info(`Validating hierarchy in organization="${organization}", project="${project}", areaPath="${areaPath || 'none'}", queryHandle="${queryHandle || 'none'}" (types=${validateTypes}, states=${validateStates})`);
 
     let workItems: Array<{id: number; title: string; type: string; state: string; additionalFields?: Record<string, unknown>}> = [];
 
-    // Get work items either by IDs or area path
-    if (workItemIds && workItemIds.length > 0) {
+    // Resolve work item IDs from query handle if provided
+    if (queryHandle) {
+      const handleIds = queryHandleService.getWorkItemIds(queryHandle);
+      if (!handleIds) {
+        return buildErrorResponse(
+          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+          { source: 'validate-hierarchy' }
+        );
+      }
+      logger.info(`Resolved ${handleIds.length} work item IDs from query handle`);
+      
       const result = await queryWorkItemsByWiql({
-        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${workItemIds.join(',')})`,
+        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${handleIds.join(',')})`,
         organization,
         project,
         includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        maxResults: workItemIds.length
+        maxResults: handleIds.length
       });
       workItems = result.workItems;
     } else if (areaPath) {
@@ -177,7 +191,7 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       workItems = result.workItems;
     } else {
       return buildErrorResponse(
-        'Either workItemIds or areaPath must be provided',
+        'Either queryHandle or areaPath must be provided',
         { source: 'validate-hierarchy' }
       );
     }
@@ -299,7 +313,7 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       }
     }
 
-    // Categorize violations
+    // Categorize violations (original grouping for backward compatibility)
     const byType = {
       invalid_parent_type: violations.filter(v => v.violationType === 'invalid_parent_type'),
       invalid_state_progression: violations.filter(v => v.violationType === 'invalid_state_progression'),
@@ -310,6 +324,80 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
       error: violations.filter(v => v.severity === 'error'),
       warning: violations.filter(v => v.severity === 'warning')
     };
+
+    // Create granular categories for query handles
+    const granularCategories: Record<string, HierarchyViolation[]> = {};
+    
+    for (const violation of violations) {
+      let categoryKey: string;
+      
+      if (violation.violationType === 'invalid_parent_type') {
+        // Create specific categories like "task_under_epic", "feature_under_pbi", etc.
+        const childType = violation.type.toLowerCase().replace(/\s+/g, '_');
+        const parentType = violation.parentType?.toLowerCase().replace(/\s+/g, '_') || 'unknown';
+        categoryKey = `invalid_parent_${childType}_under_${parentType}`;
+      } else if (violation.violationType === 'invalid_state_progression') {
+        // Group by parent-child type combination for state issues
+        const childType = violation.type.toLowerCase().replace(/\s+/g, '_');
+        const parentType = violation.parentType?.toLowerCase().replace(/\s+/g, '_') || 'unknown';
+        categoryKey = `state_issue_${childType}_under_${parentType}`;
+      } else if (violation.violationType === 'orphaned_child') {
+        // Group orphaned items by their type
+        const childType = violation.type.toLowerCase().replace(/\s+/g, '_');
+        categoryKey = `orphaned_${childType}`;
+      } else {
+        categoryKey = `other_${violation.violationType}`;
+      }
+      
+      if (!granularCategories[categoryKey]) {
+        granularCategories[categoryKey] = [];
+      }
+      granularCategories[categoryKey].push(violation);
+    }
+
+    // Create query handles for each granular category if requested
+    let queryHandles: Record<string, string> | undefined;
+    
+    if (returnQueryHandles) {
+      queryHandles = {};
+      
+      // Create query handle for each granular category that has violations
+      for (const [categoryKey, categoryViolations] of Object.entries(granularCategories)) {
+        if (categoryViolations.length > 0) {
+          const workItemIds = categoryViolations.map(v => v.workItemId);
+          
+          // Create work item context for query handle
+          const workItemContext = new Map(
+            categoryViolations.map(v => [v.workItemId, {
+              id: v.workItemId,
+              title: v.title,
+              state: v.state,
+              type: v.type
+            }])
+          );
+
+          // Create WIQL query
+          const wiqlQuery = `SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], [System.Parent] 
+FROM WorkItems 
+WHERE [System.Id] IN (${workItemIds.join(',')})`;
+
+          // Store query handle
+          const handle = queryHandleService.storeQuery(
+            workItemIds,
+            wiqlQuery,
+            {
+              project,
+              queryType: 'wiql' as const
+            },
+            3600000, // 1 hour TTL
+            workItemContext
+          );
+
+          queryHandles[categoryKey] = handle;
+          logger.info(`Created query handle for ${categoryKey}: ${handle} (${workItemIds.length} items)`);
+        }
+      }
+    }
 
     return buildSuccessResponse(
       {
@@ -322,13 +410,20 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
             invalid_parent_type: byType.invalid_parent_type.length,
             invalid_state_progression: byType.invalid_state_progression.length,
             orphaned_child: byType.orphaned_child.length
+          },
+          granularCategories: Object.fromEntries(
+            Object.entries(granularCategories).map(([key, violations]) => [key, violations.length])
+          )
+        },
+        ...(queryHandles && { queryHandles }),
+        ...(includeViolationDetails && {
+          violations: violations,
+          categorized: {
+            byType,
+            bySeverity,
+            granular: granularCategories
           }
-        },
-        violations: violations,
-        categorized: {
-          byType,
-          bySeverity
-        },
+        }),
         validationRules: {
           validChildTypes: VALID_CHILD_TYPES,
           stateHierarchy: STATE_HIERARCHY

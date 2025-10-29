@@ -32,6 +32,8 @@ export const queryTools: ToolConfig[] = [
         organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
         project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" },
         areaPath: { type: "string", description: "Override default area path from config (automatically scopes queries to configured area)" },
+        areaPathFilter: { type: "array", items: { type: "string" }, description: "Explicitly specify area paths to filter by (e.g., ['ProjectA\\\\TeamAlpha', 'ProjectA\\\\TeamBeta']). Takes precedence over default area paths and areaPath parameter. Use this when working with multiple specific area paths." },
+        useDefaultAreaPaths: { type: "boolean", description: "Control whether to automatically filter by default area paths from configuration (default: true). Set to false to query across the entire project without area path filtering. Ignored if areaPathFilter is explicitly provided. Use this when you need to query across all areas or when default filtering is causing issues." },
         iterationPath: { type: "string", description: "Override default iteration path from config" },
         
         // Result Configuration
@@ -79,6 +81,8 @@ export const queryTools: ToolConfig[] = [
         dateRangeStart: { type: "string", description: "Start date (ISO 8601: YYYY-MM-DD)" },
         dateRangeEnd: { type: "string", description: "End date (ISO 8601: YYYY-MM-DD)" },
         areaPath: { type: "string", description: "Filter by Area Path" },
+        areaPathFilter: { type: "array", items: { type: "string" }, description: "Explicitly specify area paths to filter by (e.g., ['ProjectA\\\\TeamAlpha', 'ProjectA\\\\TeamBeta']). Takes precedence over default area paths." },
+        useDefaultAreaPaths: { type: "boolean", description: "Control whether to automatically filter by default area paths from configuration (default: true). Set to false to query across the entire project without area path filtering." },
         iterationPath: { type: "string", description: "Filter by Iteration Path" },
         top: { type: "number", description: "Maximum number of results (default 100, max 1000)" },
         skip: { type: "number", description: "Number of results to skip for pagination (default 0)" },
@@ -108,20 +112,22 @@ export const queryTools: ToolConfig[] = [
   },
   {
     name: "wit-validate-hierarchy",
-    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Returns focused results without AI analysis. Note: Large area paths (>500 items) may take 1-2 minutes to process - consider using smaller maxResults or more specific area paths for faster results.",
+    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Optionally creates query handles for each violation type group (orphaned items, incorrect parent types, state progression issues) to enable direct bulk operations on problematic items. Returns focused results without AI analysis. Accepts either queryHandle (from WIQL query), workItemIds, or areaPath. Note: Large area paths (>500 items) may take 1-2 minutes to process - consider using smaller maxResults or more specific area paths for faster results.",
     script: "",
     schema: validateHierarchyFastSchema,
     inputSchema: {
       type: "object",
       properties: {
-        workItemIds: { type: "array", items: { type: "number" }, description: "Specific work item IDs to validate (if not provided, uses areaPath)" },
-        areaPath: { type: "string", description: "Area path to validate all work items within (if workItemIds not provided)" },
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true (alternative to areaPath)" },
+        areaPath: { type: "string", description: "Area path to validate all work items within (if not using queryHandle)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" },
         maxResults: { type: "number", description: "Maximum number of work items to analyze when using areaPath (default 500)" },
         includeSubAreas: { type: "boolean", description: "Include child area paths in analysis (default true)" },
         validateTypes: { type: "boolean", description: "Validate parent-child type relationships (default true)" },
-        validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" }
+        validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" },
+        returnQueryHandles: { type: "boolean", description: "Create query handles for each violation type (invalid_parent_type, invalid_state_progression, orphaned_child) to enable bulk operations (default true)" },
+        includeViolationDetails: { type: "boolean", description: "Include full violation details in response (can be large, defaults to false to save tokens)" }
       },
       required: []
     }

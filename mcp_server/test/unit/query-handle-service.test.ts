@@ -5,6 +5,7 @@
  * for safe bulk operations without ID hallucination risk.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 describe('Query Handle Service', () => {

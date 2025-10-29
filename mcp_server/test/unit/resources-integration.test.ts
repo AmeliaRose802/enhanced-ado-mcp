@@ -3,6 +3,8 @@
  * Tests the full resource flow from protocol handlers
  */
 
+import { describe, it, expect } from '@jest/globals';
+
 describe('Resources Integration', () => {
   it('should have resources capability enabled', () => {
     // This test verifies the capability is declared

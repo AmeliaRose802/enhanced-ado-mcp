@@ -11,13 +11,11 @@
 import { z } from "zod";
 import { logger } from "../utils/logger.js";
 import { findGitHubCopilotGuid } from "../services/ado-identity-service.js";
+import { type AuthenticationType } from "../utils/ado-token.js";
 
 // ============================================================================
 // Constants
 // ============================================================================
-
-/** Azure DevOps OAuth resource ID (Microsoft well-known constant) */
-export const AZURE_DEVOPS_RESOURCE_ID = "499b84ac-1321-427f-aa17-267ca6975798";
 
 // ============================================================================
 // Utility Functions
@@ -65,6 +63,10 @@ export interface CLIArguments {
   copilotGuid?: string;
   /** Enable verbose logging (from --verbose or -v flag, default: false) */
   verbose?: boolean;
+  /** Authentication type: 'interactive', 'azcli', or 'env' */
+  authentication?: AuthenticationType;
+  /** Azure tenant ID (optional, for multi-tenant scenarios) */
+  tenant?: string;
   /** Allow additional yargs properties like _, $0, kebab-case versions, etc. */
   [key: string]: unknown;
 }
@@ -91,10 +93,16 @@ export interface GitHubCopilotConfig {
   defaultGuid: string;
 }
 
+export interface AuthenticationConfig {
+  type: AuthenticationType;
+  tenantId?: string;
+}
+
 export interface MCPServerConfig {
   azureDevOps: AzureDevOpsConfig;
   gitRepository: GitRepositoryConfig;
   gitHubCopilot: GitHubCopilotConfig;
+  authentication: AuthenticationConfig;
   verboseLogging: boolean;
 }
 
@@ -124,10 +132,16 @@ export const gitHubCopilotConfigSchema = z.object({
   defaultGuid: z.string().default(""),
 });
 
+export const authenticationConfigSchema = z.object({
+  type: z.enum(["interactive", "azcli", "env"]).default("interactive"),
+  tenantId: z.string().optional(),
+});
+
 export const mcpServerConfigSchema = z.object({
   azureDevOps: azureDevOpsConfigSchema,
   gitRepository: gitRepositoryConfigSchema,
   gitHubCopilot: gitHubCopilotConfigSchema,
+  authentication: authenticationConfigSchema,
   verboseLogging: z.boolean().default(false),
 });
 
@@ -153,8 +167,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Configuration not initialized. CLI args must be set first.\\n" +
-        "Usage: enhanced-ado-msp <organization> --area-path <path>\\n" +
-        "Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
+        "Usage: enhanced-ado-mcp <organization> --area-path <path>\\n" +
+        "Example: enhanced-ado-mcp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
@@ -222,8 +236,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Organization is required.\\n" +
-        "Usage: enhanced-ado-msp <organization> --area-path <path>\\n" +
-        "Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
+        "Usage: enhanced-ado-mcp <organization> --area-path <path>\\n" +
+        "Example: enhanced-ado-mcp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
@@ -231,8 +245,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     throw formatConfigError(
       "validate",
       "Project is required. Provide area path that includes project:\\n" +
-        "  Usage: enhanced-ado-msp <organization> --area-path \"ProjectName\\\\Area\"\\n" +
-        "  Example: enhanced-ado-msp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
+        "  Usage: enhanced-ado-mcp <organization> --area-path \"ProjectName\\\\Area\"\\n" +
+        "  Example: enhanced-ado-mcp MyOrganization --area-path \"MyProject\\\\Team\\\\Component\""
     );
   }
 
@@ -248,6 +262,10 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
     gitRepository: {},
     gitHubCopilot: {
       ...(cliArgs.copilotGuid && { defaultGuid: cliArgs.copilotGuid }),
+    },
+    authentication: {
+      type: cliArgs.authentication || "interactive",
+      ...(cliArgs.tenant && { tenantId: cliArgs.tenant }),
     },
     verboseLogging: cliArgs.verbose || false,
   };
@@ -278,6 +296,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
 /**
  * Asynchronously look up and cache the GitHub Copilot GUID if not already configured
  * This should be called after initial configuration load to automatically discover Copilot
+ * 
+ * Uses Azure CLI authentication for identity lookups (separate from main OAuth flow)
  */
 export async function ensureGitHubCopilotGuid(): Promise<string | null> {
   const config = loadConfiguration();
@@ -287,23 +307,27 @@ export async function ensureGitHubCopilotGuid(): Promise<string | null> {
     return config.gitHubCopilot.defaultGuid;
   }
   
-  // Try to look it up automatically
-  logger.info('GitHub Copilot GUID not configured, attempting automatic lookup...');
+  // Attempt auto-discovery using Azure CLI authentication
+  logger.info('Attempting to auto-discover GitHub Copilot GUID...');
+  
   try {
     const guid = await findGitHubCopilotGuid(config.azureDevOps.organization);
     
     if (guid) {
-      // Update the cached config with the found GUID
+      // Cache the discovered GUID
       config.gitHubCopilot.defaultGuid = guid;
-      logger.info(`✓ Automatically discovered GitHub Copilot GUID: ${guid}`);
+      cachedConfig = config;
       return guid;
-    } else {
-      logger.warn('Could not automatically find GitHub Copilot GUID. Copilot assignment features will not work.');
-      logger.warn('You can manually specify the GUID with --copilot-guid flag');
-      return null;
     }
+    
+    // Not found via auto-discovery
+    logger.info('GitHub Copilot identity not found via auto-discovery.');
+    logger.info('Please specify the GUID with --copilot-guid flag if you want to enable Copilot assignment');
+    return null;
   } catch (error) {
-    logger.error('Failed to lookup GitHub Copilot GUID', error);
+    logger.warn('Auto-discovery failed:', error);
+    logger.info('Please ensure you are logged in with: az login');
+    logger.info('Or specify the GUID manually with --copilot-guid flag');
     return null;
   }
 }

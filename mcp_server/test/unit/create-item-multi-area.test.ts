@@ -5,7 +5,9 @@
  * Tests validation and behavior when creating work items with multiple configured area paths
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   updateConfigFromCLI, 
   loadConfiguration,

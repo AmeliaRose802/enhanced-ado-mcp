@@ -218,7 +218,7 @@ These tools auto-fill parameters from CLI arguments and built-in defaults:
 
 **CLI Arguments:**
 ```bash
-enhanced-ado-msp <organization> <project> [--area-path "Project\\Team"]
+enhanced-ado-mcp <organization> <project> [--area-path "Project\\Team"]
 ```
 
 **Built-in Defaults:**

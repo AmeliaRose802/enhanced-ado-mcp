@@ -5,7 +5,9 @@
  * and metadata stripping functionality.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleODataAnalytics } from '../../src/services/handlers/query/odata-analytics.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { odataAnalyticsQuerySchema } from '../../src/config/schemas.js';
 
 // Mock configuration
@@ -48,8 +50,9 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
 }));
 
 // Mock Azure DevOps token
-jest.mock('../../src/utils/ado-token.js', () => ({
-  getAzureDevOpsToken: jest.fn(() => 'mock-token')
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
 }));
 
 // Mock fetch globally

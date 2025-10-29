@@ -6,12 +6,21 @@
  * that creates relationships between work items from two query handles.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkLinkByQueryHandles } from '../../src/services/handlers/bulk-operations/bulk-link-handler';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { linkWorkItemsByQueryHandlesSchema } from '../../src/config/schemas';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ToolConfig } from '../../src/types/index';
 
 // Mock dependencies
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
+}));
+
 jest.mock('../../src/services/ado-discovery-service', () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,

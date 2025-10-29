@@ -3,10 +3,15 @@
  * Validates includeTitles and includeConfidence parameters
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkEnhanceDescriptions } from '../../src/services/handlers/ai-powered/bulk-enhance-descriptions.handler.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { bulkEnhanceDescriptionsByQueryHandleSchema } from '../../src/config/schemas.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ToolConfig } from '../../src/types/index.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { MCPServer } from '../../src/types/mcp.js';
 
 // Mock the dependencies
@@ -49,6 +54,11 @@ jest.mock('../../src/config/config.js', () => ({
       project: 'test-project'
     }
   }))
+}));
+
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
 }));
 
 jest.mock('../../src/utils/sampling-client.js', () => ({

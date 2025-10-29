@@ -3,6 +3,7 @@
  * Validates error categories, codes, and metadata handling
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   ErrorCategory, 
   ErrorCode, 
@@ -10,6 +11,7 @@ import {
   categorizeError,
   type ErrorMetadata 
 } from '../../src/types/error-categories.js';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { 
   buildErrorResponse,
   buildValidationErrorResponse,

@@ -2,6 +2,7 @@
  * Test to verify query generator handlers properly track usage in metadata only
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ToolExecutionResult } from '../../src/types/index.js';
 
 describe('Query Generator Usage Tracking', () => {

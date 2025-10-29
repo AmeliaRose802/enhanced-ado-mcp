@@ -5,6 +5,7 @@
  * Validates summary, preview, and full response formats.
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { bulkEnhanceDescriptionsByQueryHandleSchema } from '../../src/config/schemas.js';
 
 // Mock configuration
@@ -22,6 +23,11 @@ jest.mock('../../src/config/config.js', () => ({
     }
   })),
   updateConfigFromCLI: jest.fn()
+}));
+
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => async () => 'mock-token'),
+  setTokenProvider: jest.fn()
 }));
 
 describe('Bulk Enhance Descriptions - Response Format', () => {

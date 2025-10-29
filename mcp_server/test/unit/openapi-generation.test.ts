@@ -5,8 +5,11 @@
  * Verifies that the OpenAPI generation produces valid output
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { readFileSync } from 'fs';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { join } from 'path';
 
 describe('OpenAPI Generation', () => {

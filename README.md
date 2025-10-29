@@ -28,9 +28,9 @@ AI-powered Azure DevOps work item management via Model Context Protocol.
 
 **One-Click Install:**
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install-0098FF?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
 
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install-24bfa5?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-msp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install-24bfa5?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
 
 **VS Code will prompt you for:**
 1. **Organization name** (e.g., `mycompany`)
@@ -51,7 +51,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "github.copilot.chat.mcp.servers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": [
         "-y",
@@ -75,7 +75,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "github.copilot.chat.mcp.servers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": [
         "-y",
@@ -93,7 +93,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "github.copilot.chat.mcp.servers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": [
         "-y",
@@ -122,7 +122,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "mcpServers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": ["-y", "enhanced-ado-mcp-server", "YOUR_ORG", "--area-path", "YOUR_PROJECT\\YOUR_TEAM"]
     }
@@ -134,7 +134,7 @@ Add to VS Code `settings.json`:
 ```json
 {
   "mcpServers": {
-    "enhanced-ado-msp": {
+    "enhanced-ado-mcp": {
       "command": "npx",
       "args": [
         "-y", 
@@ -287,7 +287,7 @@ AI-powered tools require VS Code with GitHub Copilot and language model access.
 **Setup:**
 1. Open Command Palette (`F1`)
 2. Run **"MCP: List Servers"**  
-3. Select **"enhanced-ado-msp"**
+3. Select **"enhanced-ado-mcp"**
 4. Click **"Configure Model Access"**
 5. **Check ALL free models** (marked `0x` tokens)
 

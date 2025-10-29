@@ -36,11 +36,22 @@ export async function handleWiqlQuery(
     // Determine if this is AI generation or direct execution
     const isAIGeneration = !!parsed.description && !parsed.wiqlQuery;
     
-    // Resolve area path filter: explicit > config default
-    // Handle case where defaultAreaPaths may not be defined (backward compatibility)
+    // Resolve area path filter with new useDefaultAreaPaths flag
+    // Priority: explicit areaPathFilter > default paths (if useDefaultAreaPaths=true) > none
     const defaultAreaPaths = requiredConfig.defaultAreaPaths || [];
-    const areaPathFilter = parsed.areaPathFilter || 
-      (defaultAreaPaths.length > 0 ? defaultAreaPaths : undefined);
+    const useDefaultAreaPaths = parsed.useDefaultAreaPaths !== false; // Default to true for backward compatibility
+    
+    let areaPathFilter: string[] | undefined;
+    if (parsed.areaPathFilter) {
+      // Explicit filter provided - always use it
+      areaPathFilter = parsed.areaPathFilter;
+    } else if (useDefaultAreaPaths && defaultAreaPaths.length > 0) {
+      // Use default area paths if flag is true (default behavior)
+      areaPathFilter = defaultAreaPaths;
+    } else {
+      // No filtering - query entire project
+      areaPathFilter = undefined;
+    }
     
     const queryArgs = {
       ...parsed,
@@ -137,14 +148,12 @@ export async function handleWiqlQuery(
       logger.debug(`Full context packages will be fetched for each work item`);
     }
     if (queryArgs.handleOnly && queryArgs.returnQueryHandle) {
-      logger.debug(`Handle-only mode: will return query handle without fetching full work item data`);
+      logger.debug(`Handle-only mode: will fetch full data for handle context but return minimal response`);
     }
     
-    // If handleOnly is true and returnQueryHandle is true, fetch only IDs for efficiency
-    const shouldFetchFullData = !queryArgs.handleOnly || !queryArgs.returnQueryHandle;
-    
     // Generate cache key based on query parameters
-    const cacheKey = generateQueryCacheKey(queryArgs, shouldFetchFullData);
+    // Note: Always fetch full data to populate handle context, handleOnly only affects the response
+    const cacheKey = generateQueryCacheKey(queryArgs, true);
     
     let result: {
       workItems: any[];
@@ -164,9 +173,8 @@ export async function handleWiqlQuery(
         result = cached as typeof result;
       } else {
         logger.debug(`Cache miss for WIQL query, executing: ${cacheKey.substring(0, 32)}...`);
-        result = shouldFetchFullData 
-          ? await queryWorkItemsByWiql(queryArgs)
-          : await queryWorkItemsByWiql({ ...queryArgs, includeFields: [] }); // Minimal fields for ID-only fetch
+        // Always fetch full data to populate handle context, even in handleOnly mode
+        result = await queryWorkItemsByWiql(queryArgs);
         
         // Cache the result for 5 minutes
         cacheService.set(cacheKey, result, 5 * 60 * 1000);
@@ -265,29 +273,27 @@ export async function handleWiqlQuery(
       
       const workItemIds = result.workItems.map((wi) => wi.id);
       
-      // Build work item context map if we have work items data (skip if handleOnly mode)
+      // Always build work item context map for the handle (needed for later retrieval)
       const workItemContext = new Map<number, WorkItemContext>();
-      if (shouldFetchFullData) {
-        for (const wi of result.workItems) {
-          // Get tags from System.Tags field (stored as semicolon-separated string)
-          const tagsValue = wi.additionalFields?.['System.Tags'];
-          const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
-          
-          workItemContext.set(wi.id, {
-            title: wi.title,
-            state: wi.state,
-            type: wi.type,
-            createdDate: wi.createdDate,
-            assignedTo: wi.assignedTo,
-            areaPath: wi.areaPath,
-            iterationPath: wi.iterationPath,
-            changedDate: wi.changedDate,
-            tags: tagsString, // Store as string for service to parse
-            ...(wi.lastSubstantiveChangeDate && { lastSubstantiveChangeDate: wi.lastSubstantiveChangeDate }),
-            ...(wi.daysInactive !== undefined && { daysInactive: wi.daysInactive }),
-            ...(wi.additionalFields && wi.additionalFields)
-          });
-        }
+      for (const wi of result.workItems) {
+        // Get tags from System.Tags field (stored as semicolon-separated string)
+        const tagsValue = wi.additionalFields?.['System.Tags'];
+        const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
+        
+        workItemContext.set(wi.id, {
+          title: wi.title,
+          state: wi.state,
+          type: wi.type,
+          createdDate: wi.createdDate,
+          assignedTo: wi.assignedTo,
+          areaPath: wi.areaPath,
+          iterationPath: wi.iterationPath,
+          changedDate: wi.changedDate,
+          tags: tagsString, // Store as string for service to parse
+          ...(wi.lastSubstantiveChangeDate && { lastSubstantiveChangeDate: wi.lastSubstantiveChangeDate }),
+          ...(wi.daysInactive !== undefined && { daysInactive: wi.daysInactive }),
+          ...(wi.additionalFields && wi.additionalFields)
+        });
       }
 
       // Build analysis metadata

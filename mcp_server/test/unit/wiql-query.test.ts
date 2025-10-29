@@ -3,7 +3,9 @@
  * Test for the WIQL query tool
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { executeTool } from "../../src/services/tool-service.js";
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { logger } from "../../src/utils/logger.js";
 
 // Type guard for result data

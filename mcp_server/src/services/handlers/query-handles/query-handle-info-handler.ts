@@ -12,7 +12,8 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
-import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { ADOHttpClient } from '../../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../../utils/token-provider.js';
 import { loadConfiguration } from "../../../config/config.js";
 import { asToolData } from "../../../types/index.js";
 
@@ -259,7 +260,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
           const proj = project || cfg.azureDevOps.project;
 
           try {
-            const httpClient = new ADOHttpClient(org);
+            const httpClient = new ADOHttpClient(org, getTokenProvider());
             const sampleItems: WorkItemSample[] = [];
 
             for (const id of sampleIds) {

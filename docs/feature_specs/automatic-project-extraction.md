@@ -27,7 +27,7 @@ Users can now start the server without specifying project explicitly:
 
 ```bash
 # Project "MyProject" extracted automatically
-enhanced-ado-msp myorg --area-path "MyProject\\Team\\SubArea"
+enhanced-ado-mcp myorg --area-path "MyProject\\Team\\SubArea"
 ```
 
 ### Explicit Project (Still Supported)
@@ -35,7 +35,7 @@ Users can still provide project explicitly if desired:
 
 ```bash
 # Explicit project takes precedence
-enhanced-ado-msp myorg myproject --area-path "MyProject\\Team"
+enhanced-ado-mcp myorg myproject --area-path "MyProject\\Team"
 ```
 
 ### Extraction Logic
@@ -59,16 +59,16 @@ enhanced-ado-msp myorg myproject --area-path "MyProject\\Team"
 
 ```bash
 # Valid: Explicit project
-enhanced-ado-msp myorg myproject
+enhanced-ado-mcp myorg myproject
 
 # Valid: Project from area path
-enhanced-ado-msp myorg --area-path "MyProject\\Team"
+enhanced-ado-mcp myorg --area-path "MyProject\\Team"
 
 # Valid: Both (explicit takes precedence)
-enhanced-ado-msp myorg myproject --area-path "MyProject\\Team"
+enhanced-ado-mcp myorg myproject --area-path "MyProject\\Team"
 
 # Invalid: Neither project nor area path
-enhanced-ado-msp myorg
+enhanced-ado-mcp myorg
 # Error: "Either <project> or --area-path must be provided"
 ```
 
@@ -78,20 +78,20 @@ enhanced-ado-msp myorg
 
 ```
 ✓ Extracted project name 'MyProject' from area path 'MyProject\Team\Area'
-enhanced-ado-msp MCP server starting (stdio)
+enhanced-ado-mcp MCP server starting (stdio)
 ```
 
 ### Success - Explicit Project
 
 ```
-enhanced-ado-msp MCP server starting (stdio)
+enhanced-ado-mcp MCP server starting (stdio)
 ```
 
 ### Error - Missing Configuration
 
 ```
 Error: Either <project> or --area-path must be provided
-Usage: enhanced-ado-msp <organization> [project] --area-path <path> [options]
+Usage: enhanced-ado-mcp <organization> [project] --area-path <path> [options]
 
 Note: Project can be omitted if --area-path is provided (will be extracted automatically)
 ```
@@ -102,7 +102,7 @@ Note: Project can be omitted if --area-path is provided (will be extracted autom
 
 **Input:**
 ```bash
-enhanced-ado-msp myorg --area-path "MyProject\\Team"
+enhanced-ado-mcp myorg --area-path "MyProject\\Team"
 ```
 
 **Behavior:**
@@ -114,7 +114,7 @@ enhanced-ado-msp myorg --area-path "MyProject\\Team"
 
 **Input:**
 ```bash
-enhanced-ado-msp myorg --area-path "MyProject\\Team\\SubTeam\\Component"
+enhanced-ado-mcp myorg --area-path "MyProject\\Team\\SubTeam\\Component"
 ```
 
 **Behavior:**
@@ -126,7 +126,7 @@ enhanced-ado-msp myorg --area-path "MyProject\\Team\\SubTeam\\Component"
 
 **Input:**
 ```bash
-enhanced-ado-msp myorg ExplicitProject --area-path "AreaProject\\Team"
+enhanced-ado-mcp myorg ExplicitProject --area-path "AreaProject\\Team"
 ```
 
 **Behavior:**
@@ -138,13 +138,13 @@ enhanced-ado-msp myorg ExplicitProject --area-path "AreaProject\\Team"
 
 **Input:**
 ```bash
-enhanced-ado-msp myorg --area-path ""
+enhanced-ado-mcp myorg --area-path ""
 ```
 
 **Behavior:**
 ```
 Error: Project is required. Provide either:
-  1. Project as positional argument: enhanced-ado-msp <organization> <project>
+  1. Project as positional argument: enhanced-ado-mcp <organization> <project>
   2. Area path that includes project: --area-path "ProjectName\\Area"
 ```
 

@@ -5,8 +5,8 @@ import {
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
   generateODataQuerySchema,
-  unifiedQueryGeneratorSchema,
-  toolDiscoverySchema
+  toolDiscoverySchema,
+  intelligentParentFinderSchema
 } from "../schemas.js";
 
 /**
@@ -128,27 +128,6 @@ export const aiAnalysisTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-generate-query",
-    description: "🤖 AI-POWERED UNIFIED QUERY GENERATOR: Intelligently generates either WIQL or OData queries based on your request. Analyzes query characteristics and automatically selects the optimal format (WIQL for hierarchies and lists, OData for analytics and aggregations). Includes iterative validation and can return query handles for safe bulk operations. organization, project, areaPath, and iterationPath are automatically filled from configuration - only provide them to override defaults.",
-    script: "",
-    schema: unifiedQueryGeneratorSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        description: { type: "string", description: "Natural language description of query (e.g., 'Find all active bugs' or 'Count work items by state')" },
-        maxIterations: { type: "number", description: "Maximum attempts to generate valid query (1-5, default 3)" },
-        includeExamples: { type: "boolean", description: "Include example patterns in prompt (default true)" },
-        testQuery: { type: "boolean", description: "Test query by executing it (default true)" },
-        returnQueryHandle: { type: "boolean", description: "Execute query and return handle for bulk operations (prevents ID hallucination, default true)" },
-        maxResults: { type: "number", description: "Maximum work items to fetch when returnQueryHandle=true (1-1000, default 200)" },
-        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include when returnQueryHandle=true" },
-        areaPath: { type: "string", description: "Override default area path from config (automatically scopes queries to configured area)" },
-        iterationPath: { type: "string", description: "Override default iteration path from config" }
-      },
-      required: ["description"]
-    }
-  },
-  {
     name: "wit-discover-tools",
     description: "🤖 AI-POWERED TOOL DISCOVERY: Find the right tools for your task using natural language. Analyzes your intent and recommends the most appropriate tools from the MCP server with confidence scores, usage examples, and workflow guidance. Perfect when you're not sure which tool to use.",
     script: "",
@@ -167,6 +146,31 @@ export const aiAnalysisTools: ToolConfig[] = [
         }
       },
       required: ["intent"]
+    }
+  },
+  {
+    name: "wit-find-parent-item-intelligent",
+    description: "🤖 AI-POWERED PARENT FINDER: Intelligently find and recommend the best parent work items for child items using AI analysis. Accepts a QUERY HANDLE containing child work items to prevent ID hallucination. Analyzes each child's context, searches potential parents IN THE SAME AREA PATH by default (enforces area path matching), and ranks candidates based on type hierarchy, scope alignment, and logical fit. ENFORCES valid parent-child type relationships per Azure DevOps hierarchy. Returns recommendations with confidence scores and can create a query handle for safe linking. Supports dry run mode for previewing recommendations. Requires VS Code sampling support.",
+    script: "",
+    schema: intelligentParentFinderSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        childQueryHandle: { type: "string", description: "Query handle containing child work items that need parents (prevents ID hallucination)" },
+        dryRun: { type: "boolean", description: "Preview recommendations without creating result query handle (default false)" },
+        areaPath: { type: "string", description: "Area path to search for parent candidates (uses child's area path if not provided)" },
+        includeSubAreas: { type: "boolean", description: "Include sub-areas in parent search (default FALSE - enforces same area path)" },
+        maxParentCandidates: { type: "number", description: "Maximum parent candidates to analyze per child (3-50, default 20)" },
+        maxRecommendations: { type: "number", description: "Maximum parent recommendations to return per child (1-5, default 3)" },
+        parentWorkItemTypes: { type: "array", items: { type: "string" }, description: "Specific parent work item types to search for (e.g., ['Epic', 'Feature']). If not provided, determines appropriate types based on child type." },
+        searchScope: { type: "string", enum: ["area", "project", "iteration"], description: "Scope of parent search: 'area' (default), 'project', or 'iteration'" },
+        iterationPath: { type: "string", description: "Iteration path filter when searchScope='iteration'" },
+        requireActiveParents: { type: "boolean", description: "Only consider parents in Active/New/Committed states (default true)" },
+        confidenceThreshold: { type: "number", description: "Minimum confidence score for recommendations (0-1, default 0.5)" },
+        organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
+        project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" }
+      },
+      required: ["childQueryHandle"]
     }
   }
 ];

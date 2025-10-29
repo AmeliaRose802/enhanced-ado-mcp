@@ -10,6 +10,7 @@
  * - Structured data is always complete regardless of fullAnalysisText setting
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { SprintPlanningAnalyzer } from '../../src/services/analyzers/sprint-planner.js';
 
 // Mock configuration

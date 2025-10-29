@@ -1,112 +1,160 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
-  bulkCommentByQueryHandleSchema,
-  bulkUpdateByQueryHandleSchema,
-  bulkAssignByQueryHandleSchema,
-  bulkRemoveByQueryHandleSchema,
-  bulkTransitionStateByQueryHandleSchema,
-  bulkMoveToIterationByQueryHandleSchema,
   linkWorkItemsByQueryHandlesSchema,
-  bulkUndoByQueryHandleSchema
+  bulkUndoByQueryHandleSchema,
+  unifiedBulkOperationsSchema
 } from "../schemas.js";
 
 /**
  * Bulk Operations Tools
  * Tools for bulk updates, assignments, and state transitions using query handles
+ * 
+ * NOTE: Most bulk operations are now consolidated into wit-unified-bulk-operations-by-query-handle
+ * to reduce tool confusion. Individual tools remain for specialized use cases like linking and undo.
  */
 export const bulkOperationsTools: ToolConfig[] = [
   {
-    name: "wit-bulk-comment-by-query-handle",
-    description: "Add a comment to multiple work items identified by a query handle. Uses query handle from wit-wiql-query to eliminate ID hallucination risk. Supports template variables and dry-run mode. TEMPLATE VARIABLES: Use {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id} in comment text for per-item substitution when query handle includes staleness data.",
+    name: "wit-unified-bulk-operations-by-query-handle",
+    description: "🎯 UNIFIED BULK OPERATIONS: Perform multiple operations (comment, update, assign, remove, transition-state, move-iteration, change-type, add-tag, remove-tag, enhance-descriptions, assign-story-points, add-acceptance-criteria) on work items identified by a query handle. Consolidates all bulk operations into a single tool that accepts an array of actions to execute sequentially. Supports dry-run mode, error handling strategies, item selection, and AI-powered enhancements. Reduces tool confusion by providing one entry point for all bulk modifications.",
     script: "",
-    schema: bulkCommentByQueryHandleSchema,
+    schema: unifiedBulkOperationsSchema,
     inputSchema: {
       type: "object",
       properties: {
         queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
-        comment: { type: "string", description: "Comment text to add to all work items (supports Markdown and template variables like {daysInactive}, {lastSubstantiveChangeDate}, {title}, {state}, {type}, {assignedTo}, {id})" },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default false) - shows template substitution examples" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["queryHandle", "comment"]
-    }
-  },
-  {
-    name: "wit-bulk-update-by-query-handle",
-    description: "Update multiple work items identified by a query handle. Uses JSON Patch operations to update fields. Supports dry-run mode.",
-    script: "",
-    schema: bulkUpdateByQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
-        updates: {
+        actions: {
           type: "array",
+          description: "Array of actions to perform sequentially on selected work items",
           items: {
-            type: "object",
-            properties: {
-              op: { type: "string", enum: ["add", "replace", "remove"], description: "JSON Patch operation" },
-              path: { type: "string", description: "Field path (e.g., '/fields/System.State', '/fields/System.AssignedTo')" },
-              value: { description: "Value to set (not needed for 'remove' operation)" }
-            },
-            required: ["op", "path"]
-          },
-          description: "Array of JSON Patch operations to apply"
+            oneOf: [
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "comment" },
+                  comment: { type: "string", description: "Comment text (supports Markdown)" }
+                },
+                required: ["type", "comment"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "update" },
+                  updates: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        op: { type: "string", enum: ["add", "replace", "remove"] },
+                        path: { type: "string" },
+                        value: {}
+                      },
+                      required: ["op", "path"]
+                    }
+                  }
+                },
+                required: ["type", "updates"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "assign" },
+                  assignTo: { type: "string" },
+                  comment: { type: "string" }
+                },
+                required: ["type", "assignTo"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "remove" },
+                  removeReason: { type: "string" }
+                },
+                required: ["type"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "transition-state" },
+                  targetState: { type: "string" },
+                  reason: { type: "string" },
+                  comment: { type: "string" },
+                  validateTransitions: { type: "boolean" },
+                  skipInvalidTransitions: { type: "boolean" }
+                },
+                required: ["type", "targetState"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "move-iteration" },
+                  targetIterationPath: { type: "string" },
+                  comment: { type: "string" },
+                  updateChildItems: { type: "boolean" }
+                },
+                required: ["type", "targetIterationPath"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "change-type" },
+                  targetType: { type: "string" },
+                  validateTypeChanges: { type: "boolean" },
+                  skipInvalidChanges: { type: "boolean" },
+                  preserveFields: { type: "boolean" },
+                  comment: { type: "string" }
+                },
+                required: ["type", "targetType"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "add-tag" },
+                  tags: { type: "string", description: "Semicolon-separated tags to add" }
+                },
+                required: ["type", "tags"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "remove-tag" },
+                  tags: { type: "string", description: "Semicolon-separated tags to remove" }
+                },
+                required: ["type", "tags"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "enhance-descriptions" },
+                  enhancementStyle: { type: "string", enum: ["concise", "detailed", "technical", "business"], description: "Enhancement style (default: detailed)" },
+                  preserveOriginal: { type: "boolean", description: "Append to existing description instead of replacing" },
+                  minConfidenceScore: { type: "number", description: "Minimum confidence to apply enhancement (default: 0.6)" }
+                },
+                required: ["type"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "assign-story-points" },
+                  estimationScale: { type: "string", enum: ["fibonacci", "powers-of-2", "linear", "t-shirt"], description: "Estimation scale (default: fibonacci)" },
+                  includeReasoning: { type: "boolean", description: "Add estimation reasoning as comment" },
+                  overwriteExisting: { type: "boolean", description: "Overwrite existing story points" }
+                },
+                required: ["type"]
+              },
+              {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "add-acceptance-criteria" },
+                  criteriaFormat: { type: "string", enum: ["gherkin", "checklist", "user-story"], description: "Criteria format (default: gherkin)" },
+                  minCriteria: { type: "number", description: "Minimum criteria to generate (default: 3)" },
+                  maxCriteria: { type: "number", description: "Maximum criteria to generate (default: 7)" },
+                  appendToExisting: { type: "boolean", description: "Append to existing acceptance criteria" }
+                },
+                required: ["type"]
+              }
+            ]
+          }
         },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["queryHandle", "updates"]
-    }
-  },
-  {
-    name: "wit-bulk-assign-by-query-handle",
-    description: "Assign multiple work items to a user, identified by query handle. Supports dry-run mode.",
-    script: "",
-    schema: bulkAssignByQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
-        assignTo: { type: "string", description: "User email or display name to assign work items to" },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["queryHandle", "assignTo"]
-    }
-  },
-  {
-    name: "wit-bulk-remove-by-query-handle",
-    description: "Move multiple work items to 'Removed' state (does NOT permanently delete). Sets work item state to 'Removed' for items identified by a query handle. Optionally add a comment with removal reason. Supports dry-run mode.",
-    script: "",
-    schema: bulkRemoveByQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
-        removeReason: { type: "string", description: "Optional reason for removing work items (added as comment before state change)" },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default false)" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["queryHandle"]
-    }
-  },
-  {
-    name: "wit-bulk-transition-state-by-query-handle",
-    description: "Safely transition multiple work items to a new state using query handle. Common operations: close bugs, move tasks to done, resolve items. Validates state transitions before applying and supports dry-run mode for safety.",
-    script: "",
-    schema: bulkTransitionStateByQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
-        targetState: { type: "string", description: "Target state to transition to (e.g., 'Resolved', 'Closed', 'Done')" },
-        reason: { type: "string", description: "Reason for state transition (e.g., 'Fixed', 'Completed'). Required for some transitions." },
-        comment: { type: "string", description: "Optional comment to add when transitioning state" },
         itemSelector: {
           oneOf: [
             { type: "string", enum: ["all"], description: "Select all items" },
@@ -124,46 +172,13 @@ export const bulkOperationsTools: ToolConfig[] = [
           ],
           description: "Item selection: 'all', indices, or criteria (default: all)"
         },
-        validateTransitions: { type: "boolean", description: "Validate state transitions are allowed (default true)" },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default true)" },
-        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 5)" }
+        dryRun: { type: "boolean", description: "Preview operations without making changes (default true)" },
+        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 10)" },
+        stopOnError: { type: "boolean", description: "Stop executing actions if one fails (default true)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
       },
-      required: ["queryHandle", "targetState"]
-    }
-  },
-  {
-    name: "wit-bulk-move-to-iteration-by-query-handle",
-    description: "Safely move multiple work items to a different iteration/sprint using query handle. Simpler than using bulk-update with JSON Patch for iteration changes. Common for sprint rescheduling and backlog grooming. Supports dry-run mode for safety.",
-    script: "",
-    schema: bulkMoveToIterationByQueryHandleSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
-        targetIterationPath: { type: "string", description: "Target iteration/sprint path (e.g., 'Project\\\\Sprint 11')" },
-        comment: { type: "string", description: "Optional comment to add when moving to new iteration" },
-        itemSelector: {
-          oneOf: [
-            { type: "string", enum: ["all"], description: "Select all items" },
-            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
-            {
-              type: "object",
-              properties: {
-                states: { type: "array", items: { type: "string" } },
-                titleContains: { type: "array", items: { type: "string" } },
-                tags: { type: "array", items: { type: "string" } },
-                daysInactiveMin: { type: "number" },
-                daysInactiveMax: { type: "number" }
-              }
-            }
-          ],
-          description: "Item selection: 'all', indices, or criteria (default: all)"
-        },
-        updateChildItems: { type: "boolean", description: "Also update child work items to same iteration (default false)" },
-        dryRun: { type: "boolean", description: "Preview operation without making changes (default true)" },
-        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 5)" }
-      },
-      required: ["queryHandle", "targetIterationPath"]
+      required: ["queryHandle", "actions"]
     }
   },
   {

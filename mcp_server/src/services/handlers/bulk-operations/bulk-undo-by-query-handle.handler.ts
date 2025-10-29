@@ -14,7 +14,8 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/inde
 import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
-import { ADOHttpClient } from "../../../utils/ado-http-client.js";
+import { ADOHttpClient } from '../../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../../utils/token-provider.js';
 import { loadConfiguration } from "../../../config/config.js";
 
 interface UndoResult {
@@ -135,7 +136,7 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
     const cfg = loadConfiguration();
     const org = organization || cfg.azureDevOps.organization;
     const proj = project || cfg.azureDevOps.project;
-    const httpClient = new ADOHttpClient(org, proj);
+    const httpClient = new ADOHttpClient(org, getTokenProvider(), proj);
 
     const allResults: UndoResult[] = [];
     let operationsUndone = 0;
@@ -272,6 +273,9 @@ function describeUndoActions(operation: string, changes: Record<string, any>): s
     case 'bulk-move-iteration':
       actions.push(`Revert iteration from "${changes.to}" to "${changes.from}"`);
       break;
+    case 'bulk-change-type':
+      actions.push(`Revert type from "${changes.to}" to "${changes.from}"`);
+      break;
     default:
       actions.push("Undo operation not fully defined");
   }
@@ -342,6 +346,13 @@ async function performUndo(
         { op: "replace", path: "/fields/System.IterationPath", value: changes.from }
       ]);
       actions.push(`Reverted iteration to ${changes.from}`);
+      break;
+      
+    case 'bulk-change-type':
+      await httpClient.patch(`wit/workItems/${workItemId}?api-version=7.1-preview.3`, [
+        { op: "replace", path: "/fields/System.WorkItemType", value: changes.from }
+      ]);
+      actions.push(`Reverted type to ${changes.from}`);
       break;
       
     default:

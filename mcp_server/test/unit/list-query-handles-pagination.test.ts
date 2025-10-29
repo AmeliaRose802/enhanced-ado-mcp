@@ -2,6 +2,7 @@
  * Tests for wit-query-handle-list pagination functionality
  */
 
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 import { handleListQueryHandles } from '../../src/services/handlers/query-handles/list-query-handles.handler.js';
 import { listQueryHandlesSchema } from '../../src/config/schemas.js';

@@ -9,6 +9,7 @@ import { getRequiredConfig } from "../../../config/config.js";
 import { logger } from "../../../utils/logger.js";
 import { newCopilotItemSchema } from "../../../config/schemas.js";
 import { z } from "zod";
+import { queryHandleService } from "../../query-handle-service.js";
 
 type NewCopilotItemInput = z.infer<typeof newCopilotItemSchema>;
 
@@ -62,14 +63,36 @@ export async function handleNewCopilotItem(config: ToolConfig, args: unknown): P
     
     const result = await createWorkItemAndAssignToCopilot(createArgs);
     
+    // Create query handle for the newly created work item
+    const queryHandle = queryHandleService.storeQuery(
+      [result.work_item_id],
+      `SELECT [System.Id] FROM WorkItems WHERE [System.Id] = ${result.work_item_id}`,
+      {
+        project: createArgs.project,
+        queryType: 'single-item'
+      },
+      undefined, // Use default TTL
+      new Map([[result.work_item_id, {
+        title: result.work_item_title,
+        type: result.work_item_type,
+        assignedTo: result.assigned_to
+      }]])
+    );
+    
+    logger.debug(`Created query handle ${queryHandle} for new work item ${result.work_item_id}`);
+    
     return {
       success: true,
-      data: result,
+      data: {
+        ...result,
+        query_handle: queryHandle
+      },
       errors: [],
       warnings: [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-create-copilot-item'
+        tool: 'wit-create-copilot-item',
+        queryHandle
       }
     };
   } catch (error) {
