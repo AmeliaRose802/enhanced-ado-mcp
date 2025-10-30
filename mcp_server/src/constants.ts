@@ -28,6 +28,7 @@ export const TOOL_NAMES = {
   UNIFIED_BULK_OPERATIONS: 'wit-unified-bulk-operations-by-query-handle',
   LINK_WORK_ITEMS_BY_QUERY_HANDLES: 'wit-link-work-items-by-query-handles',
   BULK_UNDO: 'wit-bulk-undo-by-query-handle',
+  FORENSIC_UNDO: 'wit-forensic-undo-by-query-handle',
   
   // AI-Powered Operations
   BULK_ENHANCE_DESCRIPTIONS: 'wit-bulk-enhance-descriptions',

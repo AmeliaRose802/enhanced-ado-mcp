@@ -254,6 +254,11 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleBulkUndoByQueryHandle(config, args);
   }
 
+  if (name === 'wit-forensic-undo-by-query-handle') {
+    const { handleForensicUndoByQueryHandle } = await import('./handlers/bulk-operations/forensic-undo-by-query-handle.handler.js');
+    return await handleForensicUndoByQueryHandle(config, args);
+  }
+
   if (name === 'wit-analyze-by-query-handle') {
     return await handleAnalyzeByQueryHandle(config, args);
   }

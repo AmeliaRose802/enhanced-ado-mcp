@@ -279,6 +279,47 @@ If auto-discovery fails, you can manually specify the GUID in your arguments:
 - **Azure DevOps REST API** - Work Items API v7.1
 - **Configuration System** - Auto-fills defaults from config
 - **Authentication** - Uses Azure CLI authentication (`az account get-access-token`)
+- **Markdown Conversion** - Automatically converts markdown descriptions to HTML for proper ADO rendering
+
+### Markdown Handling
+
+Azure DevOps HTML fields (like `System.Description` and `Microsoft.VSTS.Common.AcceptanceCriteria`) require HTML content for proper rendering. The tools automatically detect and convert markdown to HTML using the following logic:
+
+1. **Smart Detection** - Checks if content contains markdown syntax (headers, bold, lists, etc.)
+2. **Automatic Conversion** - Converts markdown to HTML using GitHub Flavored Markdown (GFM)
+3. **HTML Passthrough** - If content already looks like HTML, returns it unchanged
+4. **Plain Text Wrapping** - Wraps plain text in paragraph tags for consistent rendering
+
+**Supported Markdown Features:**
+- Headers (`# H1`, `## H2`, etc.)
+- Bold (`**text**` or `__text__`)
+- Italic (`*text*` or `_text_`)
+- Lists (ordered and unordered)
+- Code blocks and inline code
+- Links (`[text](url)`)
+- Blockquotes (`> quote`)
+- Tables
+- Line breaks (with GFM)
+
+**Example:**
+```json
+{
+  "title": "Fix login bug",
+  "description": "## Problem\n\nThe login button is **not responding**.\n\n## Steps\n\n1. Navigate to login\n2. Enter credentials\n3. Click button"
+}
+```
+
+This markdown is automatically converted to HTML for proper rendering in Azure DevOps:
+```html
+<h2>Problem</h2>
+<p>The login button is <strong>not responding</strong>.</p>
+<h2>Steps</h2>
+<ol>
+<li>Navigate to login</li>
+<li>Enter credentials</li>
+<li>Click button</li>
+</ol>
+```
 
 ### API Calls
 

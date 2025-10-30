@@ -3,6 +3,7 @@ import type { ADOWorkItem, ADOWorkItemRevision, ADOApiResponse, ADOFieldOperatio
 import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
 import { getTokenProvider } from '../utils/token-provider.js';
 import { createWorkItemRepository } from '../repositories/work-item.repository.js';
+import { smartConvertToHtml } from '../utils/markdown-converter.js';
 
 interface CreateWorkItemArgs {
   title: string;
@@ -62,7 +63,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
     { op: 'add', path: '/fields/System.Title', value: title }
   ];
   
-  if (description) fields.push({ op: 'add', path: '/fields/System.Description', value: description });
+  if (description) fields.push({ op: 'add', path: '/fields/System.Description', value: smartConvertToHtml(description) });
   if (effectiveAreaPath) fields.push({ op: 'add', path: '/fields/System.AreaPath', value: effectiveAreaPath });
   if (effectiveIterationPath) fields.push({ op: 'add', path: '/fields/System.IterationPath', value: effectiveIterationPath });
   if (resolvedAssignedTo) fields.push({ op: 'add', path: '/fields/System.AssignedTo', value: resolvedAssignedTo });

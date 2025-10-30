@@ -2,6 +2,7 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   linkWorkItemsByQueryHandlesSchema,
   bulkUndoByQueryHandleSchema,
+  forensicUndoByQueryHandleSchema,
   unifiedBulkOperationsSchema
 } from "../schemas.js";
 
@@ -255,6 +256,32 @@ export const bulkOperationsTools: ToolConfig[] = [
         undoAll: { type: "boolean", description: "Undo all operations performed on this query handle (default: false, only undoes last operation)" },
         dryRun: { type: "boolean", description: "Preview undo operation without making changes (default true)" },
         maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 10)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle"]
+    }
+  },
+  {
+    name: "wit-forensic-undo-by-query-handle",
+    description: "🔍 FORENSIC UNDO: Analyze work item revision history to detect and revert changes made by a specific user within a time window. Unlike regular undo, this tool works on ANY work items (not just those changed via MCP) by directly examining ADO revision history. Detects type changes, state changes, field updates, and optionally link operations. Automatically detects if changes have already been manually reverted and only reverts items that still have unwanted changes. Essential for recovering from bulk mistakes across multiple work items.",
+    script: "",
+    schema: forensicUndoByQueryHandleSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from wit-wiql-query containing work items to analyze" },
+        changedBy: { type: "string", description: "Filter changes by user (display name or email, case-insensitive partial match)" },
+        afterTimestamp: { type: "string", description: "Only detect changes after this ISO timestamp (e.g., '2025-10-28T10:00:00Z')" },
+        beforeTimestamp: { type: "string", description: "Only detect changes before this ISO timestamp (e.g., '2025-10-29T18:00:00Z')" },
+        maxRevisions: { type: "number", description: "Maximum revisions to analyze per work item (default 50, max 200)" },
+        detectTypeChanges: { type: "boolean", description: "Detect work item type changes (default true)" },
+        detectStateChanges: { type: "boolean", description: "Detect state transitions (default true)" },
+        detectFieldChanges: { type: "boolean", description: "Detect field value changes (default true)" },
+        detectLinkChanges: { type: "boolean", description: "Detect parent/child link changes - requires additional API calls (default false)" },
+        fieldPaths: { type: "array", items: { type: "string" }, description: "Specific field paths to check (e.g., ['System.AssignedTo', 'System.Tags']). If not specified, checks all fields." },
+        dryRun: { type: "boolean", description: "Preview forensic analysis and revert actions without making changes (default true)" },
+        maxPreviewItems: { type: "number", description: "Maximum items to preview in dry-run (default 20, max 500)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
       },

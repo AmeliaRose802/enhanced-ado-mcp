@@ -25,9 +25,16 @@ export default {
     '^.*\\/utils\\/paths\\.js$': '<rootDir>/test/mocks/paths.mock.ts',
     // Mock the .mjs file that Jest can't parse
     '^.*\\/utils\\/module-dir\\.mjs$': '<rootDir>/test/mocks/paths.mock.ts',
+    // Mock marked library to avoid ES module issues
+    '^marked$': '<rootDir>/test/mocks/marked.mock.ts',
     // Then handle .js extensions
     '^(\\.\\.?\\/.+)\\.js$': '$1'
   },
+  
+  // Transform ES modules from node_modules (e.g., marked)
+  transformIgnorePatterns: [
+    'node_modules/(?!(marked)/)'
+  ],
   
   // Test match patterns
   testMatch: [

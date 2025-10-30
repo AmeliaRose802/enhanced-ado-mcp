@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "enhanced-ado-mcp-server": "file:.."
+  },
+  "devDependencies": {
+    "@types/marked": "^5.0.2"
   }
 }

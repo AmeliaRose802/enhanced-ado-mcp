@@ -9,6 +9,7 @@
 import { z } from "zod";
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
+import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
@@ -1113,7 +1114,7 @@ Build upon and improve the existing description.
         {
           op: 'add',
           path: '/fields/System.Description',
-          value: enhancedDescription
+          value: smartConvertToHtml(String(enhancedDescription))
         }
       ];
 
@@ -1442,7 +1443,7 @@ ${existingCriteria ? 'Add to existing acceptance criteria without duplicating.' 
         {
           op: 'add',
           path: '/fields/Microsoft.VSTS.Common.AcceptanceCriteria',
-          value: finalCriteria
+          value: smartConvertToHtml(finalCriteria)
         }
       ];
 

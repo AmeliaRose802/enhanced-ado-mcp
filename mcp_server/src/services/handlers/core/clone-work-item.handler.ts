@@ -9,6 +9,7 @@ import { buildSuccessResponse, buildErrorResponse } from "../../../utils/respons
 import { validateAndParse } from "../../../utils/handler-helpers.js";
 import { logger } from "../../../utils/logger.js";
 import { getRequiredConfig } from "../../../config/config.js";
+import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import type { ADOFieldOperation, ADOWorkItem } from "../../../types/index.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
@@ -80,12 +81,12 @@ export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Pr
 
     // Description
     if (includeDescription && sourceItem.fields['System.Description']) {
-      fields.push({ op: 'add', path: '/fields/System.Description', value: sourceItem.fields['System.Description'] });
+      fields.push({ op: 'add', path: '/fields/System.Description', value: smartConvertToHtml(sourceItem.fields['System.Description']) });
     }
 
     // Acceptance Criteria
     if (includeAcceptanceCriteria && sourceItem.fields['Microsoft.VSTS.Common.AcceptanceCriteria']) {
-      fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.AcceptanceCriteria', value: sourceItem.fields['Microsoft.VSTS.Common.AcceptanceCriteria'] });
+      fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.AcceptanceCriteria', value: smartConvertToHtml(sourceItem.fields['Microsoft.VSTS.Common.AcceptanceCriteria']) });
     }
 
     // Tags

@@ -8,6 +8,7 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/inde
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
 import type { ADOWorkItem } from '../../../types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
 import { logger } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
@@ -244,7 +245,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
             {
               op: 'add',
               path: '/fields/Microsoft.VSTS.Common.AcceptanceCriteria',
-              value: finalCriteria
+              value: smartConvertToHtml(finalCriteria)
             }
           ];
 

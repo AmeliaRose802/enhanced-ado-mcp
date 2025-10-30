@@ -486,6 +486,22 @@ export const bulkUndoByQueryHandleSchema = z.object({
   ...orgProjectFields()
 });
 
+export const forensicUndoByQueryHandleSchema = z.object({
+  queryHandle: z.string().min(1, "Query handle is required"),
+  changedBy: optionalString().describe("Filter changes by user (display name or email, case-insensitive partial match)"),
+  afterTimestamp: optionalString().describe("Only detect changes after this ISO timestamp (e.g., '2025-10-28T10:00:00Z')"),
+  beforeTimestamp: optionalString().describe("Only detect changes before this ISO timestamp (e.g., '2025-10-29T18:00:00Z')"),
+  maxRevisions: z.number().int().min(1).max(200).optional().default(50).describe("Maximum revisions to analyze per work item"),
+  detectTypeChanges: optionalBool(true).describe("Detect work item type changes"),
+  detectStateChanges: optionalBool(true).describe("Detect state transitions"),
+  detectFieldChanges: optionalBool(true).describe("Detect field value changes"),
+  detectLinkChanges: optionalBool(true).describe("Detect parent/child link changes including hierarchy changes (ENABLED by default - essential for catching parent link modifications)"),
+  fieldPaths: z.array(z.string()).optional().describe("Specific field paths to check (e.g., ['System.AssignedTo', 'System.Tags']). If not specified, checks all fields."),
+  dryRun: optionalBool(true).describe("Preview forensic analysis and revert actions without making changes"),
+  maxPreviewItems: z.number().int().min(1).max(500).optional().default(20).describe("Maximum items to preview in dry-run (default 20, max 500)"),
+  ...orgProjectFields()
+});
+
 // ============================================================================
 // Unified Bulk Operations Schema
 // ============================================================================

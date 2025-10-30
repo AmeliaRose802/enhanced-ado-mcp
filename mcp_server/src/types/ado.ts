@@ -149,12 +149,14 @@ export interface ADOCommentsResponse {
 
 /**
  * ADO Work Item Revision
+ * Note: relations field is optional and only included when $expand=relations is specified
  */
 export interface ADOWorkItemRevision {
   id: number;
   rev: number;
   fields: ADOWorkItemFields;
   url: string;
+  relations?: ADORelation[];  // Optional - only present with $expand=relations
 }
 
 /**
