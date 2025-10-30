@@ -27,6 +27,12 @@ export default {
     '^.*\\/utils\\/module-dir\\.mjs$': '<rootDir>/test/mocks/paths.mock.ts',
     // Mock marked library to avoid ES module issues
     '^marked$': '<rootDir>/test/mocks/marked.mock.ts',
+    // TypeScript path aliases
+    '^@/types/(.*)$': '<rootDir>/src/types/$1',
+    '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
+    '^@/config/(.*)$': '<rootDir>/src/config/$1',
+    '^@/services/(.*)$': '<rootDir>/src/services/$1',
+    '^@/repositories/(.*)$': '<rootDir>/src/repositories/$1',
     // Then handle .js extensions
     '^(\\.\\.?\\/.+)\\.js$': '$1'
   },
