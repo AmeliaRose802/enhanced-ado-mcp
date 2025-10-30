@@ -7,10 +7,18 @@
 
 let globalTokenProvider: (() => Promise<string>) | null = null;
 
+/**
+ * Set the global token provider
+ * Should be called once during server initialization
+ */
 export function setTokenProvider(provider: () => Promise<string>): void {
   globalTokenProvider = provider;
 }
 
+/**
+ * Get the global token provider
+ * Throws an error if not initialized
+ */
 export function getTokenProvider(): () => Promise<string> {
   if (!globalTokenProvider) {
     throw new Error(
