@@ -2,10 +2,10 @@
  * Handler for wit-create-item tool
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
 import { createWorkItem } from "../../ado-work-item-service.js";
-import { validateAndParse } from "../../../utils/handler-helpers.js";
-import { logger } from "../../../utils/logger.js";
+import { validateAndParse } from "@/utils/handler-helpers.js";
+import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 export async function handleCreateNewItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {

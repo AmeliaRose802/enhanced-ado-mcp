@@ -10,13 +10,13 @@
  * - Iteration moves (reverts to previous iteration)
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
-import { validateAndParse } from "../../../utils/handler-helpers.js";
-import { logger } from "../../../utils/logger.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
+import { validateAndParse } from "@/utils/handler-helpers.js";
+import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
-import { ADOHttpClient } from '../../../utils/ado-http-client.js';
-import { getTokenProvider } from '../../../utils/token-provider.js';
-import { loadConfiguration } from "../../../config/config.js";
+import { ADOHttpClient } from '@/utils/ado-http-client.js';
+import { getTokenProvider } from '@/utils/token-provider.js';
+import { loadConfiguration } from "@/config/config.js";
 
 interface UndoResult {
   workItemId: number;

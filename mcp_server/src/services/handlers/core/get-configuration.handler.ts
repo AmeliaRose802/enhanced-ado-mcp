@@ -2,8 +2,8 @@
  * Handler for wit-get-config tool
  */
 
-import { ToolExecutionResult, asToolData } from "../../../types/index.js";
-import { loadConfiguration } from "../../../config/config.js";
+import { ToolExecutionResult, asToolData } from "@/types/index.js";
+import { loadConfiguration } from "@/config/config.js";
 
 export async function handleGetConfiguration(args: unknown): Promise<ToolExecutionResult> {
   try {

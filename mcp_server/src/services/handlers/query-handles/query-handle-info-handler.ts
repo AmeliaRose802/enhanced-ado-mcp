@@ -6,16 +6,16 @@
  * With detailed=true: Includes validation and selection analysis capabilities
  */
 
-import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "../../../types/index.js";
-import type { ADOWorkItem } from '../../../types/index.js';
+import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "@/types/index.js";
+import type { ADOWorkItem } from '@/types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "@/utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
-import { ADOHttpClient } from '../../../utils/ado-http-client.js';
-import { getTokenProvider } from '../../../utils/token-provider.js';
-import { loadConfiguration } from "../../../config/config.js";
-import { asToolData } from "../../../types/index.js";
+import { ADOHttpClient } from '@/utils/ado-http-client.js';
+import { getTokenProvider } from '@/utils/token-provider.js';
+import { loadConfiguration } from "@/config/config.js";
+import { asToolData } from "@/types/index.js";
 
 interface PreviewItem {
   index: number;

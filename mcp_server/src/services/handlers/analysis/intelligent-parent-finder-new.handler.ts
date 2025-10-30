@@ -14,20 +14,20 @@
  * - Uses query handles throughout to prevent ID hallucination
  */
 
-import { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult } from "@/types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
+import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { logger } from "../../../utils/logger.js";
-import { escapeAreaPath } from "../../../utils/work-item-parser.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
+import { escapeAreaPath } from "@/utils/work-item-parser.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import type { SamplingService } from "../../sampling-service.js";
-import { SamplingClient } from "../../../utils/sampling-client.js";
-import { ADOHttpClient } from "../../../utils/ado-http-client.js";
-import { getTokenProvider } from "../../../utils/token-provider.js";
-import type { ADOWorkItem } from "../../../types/index.js";
-import { formatForAI } from "../../../utils/ai-helpers.js";
+import { SamplingClient } from "@/utils/sampling-client.js";
+import { ADOHttpClient } from "@/utils/ado-http-client.js";
+import { getTokenProvider } from "@/utils/token-provider.js";
+import type { ADOWorkItem } from "@/types/index.js";
+import { formatForAI } from "@/utils/ai-helpers.js";
 
 interface IntelligentParentFinderArgs {
   childQueryHandle: string;

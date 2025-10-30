@@ -3,11 +3,11 @@
  * Creates a new work item and immediately assigns it to GitHub Copilot
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "@/types/index.js";
 import { createWorkItemAndAssignToCopilot } from "../../ado-work-item-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
-import { logger } from "../../../utils/logger.js";
-import { newCopilotItemSchema } from "../../../config/schemas.js";
+import { getRequiredConfig } from "@/config/config.js";
+import { logger } from "@/utils/logger.js";
+import { newCopilotItemSchema } from "@/config/schemas.js";
 import { z } from "zod";
 import { queryHandleService } from "../../query-handle-service.js";
 

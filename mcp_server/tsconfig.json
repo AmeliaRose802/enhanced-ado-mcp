@@ -13,7 +13,8 @@
       "@/types/*": ["src/types/*"],
       "@/utils/*": ["src/utils/*"],
       "@/config/*": ["src/config/*"],
-      "@/services/*": ["src/services/*"]
+      "@/services/*": ["src/services/*"],
+      "@/repositories/*": ["src/repositories/*"]
     }
   },
   "include": ["src/**/*"],

@@ -4,9 +4,9 @@
  * Provides health status information for the MCP server and its dependencies.
  */
 
-import type { ToolConfig, ToolExecutionResult } from '../../../types/index.js';
+import type { ToolConfig, ToolExecutionResult } from '@/types/index.js';
 import { metricsService } from '../../metrics-service.js';
-import { validateAndParse } from '../../../utils/handler-helpers.js';
+import { validateAndParse } from '@/utils/handler-helpers.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 

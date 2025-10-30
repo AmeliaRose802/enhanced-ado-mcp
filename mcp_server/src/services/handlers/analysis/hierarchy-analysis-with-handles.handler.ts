@@ -5,10 +5,10 @@
  * query handles for each group, enabling direct bulk operations on problematic items.
  */
 
-import type { ToolExecutionResult } from '../../../types/index.js';
-import type { HierarchyValidatorArgs, WorkItemHierarchyInfo } from '../../../types/index.js';
-import { asToolData } from '../../../types/index.js';
-import { logger } from '../../../utils/logger.js';
+import type { ToolExecutionResult } from '@/types/index.js';
+import type { HierarchyValidatorArgs, WorkItemHierarchyInfo } from '@/types/index.js';
+import { asToolData } from '@/types/index.js';
+import { logger } from '@/utils/logger.js';
 import { queryHandleService } from '../../query-handle-service.js';
 import { HierarchyValidatorAnalyzer } from '../../analyzers/hierarchy-validator.js';
 

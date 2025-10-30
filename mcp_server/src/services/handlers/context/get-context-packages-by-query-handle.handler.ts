@@ -3,10 +3,10 @@
  * Retrieves full context packages for multiple work items using query handle pattern
  */
 
-import type { ToolConfig, ToolExecutionResult, JSONValue } from "../../../types/index.js";
-import { asToolData } from "../../../types/index.js";
-import { buildValidationErrorResponse, buildErrorResponse } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
+import type { ToolConfig, ToolExecutionResult, JSONValue } from "@/types/index.js";
+import { asToolData } from "@/types/index.js";
+import { buildValidationErrorResponse, buildErrorResponse } from "@/utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "./get-work-item-context-package.handler.js";
 
@@ -14,7 +14,7 @@ interface SelectionSummary {
   selection_type: 'index-based' | 'all' | 'criteria-based';
   criteria?: JSONValue;
 }
-import { loadConfiguration } from "../../../config/config.js";
+import { loadConfiguration } from "@/config/config.js";
 
 /**
  * Handler for retrieving full context packages by query handle

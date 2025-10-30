@@ -4,13 +4,13 @@
  * Non-intelligent: applies strict rules for parent-child types and state progression
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
+import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { logger } from "../../../utils/logger.js";
-import { escapeAreaPath } from "../../../utils/work-item-parser.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
+import { escapeAreaPath } from "@/utils/work-item-parser.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "@/utils/response-builder.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 interface ValidateHierarchyArgs {

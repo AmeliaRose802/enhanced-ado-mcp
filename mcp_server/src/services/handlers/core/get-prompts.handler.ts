@@ -1,9 +1,9 @@
-import type { ToolExecutionResult } from "../../../types/index.js";
-import { asToolData } from "../../../types/index.js";
+import type { ToolExecutionResult } from "@/types/index.js";
+import { asToolData } from "@/types/index.js";
 import type { z } from "zod";
-import type { getPromptsSchema } from "../../../config/schemas.js";
+import type { getPromptsSchema } from "@/config/schemas.js";
 import { loadPrompts, getPromptContent } from "../../prompt-service.js";
-import { logger } from "../../../utils/logger.js";
+import { logger } from "@/utils/logger.js";
 
 /**
  * Prompt metadata structure for JSON serialization

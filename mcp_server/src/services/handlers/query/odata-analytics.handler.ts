@@ -3,13 +3,13 @@
  * Queries Azure DevOps Analytics using OData for efficient aggregations and metrics
  */
 
-import type { ToolConfig, ToolExecutionResult, ToolExecutionData, ToolExecutionMetadata, JSONValue, ODataAnalyticsArgs, ODataResponse } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult, ToolExecutionData, ToolExecutionMetadata, JSONValue, ODataAnalyticsArgs, ODataResponse } from "@/types/index.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
-import { getTokenProvider } from '../../../utils/token-provider.js';
-import { escapeAreaPath } from "../../../utils/work-item-parser.js";
+import { getRequiredConfig } from "@/config/config.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "@/utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
+import { getTokenProvider } from '@/utils/token-provider.js';
+import { escapeAreaPath } from "@/utils/work-item-parser.js";
 import { cacheService } from "../../cache-service.js";
 import crypto from 'crypto';
 

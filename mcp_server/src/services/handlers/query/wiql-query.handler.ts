@@ -3,19 +3,19 @@
  * Unified handler for both direct WIQL execution and AI-powered query generation
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import type { WorkItemContext, WorkItemContextPackage } from '../../../types/index.js';
-import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
-import { asToolData } from "../../../types/index.js";
-import { validateAndParse } from "../../../utils/handler-helpers.js";
-import { getRequiredConfig } from "../../../config/config.js";
+import type { ToolConfig, ToolExecutionResult } from "@/types/index.js";
+import type { WorkItemContext, WorkItemContextPackage } from '@/types/index.js';
+import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
+import { asToolData } from "@/types/index.js";
+import { validateAndParse } from "@/utils/handler-helpers.js";
+import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { logger } from "../../../utils/logger.js";
+import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "../context/get-work-item-context-package.handler.js";
-import { SamplingClient } from "../../../utils/sampling-client.js";
-import { extractWiqlQuery, cleanWiqlQuery } from "../../../utils/wiql-helpers.js";
-import { buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
+import { SamplingClient } from "@/utils/sampling-client.js";
+import { extractWiqlQuery, cleanWiqlQuery } from "@/utils/wiql-helpers.js";
+import { buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { cacheService } from "../../cache-service.js";
 import crypto from 'crypto';
 

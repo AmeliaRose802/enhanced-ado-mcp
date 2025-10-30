@@ -3,11 +3,11 @@
  * Extracts instruction links from security scan work items
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "../../../types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData, JSONValue } from "@/types/index.js";
 import { extractSecurityInstructionLinks } from "../../ado-work-item-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
-import { logger } from "../../../utils/logger.js";
-import { extractSecurityLinksSchema } from "../../../config/schemas.js";
+import { getRequiredConfig } from "@/config/config.js";
+import { logger } from "@/utils/logger.js";
+import { extractSecurityLinksSchema } from "@/config/schemas.js";
 import { z } from "zod";
 
 type ExtractSecurityLinksInput = z.infer<typeof extractSecurityLinksSchema>;

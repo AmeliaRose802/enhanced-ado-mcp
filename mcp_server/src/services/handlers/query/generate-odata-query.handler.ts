@@ -3,17 +3,17 @@
  * Generates OData Analytics queries from natural language using AI sampling with iterative validation
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
-import { asToolData } from "../../../types/index.js";
-import type { WorkItemContext } from '../../../types/index.js';
-import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
+import type { ToolConfig, ToolExecutionResult } from "@/types/index.js";
+import { asToolData } from "@/types/index.js";
+import type { WorkItemContext } from '@/types/index.js';
+import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
-import { SamplingClient } from "../../../utils/sampling-client.js";
-import { getTokenProvider } from '../../../utils/token-provider.js';
+import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
+import { SamplingClient } from "@/utils/sampling-client.js";
+import { getTokenProvider } from '@/utils/token-provider.js';
 import { queryHandleService } from "../../query-handle-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
+import { getRequiredConfig } from "@/config/config.js";
 
 interface GenerateODataQueryArgs {
   description: string;

@@ -6,15 +6,15 @@
  * This eliminates ID hallucination risk by using stored query results.
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
-import type { ADOWorkItem, ADOFieldOperation } from '../../../types/index.js';
+import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
+import type { ADOWorkItem, ADOFieldOperation } from '@/types/index.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
-import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
+import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "@/utils/response-builder.js";
+import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
-import { ADOHttpClient } from '../../../utils/ado-http-client.js';
-import { getTokenProvider } from '../../../utils/token-provider.js';
-import { loadConfiguration } from "../../../config/config.js";
+import { ADOHttpClient } from '@/utils/ado-http-client.js';
+import { getTokenProvider } from '@/utils/token-provider.js';
+import { loadConfiguration } from "@/config/config.js";
 
 /**
  * Map user-friendly link types to ADO internal link type references

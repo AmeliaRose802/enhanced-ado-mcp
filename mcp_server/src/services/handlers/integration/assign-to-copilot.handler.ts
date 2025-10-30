@@ -3,12 +3,12 @@
  * Assigns an existing work item to GitHub Copilot and adds branch link
  */
 
-import type { ToolConfig, ToolExecutionResult } from "../../../types/index.js";
+import type { ToolConfig, ToolExecutionResult } from "@/types/index.js";
 import { assignWorkItemToCopilot } from "../../ado-work-item-service.js";
-import { getRequiredConfig } from "../../../config/config.js";
-import { logger } from "../../../utils/logger.js";
-import { assignToCopilotSchema } from "../../../config/schemas.js";
-import { buildValidationErrorResponse, buildErrorResponse, buildSuccessResponse, buildBusinessLogicError } from "../../../utils/response-builder.js";
+import { getRequiredConfig } from "@/config/config.js";
+import { logger } from "@/utils/logger.js";
+import { assignToCopilotSchema } from "@/config/schemas.js";
+import { buildValidationErrorResponse, buildErrorResponse, buildSuccessResponse, buildBusinessLogicError } from "@/utils/response-builder.js";
 import { z } from "zod";
 
 type AssignToCopilotInput = z.infer<typeof assignToCopilotSchema>;
