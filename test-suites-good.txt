@@ -1,0 +1,117 @@
+[ERROR] Failed to create link 102 -> 202: Error: Link creation failed
+[WARN] Failed to fetch context package for work item 102: [ 'Failed to fetch item 102' ]
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+FAIL test/integration/bulk-operations-integration.test.ts
+FAIL test/integration/bulk-operations-integration.test.ts
+FAIL test/unit/bulk-enhance-descriptions-minimization.test.ts
+FAIL test/unit/bulk-enhance-descriptions-minimization.test.ts
+FAIL test/unit/bulk-preview-limits.test.ts
+FAIL test/unit/bulk-preview-limits.test.ts
+FAIL test/unit/bulk-undo.test.ts
+FAIL test/unit/bulk-undo.test.ts
+FAIL test/unit/constants.test.ts
+FAIL test/unit/constants.test.ts
+FAIL test/unit/error-categorization.test.ts
+FAIL test/unit/error-categorization.test.ts
+FAIL test/unit/generate-odata-query-handle.test.ts
+FAIL test/unit/generate-odata-query-handle.test.ts
+FAIL test/unit/generate-wiql-query-handle.test.ts
+FAIL test/unit/generate-wiql-query-handle.test.ts
+FAIL test/unit/get-last-substantive-change.test.ts
+FAIL test/unit/get-last-substantive-change.test.ts
+FAIL test/unit/get-prompts.test.ts
+FAIL test/unit/get-prompts.test.ts
+FAIL test/unit/handle-based-analysis.test.ts
+FAIL test/unit/handle-based-analysis.test.ts
+FAIL test/unit/history-stripping.test.ts
+FAIL test/unit/history-stripping.test.ts
+FAIL test/unit/missing-description-filter.test.ts
+FAIL test/unit/missing-description-filter.test.ts
+FAIL test/unit/odata-analytics.test.ts
+FAIL test/unit/odata-analytics.test.ts
+FAIL test/unit/query-handle-service.test.ts (6.04 s)
+FAIL test/unit/query-handle-service.test.ts (6.04 s)
+FAIL test/unit/selection-integration.test.ts
+FAIL test/unit/selection-integration.test.ts
+FAIL test/unit/unified-bulk-operations.test.ts
+FAIL test/unit/unified-bulk-operations.test.ts
+FAIL test/unit/validation-errors.test.ts
+FAIL test/unit/validation-errors.test.ts
+FAIL test/unit/work-item-repository.test.ts
+FAIL test/unit/work-item-repository.test.ts
+Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+Jest failed to parse a file. This happens e.g. when your code or its dependencies use non-standard JavaScript syntax, or when Jest is not configured to support such syntax.
+PASS test/integration/bulk-undo-real.test.ts (42.055 s)
+PASS test/unit/ai-assignment-analyzer.test.ts
+PASS test/unit/area-path-filtering.test.ts
+PASS test/unit/bulk-enhance-descriptions-format.test.ts
+PASS test/unit/bulk-link-work-items.test.ts
+PASS test/unit/cache-service.test.ts
+PASS test/unit/config-types.test.ts (6.513 s)
+PASS test/unit/configuration-discovery.test.ts
+PASS test/unit/context-package-optimization.test.ts
+PASS test/unit/context-packages-by-handle.test.ts
+PASS test/unit/create-item-multi-area.test.ts (6.471 s)
+PASS test/unit/find-tool-minimization.test.ts
+PASS test/unit/fixtures-and-factories.test.ts
+PASS test/unit/html-field-stripping.test.ts
+PASS test/unit/item-context-enrichment.test.ts
+PASS test/unit/list-query-handles-pagination.test.ts
+PASS test/unit/markdown-converter.test.ts
+PASS test/unit/metrics-service.test.ts (6.021 s)
+PASS test/unit/multi-area-path-support.test.ts (6.54 s)
+PASS test/unit/openapi-generation.test.ts
+PASS test/unit/query-generator-usage.test.ts
+PASS test/unit/query-handle-info.test.ts
+PASS test/unit/query-handle-selection.test.ts
+PASS test/unit/rate-limiter.test.ts (6.175 s)
+PASS test/unit/resource-service.test.ts
+PASS test/unit/resources-integration.test.ts
+PASS test/unit/sampling-feature.test.ts (5.88 s)
+PASS test/unit/sprint-planner-optional-fields.test.ts
+PASS test/unit/validate-hierarchy-fast.test.ts
+PASS test/unit/validate-hierarchy-query-handle.test.ts
+PASS test/unit/wiql-full-packages.test.ts
+PASS test/unit/wiql-missing-fields-filter.test.ts
+PASS test/unit/wiql-query.test.ts (5.976 s)
+Summary of all failing tests
+Test Suites: 19 failed, 33 passed, 52 total
+Tests:       1 failed, 472 passed, 473 total
+ΓêÜ should handle partial failures (75 ms)
+ΓêÜ should handle partial failures when fetching packages (14 ms)
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run
+ΓùÅ Test suite failed to run

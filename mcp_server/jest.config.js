@@ -21,19 +21,24 @@ export default {
   
   // Module name mapper to handle .js extensions in imports
   moduleNameMapper: {
+    // TypeScript path aliases - strip .js extension if present
+    '^@/types/(.+)\\.js$': '<rootDir>/src/types/$1',
+    '^@/types/(.+)$': '<rootDir>/src/types/$1',
+    '^@/utils/(.+)\\.js$': '<rootDir>/src/utils/$1',
+    '^@/utils/(.+)$': '<rootDir>/src/utils/$1',
+    '^@/config/(.+)\\.js$': '<rootDir>/src/config/$1',
+    '^@/config/(.+)$': '<rootDir>/src/config/$1',
+    '^@/services/(.+)\\.js$': '<rootDir>/src/services/$1',
+    '^@/services/(.+)$': '<rootDir>/src/services/$1',
+    '^@/repositories/(.+)\\.js$': '<rootDir>/src/repositories/$1',
+    '^@/repositories/(.+)$': '<rootDir>/src/repositories/$1',
     // Mock paths module first to avoid import.meta issues
     '^.*\\/utils\\/paths\\.js$': '<rootDir>/test/mocks/paths.mock.ts',
     // Mock the .mjs file that Jest can't parse
     '^.*\\/utils\\/module-dir\\.mjs$': '<rootDir>/test/mocks/paths.mock.ts',
     // Mock marked library to avoid ES module issues
     '^marked$': '<rootDir>/test/mocks/marked.mock.ts',
-    // TypeScript path aliases
-    '^@/types/(.*)$': '<rootDir>/src/types/$1',
-    '^@/utils/(.*)$': '<rootDir>/src/utils/$1',
-    '^@/config/(.*)$': '<rootDir>/src/config/$1',
-    '^@/services/(.*)$': '<rootDir>/src/services/$1',
-    '^@/repositories/(.*)$': '<rootDir>/src/repositories/$1',
-    // Then handle .js extensions
+    // Then handle .js extensions for relative imports
     '^(\\.\\.?\\/.+)\\.js$': '$1'
   },
   
