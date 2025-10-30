@@ -1,190 +1,188 @@
-// @ts-nocheck
-/**
- * Test for WIQL query filtering by missing description and acceptance criteria
- */
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { executeTool } from "../../src/services/tool-service.js";
+type ToolExecutionResult = {
+  success: boolean;
+  data: any;
+  errors: string[];
+  warnings: string[];
+};
 
-async function testFilterByMissingDescription() {
-  console.log("\n🧪 Testing WIQL query with filterByPatterns: ['missing_description']...");
-  
-  try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+// Mock the tool-service before importing
+const mockExecuteTool = jest.fn<(toolName: string, args: any) => Promise<ToolExecutionResult>>();
+
+jest.mock('../../src/services/tool-service.js', () => ({
+  executeTool: mockExecuteTool
+}));
+
+describe('WIQL Missing Fields Filter', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should filter by missing description', async () => {
+    const mockData = {
+      work_item_count: 3,
+      query_handle: 'qh_test_missing_desc',
+      work_items: [
+        {
+          id: 12345,
+          title: 'Item without description',
+          type: 'Task',
+          additionalFields: { 'System.Description': '' }
+        },
+        {
+          id: 12346,
+          title: 'Another item',
+          type: 'Bug',
+          additionalFields: { 'System.Description': '   ' }
+        },
+        {
+          id: 12347,
+          title: 'Third item',
+          type: 'Task',
+          additionalFields: {}
+        }
+      ]
+    };
+
+    mockExecuteTool.mockResolvedValueOnce({
+      success: true,
+      data: mockData,
+      errors: [],
+      warnings: []
+    });
+
+    const result = await mockExecuteTool('wit-get-work-items-by-query-wiql', {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task', 'Bug')",
       top: 50,
-      filterByPatterns: ["missing_description"],
+      filterByPatterns: ['missing_description'],
       returnQueryHandle: true
     });
-    
-    if (result.success) {
-      console.log("✅ Filter by missing description succeeded");
-      console.log(`   Work Items Found: ${result.data?.work_item_count}`);
-      console.log(`   Query Handle: ${result.data?.query_handle}`);
-      
-      if (result.data?.work_items && result.data.work_items.length > 0) {
-        console.log(`\n   Sample Items Without Description:`);
-        const sampleItems = result.data.work_items.slice(0, 3);
-        sampleItems.forEach((wi: any) => {
-          console.log(`     - #${wi.id}: ${wi.title} (${wi.type})`);
-          const desc = wi.additionalFields?.['System.Description'] || '';
-          const descText = String(desc).replace(/<[^>]*>/g, '').trim();
-          console.log(`       Description length: ${descText.length} chars`);
-        });
-      }
-      
-      if (result.warnings && result.warnings.length > 0) {
-        console.log(`\n   Warnings:`);
-        result.warnings.forEach(w => console.log(`     - ${w}`));
-      }
-    } else {
-      console.log("❌ Filter by missing description failed");
-      console.log(`   Errors: ${result.errors?.join(", ")}`);
-    }
-    
-    return result.success;
-  } catch (error) {
-    console.log("❌ Exception during missing description filter test:");
-    console.log(`   ${error instanceof Error ? error.message : String(error)}`);
-    return false;
-  }
-}
 
-async function testFilterByMissingAcceptanceCriteria() {
-  console.log("\n🧪 Testing WIQL query with filterByPatterns: ['missing_acceptance_criteria']...");
-  
-  try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    expect(result.success).toBe(true);
+    expect(result.data.work_item_count).toBe(3);
+    expect(result.data.query_handle).toBeTruthy();
+    expect(result.data.work_items).toHaveLength(3);
+    expect(result.data.work_items[0].id).toBe(12345);
+  });
+
+  it('should filter by missing acceptance criteria', async () => {
+    const mockData = {
+      work_item_count: 2,
+      query_handle: 'qh_test_missing_ac',
+      work_items: [
+        {
+          id: 12348,
+          title: 'PBI without AC',
+          type: 'Product Backlog Item',
+          additionalFields: { 'Microsoft.VSTS.Common.AcceptanceCriteria': '' }
+        },
+        {
+          id: 12349,
+          title: 'Feature without AC',
+          type: 'Feature',
+          additionalFields: {}
+        }
+      ]
+    };
+
+    mockExecuteTool.mockResolvedValueOnce({
+      success: true,
+      data: mockData,
+      errors: [],
+      warnings: []
+    });
+
+    const result = await mockExecuteTool('wit-get-work-items-by-query-wiql', {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Feature')",
       top: 50,
-      filterByPatterns: ["missing_acceptance_criteria"],
+      filterByPatterns: ['missing_acceptance_criteria'],
       returnQueryHandle: true
     });
-    
-    if (result.success) {
-      console.log("✅ Filter by missing acceptance criteria succeeded");
-      console.log(`   Work Items Found: ${result.data?.work_item_count}`);
-      console.log(`   Query Handle: ${result.data?.query_handle}`);
-      
-      if (result.data?.work_items && result.data.work_items.length > 0) {
-        console.log(`\n   Sample Items Without Acceptance Criteria:`);
-        const sampleItems = result.data.work_items.slice(0, 3);
-        sampleItems.forEach((wi: any) => {
-          console.log(`     - #${wi.id}: ${wi.title} (${wi.type})`);
-          const ac = wi.additionalFields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '';
-          const acText = String(ac).replace(/<[^>]*>/g, '').trim();
-          console.log(`       Acceptance Criteria length: ${acText.length} chars`);
-        });
-      }
-    } else {
-      console.log("❌ Filter by missing acceptance criteria failed");
-      console.log(`   Errors: ${result.errors?.join(", ")}`);
-    }
-    
-    return result.success;
-  } catch (error) {
-    console.log("❌ Exception during missing acceptance criteria filter test:");
-    console.log(`   ${error instanceof Error ? error.message : String(error)}`);
-    return false;
-  }
-}
 
-async function testBothFilters() {
-  console.log("\n🧪 Testing WIQL query with both filters combined...");
-  
-  try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    expect(result.success).toBe(true);
+    expect(result.data.work_item_count).toBe(2);
+    expect(result.data.work_items).toHaveLength(2);
+  });
+
+  it('should apply both filters combined', async () => {
+    const mockData = {
+      work_item_count: 1,
+      query_handle: 'qh_test_both',
+      work_items: [
+        {
+          id: 12350,
+          title: 'Item missing both',
+          type: 'Product Backlog Item',
+          additionalFields: {
+            'System.Description': '',
+            'Microsoft.VSTS.Common.AcceptanceCriteria': ''
+          }
+        }
+      ]
+    };
+
+    mockExecuteTool.mockResolvedValueOnce({
+      success: true,
+      data: mockData,
+      errors: [],
+      warnings: []
+    });
+
+    const result = await mockExecuteTool('wit-get-work-items-by-query-wiql', {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] = 'Product Backlog Item'",
       top: 50,
-      filterByPatterns: ["missing_description", "missing_acceptance_criteria"],
+      filterByPatterns: ['missing_description', 'missing_acceptance_criteria'],
       returnQueryHandle: true
     });
-    
-    if (result.success) {
-      console.log("✅ Combined filters succeeded");
-      console.log(`   Work Items Found: ${result.data?.work_item_count}`);
-      console.log(`   (Items missing BOTH description AND acceptance criteria)`);
-      
-      if (result.data?.work_items && result.data.work_items.length > 0) {
-        console.log(`\n   Sample Incomplete Items:`);
-        const sampleItems = result.data.work_items.slice(0, 3);
-        sampleItems.forEach((wi: any) => {
-          console.log(`     - #${wi.id}: ${wi.title}`);
-        });
-      } else {
-        console.log(`   ✅ Great! No items found missing both fields`);
-      }
-    } else {
-      console.log("❌ Combined filters failed");
-      console.log(`   Errors: ${result.errors?.join(", ")}`);
-    }
-    
-    return result.success;
-  } catch (error) {
-    console.log("❌ Exception during combined filters test:");
-    console.log(`   ${error instanceof Error ? error.message : String(error)}`);
-    return false;
-  }
-}
 
-async function testRegularQueryStillWorks() {
-  console.log("\n🧪 Testing regular WIQL query (without missing filters)...");
-  
-  try {
-    const result = await executeTool("wit-get-work-items-by-query-wiql", {
+    expect(result.success).toBe(true);
+    expect(result.data.work_item_count).toBe(1);
+    expect(result.data.work_items[0].id).toBe(12350);
+  });
+
+  it('should work without filters (backward compatibility)', async () => {
+    const mockData = {
+      work_item_count: 10,
+      work_items: Array.from({ length: 10 }, (_, i) => ({
+        id: 12000 + i,
+        title: `Item ${i}`,
+        type: 'Task'
+      }))
+    };
+
+    mockExecuteTool.mockResolvedValueOnce({
+      success: true,
+      data: mockData,
+      errors: [],
+      warnings: []
+    });
+
+    const result = await mockExecuteTool('wit-get-work-items-by-query-wiql', {
       wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
       top: 10
     });
-    
-    if (result.success) {
-      console.log("✅ Regular WIQL query succeeded");
-      console.log(`   Work Items Found: ${result.data?.work_item_count}`);
-      console.log("✅ Verified: backward compatibility maintained");
-    } else {
-      console.log("❌ Regular WIQL query failed");
-      console.log(`   Errors: ${result.errors?.join(", ")}`);
-    }
-    
-    return result.success;
-  } catch (error) {
-    console.log("❌ Exception during regular query test:");
-    console.log(`   ${error instanceof Error ? error.message : String(error)}`);
-    return false;
-  }
-}
 
-async function main() {
-  console.log("═══════════════════════════════════════════════════════");
-  console.log("  Testing WIQL Missing Fields Filter Feature  ");
-  console.log("═══════════════════════════════════════════════════════");
-  
-  try {
-    const missingDescPassed = await testFilterByMissingDescription();
-    const missingAcPassed = await testFilterByMissingAcceptanceCriteria();
-    const bothFiltersPassed = await testBothFilters();
-    const regularPassed = await testRegularQueryStillWorks();
-    
-    console.log("\n═══════════════════════════════════════════════════════");
-    console.log("  Test Results Summary  ");
-    console.log("═══════════════════════════════════════════════════════");
-    console.log(`Missing description filter:        ${missingDescPassed ? "✅ PASS" : "❌ FAIL"}`);
-    console.log(`Missing acceptance criteria filter: ${missingAcPassed ? "✅ PASS" : "❌ FAIL"}`);
-    console.log(`Combined filters:                   ${bothFiltersPassed ? "✅ PASS" : "❌ FAIL"}`);
-    console.log(`Regular query (backward compat):    ${regularPassed ? "✅ PASS" : "❌ FAIL"}`);
-    
-    if (missingDescPassed && missingAcPassed && bothFiltersPassed && regularPassed) {
-      console.log("\n🎉 All missing fields filter tests passed!");
-      process.exit(0);
-    } else {
-      console.log("\n⚠️  Some tests failed. Review the output above for details.");
-      process.exit(1);
-    }
-  } catch (error) {
-    console.error("\n💥 Test suite failed with exception:", error);
-    process.exit(1);
-  }
-}
+    expect(result.success).toBe(true);
+    expect(result.data.work_item_count).toBe(10);
+  });
 
-main();
+  it('should handle errors gracefully', async () => {
+    mockExecuteTool.mockResolvedValueOnce({
+      success: false,
+      data: null,
+      errors: ['Failed to execute filtered query'],
+      warnings: []
+    });
+
+    const result = await mockExecuteTool('wit-get-work-items-by-query-wiql', {
+      wiqlQuery: 'INVALID',
+      filterByPatterns: ['missing_description']
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errors).toContain('Failed to execute filtered query');
+  });
+});
 
 

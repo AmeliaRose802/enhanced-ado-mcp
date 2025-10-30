@@ -49,15 +49,8 @@ export default {
     '/dist/',
     // Integration tests that require real ADO credentials
     'work-item-rest-api.test.ts',
-    'configuration-discovery.test.ts',
     'hierarchy-validator-integration.test.ts',
-    'ai-assignment-integration.test.ts',
-    // Tests with import.meta issues (Jest limitation with ES modules)
-    'ai-assignment-analyzer.test.ts',
-    'sampling-feature.test.ts',
-    'wiql-full-packages.test.ts',
-    'wiql-missing-fields-filter.test.ts',
-    'wiql-query.test.ts'
+    'ai-assignment-integration.test.ts'
   ],
   
   // Coverage configuration

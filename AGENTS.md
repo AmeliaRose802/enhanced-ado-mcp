@@ -2,6 +2,41 @@
 
 This is an **Azure DevOps Model Context Protocol (MCP) Server** that enables AI agents to interact with Azure DevOps work items, queries, and projects.
 
+## 🔗 Task Tracking with Beads
+
+**IMPORTANT:** This project uses **[bd (beads)](https://github.com/steveyegge/beads)** for ALL task tracking and issue management.
+
+### Quick Start with Beads
+
+```bash
+# If not initialized, run once
+bd init --quiet
+
+# Check for ready work
+bd ready --json
+
+# Create issues
+bd create "Issue title" -t bug|feature|task -p 0-4 --json
+bd create "Found issue" -p 1 --deps discovered-from:<parent-id> --json
+
+# Update issues
+bd update <id> --status in_progress --json
+bd update <id> --priority 1 --json
+
+# Complete work
+bd close <id> --reason "Done" --json
+
+# End of session - sync immediately
+bd sync
+```
+
+**DO NOT:**
+- Create markdown TODO lists
+- Use `/tasklist` directory (deprecated)
+- Create external tracking systems
+
+For complete beads documentation, see the "TASK TRACKING WITH BEADS" section in `.github/copilot-instructions.md`.
+
 ## Project Overview
 
 **Language:** TypeScript (Node.js)
@@ -190,12 +225,14 @@ enhanced-ado-mcp myorg -a "MyProject\\Team"
 - Implementation status documents
 - Changelogs outside git commits
 - Verbose architecture docs (code comments preferred)
+- **Markdown TODO lists** (use `bd` for task tracking)
 
 ### Acceptable Documentation Updates
 - Updating existing `/docs` files with user-facing info
 - Adding `/mcp_server/resources` quick reference guides
 - Code comments for complex logic
 - Feature specs for new/modified features
+- **bd issues** for task tracking and work discovery
 
 ## Common Pitfalls to Avoid
 
