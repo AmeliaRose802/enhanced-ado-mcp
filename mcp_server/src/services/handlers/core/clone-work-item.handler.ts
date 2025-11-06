@@ -3,14 +3,14 @@
  * Clone/duplicate an existing work item with optional modifications
  */
 
-import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
-import { createWorkItemRepository } from "@/repositories/work-item.repository.js";
-import { buildSuccessResponse, buildErrorResponse } from "@/utils/response-builder.js";
-import { validateAndParse } from "@/utils/handler-helpers.js";
-import { logger } from "@/utils/logger.js";
-import { getRequiredConfig } from "@/config/config.js";
-import { smartConvertToHtml } from "@/utils/markdown-converter.js";
-import type { ADOFieldOperation, ADOWorkItem } from "@/types/index.js";
+import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
+import { createWorkItemRepository } from "../../../repositories/work-item.repository.js";
+import { buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { validateAndParse } from "../../../utils/handler-helpers.js";
+import { logger } from "../../../utils/logger.js";
+import { getRequiredConfig } from "../../../config/config.js";
+import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
+import type { ADOFieldOperation, ADOWorkItem } from "../../../types/index.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 interface CloneWorkItemArgs {

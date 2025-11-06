@@ -154,10 +154,19 @@ const argv = yargs(hideBin(process.argv))
  */
 async function main() {
   try {
+    // Validate organization is provided and is a string
+    if (!argv.organization || typeof argv.organization !== 'string') {
+      logger.error('Organization must be provided as the first positional argument');
+      logger.error('Usage: enhanced-ado-mcp <organization> --area-path <path>');
+      logger.error('Example: enhanced-ado-mcp myorg --area-path "MyProject\\\\Team"');
+      process.exit(1);
+    }
+
     // Normalize area-path from yargs (can be string, array, or undefined)
     const areaPathArg = argv['area-path'];
     const normalizedArgs = {
       ...argv,
+      organization: argv.organization, // Explicitly set organization from positional arg
       areaPath: undefined, // Clear single value
       areaPaths: Array.isArray(areaPathArg) 
         ? areaPathArg 

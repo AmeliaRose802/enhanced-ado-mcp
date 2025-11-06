@@ -3,7 +3,6 @@
  */
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { workItemContextPackageSchema } from '../../src/config/schemas.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { z } from 'zod';
 
 // Mock configuration to avoid initialization issues in tests

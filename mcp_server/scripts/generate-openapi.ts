@@ -41,7 +41,7 @@ const schemaCategories: Record<string, { title: string; category: string; aiPowe
   aiAssignmentAnalyzerSchema: { title: 'AI Assignment Analyzer', category: 'AI-Powered Analysis', aiPowered: true },
   getConfigurationSchema: { title: 'Get Configuration', category: 'Configuration' },
   wiqlQuerySchema: { title: 'WIQL Query', category: 'Queries' },
-  odataAnalyticsQuerySchema: { title: 'OData Analytics Query', category: 'Queries' },
+  odataQuerySchema: { title: 'OData Query', category: 'Queries', aiPowered: true },
   selectItemsFromQueryHandleSchema: { title: 'Select Items from Query Handle', category: 'Query Handles' },
   workItemContextPackageSchema: { title: 'Get Work Item Context Package', category: 'Context Retrieval' },
   getLastSubstantiveChangeSchema: { title: 'Get Last Substantive Change', category: 'Work Item Operations' },
@@ -56,7 +56,6 @@ const schemaCategories: Record<string, { title: string; category: string; aiPowe
   bulkAssignStoryPointsByQueryHandleSchema: { title: 'Bulk Assign Story Points', category: 'Bulk Operations', aiPowered: true },
   bulkAddAcceptanceCriteriaByQueryHandleSchema: { title: 'Bulk Add Acceptance Criteria', category: 'Bulk Operations', aiPowered: true },
   generateWiqlQuerySchema: { title: 'Generate WIQL Query', category: 'AI-Powered Query Generation', aiPowered: true },
-  generateODataQuerySchema: { title: 'Generate OData Query', category: 'AI-Powered Query Generation', aiPowered: true },
   toolDiscoverySchema: { title: 'Tool Discovery', category: 'Discovery' },
   personalWorkloadAnalyzerSchema: { title: 'Personal Workload Analyzer', category: 'AI-Powered Analysis', aiPowered: true },
   sprintPlanningAnalyzerSchema: { title: 'Sprint Planning Analyzer', category: 'AI-Powered Analysis', aiPowered: true }

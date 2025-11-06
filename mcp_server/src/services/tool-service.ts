@@ -14,9 +14,6 @@ import { handleHealthCheck } from './handlers/core/health-check.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
-import { handleODataAnalytics } from "./handlers/query/odata-analytics.handler.js";
-import { handleGenerateODataQuery } from './handlers/query/generate-odata-query.handler.js';
-// handleUnifiedQueryGenerator removed - wit-generate-query tool deprecated (non-functional)
 
 // Query handle handlers
 import { handleListQueryHandles } from './handlers/query-handles/list-query-handles.handler.js';
@@ -180,9 +177,10 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleWiqlQuery(config, args, serverInstance ?? undefined);
   }
 
-  // Query Analytics using OData for aggregations and metrics
-  if (name === 'wit-query-analytics-odata') {
-    return await handleODataAnalytics(config, args);
+  // OData query tool (supports both AI generation and direct execution)
+  if (name === 'wit-odata-query') {
+    const { handleODataQuery } = await import('./handlers/query/odata-query.handler.js');
+    return await handleODataQuery(config, args, serverInstance ?? undefined);
   }
 
   // Full context package (single work item)
@@ -278,16 +276,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
 
   // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)
   // are now consolidated into wit-unified-bulk-operations-by-query-handle as actions
-
-  // AI-powered OData query generator
-  if (name === 'wit-generate-odata-query') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    return await handleGenerateODataQuery(config, args, serverInstance);
-  }
-
-  // wit-generate-query removed - tool was non-functional and deprecated
 
   // All tools should be handled by the cases above
   // PowerShell script execution has been fully deprecated

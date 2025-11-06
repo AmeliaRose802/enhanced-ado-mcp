@@ -4,7 +4,6 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { WorkItemRepository } from '../../src/repositories/work-item.repository.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ADOWorkItem, ADORepository, ADOWorkItemRevision, ADOApiResponse, ADOWiqlResult } from '../../src/types/index.js';
 
 // Mock the token provider module

@@ -2,26 +2,14 @@
  * Selection Integration Tests
  * 
  * End-to-end integration tests that validate complete workflows from 
- * query → selection → bulk operation.
+ * query → selection → bulk operation using the unified bulk operations handler.
  */
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { handleSelectItemsFromQueryHandle } from '../../src/services/handlers/query-handles/select-items-from-query-handle.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { handleBulkCommentByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-comment-by-query-handle.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { handleBulkAssignByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-assign-by-query-handle.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { handleBulkUpdateByQueryHandle } from '../../src/services/handlers/bulk-operations/bulk-update-by-query-handle.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { 
-  selectItemsFromQueryHandleSchema,
-  bulkCommentByQueryHandleSchema,
-  bulkAssignByQueryHandleSchema,
-  bulkUpdateByQueryHandleSchema
-} from '../../src/config/schemas.js';
+import { handleUnifiedBulkOperations } from '../../src/services/handlers/bulk-operations/unified-bulk-operations.handler.js';
+import { unifiedBulkOperationsSchema } from '../../src/config/schemas.js';
+import type { ToolConfig } from '../../src/types/index.js';
 
 // Mock configuration
 jest.mock('../../src/config/config.js', () => ({
@@ -52,8 +40,30 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
 // Mock ADO HTTP Client
 jest.mock('../../src/utils/ado-http-client.js', () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
-    addComment: jest.fn().mockResolvedValue({ success: true }),
-    updateWorkItem: jest.fn().mockResolvedValue({ success: true })
+    get: jest.fn(async (url: string) => {
+      const workItemId = parseInt(url.match(/workitems\/(\d+)/)?.[1] || '0');
+      return {
+        data: {
+          id: workItemId,
+          fields: {
+            'System.Id': workItemId,
+            'System.Title': `Test Work Item ${workItemId}`,
+            'System.WorkItemType': 'Task',
+            'System.State': 'Active',
+            'System.Tags': ''
+          }
+        }
+      };
+    }),
+    patch: jest.fn(async () => ({ data: { success: true } })),
+    post: jest.fn(async () => ({ data: { success: true } }))
+  }))
+}));
+
+// Mock token provider
+jest.mock('../../src/utils/token-provider.js', () => ({
+  getTokenProvider: jest.fn(() => ({
+    getToken: jest.fn(async () => 'mock-token')
   }))
 }));
 
@@ -106,7 +116,7 @@ describe('Selection Integration Tests', () => {
   });
 
   describe('Scenario 1: Full Workflow - Query to Bulk Comment', () => {
-    it('should complete full workflow: query → inspect → select → bulk comment', async () => {
+    it('should complete full workflow: query → select → bulk comment', async () => {
       // 1. Create query with handle
       const workItemIds = [1, 2, 3, 4, 5];
       const workItemContext = new Map([
@@ -126,44 +136,34 @@ describe('Selection Integration Tests', () => {
       );
       
       // 2. Preview selection (critical bugs only)
-      const mockSelectConfig = {
-        name: 'wit-query-handle-select',
-        description: 'Test',
-        script: '',
-        schema: selectItemsFromQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
-      };
-
-      const previewResult = await handleSelectItemsFromQueryHandle(mockSelectConfig, {
-        queryHandle,
-        itemSelector: { tags: ['critical'] }
-      });
-      
-      expect(previewResult.success).toBe(true);
-      expect((previewResult.data as any).selection_analysis.selected_items_count).toBe(2);
-      expect((previewResult.data as any).preview_items.every((i: any) => 
-        i.tags && i.tags.includes('critical')
-      )).toBe(true);
+      const criticalItems = queryHandleService.getItemsByCriteria(queryHandle, { tags: ['critical'] });
+      expect(criticalItems).toHaveLength(2);
+      expect(criticalItems).toEqual([1, 4]); // Items with critical tag
       
       // 3. Execute bulk comment with same selector (dry run)
-      const mockCommentConfig = {
-        name: 'wit-bulk-comment',
+      const mockConfig: ToolConfig = {
+        name: 'wit-unified-bulk-operations-by-query-handle',
         description: 'Test',
         script: '',
-        schema: bulkCommentByQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
+        schema: unifiedBulkOperationsSchema,
+        inputSchema: { type: 'object' }
       };
 
-      const commentResult = await handleBulkCommentByQueryHandle(mockCommentConfig, {
+      const commentResult = await handleUnifiedBulkOperations(mockConfig, {
         queryHandle,
         itemSelector: { tags: ['critical'] },
-        comment: 'Security review needed',
-        template: false,
+        actions: [
+          {
+            type: 'comment',
+            comment: 'Security review needed'
+          }
+        ],
         dryRun: true
       });
       
       expect(commentResult.success).toBe(true);
-      expect((commentResult.data as any).selected_items_count).toBe(2);
+      const data = commentResult.data as any;
+      expect(data.items_selected).toBe(2);
     });
   });
 
@@ -177,29 +177,35 @@ describe('Selection Integration Tests', () => {
       expect(selected![0]).toBe(1); // ID is 1 (index 0)
       
       // Update that item (dry run)
-      const mockUpdateConfig = {
-        name: 'wit-bulk-update',
+      const mockConfig: ToolConfig = {
+        name: 'wit-unified-bulk-operations-by-query-handle',
         description: 'Test',
         script: '',
-        schema: bulkUpdateByQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
+        schema: unifiedBulkOperationsSchema,
+        inputSchema: { type: 'object' }
       };
 
-      const updateResult = await handleBulkUpdateByQueryHandle(mockUpdateConfig, {
+      const updateResult = await handleUnifiedBulkOperations(mockConfig, {
         queryHandle,
         itemSelector: [0],
-        updates: [
-          { 
-            op: 'replace',
-            path: '/fields/System.Priority',
-            value: '1'
+        actions: [
+          {
+            type: 'update',
+            updates: [
+              { 
+                op: 'replace',
+                path: '/fields/System.Priority',
+                value: '1'
+              }
+            ]
           }
         ],
         dryRun: true
       });
       
       expect(updateResult.success).toBe(true);
-      expect((updateResult.data as any).selected_items_count).toBe(1);
+      const data = updateResult.data as any;
+      expect(data.items_selected).toBe(1);
     });
   });
 
@@ -214,23 +220,29 @@ describe('Selection Integration Tests', () => {
       expect(selected).toEqual([1, 3, 5, 7]); // IDs based on indices
       
       // Assign those items (dry run)
-      const mockAssignConfig = {
-        name: 'wit-bulk-assign',
+      const mockConfig: ToolConfig = {
+        name: 'wit-unified-bulk-operations-by-query-handle',
         description: 'Test',
         script: '',
-        schema: bulkAssignByQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
+        schema: unifiedBulkOperationsSchema,
+        inputSchema: { type: 'object' }
       };
 
-      const assignResult = await handleBulkAssignByQueryHandle(mockAssignConfig, {
+      const assignResult = await handleUnifiedBulkOperations(mockConfig, {
         queryHandle,
         itemSelector: indices,
-        assignTo: 'test-user@company.com',
+        actions: [
+          {
+            type: 'assign',
+            assignTo: 'test-user@company.com'
+          }
+        ],
         dryRun: true
       });
       
       expect(assignResult.success).toBe(true);
-      expect((assignResult.data as any).selected_items_count).toBe(4);
+      const data = assignResult.data as any;
+      expect(data.items_selected).toBe(4);
     });
   });
 
@@ -264,23 +276,29 @@ describe('Selection Integration Tests', () => {
       expect(selected).toEqual([1, 4]); // Items 1 and 4 match criteria
       
       // Bulk comment those items (dry run)
-      const mockCommentConfig = {
-        name: 'wit-bulk-comment',
+      const mockConfig: ToolConfig = {
+        name: 'wit-unified-bulk-operations-by-query-handle',
         description: 'Test',
         script: '',
-        schema: bulkCommentByQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
+        schema: unifiedBulkOperationsSchema,
+        inputSchema: { type: 'object' }
       };
 
-      const commentResult = await handleBulkCommentByQueryHandle(mockCommentConfig, {
+      const commentResult = await handleUnifiedBulkOperations(mockConfig, {
         queryHandle,
         itemSelector: criteria,
-        comment: 'Active critical items need attention',
+        actions: [
+          {
+            type: 'comment',
+            comment: 'Active critical items need attention'
+          }
+        ],
         dryRun: true
       });
       
       expect(commentResult.success).toBe(true);
-      expect((commentResult.data as any).selected_items_count).toBe(2);
+      const data = commentResult.data as any;
+      expect(data.items_selected).toBe(2);
     });
   });
 
@@ -312,24 +330,29 @@ describe('Selection Integration Tests', () => {
       expect(selected).toEqual([2, 3]);
       
       // Comment on stale items (dry run)
-      const mockCommentConfig = {
-        name: 'wit-bulk-comment',
+      const mockConfig: ToolConfig = {
+        name: 'wit-unified-bulk-operations-by-query-handle',
         description: 'Test',
         script: '',
-        schema: bulkCommentByQueryHandleSchema,
-        inputSchema: { type: 'object' as const }
+        schema: unifiedBulkOperationsSchema,
+        inputSchema: { type: 'object' }
       };
 
-      const result = await handleBulkCommentByQueryHandle(mockCommentConfig, {
+      const result = await handleUnifiedBulkOperations(mockConfig, {
         queryHandle,
         itemSelector: { daysInactiveMin: 7 },
-        comment: 'This item has been inactive for {{daysInactive}} days',
-        template: true,
+        actions: [
+          {
+            type: 'comment',
+            comment: 'This item has been inactive - please review'
+          }
+        ],
         dryRun: true
       });
       
       expect(result.success).toBe(true);
-      expect((result.data as any).selected_items_count).toBe(2);
+      const data = result.data as any;
+      expect(data.items_selected).toBe(2);
     });
   });
 
@@ -352,25 +375,30 @@ describe('Selection Integration Tests', () => {
       it('should handle empty selection gracefully', async () => {
         const queryHandle = createTestQueryHandle(5);
         
-        const mockCommentConfig = {
-          name: 'wit-bulk-comment',
+        const mockConfig: ToolConfig = {
+          name: 'wit-unified-bulk-operations-by-query-handle',
           description: 'Test',
           script: '',
-          schema: bulkCommentByQueryHandleSchema,
-          inputSchema: { type: 'object' as const }
+          schema: unifiedBulkOperationsSchema,
+          inputSchema: { type: 'object' }
         };
 
-        const result = await handleBulkCommentByQueryHandle(mockCommentConfig, {
+        const result = await handleUnifiedBulkOperations(mockConfig, {
           queryHandle,
           itemSelector: { states: ['NonExistentState'] }, // No matches
-          comment: 'Test',
+          actions: [
+            {
+              type: 'comment',
+              comment: 'Test'
+            }
+          ],
           dryRun: true
         });
         
-        // Operation succeeds but affects 0 items
-        expect(result.success).toBe(true);
-        expect((result.data as any).selected_items_count).toBe(0);
-        expect((result.data as any).summary).toContain('0 of 5');
+        // Operation should fail when no items are selected
+        expect(result.success).toBe(false);
+        expect(result.errors.length).toBeGreaterThan(0);
+        expect(result.errors[0]).toContain('No work items matched');
       });
       
       it('should validate indices are within bounds', () => {

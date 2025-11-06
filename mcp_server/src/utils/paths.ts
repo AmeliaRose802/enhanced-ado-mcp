@@ -13,8 +13,9 @@ if (process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test')
   // This works correctly regardless of where the process is started from
   try {
     // ES Module equivalent of __dirname
-    // @ts-ignore - import.meta.url is available at runtime in ES modules
-    thisFileDir = dirname(fileURLToPath(import.meta.url));
+    // Use eval to prevent TypeScript from checking import.meta at compile time
+    const importMetaUrl = eval('import.meta.url') as string;
+    thisFileDir = dirname(fileURLToPath(importMetaUrl));
     
     if (process.env.MCP_DEBUG === '1') {
       console.error(`[paths.ts] Using import.meta.url-based path resolution: ${thisFileDir}`);

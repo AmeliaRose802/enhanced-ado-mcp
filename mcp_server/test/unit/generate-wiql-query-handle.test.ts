@@ -6,9 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleWiqlQuery } from '../../src/services/handlers/query/wiql-query.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { wiqlQuerySchema } from '../../src/config/schemas.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 // Mock configuration
@@ -49,7 +47,7 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
 // Mock sampling client
 const mockSamplingClient = {
   hasSamplingSupport: jest.fn(() => true),
-  createMessage: jest.fn(),
+  createMessage: jest.fn<() => Promise<any>>(),
   extractResponseText: jest.fn()
 };
 
@@ -62,7 +60,6 @@ jest.mock('../../src/services/ado-work-item-service.js', () => ({
   queryWorkItemsByWiql: jest.fn()
 }));
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryWorkItemsByWiql } from '../../src/services/ado-work-item-service.js';
 const mockQueryWorkItemsByWiql = queryWorkItemsByWiql as jest.MockedFunction<typeof queryWorkItemsByWiql>;
 

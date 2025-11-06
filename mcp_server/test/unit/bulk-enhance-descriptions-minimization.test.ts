@@ -5,13 +5,9 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleBulkEnhanceDescriptions } from '../../src/services/handlers/ai-powered/bulk-enhance-descriptions.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { bulkEnhanceDescriptionsByQueryHandleSchema } from '../../src/config/schemas.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { ToolConfig } from '../../src/types/index.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import type { MCPServer } from '../../src/types/mcp.js';
 
 // Mock the dependencies
@@ -24,7 +20,7 @@ jest.mock('../../src/services/ado-discovery-service.js', () => ({
 
 jest.mock('../../src/utils/ado-http-client.js', () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
-    get: jest.fn().mockImplementation((url: string) => {
+    get: jest.fn<(url: string) => Promise<any>>().mockImplementation((url: string) => {
       const match = url.match(/wit\/workitems\/(\d+)/);
       if (match) {
         const id = parseInt(match[1]);
@@ -43,7 +39,7 @@ jest.mock('../../src/utils/ado-http-client.js', () => ({
       }
       return Promise.reject(new Error('Not found'));
     }),
-    patch: jest.fn().mockResolvedValue({})
+    patch: jest.fn<() => Promise<any>>().mockResolvedValue({})
   }))
 }));
 
@@ -64,7 +60,7 @@ jest.mock('../../src/utils/token-provider.js', () => ({
 jest.mock('../../src/utils/sampling-client.js', () => ({
   SamplingClient: jest.fn().mockImplementation(() => ({
     hasSamplingSupport: jest.fn(() => true),
-    createMessage: jest.fn().mockResolvedValue({
+    createMessage: jest.fn<() => Promise<any>>().mockResolvedValue({
       content: [
         {
           type: 'text',
@@ -76,7 +72,7 @@ jest.mock('../../src/utils/sampling-client.js', () => ({
         }
       ]
     }),
-    extractResponseText: jest.fn((result) => {
+    extractResponseText: jest.fn((result: any) => {
       return result.content[0].text;
     })
   }))
@@ -241,7 +237,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
       const { SamplingClient } = require('../../src/utils/sampling-client.js');
       SamplingClient.mockImplementationOnce(() => ({
         hasSamplingSupport: jest.fn(() => true),
-        createMessage: jest.fn().mockResolvedValue({
+        createMessage: jest.fn<() => Promise<any>>().mockResolvedValue({
           content: [
             {
               type: 'text',
@@ -253,7 +249,7 @@ describe('Bulk Enhance Descriptions - Parameter Minimization', () => {
             }
           ]
         }),
-        extractResponseText: jest.fn((result) => result.content[0].text)
+        extractResponseText: jest.fn((result: any) => result.content[0].text)
       }));
 
       const workItemIds = [101];

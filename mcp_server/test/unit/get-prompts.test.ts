@@ -3,8 +3,6 @@
  */
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { describe, it, expect } from '@jest/globals';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { getPromptsSchema } from '../../src/config/schemas.js';
 
 describe('wit-get-prompts Tool Configuration', () => {

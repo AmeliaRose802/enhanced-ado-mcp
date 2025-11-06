@@ -303,7 +303,13 @@ export const wiqlQuerySchema = z.object({
   { message: "Either 'description' (for AI generation) or 'wiqlQuery' (for direct execution) must be provided" }
 );
 
-export const odataAnalyticsQuerySchema = z.object({
+/**
+ * OData Query Schema
+ * Supports both direct OData execution and AI-powered query generation
+ */
+export const odataQuerySchema = z.object({
+  // Query Definition (provide ONE of these three options)
+  description: z.string().min(1).optional(), // Natural language for AI generation
   queryType: z.enum([
     "workItemCount",
     "groupByState",
@@ -312,30 +318,40 @@ export const odataAnalyticsQuerySchema = z.object({
     "velocityMetrics",
     "cycleTimeMetrics",
     "customQuery"
-  ]),
+  ]).optional(), // Predefined query type for direct execution
+  customODataQuery: optionalString(), // Custom OData query string for direct execution
+  
+  // AI Generation Options (only used with 'description')
+  includeExamples: optionalBool(true),
+  maxIterations: z.number().int().positive().min(1).max(5).optional().default(3),
+  testQuery: optionalBool(true),
+  
+  // OData Query Parameters (used with queryType or customODataQuery)
   filters: z.record(z.any()).optional(),
   groupBy: z.array(z.string()).optional(),
   select: z.array(z.string()).optional(),
   orderBy: optionalString(),
-  customODataQuery: optionalString(),
   dateRangeField: z.enum(["CreatedDate", "ChangedDate", "CompletedDate", "ClosedDate"]).optional(),
   dateRangeStart: optionalString(),
   dateRangeEnd: optionalString(),
+  computeCycleTime: optionalBool(false),
+  
+  // Result Configuration
+  returnQueryHandle: optionalBool(false), // OData defaults to false (aggregations don't support handles)
+  maxResults: z.number().int().min(1).max(1000).optional().default(200), // Used when returnQueryHandle=true
+  includeFields: z.array(z.string()).optional(), // Used when returnQueryHandle=true
   top: z.number().int().min(1).max(10000).optional().default(1000),
   skip: z.number().int().min(0).optional().default(0),
   includeMetadata: optionalBool(false),
   includeOdataMetadata: optionalBool(false),
+  
+  // Scope Configuration (auto-filled from config)
   areaPath: optionalString(),
   areaPathFilter: z.array(z.string()).optional(),
   useDefaultAreaPaths: optionalBool(true),
   iterationPath: optionalString(),
-  computeCycleTime: optionalBool(false),
+  
   ...orgProjectFields()
-});
-
-export const generateODataQuerySchema = z.object({
-  ...queryGeneratorFields(),
-  returnQueryHandle: optionalBool(true)
 });
 
 export const unifiedQueryGeneratorSchema = z.object({

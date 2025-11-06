@@ -37,6 +37,13 @@ export function extractProjectFromAreaPath(areaPath: string): string | null {
     return null;
   }
   
+  // **CRITICAL**: Azure DevOps area paths must have at least 2 segments (Project\Area)
+  // Single segment indicates likely confusion between organization and area path
+  if (segments.length < 2) {
+    logger.warn(`Area path "${areaPath}" appears invalid - should be "ProjectName\\AreaName" format`);
+    // Still return the single segment for backward compatibility, but log warning
+  }
+  
   // First segment is always the project name in Azure DevOps
   return segments[0];
 }
@@ -193,6 +200,19 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       );
     }
 
+    // Validate area path format (must contain backslash for Project\Area format)
+    const invalidPaths = areaPaths.filter(p => !p.includes('\\'));
+    if (invalidPaths.length > 0) {
+      throw formatConfigError(
+        "validate",
+        `Invalid area path format. Area paths must follow "ProjectName\\AreaName" format.\\n` +
+        `Invalid paths: ${invalidPaths.join(', ')}\\n` +
+        `Example: "MyProject\\\\Team\\\\Component"\\n\\n` +
+        `NOTE: If you meant to provide an organization name, it should be the first positional argument:\\n` +
+        `  Correct: enhanced-ado-mcp ${cliArgs.organization} --area-path "MyProject\\\\Team"`
+      );
+    }
+
     // Check for duplicates
     const uniquePaths = new Set(areaPaths);
     if (uniquePaths.size !== areaPaths.length) {
@@ -225,6 +245,14 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
 
     if (extractedProjects.size === 1) {
       project = Array.from(extractedProjects)[0];
+      
+      // **CRITICAL**: Check if extracted project matches organization name (likely misconfiguration)
+      if (project === cliArgs.organization) {
+        logger.warn(`⚠️  WARNING: Extracted project name "${project}" matches organization name "${cliArgs.organization}"`);
+        logger.warn(`⚠️  This is likely a configuration error. Did you mean to provide an area path like "${project}\\\\TeamName"?`);
+        logger.warn(`⚠️  If "${project}" is both your organization AND project name, ignore this warning.`);
+      }
+      
       if (verbose) {
         logger.info(`Extracted project name '${project}' from area path(s)`);
       }

@@ -16,8 +16,7 @@ export const TOOL_NAMES = {
   
   // Query Operations
   WIQL_QUERY: 'wit-wiql-query', // Unified: supports both direct WIQL and AI generation
-  ODATA_ANALYTICS: 'wit-query-analytics-odata',
-  GENERATE_ODATA_QUERY: 'wit-generate-odata-query',
+  ODATA_QUERY: 'wit-odata-query', // Unified: supports both direct OData and AI generation
   
   // Query Handle Operations
   LIST_QUERY_HANDLES: 'wit-list-query-handles',

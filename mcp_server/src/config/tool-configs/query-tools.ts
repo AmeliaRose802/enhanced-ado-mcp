@@ -1,7 +1,7 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   wiqlQuerySchema,
-  odataAnalyticsQuerySchema,
+  odataQuerySchema,
   getLastSubstantiveChangeSchema,
   validateHierarchyFastSchema
 } from "../schemas.js";
@@ -62,35 +62,51 @@ export const queryTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-analytics-odata",
-    description: "Query Azure DevOps Analytics using OData for efficient aggregations, metrics, and trend analysis. Supports work item counts, grouping by state/type/assignee, velocity metrics, and cycle time analysis. Use this for analytics and reporting instead of WIQL when you need aggregated data. Supports pagination for large result sets.",
+    name: "wit-odata-query",
+    description: "🔐 UNIFIED ODATA TOOL: Execute OData Analytics queries (direct or AI-generated from natural language) for metrics, aggregations, and trend analysis. Supports both predefined query types (counts, grouping by state/type/assignee, velocity metrics) and custom queries. AI-powered query generation validates and tests queries automatically. For aggregation queries, returns statistical summaries. For work item list queries, can return query handles for safe bulk operations. Requires 'View analytics' permission in Azure DevOps.",
     script: "",
-    schema: odataAnalyticsQuerySchema,
+    schema: odataQuerySchema,
     inputSchema: {
       type: "object",
       properties: {
-        queryType: { type: "string", enum: ["workItemCount", "groupByState", "groupByType", "groupByAssignee", "velocityMetrics", "cycleTimeMetrics", "customQuery"], description: "Type of analytics query to execute" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" },
+        // Query Definition (provide ONE)
+        description: { type: "string", description: "🤖 AI-POWERED: Natural language description of analytics query (e.g., 'count active bugs by assignee', 'velocity metrics for last sprint'). When provided, the tool will generate and validate an OData query automatically." },
+        queryType: { type: "string", enum: ["workItemCount", "groupByState", "groupByType", "groupByAssignee", "velocityMetrics", "cycleTimeMetrics", "customQuery"], description: "Predefined query type for direct execution. workItemCount: count of items. groupByState/Type/Assignee: grouped aggregations. velocityMetrics: completed work over time. cycleTimeMetrics: time from creation to completion." },
+        customODataQuery: { type: "string", description: "Custom OData query string for advanced scenarios. Use OData v4.0 syntax with $filter, $apply, $select, $orderby, etc." },
+        
+        // AI Generation Options (only used with 'description')
+        includeExamples: { type: "boolean", description: "🤖 Include example patterns in AI prompt when generating queries (default true). Only relevant when using 'description' parameter." },
+        maxIterations: { type: "number", description: "🤖 Maximum attempts to generate valid query when using AI generation (1-5, default 3). Only relevant when using 'description' parameter." },
+        testQuery: { type: "boolean", description: "🤖 Test generated query by executing it to validate syntax (default true). Only relevant when using 'description' parameter." },
+        
+        // OData Query Parameters (used with queryType or customODataQuery)
         filters: { type: "object", description: "Filter conditions (e.g., { State: 'Active', WorkItemType: 'Bug' })" },
         groupBy: { type: "array", items: { type: "string" }, description: "Fields to group by for aggregation" },
         select: { type: "array", items: { type: "string" }, description: "Specific fields to return" },
         orderBy: { type: "string", description: "Field to order results by (e.g., 'Count desc')" },
-        customODataQuery: { type: "string", description: "Custom OData query string for advanced scenarios" },
         dateRangeField: { type: "string", enum: ["CreatedDate", "ChangedDate", "CompletedDate", "ClosedDate"], description: "Date field to filter by" },
         dateRangeStart: { type: "string", description: "Start date (ISO 8601: YYYY-MM-DD)" },
         dateRangeEnd: { type: "string", description: "End date (ISO 8601: YYYY-MM-DD)" },
+        computeCycleTime: { type: "boolean", description: "Compute cycle time for completed items (used with cycleTimeMetrics)" },
+        
+        // Result Configuration
+        returnQueryHandle: { type: "boolean", description: "🔐 Return query handle for safe bulk operations (default false). Only works for non-aggregation queries that return work item lists. Aggregation queries always return statistical summaries." },
+        maxResults: { type: "number", description: "Maximum results when returnQueryHandle=true (default 200, max 1000)" },
+        includeFields: { type: "array", items: { type: "string" }, description: "Additional fields to include when returnQueryHandle=true" },
+        top: { type: "number", description: "Maximum number of results for analytics queries (default 1000, max 10000)" },
+        skip: { type: "number", description: "Number of results to skip for pagination (default 0)" },
+        includeMetadata: { type: "boolean", description: "Include query and URL metadata in response (default false)" },
+        includeOdataMetadata: { type: "boolean", description: "Include OData metadata fields (@odata.*) in response (default false)" },
+        
+        // Scope Configuration (auto-filled from config)
+        organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
+        project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" },
         areaPath: { type: "string", description: "Filter by Area Path" },
         areaPathFilter: { type: "array", items: { type: "string" }, description: "Explicitly specify area paths to filter by (e.g., ['ProjectA\\\\TeamAlpha', 'ProjectA\\\\TeamBeta']). Takes precedence over default area paths." },
         useDefaultAreaPaths: { type: "boolean", description: "Control whether to automatically filter by default area paths from configuration (default: true). Set to false to query across the entire project without area path filtering." },
-        iterationPath: { type: "string", description: "Filter by Iteration Path" },
-        top: { type: "number", description: "Maximum number of results (default 100, max 1000)" },
-        skip: { type: "number", description: "Number of results to skip for pagination (default 0)" },
-        computeCycleTime: { type: "boolean", description: "Compute cycle time for completed items" },
-        includeMetadata: { type: "boolean", description: "Include query and URL metadata in response" },
-        includeOdataMetadata: { type: "boolean", description: "Include OData metadata fields (@odata.*) in response (default: false)" }
+        iterationPath: { type: "string", description: "Filter by Iteration Path" }
       },
-      required: ["queryType"]
+      required: []
     }
   },
   {

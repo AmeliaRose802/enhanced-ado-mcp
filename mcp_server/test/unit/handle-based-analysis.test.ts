@@ -4,11 +4,8 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleAnalyzeByQueryHandle } from '../../src/services/handlers/ai-powered/analyze-by-query-handle.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleListQueryHandles } from '../../src/services/handlers/query-handles/list-query-handles.handler.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { queryHandleService } from '../../src/services/query-handle-service.js';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { analyzeByQueryHandleSchema, listQueryHandlesSchema } from '../../src/config/schemas.js';
 
 // Mock configuration
@@ -45,7 +42,7 @@ jest.mock('../../src/utils/token-provider.js', () => ({
 // Mock ADO HTTP Client
 jest.mock('../../src/utils/ado-http-client.js', () => ({
   ADOHttpClient: jest.fn().mockImplementation(() => ({
-    get: jest.fn().mockResolvedValue({
+    get: jest.fn<() => Promise<any>>().mockResolvedValue({
       data: {
         value: [
           {

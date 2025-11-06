@@ -22,13 +22,13 @@ describe('Constants', () => {
 
     it('should have query operation names', () => {
       expect(TOOL_NAMES.WIQL_QUERY).toBe('wit-wiql-query');
-      expect(TOOL_NAMES.ODATA_ANALYTICS).toBe('wit-query-analytics-odata');
-      expect(TOOL_NAMES.GENERATE_ODATA_QUERY).toBe('wit-generate-odata-query');
+      expect(TOOL_NAMES.ODATA_QUERY).toBe('wit-odata-query');
     });
 
     it('should have bulk operation names', () => {
-      expect(TOOL_NAMES.BULK_ASSIGN_BY_QUERY_HANDLE).toBe('wit-bulk-assign-by-query-handle');
-      expect(TOOL_NAMES.BULK_UPDATE_BY_QUERY_HANDLE).toBe('wit-bulk-update-by-query-handle');
+      expect(TOOL_NAMES.UNIFIED_BULK_OPERATIONS).toBe('wit-unified-bulk-operations-by-query-handle');
+      expect(TOOL_NAMES.BULK_UNDO).toBe('wit-bulk-undo-by-query-handle');
+      expect(TOOL_NAMES.FORENSIC_UNDO).toBe('wit-forensic-undo-by-query-handle');
     });
 
     it('should have AI-powered operation names', () => {

@@ -5,7 +5,6 @@
 
 import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { z } from 'zod';
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { buildValidationErrorResponse } from '../../src/utils/response-builder.js';
 
 describe('Schema Validation Error Messages', () => {
