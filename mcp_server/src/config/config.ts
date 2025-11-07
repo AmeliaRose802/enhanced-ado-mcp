@@ -360,6 +360,63 @@ export async function ensureGitHubCopilotGuid(): Promise<string | null> {
   }
 }
 
+/**
+ * Asynchronously discover and cache the current iteration path if not already configured
+ * This should be called after initial configuration load to automatically set current iteration
+ * 
+ * The current iteration is determined by querying the team's iteration settings.
+ * Team is inferred from the area path (second segment).
+ */
+export async function ensureCurrentIterationPath(): Promise<string | null> {
+  const config = loadConfiguration();
+  
+  // If already configured, return it
+  if (config.azureDevOps.iterationPath) {
+    return config.azureDevOps.iterationPath;
+  }
+  
+  // Need area path to determine team
+  const areaPaths = config.azureDevOps.areaPaths || 
+    (config.azureDevOps.areaPath ? [config.azureDevOps.areaPath] : []);
+  
+  if (areaPaths.length === 0) {
+    logger.debug('No area paths configured - cannot discover current iteration');
+    return null;
+  }
+  
+  // Use first area path to determine team
+  const primaryAreaPath = areaPaths[0];
+  
+  logger.info('Attempting to auto-discover current iteration path...');
+  
+  try {
+    const { getCurrentIterationPath } = await import('../services/ado-discovery-service.js');
+    
+    const iterationPath = await getCurrentIterationPath(
+      config.azureDevOps.organization,
+      config.azureDevOps.project,
+      primaryAreaPath
+    );
+    
+    if (iterationPath) {
+      // Cache the discovered iteration path
+      config.azureDevOps.iterationPath = iterationPath;
+      cachedConfig = config;
+      logger.info(`Current iteration path discovered: ${iterationPath}`);
+      return iterationPath;
+    }
+    
+    // Not found via auto-discovery
+    logger.debug('Current iteration path not found via auto-discovery.');
+    logger.debug('New work items will not have a default iteration path unless explicitly specified.');
+    return null;
+  } catch (error) {
+    logger.warn('Current iteration auto-discovery failed:', error instanceof Error ? error.message : String(error));
+    logger.debug('New work items will not have a default iteration path unless explicitly specified.');
+    return null;
+  }
+}
+
 export function updateConfigFromCLI(args: CLIArguments): void {
   cliArgs = args;
 }

@@ -15,7 +15,7 @@ import { checkSamplingSupport } from "./utils/sampling-client.js";
 import { listResources, getResourceContent } from "./services/resource-service.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { updateConfigFromCLI, ensureGitHubCopilotGuid, loadConfiguration, type CLIArguments } from "./config/config.js";
+import { updateConfigFromCLI, ensureGitHubCopilotGuid, ensureCurrentIterationPath, loadConfiguration, type CLIArguments } from "./config/config.js";
 import { createAuthenticator, getDefaultAuthType } from "./utils/ado-token.js";
 import { getOrgTenant } from "./utils/org-tenants.js";
 import { setTokenProvider } from "./utils/token-provider.js";
@@ -202,6 +202,9 @@ async function main() {
 
     // Automatically look up GitHub Copilot GUID if not provided
     await ensureGitHubCopilotGuid();
+    
+    // Automatically discover current iteration path if not provided
+    await ensureCurrentIterationPath();
 
     const useHybrid = process.env.MCP_HYBRID === "1";
     
