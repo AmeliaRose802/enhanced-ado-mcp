@@ -23,4 +23,9 @@ The tool should return a list of names and descriptions for avabile subagents.
 
 3. Add a tool to get people on the team. 
 
-The hyerchey analysis tool returns the same data 3 times over creating a lot of bloat and token wasteage. Just return the handles by default so the user can fetch data on demand.
+4. The hyerchey analysis tool returns the same data 3 times over creating a lot of bloat and token wasteage. Just return the handles by default so the user can fetch data on demand.
+
+
+5. The tools: wit-list-query-handles and wit-get-prompts are primarly used for debugging. Please feature flag so these are disabled in the released version
+
+

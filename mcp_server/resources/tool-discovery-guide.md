@@ -48,7 +48,7 @@ Use tool discovery when:
 }
 ```
 
-**Result**: Recommends `wit-get-work-items-by-query-wiql` or `wit-generate-wiql-query`
+**Result**: Recommends `wit-wiql-query`
 
 ### Example 2: Bulk Operations
 ```json
@@ -59,7 +59,7 @@ Use tool discovery when:
 ```
 
 **Result**: Recommends workflow:
-1. `wit-get-work-items-by-query-wiql` (with returnQueryHandle=true)
+1. `wit-wiql-query` (with returnQueryHandle=true)
 2. `wit-query-handle-info` (preview and validate)
 3. `wit-bulk-update-by-query-handle` (dryRun first)
 

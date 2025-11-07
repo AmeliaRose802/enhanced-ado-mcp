@@ -177,9 +177,9 @@ For each team member:
 ## Integration with Other Tools
 
 ### Before Sprint Planning
-1. **Query Backlog**: Use `wit-get-work-items-by-query-wiql` to identify candidate items
+1. **Query Backlog**: Use `wit-wiql-query` to identify candidate items
 2. **Estimate Items**: Use `wit-bulk-assign-story-points-by-query-handle` to ensure all items have estimates
-3. **Analyze Velocity**: Use `wit-query-analytics-odata` to get historical completion data
+3. **Analyze Velocity**: Use `wit-odata-query` to get historical completion data
 
 ### After Sprint Planning
 1. **Assign Work**: Use `wit-bulk-assign-by-query-handle` to assign items to team members
@@ -258,9 +258,9 @@ For each team member:
 ## Related Tools
 
 - `wit-personal-workload-analyzer` - Analyze individual team member workload
-- `wit-get-work-items-by-query-wiql` - Query backlog items
+- `wit-wiql-query` - Query backlog items
 - `wit-bulk-assign-story-points-by-query-handle` - Estimate work items
-- `wit-query-analytics-odata` - Historical velocity data
+- `wit-odata-query` - Historical velocity data
 - `wit-bulk-assign-by-query-handle` - Batch assign work items
 
 ## Tips for Success

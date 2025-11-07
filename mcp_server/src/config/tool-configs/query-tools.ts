@@ -110,7 +110,7 @@ export const queryTools: ToolConfig[] = [
   },
   {
     name: "wit-validate-hierarchy",
-    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). Optionally creates query handles for each violation type group (orphaned items, incorrect parent types, state progression issues) to enable direct bulk operations on problematic items. Returns focused results without AI analysis. Accepts either queryHandle (from WIQL query), workItemIds, or areaPath. Note: Large area paths (>500 items) may take 1-2 minutes to process - consider using smaller maxResults or more specific area paths for faster results.",
+    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). By DEFAULT, returns only summary counts and query handles for each violation category - use includeViolationDetails=true to get full violation arrays (not recommended due to size). Query handles enable bulk operations on specific violation groups (orphaned items, incorrect parent types, state issues). Use inspect-query-handle to view items in each category. Accepts either queryHandle (from WIQL query) or areaPath. Note: Large area paths (>500 items) may take 1-2 minutes.",
     script: "",
     schema: validateHierarchyFastSchema,
     inputSchema: {
@@ -124,8 +124,8 @@ export const queryTools: ToolConfig[] = [
         includeSubAreas: { type: "boolean", description: "Include child area paths in analysis (default true)" },
         validateTypes: { type: "boolean", description: "Validate parent-child type relationships (default true)" },
         validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" },
-        returnQueryHandles: { type: "boolean", description: "Create query handles for each violation type (invalid_parent_type, invalid_state_progression, orphaned_child) to enable bulk operations (default true)" },
-        includeViolationDetails: { type: "boolean", description: "Include full violation details in response (can be large, defaults to false to save tokens)" }
+        returnQueryHandles: { type: "boolean", description: "Create query handles for each granular violation category (e.g., bug_under_feature, orphaned_task) to enable bulk operations and inspection (default true). Handles expire after 1 hour." },
+        includeViolationDetails: { type: "boolean", description: "⚠️ Include full violation arrays in response (default false). WARNING: This triples response size by including the same data in multiple formats. Leave false and use query handles with inspect-query-handle to view specific violations on-demand instead." }
       },
       required: []
     }

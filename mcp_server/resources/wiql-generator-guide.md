@@ -260,7 +260,7 @@ Returns just the query text with validation results.
 
 ### Step 2a: Use Generated Query Directly
 Copy the validated query from response and use it with:
-- `wit-get-work-items-by-query-wiql` - Execute the query
+- `wit-wiql-query` - Execute the query
 - Save to documentation for reuse
 - Modify and refine as needed
 

@@ -349,13 +349,50 @@ Query handles expire after 1 hour by default. After expiration:
 
 All tools support `dryRun: true` for safe preview:
 
+### Unified Bulk Operations (Recommended)
+
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-select-items-from-query-handle` | **NEW**: Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
+| `wit-unified-bulk-operations-by-query-handle` | **SINGLE TOOL** for all bulk modifications - execute multiple actions sequentially | `queryHandle`, `actions[]`, `itemSelector`, `stopOnError` |
+
+**Supported Actions:**
+- `comment` - Add comments
+- `update` - Update fields
+- `assign` - Assign to user
+- `remove` - Remove work items
+- `transition-state` - Change state
+- `move-iteration` - Move to iteration
+- `change-type` - Change work item type
+- `add-tag` / `remove-tag` - Manage tags
+- `enhance-descriptions` - AI-powered description enhancement
+- `assign-story-points` - AI-powered estimation
+- `add-acceptance-criteria` - AI-powered criteria generation
+
+### Individual Bulk Operations (Legacy)
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
 | `wit-bulk-comment-by-query-handle` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
 | `wit-bulk-update-by-query-handle` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
 | `wit-bulk-assign-by-query-handle` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
 | `wit-bulk-remove-by-query-handle` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
+
+### Query Handle Management
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `wit-query-handle-info` | Inspect query handle contents, validation, and stats | `queryHandle`, `detailed`, `itemSelector` |
+| `wit-list-query-handles` | List all active query handles for tracking | `includeExpired`, `top`, `skip` |
+| `wit-select-items-from-query-handle` | Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
+
+### Special Operations
+
+| Tool | Purpose | Key Parameters |
+|------|---------|----------------|
+| `wit-forensic-undo-by-query-handle` | Analyze and revert changes by user/time window (works on ANY items) | `queryHandle`, `changedBy`, `afterTimestamp`, `beforeTimestamp` |
+| `wit-bulk-undo-by-query-handle` | Undo MCP bulk operations (last or all) | `queryHandle`, `undoAll` |
+| `wit-find-parent-item-intelligent` | AI-powered parent recommendations for orphaned items | `childQueryHandle`, `parentWorkItemTypes`, `searchScope` |
+| `wit-link-work-items-by-query-handles` | Create relationships between two query handle result sets | `sourceQueryHandle`, `targetQueryHandle`, `linkType`, `linkStrategy` |
 
 ## 📋 Best Practices
 

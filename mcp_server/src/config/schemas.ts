@@ -650,6 +650,13 @@ export const getPromptsSchema = z.object({
 });
 
 export const listSubagentsSchema = z.object({
-  repository: z.string().min(1, "Repository name or ID is required"),
+  repository: z.string().min(1, "Repository name is required"),
+  ...orgProjectFields()
+});
+
+export const listTeamMembersSchema = z.object({
+  managerEmail: optionalString().describe("Filter team members by manager email address"),
+  includeManager: optionalBool(false).describe("Include the manager in the results (default: false, only direct reports)"),
+  outputFormat: z.enum(["detailed", "emails"]).optional().default("detailed").describe("Output format: 'detailed' (full user info) or 'emails' (comma-separated list for WIQL queries)"),
   ...orgProjectFields()
 });

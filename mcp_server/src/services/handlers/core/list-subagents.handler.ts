@@ -41,28 +41,22 @@ interface GitItemsResponse {
  * Returns metadata object or debug info string if failed
  */
 function parseSubagentMetadata(content: string, filePath: string): SubagentMetadata | null {
-  const debugLines: string[] = [];
-  
   try {
-    // Show first 300 chars for debugging
-    debugLines.push(`    First 300 chars: "${content.substring(0, 300)}..."`);
     logger.debug(`Parsing YAML from ${filePath}, first 200 chars: ${content.substring(0, 200)}`);
     
     const parsed = yaml.parse(content);
     
     const parsedPreview = JSON.stringify(parsed, null, 2).substring(0, 500);
-    debugLines.push(`    Parsed structure preview: ${parsedPreview}`);
     logger.debug(`Parsed YAML structure: ${parsedPreview}`);
     
     // Look for metadata section - check both root level and nested
     if (parsed && typeof parsed === 'object') {
       // Check if name and description are at root level
       if ('name' in parsed && 'description' in parsed) {
-        const name = parsed.name as string;
-        const description = parsed.description as string;
+        const name = String(parsed.name || '').trim();
+        const description = String(parsed.description || '').trim();
         
         if (name && description) {
-          debugLines.push(`    Found at root: name="${name}"`);
           logger.debug(`Found metadata at root: name="${name}", description="${description}"`);
           return {
             name,
@@ -71,73 +65,13 @@ function parseSubagentMetadata(content: string, filePath: string): SubagentMetad
           };
         }
       }
-      
-      // Also check for common YAML comment patterns (metadata might be in comments)
-      // Look for lines starting with "# metadata" followed by name/description
-      const lines = content.split('\n');
-      let inMetadata = false;
-      let name = '';
-      let description = '';
-      
-      debugLines.push(`    Scanning ${lines.length} lines for comment metadata...`);
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmed = line.trim();
-        
-        // Check if this is a metadata section marker
-        if (trimmed === '# metadata' || trimmed === '#metadata') {
-          inMetadata = true;
-          debugLines.push(`    Found metadata marker at line ${i + 1}`);
-          continue;
-        }
-        
-        // If in metadata section and line starts with #
-        if (inMetadata && trimmed.startsWith('#')) {
-          // Remove leading # and whitespace
-          const contentLine = trimmed.substring(1).trim();
-          
-          if (contentLine.toLowerCase().startsWith('name:')) {
-            name = contentLine.substring(5).trim();
-            debugLines.push(`    Found name at line ${i + 1}: "${name}"`);
-          } else if (contentLine.toLowerCase().startsWith('description:')) {
-            description = contentLine.substring(12).trim();
-            debugLines.push(`    Found description at line ${i + 1}: "${description.substring(0, 50)}..."`);
-          }
-        } else if (inMetadata && !trimmed.startsWith('#') && trimmed.length > 0) {
-          // Exited metadata comment block
-          debugLines.push(`    Exited metadata block at line ${i + 1}`);
-          break;
-        }
-      }
-      
-      if (name && description) {
-        debugLines.push(`    Successfully extracted from comments!`);
-        logger.debug(`Found metadata in comments: name="${name}", description="${description}"`);
-        return {
-          name,
-          description,
-          filePath
-        };
-      } else {
-        debugLines.push(`    No valid name/description found. name="${name}", description="${description}"`);
-      }
-    } else {
-      debugLines.push(`    Parsed result is not an object: ${typeof parsed}`);
     }
     
-    // Log all debug lines
-    debugLines.forEach(line => logger.debug(line));
-    
+    logger.debug(`No valid metadata found in parsed YAML for ${filePath}`);
     return null;
   } catch (error) {
     const errorMsg = `Failed to parse YAML from ${filePath}: ${error}`;
-    debugLines.push(`    Parse error: ${errorMsg}`);
     logger.warn(errorMsg);
-    
-    // Log all debug lines even on error
-    debugLines.forEach(line => logger.debug(line));
-    
     return null;
   }
 }
@@ -236,46 +170,49 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
     // Fetch and parse each YAML file
     const subagents: SubagentMetadata[] = [];
     const errors: string[] = [];
-    const debugInfo: string[] = [];
 
     for (const file of yamlFiles) {
       try {
-        debugInfo.push(`Fetching: ${file.path}`);
+        logger.debug(`Fetching: ${file.path}`);
         
-        // Fetch file content - ADO returns content directly as text when downloading
-        // Use includeContent=true to get the actual file content
-        const contentResponse = await httpClient.get<string>(
-          `git/repositories/${encodeURIComponent(repository)}/items?path=${encodeURIComponent(file.path)}&includeContent=true&api-version=7.1-preview.1`
-        );
-
-        // ADO returns the content directly as a string (not base64)
-        const content = contentResponse.data;
-        const contentType = typeof content;
-        const contentPreview = typeof content === 'string' ? content.substring(0, 150) : JSON.stringify(content).substring(0, 150);
+        // Use native fetch directly for file content to bypass JSON parsing
+        // Azure DevOps returns octet-stream for file downloads
+        const token = await getTokenProvider()();
+        const url = `https://dev.azure.com/${organization}/${project}/_apis/git/repositories/${encodeURIComponent(repository)}/items?path=${encodeURIComponent(file.path)}&download=true&api-version=7.1-preview.1`;
         
-        debugInfo.push(`  Content type: ${contentType}, preview: ${contentPreview}`);
-        logger.debug(`Fetched ${file.path}, content length: ${typeof content === 'string' ? content.length : 'not a string'}`);
-        
-        if (content && typeof content === 'string') {
-          const metadata = parseSubagentMetadata(content, file.path);
-          
-          if (metadata) {
-            subagents.push(metadata);
-            debugInfo.push(`  ✓ Found agent: ${metadata.name}`);
-            logger.debug(`Found subagent: ${metadata.name}`);
-          } else {
-            debugInfo.push(`  ✗ No metadata found in file`);
-            logger.debug(`No metadata found in ${file.path}`);
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'text/plain, application/octet-stream, */*',
+            'X-TFS-FedAuthRedirect': 'Suppress'
           }
-        } else {
-          const msg = `Invalid content format for ${file.path}: expected string, got ${contentType}`;
-          debugInfo.push(`  ✗ ${msg}`);
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const content = await response.text();
+        
+        if (!content || content.length === 0) {
+          const msg = `Unable to extract content from ${file.path}`;
           errors.push(msg);
           logger.warn(msg);
+          continue;
+        }
+        
+        logger.debug(`Fetched ${file.path}, content length: ${content.length}`);
+        
+        const metadata = parseSubagentMetadata(content, file.path);
+        
+        if (metadata) {
+          subagents.push(metadata);
+          logger.debug(`Found subagent: ${metadata.name}`);
+        } else {
+          logger.debug(`No metadata found in ${file.path}`);
         }
       } catch (error) {
         const errorMsg = `Failed to read ${file.path}: ${error instanceof Error ? error.message : String(error)}`;
-        debugInfo.push(`  ✗ Error: ${errorMsg}`);
         logger.warn(errorMsg);
         errors.push(errorMsg);
       }
@@ -286,8 +223,7 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
         repository,
         subagents,
         scannedFiles: yamlFiles.length,
-        foundAgents: subagents.length,
-        debug: debugInfo // Include debug info in response
+        foundAgents: subagents.length
       },
       { 
         source: 'list-subagents',
@@ -296,14 +232,9 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
       }
     );
 
-    // Combine errors and debug info as warnings
-    const allWarnings = [...errors];
-    if (debugInfo.length > 0) {
-      allWarnings.push('=== Debug Info ===', ...debugInfo);
-    }
-    
-    if (allWarnings.length > 0) {
-      result.warnings = allWarnings;
+    // Include errors as warnings if any occurred
+    if (errors.length > 0) {
+      result.warnings = errors;
     }
 
     return result;

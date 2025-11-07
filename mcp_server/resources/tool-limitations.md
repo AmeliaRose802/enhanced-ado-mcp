@@ -231,6 +231,140 @@ AI Response: { "confidence": 0.85, "description": "..." }
 - **VS Code Required:** Must run in VS Code with language model access
 - **No Guarantees:** Recommendations should be reviewed by humans
 
+### Unified Bulk Operations
+
+**Capabilities:**
+- ✅ Single tool for all bulk modifications (comment, update, assign, remove, transition, etc.)
+- ✅ Sequential action execution
+- ✅ Item selection within query handles
+- ✅ Error handling strategies (stop or continue on error)
+- ✅ Dry-run support for all actions
+
+**Limitations:**
+- **Max Actions:** 20 actions per call (prevents excessive complexity)
+- **Action Sequence:** Actions execute sequentially, not in parallel
+- **AI Actions:** AI-powered actions (enhance-descriptions, assign-story-points, add-acceptance-criteria) count against batch limits (100 items max)
+- **Query Handle Expiration:** Inherits 1-hour query handle expiration
+- **Mixed Operations:** Some actions may succeed while others fail (check individual results)
+- **Stop on Error:** If enabled, subsequent actions won't execute after first failure
+
+**Performance:**
+- Simple actions (comment, tag): ~5-10 seconds for 50 items
+- Field updates: ~10-20 seconds for 50 items
+- AI actions: 2-5 seconds per item (~5-10 minutes for 50 items)
+
+### Forensic Undo
+
+**Capabilities:**
+- ✅ Analyzes ADO revision history to detect changes
+- ✅ Works on ANY work items (not just MCP-changed items)
+- ✅ Time window filtering (afterTimestamp, beforeTimestamp)
+- ✅ User filtering (changedBy)
+- ✅ Detects type changes, state changes, field changes, link changes
+- ✅ Auto-detects already-reverted changes
+
+**Limitations:**
+- **Max Revisions:** 200 revisions per work item (configurable, default 50)
+- **Performance:** 1-2 seconds per work item for revision analysis
+- **Large Datasets:** 100+ items may take 2-5 minutes to analyze
+- **User Matching:** Case-insensitive partial match on display name or email
+- **Link Detection:** Optional (requires additional API calls, disabled by default)
+- **Indirect Evidence:** Cannot guarantee all changes detected (depends on revision history completeness)
+- **Comments:** Cannot delete comments via ADO API (reversal comment added instead)
+
+**When to Avoid:**
+- Very large query handles (>500 items) - analysis will timeout
+- Need to revert changes from >90 days ago (revision history may be incomplete)
+- Precise timestamp matching required (revision timestamps may have timezone artifacts)
+
+### Intelligent Parent Finding
+
+**Capabilities:**
+- ✅ AI-powered parent recommendations using context analysis
+- ✅ Type hierarchy enforcement (Task→PBI→Feature→Epic)
+- ✅ Area path matching (defaults to same area path)
+- ✅ Confidence scoring per recommendation
+- ✅ Multiple recommendations per child (top N)
+
+**Limitations:**
+- **Max Children:** 100 orphaned items per call
+- **Max Candidates:** 50 parent candidates per child (configurable, default 20)
+- **Processing Time:** 10-30 seconds for 10 children, 2-5 minutes for 100 children
+- **VS Code Required:** Requires VS Code Language Model API for AI matching
+- **Confidence Threshold:** Recommendations below threshold (default 0.5) not returned
+- **Area Path Constraint:** By default, only searches same area path (prevents cross-team linking)
+- **No Guarantee:** AI recommendations should be reviewed before creating links
+- **Rate Limits:** Subject to VS Code sampling rate limits
+
+**When to Avoid:**
+- Need deterministic parent-child linking (use WIQL queries and manual linking)
+- Cross-area parent recommendations needed (use includeSubAreas or searchScope='project')
+- Very specific parent requirements (AI may not capture nuanced business logic)
+
+### Sprint Planning Analyzer
+
+**Capabilities:**
+- ✅ Historical velocity analysis (last N sprints)
+- ✅ Team capacity assessment
+- ✅ AI-powered work assignment recommendations
+- ✅ Skill matching and load balancing
+- ✅ Risk assessment and mitigation strategies
+
+**Limitations:**
+- **Team Size:** Optimized for 3-10 team members (larger teams may timeout)
+- **Historical Data:** Requires at least 1 completed sprint for velocity (3+ recommended)
+- **Processing Time:** 30-90 seconds for typical sprint analysis
+- **Backlog Items:** Best with 20-100 candidate items (>500 may timeout)
+- **VS Code Required:** Requires VS Code Language Model API for AI analysis
+- **Accuracy:** Velocity predictions are estimates based on historical data (~80-90% confidence)
+- **Rate Limits:** Subject to VS Code sampling rate limits
+- **No Guarantees:** Recommendations should be reviewed and adjusted by team
+
+**When to Avoid:**
+- New teams with no historical velocity data (predictions will be low confidence)
+- Very large backlogs (>500 items) - query beforehand to narrow candidates
+- Need deterministic assignment (use manual assignment or simpler rules)
+
+### Personal Workload Analyzer
+
+**Capabilities:**
+- ✅ Burnout risk assessment
+- ✅ Overspecialization detection
+- ✅ Work-life balance analysis
+- ✅ Career growth opportunity identification
+- ✅ Custom intent analysis (promotion readiness, skill development, etc.)
+
+**Limitations:**
+- **Analysis Period:** 7-365 days (default 90, longer periods may timeout)
+- **Processing Time:** 30-90 seconds for standard analysis, 60-120 seconds with custom intent
+- **Indirect Evidence:** Cannot measure actual hours worked, only work item activity
+- **Timestamps:** May have timezone artifacts or scheduled task timestamps
+- **Privacy Concerns:** Should be used constructively to help, not harm employees
+- **VS Code Required:** Requires VS Code Language Model API for AI analysis
+- **Rate Limits:** Subject to VS Code sampling rate limits
+- **Context Required:** Best with 20+ completed items in period
+
+**When to Avoid:**
+- Performance reviews or compensation decisions (too narrow a view)
+- Disciplinary actions (indirect evidence only)
+- Competitive team member comparisons
+- Employees with very low work item volume (<10 items)
+
+### Query Handle Management Tools
+
+**wit-query-handle-info:**
+- **Fast:** <1 second for validation and preview
+- **Detailed Mode:** Adds 2-5 seconds for sample item fetching
+
+**wit-list-query-handles:**
+- **Fast:** <1 second to list all handles
+- **Pagination:** Default 50 handles per page (max 200)
+
+**Limitations:**
+- Query handles expire after 1 hour (not configurable)
+- Handle inspection doesn't extend expiration time
+- Large query result sets (>1000 items) may have slow preview generation
+
 ## 🌐 Azure DevOps API Limitations
 
 ### Authentication
@@ -520,8 +654,8 @@ az login
 ## 🎯 Decision Matrix: Which Tool to Use
 
 ### "I need to find work items..."
-- **By state/type/area** → WIQL query (`wit-get-work-items-by-query-wiql`)
-- **Historical trends** → OData query (`wit-query-analytics-odata`)
+- **By state/type/area** → WIQL query (`wit-wiql-query`)
+- **Historical trends** → OData query (`wit-odata-query`)
 - **Natural language** → AI query generation (`wit-generate-wiql-query` or `wit-generate-odata-query`)
 
 ### "I need to update multiple work items..."
@@ -531,7 +665,7 @@ az login
 
 ### "I need metrics/analytics..."
 - **Real-time counts** → WIQL query + count items in code
-- **Historical velocity** → OData query (`wit-query-analytics-odata`)
+- **Historical velocity** → OData query (`wit-odata-query`)
 - **StoryPoints sum** → WIQL + manual calculation or wit-analyze-by-query-handle
 
 ### "I need to analyze work items..."

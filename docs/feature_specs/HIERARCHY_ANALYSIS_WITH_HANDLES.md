@@ -1,20 +1,45 @@
 # Hierarchy Analysis with Query Handles
 
 **Status:** Implemented  
-**Version:** 1.10.1 (Added 2025-10-28)  
-**MCP Tool:** `wit-analyze-hierarchy-with-handles`
+**Version:** 1.10.2 (Updated 2025-11-07)  
+**MCP Tools:** 
+- `wit-analyze-hierarchy-with-handles` (AI-powered analysis with recommendations)
+- `wit-validate-hierarchy` (Fast rule-based validation, token-optimized)
 
 ## Overview
 
-Enhanced hierarchy validation that groups violations by type and creates query handles for each violation group, enabling direct bulk operations on problematic items. This tool combines AI-powered hierarchy analysis with the query handle pattern to make validation results immediately actionable.
+Hierarchy validation tools that group violations by type and create query handles for each violation category, enabling direct bulk operations on problematic items. Two variants are available:
+
+1. **`wit-validate-hierarchy`** - Fast, rule-based validation with minimal token usage (default behavior)
+2. **`wit-analyze-hierarchy-with-handles`** - AI-powered analysis with actionable recommendations (comprehensive)
+
+Both tools use the query handle pattern to make validation results immediately actionable without exposing work item IDs to LLMs.
 
 ## Purpose
 
-Standard hierarchy analysis identifies problems but requires manual work to act on them. This enhanced tool solves that by:
-- **Grouping violations by type** (orphaned items, incorrect parents, state issues, etc.)
-- **Creating query handles** for each violation group
-- **Enabling bulk operations** directly on problem sets
-- **Providing actionable recommendations** with suggested fixes
+Standard hierarchy analysis identifies problems but requires manual work to act on them. These enhanced tools solve that by:
+- **Grouping violations by granular categories** (e.g., `bug_under_feature`, `orphaned_task`, `state_issue_bug_under_epic`)
+- **Creating query handles** for each violation category (not full violation arrays)
+- **Enabling bulk operations** directly on problem sets using handles
+- **Providing actionable recommendations** (in AI-powered variant)
+- **Minimizing token usage** by returning handles instead of duplicate violation data (default)
+
+## Token-Saving Default Behavior
+
+**By default (`includeViolationDetails: false`), these tools return:**
+- Summary counts of violations by category
+- Query handles for each granular violation category
+- Validation rules reference
+- Usage guidance for retrieving details on-demand
+
+**Full violation arrays are NOT included** to avoid bloat and token waste. The same violation data would otherwise appear in 3+ different structures.
+
+**To view specific violations:**
+1. Use the returned query handles with `wit-query-handle-get-items` or `inspect-query-handle`
+2. Only fetch details for categories you need to review
+3. Use bulk operations directly on handles without viewing details
+
+Set `includeViolationDetails: true` only when you need the full violation arrays in the response (triples response size).
 
 ## User-Facing Behavior
 

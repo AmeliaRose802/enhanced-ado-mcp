@@ -399,39 +399,53 @@ WHERE [System.Id] IN (${workItemIds.join(',')})`;
       }
     }
 
-    return buildSuccessResponse(
-      {
-        summary: {
-          totalItemsAnalyzed: workItems.length,
-          totalViolations: violations.length,
-          errors: bySeverity.error.length,
-          warnings: bySeverity.warning.length,
-          byViolationType: {
-            invalid_parent_type: byType.invalid_parent_type.length,
-            invalid_state_progression: byType.invalid_state_progression.length,
-            orphaned_child: byType.orphaned_child.length
-          },
-          granularCategories: Object.fromEntries(
-            Object.entries(granularCategories).map(([key, violations]) => [key, violations.length])
-          )
+    // Build response - only include full violation details if explicitly requested
+    const response: Record<string, unknown> = {
+      summary: {
+        totalItemsAnalyzed: workItems.length,
+        totalViolations: violations.length,
+        errors: bySeverity.error.length,
+        warnings: bySeverity.warning.length,
+        byViolationType: {
+          invalid_parent_type: byType.invalid_parent_type.length,
+          invalid_state_progression: byType.invalid_state_progression.length,
+          orphaned_child: byType.orphaned_child.length
         },
-        ...(queryHandles && { queryHandles }),
-        ...(includeViolationDetails && {
-          violations: violations,
-          categorized: {
-            byType,
-            bySeverity,
-            granular: granularCategories
-          }
-        }),
-        validationRules: {
-          validChildTypes: VALID_CHILD_TYPES,
-          stateHierarchy: STATE_HIERARCHY
-        }
+        granularCategories: Object.fromEntries(
+          Object.entries(granularCategories).map(([key, violations]) => [key, violations.length])
+        )
       },
+      validationRules: {
+        validChildTypes: VALID_CHILD_TYPES,
+        stateHierarchy: STATE_HIERARCHY
+      }
+    };
+
+    // Add query handles (lightweight, always included by default)
+    if (returnQueryHandles && queryHandles) {
+      response.queryHandles = queryHandles;
+      response.usage = {
+        note: "Use query handles with bulk-operations tools or inspect-query-handle to view specific violations",
+        example: "Call inspect-query-handle with one of the query handles above to see the work items in that violation category"
+      };
+    }
+
+    // Only include full violation arrays if explicitly requested (they're huge)
+    if (includeViolationDetails) {
+      response.violations = violations;
+      response.categorized = {
+        byType,
+        bySeverity,
+        granular: granularCategories
+      };
+    }
+
+    return buildSuccessResponse(
+      response,
       { 
         source: "validate-hierarchy",
-        violationCount: violations.length
+        violationCount: violations.length,
+        samplingAvailable: includeViolationDetails ? false : true
       }
     );
   } catch (error) {
