@@ -206,10 +206,7 @@ export const sprintPlanningAnalyzerSchema = z.object({
 });
 
 export const validateHierarchyFastSchema = z.object({
-  queryHandle: optionalString(),
-  areaPath: optionalString(),
-  maxResults: z.number().int().min(1).max(2000).optional().default(500),
-  includeSubAreas: optionalBool(true),
+  queryHandle: z.string().min(1, "Query handle is required"),
   validateTypes: optionalBool(true),
   validateStates: optionalBool(true),
   returnQueryHandles: optionalBool(true).describe("Create query handles for each violation type (enables bulk operations on violation groups)"),
@@ -638,8 +635,14 @@ export const analyzeByQueryHandleSchema = z.object({
     "assignments",
     "risks",
     "completion",
-    "priorities"
+    "priorities",
+    "hierarchy"
   ])).min(1, "At least one analysis type required"),
+  // Hierarchy validation options (only used when analysisType includes "hierarchy")
+  validateTypes: optionalBool(true).describe("Validate parent-child type relationships (only for hierarchy analysis)"),
+  validateStates: optionalBool(true).describe("Validate state progression consistency (only for hierarchy analysis)"),
+  returnQueryHandles: optionalBool(true).describe("Create query handles for violation categories (only for hierarchy analysis)"),
+  includeViolationDetails: optionalBool(false).describe("Include full violation details in response (only for hierarchy analysis)"),
   ...orgProjectFields()
 });
 

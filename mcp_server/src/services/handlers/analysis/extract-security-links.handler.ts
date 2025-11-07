@@ -50,7 +50,7 @@ export async function handleExtractSecurityLinks(config: ToolConfig, args: unkno
       warnings: [],
       metadata: {
         timestamp: new Date().toISOString(),
-        tool: 'wit-analyze-security'
+        source: 'extract-security-links'
       }
     };
   } catch (error) {

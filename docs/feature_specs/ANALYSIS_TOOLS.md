@@ -10,10 +10,11 @@
 The Enhanced ADO MCP Server provides comprehensive analysis and validation tools for work items:
 
 1. **wit-get-work-items-by-query-wiql with filterByPatterns** - Identify common work item issues (replaces deprecated wit-analyze-patterns)
-2. **wit-analyze-hierarchy** - Fast rule-based hierarchy validation
-3. **wit-get-last-change** - Determine meaningful change dates
-4. **wit-analyze-security** - Extract security scan instruction links
-5. **wit-get-config** - View current MCP server configuration
+2. **wit-analyze-by-query-handle** - Comprehensive analysis including effort, velocity, assignments, risks, completion, priorities, and hierarchy validation
+3. **wit-analyze-hierarchy** - Standalone fast rule-based hierarchy validation (also available via wit-analyze-by-query-handle)
+4. **wit-get-last-change** - Determine meaningful change dates
+5. **wit-analyze-security** - Extract security scan instruction links
+6. **wit-get-config** - View current MCP server configuration
 
 These tools enable proactive issue detection and work item quality improvement.
 
@@ -112,9 +113,99 @@ Use the query handle with bulk operations to remediate issues.
 }
 ```
 
-### 2. wit-analyze-hierarchy
+### 2. wit-analyze-by-query-handle with Hierarchy Analysis
 
-Fast, rule-based validation of work item hierarchy.
+Comprehensive work item analysis including hierarchy validation as one of multiple analysis types.
+
+#### Input Parameters
+
+**Required:**
+- `queryHandle` (string) - Query handle from `wit-wiql-query` with `returnQueryHandle=true`
+- `analysisType` (array of strings) - Analysis types to perform:
+  - `"effort"` - Story Points breakdown and estimation coverage
+  - `"velocity"` - Completion trends over time
+  - `"assignments"` - Team workload distribution
+  - `"risks"` - Blockers, stale items, and risk assessment
+  - `"completion"` - State distribution and progress metrics
+  - `"priorities"` - Priority balance analysis
+  - `"hierarchy"` - Parent-child type validation and state consistency checks
+
+**Optional (for hierarchy analysis only):**
+- `validateTypes` (boolean) - Validate parent-child type relationships (default true)
+- `validateStates` (boolean) - Validate state progression consistency (default true)
+- `returnQueryHandles` (boolean) - Create query handles for violation categories (default true)
+- `includeViolationDetails` (boolean) - Include full violation details in response (default false)
+- `organization` (string) - Azure DevOps organization
+- `project` (string) - Azure DevOps project
+
+#### Output Format
+
+**Success Response (with hierarchy analysis):**
+```json
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_abc123",
+    "item_count": 50,
+    "original_query": "SELECT [System.Id] FROM WorkItems WHERE...",
+    "analysis_types": ["effort", "risks", "hierarchy"],
+    "results": {
+      "effort": {
+        "total_items": 50,
+        "items_with_story_points": 42,
+        "total_story_points": 137
+      },
+      "risks": {
+        "risk_score": 35,
+        "risk_level": "Medium",
+        "identified_risks": ["High unestimated work: 8/50 items"]
+      },
+      "hierarchy": {
+        "summary": {
+          "totalItemsAnalyzed": 50,
+          "totalViolations": 5,
+          "errors": 2,
+          "warnings": 3
+        },
+        "queryHandles": {
+          "invalid_parent_task_under_epic": "qh_violations_abc",
+          "orphaned_task": "qh_orphaned_def"
+        }
+      }
+    }
+  },
+  "errors": [],
+  "warnings": []
+}
+```
+
+#### Examples
+
+**Example 1: Multi-faceted Analysis with Hierarchy**
+```json
+{
+  "queryHandle": "qh_abc123",
+  "analysisType": ["effort", "risks", "hierarchy"],
+  "validateTypes": true,
+  "validateStates": true
+}
+```
+
+**Example 2: Hierarchy-Only Analysis**
+```json
+{
+  "queryHandle": "qh_abc123",
+  "analysisType": ["hierarchy"],
+  "returnQueryHandles": true,
+  "includeViolationDetails": false
+}
+```
+
+💡 **Tip:** Use `wit-analyze-by-query-handle` when you want to combine multiple analyses (e.g., effort + hierarchy + risks) in a single call. Use standalone `wit-analyze-hierarchy` when you only need hierarchy validation.
+
+### 3. wit-analyze-hierarchy
+
+Fast, rule-based validation of work item hierarchy (standalone tool).
 
 #### Input Parameters
 

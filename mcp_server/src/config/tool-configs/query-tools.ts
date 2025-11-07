@@ -110,24 +110,21 @@ export const queryTools: ToolConfig[] = [
   },
   {
     name: "wit-validate-hierarchy",
-    description: "Fast, rule-based validation of work item hierarchy. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). By DEFAULT, returns only summary counts and query handles for each violation category - use includeViolationDetails=true to get full violation arrays (not recommended due to size). Query handles enable bulk operations on specific violation groups (orphaned items, incorrect parent types, state issues). Use inspect-query-handle to view items in each category. Accepts either queryHandle (from WIQL query) or areaPath. Note: Large area paths (>500 items) may take 1-2 minutes.",
+    description: "Fast, rule-based validation of work item hierarchy using a query handle from wit-wiql-query. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). By DEFAULT, returns only summary counts and query handles for each violation category - use includeViolationDetails=true to get full violation arrays (not recommended due to size). Query handles enable bulk operations on specific violation groups (orphaned items, incorrect parent types, state issues). Use inspect-query-handle to view items in each category. ⚠️ REQUIRES query handle from wit-wiql-query - first run a WIQL query with returnQueryHandle=true, then pass the handle to this tool. 💡 TIP: You can also use wit-analyze-by-query-handle with analysisType=['hierarchy'] to include hierarchy validation alongside other analyses.",
     script: "",
     schema: validateHierarchyFastSchema,
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true (alternative to areaPath)" },
-        areaPath: { type: "string", description: "Area path to validate all work items within (if not using queryHandle)" },
+        queryHandle: { type: "string", description: "REQUIRED: Query handle from wit-wiql-query with returnQueryHandle=true. First execute a WIQL query to get work items, then pass the returned query handle here." },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" },
-        maxResults: { type: "number", description: "Maximum number of work items to analyze when using areaPath (default 500)" },
-        includeSubAreas: { type: "boolean", description: "Include child area paths in analysis (default true)" },
         validateTypes: { type: "boolean", description: "Validate parent-child type relationships (default true)" },
         validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" },
         returnQueryHandles: { type: "boolean", description: "Create query handles for each granular violation category (e.g., bug_under_feature, orphaned_task) to enable bulk operations and inspection (default true). Handles expire after 1 hour." },
         includeViolationDetails: { type: "boolean", description: "⚠️ Include full violation arrays in response (default false). WARNING: This triples response size by including the same data in multiple formats. Leave false and use query handles with inspect-query-handle to view specific violations on-demand instead." }
       },
-      required: []
+      required: ["queryHandle"]
     }
   }
 ];

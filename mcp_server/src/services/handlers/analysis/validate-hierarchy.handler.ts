@@ -9,17 +9,13 @@ import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "@/utils/logger.js";
-import { escapeAreaPath } from "@/utils/work-item-parser.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "@/utils/response-builder.js";
 import { queryHandleService } from "../../query-handle-service.js";
 
 interface ValidateHierarchyArgs {
-  queryHandle?: string;
-  areaPath?: string;
+  queryHandle: string;
   organization?: string;
   project?: string;
-  maxResults?: number;
-  includeSubAreas?: boolean;
   validateTypes?: boolean;
   validateStates?: boolean;
   returnQueryHandles?: boolean;
@@ -117,7 +113,6 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
   // Declare variables at function scope for error handling
   let organization: string = '';
   let project: string = '';
-  let areaPath: string | undefined;
   
   try {
     const azValidation = validateAzureCLI();
@@ -142,8 +137,6 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
 
     const {
       queryHandle,
-      maxResults = 500,
-      includeSubAreas = true,
       validateTypes = true,
       validateStates = true,
       returnQueryHandles = true,
@@ -153,48 +146,27 @@ export async function handleValidateHierarchy(config: ToolConfig, args: unknown)
     // Set for error handling
     organization = validationArgs.organization;
     project = validationArgs.project;
-    areaPath = validationArgs.areaPath;
 
-    logger.info(`Validating hierarchy in organization="${organization}", project="${project}", areaPath="${areaPath || 'none'}", queryHandle="${queryHandle || 'none'}" (types=${validateTypes}, states=${validateStates})`);
+    logger.info(`Validating hierarchy in organization="${organization}", project="${project}", queryHandle="${queryHandle}" (types=${validateTypes}, states=${validateStates})`);
 
-    let workItems: Array<{id: number; title: string; type: string; state: string; additionalFields?: Record<string, unknown>}> = [];
-
-    // Resolve work item IDs from query handle if provided
-    if (queryHandle) {
-      const handleIds = queryHandleService.getWorkItemIds(queryHandle);
-      if (!handleIds) {
-        return buildErrorResponse(
-          `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
-          { source: 'validate-hierarchy' }
-        );
-      }
-      logger.info(`Resolved ${handleIds.length} work item IDs from query handle`);
-      
-      const result = await queryWorkItemsByWiql({
-        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${handleIds.join(',')})`,
-        organization,
-        project,
-        includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        maxResults: handleIds.length
-      });
-      workItems = result.workItems;
-    } else if (areaPath) {
-      const escapedAreaPath = escapeAreaPath(areaPath);
-      const areaClause = includeSubAreas ? `[System.AreaPath] UNDER '${escapedAreaPath}'` : `[System.AreaPath] = '${escapedAreaPath}'`;
-      const result = await queryWorkItemsByWiql({
-        wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE ${areaClause} AND [System.State] NOT IN ('Removed', 'Closed', 'Done', 'Completed', 'Resolved') ORDER BY [System.WorkItemType], [System.Id]`,
-        organization,
-        project,
-        includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
-        maxResults
-      });
-      workItems = result.workItems;
-    } else {
+    // Resolve work item IDs from query handle
+    const handleIds = queryHandleService.getWorkItemIds(queryHandle);
+    if (!handleIds) {
       return buildErrorResponse(
-        'Either queryHandle or areaPath must be provided',
+        `Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`,
         { source: 'validate-hierarchy' }
       );
     }
+    logger.info(`Resolved ${handleIds.length} work item IDs from query handle`);
+    
+    const result = await queryWorkItemsByWiql({
+      wiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${handleIds.join(',')})`,
+      organization,
+      project,
+      includeFields: ['System.Parent', 'System.State', 'System.WorkItemType', 'System.Title'],
+      maxResults: handleIds.length
+    });
+    const workItems = result.workItems;
 
     logger.debug(`Analyzing ${workItems.length} work items for hierarchy violations`);
 
@@ -461,19 +433,18 @@ WHERE [System.Id] IN (${workItemIds.join(',')})`;
           `Failed to validate hierarchy: Project not found or access denied.\n\n` +
           `Currently using:\n` +
           `  Organization: "${organization}"\n` +
-          `  Project: "${project}"\n` +
-          `  Area Path: "${areaPath || 'none'}"\n\n` +
+          `  Project: "${project}"\n\n` +
           `Server configuration defaults:\n` +
           `  Organization: "${requiredConfig.organization}"\n` +
           `  Project: "${requiredConfig.project}"\n\n` +
           `This error means either:\n` +
           `  1. The project "${project}" does not exist in organization "${organization}"\n` +
           `  2. You don't have access to this organization/project\n` +
-          `  3. The area path exists in a different organization/project\n\n` +
+          `  3. The query handle referenced work items from a different organization/project\n\n` +
           `Solutions:\n` +
-          `  - Provide explicit "organization" and "project" parameters that match where the area path exists\n` +
+          `  - Provide explicit "organization" and "project" parameters that match the query handle's context\n` +
           `  - Verify you're logged in with the correct Azure account: az login\n` +
-          `  - Check that the area path "${areaPath || 'none'}" exists in the specified project`
+          `  - Ensure the query handle is still valid (handles expire after 1 hour)`
         ),
         { source: "validate-hierarchy" }
       );

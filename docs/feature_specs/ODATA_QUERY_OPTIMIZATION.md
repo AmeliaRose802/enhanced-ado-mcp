@@ -16,7 +16,7 @@ The `wit-query-odata` tool supports these predefined query types:
 2. **groupByState** - Group work items by state with counts
 3. **groupByType** - Group work items by work item type with counts
 4. **groupByAssignee** - Group work items by assignee with counts
-5. **velocityMetrics** - Track completed work items over time for velocity/burndown
+5. **velocityMetrics** - Track completed work items over time for velocity/burndown. Returns work items with CompletedDate, ClosedDate, WorkItemType, and Title. Does NOT require or include StoryPoints field for maximum compatibility across all Azure DevOps projects.
 6. **cycleTimeMetrics** - Calculate average and max cycle time by assignee
 7. **customQuery** - Execute custom OData query for advanced scenarios
 

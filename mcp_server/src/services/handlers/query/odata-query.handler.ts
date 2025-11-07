@@ -133,42 +133,26 @@ export async function handleODataQuery(
 
       logger.info(`✅ Generated valid query in ${generationResult.iterationCount} iteration(s)`);
 
-      // If AI generation was used but returnQueryHandle is false or it's an aggregation query, return just the query
-      if (!queryArgs.returnQueryHandle || isAggregationQuery) {
-        const warnings: string[] = [];
-        if (isAggregationQuery) {
-          warnings.push("⚠️ Query handles not available for aggregated queries - results are statistical summaries, not work item lists");
-          warnings.push("Use this query directly with wit-odata-query to get aggregated results");
-        }
-
-        return {
-          success: true,
-          data: asToolData({
-            query: finalQuery,
-            isValidated: generationResult.validated,
-            message: isAggregationQuery
-              ? '✅ Query generated successfully. This is an aggregation query - execute it to get statistical results.'
-              : '✅ Query generated successfully. Set returnQueryHandle=true to execute it and get results.'
-          }),
-          metadata: {
-            source: "odata-query",
-            mode: "ai-generation-only",
-            queryType: isAggregationQuery ? 'aggregation' : 'itemList',
-            ...aiGenerationMetadata
-          },
-          errors: [],
-          warnings
-        };
+      // AI-generated queries should always execute and return results
+      // For aggregation queries, execute via Analytics API (no query handle)
+      if (isAggregationQuery) {
+        logger.info(`Executing AI-generated aggregation query...`);
+        return await executeODataAnalytics(finalQuery, queryArgs as ODataAnalyticsArgs, aiGenerationMetadata);
       }
 
-      // For non-aggregation AI-generated queries with returnQueryHandle=true, execute the query
-      logger.info(`Executing AI-generated OData query to create query handle (maxResults: ${queryArgs.maxResults || 200})...`);
-      
-      return await executeODataQueryForHandle(
-        finalQuery,
-        queryArgs,
-        aiGenerationMetadata
-      );
+      // For non-aggregation queries, execute and optionally create query handle
+      if (queryArgs.returnQueryHandle) {
+        logger.info(`Executing AI-generated OData query to create query handle (maxResults: ${queryArgs.maxResults || 200})...`);
+        return await executeODataQueryForHandle(
+          finalQuery,
+          queryArgs,
+          aiGenerationMetadata
+        );
+      }
+
+      // For non-aggregation queries without returnQueryHandle, execute via Analytics API
+      logger.info(`Executing AI-generated non-aggregation query without query handle...`);
+      return await executeODataAnalytics(finalQuery, queryArgs as ODataAnalyticsArgs, aiGenerationMetadata);
     }
 
     // Direct OData execution path
@@ -881,7 +865,9 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       if (filterClauses.length > 0) {
         query += ` and ${filterClauses.join(' and ')}`;
       }
-      query += "&$select=WorkItemId,State,CompletedDate,StoryPoints";
+      // Don't hardcode StoryPoints - it may not exist in all projects
+      // Include common completion fields instead
+      query += "&$select=WorkItemId,State,CompletedDate,ClosedDate,WorkItemType,Title";
       break;
 
     case "cycleTimeMetrics":

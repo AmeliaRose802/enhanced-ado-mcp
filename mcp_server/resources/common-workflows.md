@@ -106,16 +106,26 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Validate Hierarchy
 ```json
+// First, get a query handle for the items
+// Tool: wit-wiql-query
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (12345, 12346, 12347, 12348)",
+  "returnQueryHandle": true
+}
+// Returns: { query_handle: "qh_items_xyz" }
+
+// Then validate using the handle
 // Tool: wit-validate-hierarchy
 {
-  "workItemIds": [12345, 12346, 12347, 12348]
+  "queryHandle": "qh_items_xyz"
 }
 ```
 
 **Checks:**
 - Parent-child type rules
 - State consistency
-- No circular references
+- Orphaned items
+- Returns query handles for each violation category
 
 ### Step 4: Assign to Copilot (Optional)
 ```json
@@ -169,9 +179,10 @@ End-to-end workflows combining multiple tools.
 
 ### Step 3: Validate Hierarchies
 ```json
+// Use the query handle from Step 2
 // Tool: wit-validate-hierarchy
 {
-  "workItemIds": [100, 101, 102, ...]
+  "queryHandle": "qh_items_with_issues"
 }
 ```
 
@@ -320,9 +331,18 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Validate Complete Hierarchy
 ```json
+// First, create a query handle for all items
+// Tool: wit-wiql-query
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (12345, 12346, ...)",
+  "returnQueryHandle": true
+}
+// Returns: { query_handle: "qh_tree_xyz" }
+
+// Then validate using the handle
 // Tool: wit-validate-hierarchy
 {
-  "workItemIds": [12345, 12346, ...] // all items in tree
+  "queryHandle": "qh_tree_xyz"
 }
 ```
 

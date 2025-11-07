@@ -288,18 +288,33 @@ Query Azure DevOps Analytics using OData for efficient aggregations, metrics, an
 {
   "success": true,
   "data": {
+    "summary": "Velocity metrics for 163 completed work items",
+    "count": 163,
     "results": [
-      { "CompletedDate": "2024-01-01", "Count": 12 },
-      { "CompletedDate": "2024-01-02", "Count": 15 },
-      { "CompletedDate": "2024-01-03", "Count": 8 }
-    ],
-    "totalCompleted": 35,
-    "averagePerDay": 11.67
+      {
+        "WorkItemId": 12345,
+        "State": "Closed",
+        "CompletedDate": "2024-01-15T10:30:00Z",
+        "ClosedDate": "2024-01-15T11:00:00Z",
+        "WorkItemType": "User Story",
+        "Title": "Implement authentication"
+      },
+      {
+        "WorkItemId": 12346,
+        "State": "Done",
+        "CompletedDate": "2024-01-16T14:20:00Z",
+        "ClosedDate": "2024-01-16T14:30:00Z",
+        "WorkItemType": "Bug",
+        "Title": "Fix login bug"
+      }
+    ]
   },
   "errors": [],
   "warnings": []
 }
 ```
+
+**Note:** velocityMetrics returns completed work items with their completion dates. It does NOT require or include StoryPoints field - this ensures compatibility with all Azure DevOps projects regardless of whether they track story points.
 
 #### Examples
 

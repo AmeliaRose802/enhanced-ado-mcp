@@ -13,7 +13,7 @@ import {
 export const queryHandleTools: ToolConfig[] = [
   {
     name: "wit-analyze-by-query-handle",
-    description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, and priority analysis. Forces safe analysis patterns.",
+    description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, priority analysis, and hierarchy validation. Forces safe analysis patterns.",
     script: "",
     schema: analyzeByQueryHandleSchema,
     inputSchema: {
@@ -24,10 +24,14 @@ export const queryHandleTools: ToolConfig[] = [
           type: "array", 
           items: { 
             type: "string", 
-            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities"] 
+            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities", "hierarchy"] 
           },
-          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown)"
+          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child type validation and state progression checks)"
         },
+        validateTypes: { type: "boolean", description: "Validate parent-child type relationships (only for hierarchy analysis, default true)" },
+        validateStates: { type: "boolean", description: "Validate state progression consistency (only for hierarchy analysis, default true)" },
+        returnQueryHandles: { type: "boolean", description: "Create query handles for violation categories (only for hierarchy analysis, default true)" },
+        includeViolationDetails: { type: "boolean", description: "Include full violation details in response (only for hierarchy analysis, default false)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
       },

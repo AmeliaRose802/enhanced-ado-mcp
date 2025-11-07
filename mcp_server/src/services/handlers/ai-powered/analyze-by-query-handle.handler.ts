@@ -14,6 +14,8 @@ import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "@/utils/ado-http-client.js";
 import { loadConfiguration } from "@/config/config.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
+import { validateHierarchyFastSchema } from "@/config/schemas.js";
+import { handleValidateHierarchy } from "../analysis/validate-hierarchy.handler.js";
 
 // Type definitions for analysis results
 interface EffortAnalysisResult {
@@ -74,6 +76,16 @@ interface PriorityAnalysisResult {
   priority_balance: string;
 }
 
+interface HierarchyAnalysisResult {
+  summary: {
+    totalItemsAnalyzed: number;
+    totalViolations: number;
+    errors: number;
+    warnings: number;
+  };
+  [key: string]: unknown;
+}
+
 interface WorkItemAnalysisResults {
   effort?: EffortAnalysisResult;
   velocity?: VelocityAnalysisResult;
@@ -81,7 +93,8 @@ interface WorkItemAnalysisResults {
   risks?: RiskAnalysisResult;
   completion?: CompletionAnalysisResult;
   priorities?: PriorityAnalysisResult;
-  [key: string]: EffortAnalysisResult | VelocityAnalysisResult | AssignmentAnalysisResult | RiskAnalysisResult | CompletionAnalysisResult | PriorityAnalysisResult | { error: string } | undefined;
+  hierarchy?: HierarchyAnalysisResult;
+  [key: string]: EffortAnalysisResult | VelocityAnalysisResult | AssignmentAnalysisResult | RiskAnalysisResult | CompletionAnalysisResult | PriorityAnalysisResult | HierarchyAnalysisResult | { error: string } | undefined;
 }
 
 interface WorkItemAnalysis {
@@ -251,6 +264,43 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
                 break;
               case 'priorities':
                 analysis.results.priorities = analyzePriorities(workItems);
+                break;
+              case 'hierarchy':
+                // Call hierarchy validation handler with query handle
+                const hierarchyArgs = {
+                  queryHandle,
+                  organization: org,
+                  project: proj,
+                  validateTypes: parsed.data.validateTypes,
+                  validateStates: parsed.data.validateStates,
+                  returnQueryHandles: parsed.data.returnQueryHandles,
+                  includeViolationDetails: parsed.data.includeViolationDetails
+                };
+                const hierarchyConfig: ToolConfig = {
+                  schema: validateHierarchyFastSchema,
+                  name: 'wit-validate-hierarchy',
+                  description: 'Validate hierarchy for analysis',
+                  script: '',
+                  inputSchema: {
+                    type: 'object',
+                    properties: {},
+                    required: []
+                  }
+                };
+                const hierarchyResult = await handleValidateHierarchy(hierarchyConfig, hierarchyArgs);
+                if (hierarchyResult.success && hierarchyResult.data) {
+                  analysis.results.hierarchy = hierarchyResult.data as HierarchyAnalysisResult;
+                } else {
+                  analysis.results.hierarchy = {
+                    summary: {
+                      totalItemsAnalyzed: 0,
+                      totalViolations: 0,
+                      errors: 0,
+                      warnings: 0
+                    },
+                    error: hierarchyResult.errors?.join('; ') || 'Hierarchy validation failed'
+                  };
+                }
                 break;
               default:
                 logger.warn(`Unknown analysis type: ${analysisTypeItem}`);

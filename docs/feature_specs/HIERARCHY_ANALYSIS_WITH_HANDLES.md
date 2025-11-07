@@ -44,6 +44,24 @@ Set `includeViolationDetails: true` only when you need the full violation arrays
 ## User-Facing Behavior
 
 ### Invocation
+
+**`wit-validate-hierarchy` requires a query handle:**
+```typescript
+// First, run a WIQL query to get items
+const query = await callTool('wit-wiql-query', {
+  description: "all work items in MyProject\\Team\\Area",
+  returnQueryHandle: true
+});
+
+// Then validate hierarchy using the query handle
+const result = await callTool('wit-validate-hierarchy', {
+  queryHandle: query.data.query_handle,
+  validateTypes: true,
+  validateStates: true
+});
+```
+
+**`wit-analyze-hierarchy-with-handles` accepts area path or work item IDs:**
 ```typescript
 const result = await callTool('wit-analyze-hierarchy-with-handles', {
   AreaPath: "MyProject\\Team\\Area",
@@ -94,7 +112,19 @@ Returns violation groups with query handles, detailed issues, and recommendation
 
 ## Input Parameters
 
-### Optional Parameters
+### `wit-validate-hierarchy` Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `queryHandle` | `string` | **Yes** | - | Query handle from `wit-wiql-query` (with `returnQueryHandle: true`) |
+| `Organization` | `string` | No | Config default | Azure DevOps organization |
+| `Project` | `string` | No | Config default | Azure DevOps project |
+| `validateTypes` | `boolean` | No | `true` | Validate parent-child type relationships |
+| `validateStates` | `boolean` | No | `true` | Validate state consistency |
+| `returnQueryHandles` | `boolean` | No | `true` | Create query handles for violation categories |
+| `includeViolationDetails` | `boolean` | No | `false` | Include full violation arrays (triples response size) |
+
+### `wit-analyze-hierarchy-with-handles` Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
@@ -108,7 +138,7 @@ Returns violation groups with query handles, detailed issues, and recommendation
 | `ExcludeStates` | `string[]` | - | Exclude items in these states |
 | `AnalysisDepth` | `'shallow' \| 'deep'` | `'deep'` | Analysis depth level |
 
-**Note:** Provide either `WorkItemIds` OR `AreaPath`, not both.
+**Note:** For `wit-analyze-hierarchy-with-handles`, provide either `WorkItemIds` OR `AreaPath`, not both.
 
 ## Configuration
 
@@ -188,41 +218,63 @@ enhanced-ado-mcp myorg --area-path "MyProject\\Team"
 
 ## Examples
 
-### Example 1: Analyze by Area Path
+### Example 1: Fast Validation by Query Handle (`wit-validate-hierarchy`)
 
-**Input:**
+**Step 1 - Query work items:**
 ```typescript
-{
-  "AreaPath": "MyProject\\Team\\Backend",
-  "MaxItemsToAnalyze": 200,
-  "AnalysisDepth": "deep"
-}
+const query = await callTool('wit-wiql-query', {
+  description: "all active work items in Backend team area",
+  returnQueryHandle: true
+});
+// Returns: { query_handle: "qh_backend_items_123", count: 180, ... }
+```
+
+**Step 2 - Validate hierarchy:**
+```typescript
+const validation = await callTool('wit-validate-hierarchy', {
+  queryHandle: query.data.query_handle,
+  validateTypes: true,
+  validateStates: true
+});
 ```
 
 **Output:**
 ```json
 {
   "summary": {
-    "totalAnalyzed": 180,
-    "itemsWithIssues": 15,
-    "violationGroupsCreated": 3
-  },
-  "violationGroups": [
-    {
-      "type": "orphaned_items",
-      "queryHandle": "qh_orphaned_abc123",
-      "count": 5,
-      "suggestedActions": ["Link to parent Feature"]
+    "totalItemsAnalyzed": 180,
+    "totalViolations": 15,
+    "errors": 5,
+    "warnings": 10,
+    "byViolationType": {
+      "invalid_parent_type": 3,
+      "invalid_state_progression": 7,
+      "orphaned_child": 5
+    },
+    "granularCategories": {
+      "orphaned_task": 3,
+      "orphaned_bug": 2,
+      "invalid_parent_task_under_epic": 2,
+      "state_issue_task_under_pbi": 5
     }
-  ]
+  },
+  "queryHandles": {
+    "orphaned_task": "qh_orphaned_task_abc",
+    "orphaned_bug": "qh_orphaned_bug_def",
+    "invalid_parent_task_under_epic": "qh_wrong_parent_ghi",
+    "state_issue_task_under_pbi": "qh_state_jkl"
+  },
+  "usage": {
+    "note": "Use query handles with bulk-operations tools or inspect-query-handle"
+  }
 }
 ```
 
 **Follow-up Action:**
 ```typescript
-// Bulk assign orphaned items to review
+// Bulk assign orphaned tasks for review
 await callTool('wit-bulk-assign-by-query-handle', {
-  queryHandle: "qh_orphaned_abc123",
+  queryHandle: "qh_orphaned_task_abc",
   assignee: "team-lead@company.com"
 });
 ```
