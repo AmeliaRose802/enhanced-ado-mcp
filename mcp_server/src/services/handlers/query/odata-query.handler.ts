@@ -259,9 +259,13 @@ async function executeODataAnalytics(
           `The user account does not have permission to access Azure DevOps Analytics.\n\n` +
           `REQUIRED PERMISSION: "View analytics" at the project level\n` +
           `This permission is required to use OData queries for aggregations and analytics.\n\n` +
+          `HOW TO CHECK YOUR PERMISSIONS:\n` +
+          `1. Go to: https://dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_settings/security\n` +
+          `2. Search for your email address in the Members list\n` +
+          `3. Look for "View analytics" permission in your permissions list\n\n` +
           `HOW TO FIX:\n` +
-          `1. Contact your Azure DevOps administrator to grant "View analytics" permission\n` +
-          `2. Or use WIQL queries instead (wit-wiql-query tool) for non-aggregation queries\n\n` +
+          `1. If you don't have "View analytics" permission, contact your Azure DevOps administrator\n` +
+          `2. Alternative: Use WIQL queries (wit-wiql-query tool) which don't require Analytics permissions\n\n` +
           `MORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\n` +
           `Technical details: ${errorText}`
         );
@@ -404,9 +408,13 @@ async function executeODataQueryForHandle(
         `The user account does not have permission to access Azure DevOps Analytics.\n\n` +
         `REQUIRED PERMISSION: "View analytics" at the project level\n` +
         `This permission is required to use OData queries with query handles.\n\n` +
+        `HOW TO CHECK YOUR PERMISSIONS:\n` +
+        `1. Go to: https://dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_settings/security\n` +
+        `2. Search for your email address in the Members list\n` +
+        `3. Look for "View analytics" permission in your permissions list\n\n` +
         `HOW TO FIX:\n` +
-        `1. Contact your Azure DevOps administrator to grant "View analytics" permission\n` +
-        `2. Or use WIQL queries with returnQueryHandle=true for non-aggregation queries\n\n` +
+        `1. If you don't have "View analytics" permission, contact your Azure DevOps administrator\n` +
+        `2. Alternative: Use WIQL queries with returnQueryHandle=true for non-aggregation queries\n\n` +
         `MORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\n` +
         `Technical details: ${errorText}`
       );
@@ -691,7 +699,7 @@ async function testODataQuery(
       if (response.status === 401 || response.status === 403 || errorText.includes('TF400813')) {
         return {
           success: false,
-          error: `Analytics API authorization error: ${response.status}. User lacks "View analytics" permission. Contact your Azure DevOps administrator to grant access, or use WIQL queries instead. More info: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security`
+          error: `Analytics API authorization error: ${response.status}. User lacks "View analytics" permission. Check permissions at: https://dev.azure.com/${organization}/${project}/_settings/security - Search for your email and verify "View analytics" is granted. Contact your Azure DevOps administrator if needed, or use WIQL queries instead. More info: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security`
         };
       }
       
