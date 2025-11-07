@@ -138,7 +138,7 @@ Use tool discovery when:
     }
   ],
   "alternativeApproaches": [
-    "Use wit-new-copilot-item if assigning to Copilot immediately"
+    "Use wit-create-new-item for basic creation, then wit-assign-to-copilot if assigning to Copilot separately"
   ],
   "warnings": []
 }
@@ -175,7 +175,7 @@ Use tool discovery when:
 
 ### Creating Items
 - Single: `wit-create-new-item`
-- With assignment: `wit-new-copilot-item`
+- Basic: `wit-create-new-item`
 
 ### Querying
 - Known query: `wit-get-work-items-by-query-wiql`

@@ -109,22 +109,7 @@ export const assignToCopilotSchema = z.object({
   ...orgProjectFields()
 });
 
-export const newCopilotItemSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  parentWorkItemId: workItemIdField(),
-  repository: z.string().min(1, "Repository is required"),
-  description: optionalString(),
-  tags: optionalString(),
-  workItemType: optionalString(),
-  branch: optionalString(),
-  gitHubCopilotGuid: optionalString(),
-  specializedAgent: optionalString().describe("Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'"),
-  areaPath: optionalString(),
-  iterationPath: optionalString(),
-  priority: optionalNumber(),
-  inheritParentPaths: optionalBool(),
-  ...orgProjectFields()
-});
+
 
 // ============================================================================
 // Analysis & Intelligence Schemas

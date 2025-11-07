@@ -34,7 +34,7 @@ import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-p
 
 // Integration handlers
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
-import { handleNewCopilotItem } from './handlers/integration/new-copilot-item.handler.js';
+
 
   // Context handlers
 import { handleGetWorkItemContextPackage } from './handlers/context/get-work-item-context-package.handler.js';
@@ -190,11 +190,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Assign work item to GitHub Copilot with branch link
   if (name === 'assign-copilot') {
     return await handleAssignToCopilot(config, args);
-  }
-
-  // Create work item and immediately assign to GitHub Copilot
-  if (name === 'create-workitem-copilot') {
-    return await handleNewCopilotItem(config, args);
   }
 
   // Extract security instruction links from work item

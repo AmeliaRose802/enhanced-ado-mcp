@@ -226,7 +226,7 @@ Relibly generating queries requires thosands of tokens of context, which will de
 **Work Item Creation (4 tools):**
 - `create-workitem` - Create work items with optional parent
 - `assign-copilot` - Assign existing items to GitHub Copilot
-- `create-workitem-copilot` - Create and auto-assign to Copilot
+
 - `clone-workitem` - Clone/duplicate work items
 
 **Work Item Context (2 tools):**

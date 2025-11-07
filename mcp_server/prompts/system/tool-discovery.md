@@ -66,7 +66,7 @@ Some tasks require multiple tools in sequence:
 
 ### Creation Tools
 - `wit-create-new-item`: Create single work item
-- `wit-new-copilot-item`: Create and assign to Copilot
+- `wit-assign-to-copilot`: Assign existing work item to Copilot
 
 ### Query Tools
 - `wit-wiql-query`: Execute WIQL queries

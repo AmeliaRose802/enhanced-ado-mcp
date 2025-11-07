@@ -44,7 +44,6 @@ export const TOOL_NAMES = {
   
   // Integration Tools
   ASSIGN_TO_COPILOT: 'wit-assign-to-copilot',
-  NEW_COPILOT_ITEM: 'wit-new-copilot-item',
 } as const;
 
 /**

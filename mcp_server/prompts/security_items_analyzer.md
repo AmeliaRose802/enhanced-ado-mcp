@@ -37,7 +37,7 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 **Work Item Management:**
 - `wit-create-new-item` - Create work items
 - `wit-assign-to-copilot` - Assign to GitHub Copilot
-- `wit-new-copilot-item` - Create and assign to Copilot
+- `wit-assign-to-copilot` - Assign existing item to Copilot
 
 **Bulk Operations:**
 - `wit-unified-bulk-operations-by-query-handle` - Unified bulk operations tool

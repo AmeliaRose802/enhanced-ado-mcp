@@ -2,7 +2,6 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   createNewItemSchema,
   assignToCopilotSchema,
-  newCopilotItemSchema,
   cloneWorkItemSchema
 } from "../schemas.js";
 
@@ -47,30 +46,6 @@ export const workItemCreationTools: ToolConfig[] = [
         specializedAgent: { type: "string", description: "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'" }
       },
       required: ["workItemId", "repository"]
-    }
-  },
-  {
-    name: "create-workitem-copilot",
-    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Optionally specify a specialized Copilot agent using the specializedAgent parameter. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, branch, gitHubCopilotGuid, areaPath, iterationPath, priority, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
-    script: "",
-    schema: newCopilotItemSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string", description: "Title of the work item" },
-        parentWorkItemId: { type: "number", description: "Parent work item ID under which to create the new item" },
-        repository: { type: "string", description: "Git repository name (required)" },
-        description: { type: "string", description: "Markdown description" },
-        tags: { type: "string", description: "Semicolon or comma separated tags" },
-        workItemType: { type: "string", description: "Override default work item type from config" },
-        branch: { type: "string", description: "Override default branch from config" },
-        gitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" },
-        specializedAgent: { type: "string", description: "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'" },
-        areaPath: { type: "string", description: "Override default area path from config" },
-        iterationPath: { type: "string", description: "Override default iteration path from config" },
-        priority: { type: "number", description: "Override default priority from config" }
-      },
-      required: ["title", "parentWorkItemId", "repository"]
     }
   },
   {
