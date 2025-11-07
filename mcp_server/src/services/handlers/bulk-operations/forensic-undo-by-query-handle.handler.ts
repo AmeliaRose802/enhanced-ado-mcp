@@ -1,5 +1,5 @@
 /**
- * Handler for wit-forensic-undo-by-query-handle tool
+ * Handler for undo-forensic tool
  * 
  * Forensic undo: Analyzes work item revision history to detect and revert changes
  * made by a specific user within a time window, even if those changes were not
@@ -134,7 +134,7 @@ export async function handleForensicUndoByQueryHandle(config: ToolConfig, args: 
         success: false,
         data: null,
         metadata: { source: "forensic-undo-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

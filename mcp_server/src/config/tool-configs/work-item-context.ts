@@ -10,7 +10,7 @@ import {
  */
 export const workItemContextTools: ToolConfig[] = [
   {
-    name: "wit-get-work-item-context-package",
+    name: "get-context",
     description: "Retrieve a comprehensive context package for a single work item including core fields, description, acceptance criteria, parent, children, related links, comments, recent history, and optionally PRs/commits and attachments in one call.",
     script: "",
     schema: workItemContextPackageSchema,
@@ -36,7 +36,7 @@ export const workItemContextTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-extract-security-links",
+    name: "extract-security-links",
     description: "Extract instruction links from security scan work items. organization and project are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: extractSecurityLinksSchema,

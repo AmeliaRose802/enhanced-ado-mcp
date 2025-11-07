@@ -1,5 +1,5 @@
 /**
- * Unified handler for wit-query-handle-info tool
+ * Unified handler for inspect-handle tool
  * Combines functionality from validate, inspect, and select handlers
  * 
  * Default behavior: Returns basic inspection data
@@ -69,7 +69,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
     if (!queryData) {
       return buildNotFoundError('query-handle', queryHandle, {
         source: 'query-handle-info',
-        hint: 'Query handles expire after 1 hour.'
+        hint: 'Query handles expire after 24 hours.'
       });
     }
 
@@ -244,8 +244,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
       response.validation = {
         valid: true,
         item_count: queryData.workItemIds.length,
-        time_remaining_minutes: minutesUntilExpiration,
-        original_query: queryData.query
+        time_remaining_minutes: minutesUntilExpiration
       };
 
       // Fetch sample items from ADO API if requested

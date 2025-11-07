@@ -1,5 +1,5 @@
 /**
- * Handler for wit-query-handle-list tool
+ * Handler for list-handles tool
  * 
  * Lists all active query handles to help users track and manage them.
  * Makes handles feel like persistent, manageable resources.
@@ -42,7 +42,7 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
       handles: result.handles,
       pagination: result.pagination,
       guidance: {
-        handle_lifetime: "1 hour (default)",
+        handle_lifetime: "24 hours (default)",
         cleanup_frequency: "Every 5 minutes",
         max_recommended: "Keep under 10 active handles for performance",
         usage_tip: "Use wit-query-handle-info to check specific handle status"

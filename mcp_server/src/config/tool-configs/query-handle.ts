@@ -12,7 +12,7 @@ import {
  */
 export const queryHandleTools: ToolConfig[] = [
   {
-    name: "wit-analyze-by-query-handle",
+    name: "analyze-bulk",
     description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, priority analysis, and hierarchy validation. Forces safe analysis patterns.",
     script: "",
     schema: analyzeByQueryHandleSchema,
@@ -39,7 +39,7 @@ export const queryHandleTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-list-query-handles",
+    name: "list-handles",
     description: "📋 HANDLE REGISTRY: List all active query handles to track and manage them. Shows handle statistics, cleanup status, and provides guidance on handle management. Makes handles feel like persistent resources rather than ephemeral strings. Supports pagination for large numbers of handles.",
     script: "",
     schema: listQueryHandlesSchema,
@@ -54,7 +54,7 @@ export const queryHandleTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-query-handle-info",
+    name: "inspect-handle",
     description: "🔍 UNIFIED HANDLE INFO: Get comprehensive information about a query handle in one call. Default mode provides inspection data (work item preview, statistics, selection hints). With detailed=true, adds validation data and optional selection analysis. Replaces separate validate/inspect/select tools for simpler workflows.",
     script: "",
     schema: queryHandleInfoSchema,
@@ -93,7 +93,7 @@ export const queryHandleTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-get-context-packages-by-query-handle",
+    name: "get-context-bulk",
     description: "🔐 HANDLE-BASED CONTEXT: Retrieve full context packages for multiple work items identified by a query handle. Returns comprehensive work item data including descriptions, comments, history, relations, children, and parent for each item. Essential for deep analysis workflows that need complete context without ID hallucination risk.",
     script: "",
     schema: getContextPackagesByQueryHandleSchema,

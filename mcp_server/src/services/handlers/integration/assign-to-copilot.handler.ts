@@ -1,5 +1,5 @@
 /**
- * Handler for wit-assign-copilot tool
+ * Handler for assign-copilot tool
  * Assigns an existing work item to GitHub Copilot and adds branch link
  */
 

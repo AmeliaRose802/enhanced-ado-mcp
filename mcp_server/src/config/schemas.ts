@@ -39,23 +39,6 @@ const optionalBool = (defaultValue?: boolean) =>
     ? z.boolean().optional().default(defaultValue)
     : z.boolean().optional();
 
-/** Common query generation fields */
-const queryGeneratorFields = () => ({
-  description: z.string().min(1, "Query description is required"),
-  includeExamples: optionalBool(true),
-  testQuery: optionalBool(true),
-  maxIterations: z.number().int().positive().optional().default(3),
-  areaPath: optionalString(),
-  areaPathFilter: z.array(z.string()).optional(),
-  useDefaultAreaPaths: optionalBool(true),
-  iterationPath: optionalString(),
-  returnQueryHandle: optionalBool(),
-  maxResults: z.number().int().positive().optional().default(200),
-  includeFields: z.array(z.string()).optional(),
-  validateSyntax: optionalBool(true),
-  ...orgProjectFields()
-});
-
 /** Common bulk operation fields */
 const bulkOperationFields = (defaultPreview: number = 10) => ({
   queryHandle: z.string().min(1, "Query handle is required"),
@@ -199,18 +182,24 @@ export const personalWorkloadAnalyzerSchema = z.object({
 });
 
 export const sprintPlanningAnalyzerSchema = z.object({
-  iterationPath: optionalString(),
-  teamCapacityHours: optionalNumber(),
-  analysisFocus: z.enum(["capacity", "risks", "dependencies", "full"]).optional().default("full"),
-  ...orgProjectFields()
-});
-
-export const validateHierarchyFastSchema = z.object({
-  queryHandle: z.string().min(1, "Query handle is required"),
-  validateTypes: optionalBool(true),
-  validateStates: optionalBool(true),
-  returnQueryHandles: optionalBool(true).describe("Create query handles for each violation type (enables bulk operations on violation groups)"),
-  includeViolationDetails: optionalBool(false).describe("Include full violation details in response (can be large, defaults to false to save tokens)"),
+  iterationPath: z.string().min(1, "Iteration path is required"),
+  teamMembers: z.array(z.object({
+    email: z.string().min(1, "Email is required"),
+    name: z.string().min(1, "Name is required"),
+    capacityHours: optionalNumber(),
+    skills: z.array(z.string()).optional(),
+    preferredWorkTypes: z.array(z.string()).optional()
+  })).min(1, "At least one team member is required"),
+  sprintCapacityHours: optionalNumber(),
+  historicalSprintsToAnalyze: z.number().int().min(1).max(10).optional().default(3),
+  candidateWorkItemIds: z.array(z.number().int()).optional(),
+  considerDependencies: optionalBool(true),
+  considerSkills: optionalBool(true),
+  additionalConstraints: optionalString(),
+  includeFullAnalysis: optionalBool(false),
+  rawAnalysisOnError: optionalBool(false),
+  areaPath: optionalString(),
+  areaPathFilter: z.array(z.string()).optional(),
   ...orgProjectFields()
 });
 
@@ -224,7 +213,8 @@ export const getConfigurationSchema = z.object({
 });
 
 export const toolDiscoverySchema = z.object({
-  intent: z.string().min(1, "Intent is required"),
+  intent: z.string().min(1).optional(),
+  listAll: optionalBool(false).describe("List all available tools without AI analysis (default false)"),
   includeExamples: optionalBool(false).describe("Include example usage in response (saves tokens when false, default false)"),
   maxRecommendations: z.number().int().min(1).max(10).optional().default(3),
   filterCategory: z.enum([
@@ -238,7 +228,10 @@ export const toolDiscoverySchema = z.object({
   ]).optional().default("all"),
   context: optionalString(),
   contextInfo: optionalString()
-});
+}).refine(
+  (data) => data.listAll || data.intent,
+  { message: "Either 'intent' or 'listAll' must be provided" }
+);
 
 // ============================================================================
 // Query & Search Schemas
@@ -353,10 +346,6 @@ export const odataQuerySchema = z.object({
   ...orgProjectFields()
 });
 
-export const unifiedQueryGeneratorSchema = z.object({
-  ...queryGeneratorFields()
-});
-
 // ============================================================================
 // Query Handle Operations Schemas
 // ============================================================================
@@ -422,57 +411,6 @@ export const getContextPackagesByQueryHandleSchema = z.object({
 // ============================================================================
 // Bulk Operations Schemas
 // ============================================================================
-
-export const bulkCommentByQueryHandleSchema = z.object({
-  comment: z.string().min(1, "Comment text is required"),
-  ...bulkOperationFields()
-});
-
-export const bulkUpdateByQueryHandleSchema = z.object({
-  updates: z.array(z.object({
-    op: z.enum(["add", "replace", "remove"]),
-    path: z.string(),
-    value: z.any().optional()
-  })).min(1, "At least one update operation required"),
-  ...bulkOperationFields()
-});
-
-export const bulkAssignByQueryHandleSchema = z.object({
-  assignTo: z.string().min(1, "Assignee is required"),
-  comment: optionalString(),
-  ...bulkOperationFields(5)
-});
-
-export const bulkRemoveByQueryHandleSchema = z.object({
-  permanentDelete: optionalBool(false),
-  requireConfirmation: optionalBool(true),
-  ...bulkOperationFields(5)
-});
-
-export const bulkTransitionStateByQueryHandleSchema = z.object({
-  targetState: z.string().min(1, "Target state is required"),
-  reason: optionalString(),
-  comment: optionalString(),
-  validateTransitions: optionalBool(true),
-  skipInvalidTransitions: optionalBool(true),
-  ...bulkOperationFields()
-});
-
-export const bulkMoveToIterationByQueryHandleSchema = z.object({
-  targetIterationPath: z.string().min(1, "Target iteration path is required"),
-  comment: optionalString(),
-  updateChildItems: optionalBool(false),
-  ...bulkOperationFields()
-});
-
-export const bulkChangeTypeByQueryHandleSchema = z.object({
-  targetType: z.string().min(1, "Target work item type is required"),
-  validateTypeChanges: optionalBool(true),
-  skipInvalidChanges: optionalBool(true),
-  preserveFields: optionalBool(true),
-  comment: optionalString(),
-  ...bulkOperationFields()
-});
 
 export const linkWorkItemsByQueryHandlesSchema = z.object({
   sourceQueryHandle: z.string().min(1, "Source query handle is required"),
@@ -602,30 +540,8 @@ export const unifiedBulkOperationsSchema = z.object({
 });
 
 // ============================================================================
-// AI-Powered Bulk Operations Schemas
+// AI-Powered Analysis Schemas
 // ============================================================================
-
-export const bulkEnhanceDescriptionsByQueryHandleSchema = z.object({
-  enhancementStyle: z.enum(["concise", "detailed", "technical", "business"]).optional().default("detailed"),
-  preserveOriginal: optionalBool(true),
-  returnFormat: z.enum(["summary", "full", "preview"]).optional(),
-  includeTitles: optionalBool(false),
-  includeConfidence: optionalBool(false),
-  ...bulkOperationFields(5)
-});
-
-export const bulkAssignStoryPointsByQueryHandleSchema = z.object({
-  fibonacciOnly: optionalBool(true),
-  includeReasoning: optionalBool(true),
-  ...bulkOperationFields(5)
-});
-
-export const bulkAddAcceptanceCriteriaByQueryHandleSchema = z.object({
-  criteriaStyle: z.enum(["gherkin", "checklist", "narrative"]).optional().default("gherkin"),
-  minCriteria: z.number().int().min(1).max(10).optional().default(3),
-  maxCriteria: z.number().int().min(1).max(20).optional().default(8),
-  ...bulkOperationFields(5)
-});
 
 export const analyzeByQueryHandleSchema = z.object({
   queryHandle: z.string().min(1, "Query handle is required"),
@@ -654,12 +570,5 @@ export const getPromptsSchema = z.object({
 
 export const listSubagentsSchema = z.object({
   repository: z.string().min(1, "Repository name is required"),
-  ...orgProjectFields()
-});
-
-export const listTeamMembersSchema = z.object({
-  managerEmail: optionalString().describe("Filter team members by manager email address"),
-  includeManager: optionalBool(false).describe("Include the manager in the results (default: false, only direct reports)"),
-  outputFormat: z.enum(["detailed", "emails"]).optional().default("detailed").describe("Output format: 'detailed' (full user info) or 'emails' (comma-separated list for WIQL queries)"),
   ...orgProjectFields()
 });

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-create-item tool
+ * Handler for create-workitem tool
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";

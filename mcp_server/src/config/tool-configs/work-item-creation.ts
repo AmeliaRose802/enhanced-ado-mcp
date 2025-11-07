@@ -12,7 +12,7 @@ import {
  */
 export const workItemCreationTools: ToolConfig[] = [
   {
-    name: "wit-create-new-item",
+    name: "create-workitem",
     description: "Create a new Azure DevOps work item with optional parent relationship. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, priority, assignedTo, areaPath, iterationPath, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: createNewItemSchema,
@@ -33,7 +33,7 @@ export const workItemCreationTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-assign-to-copilot",
+    name: "assign-copilot",
     description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. Optionally specify a specialized Copilot agent using the specializedAgent parameter. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: assignToCopilotSchema,
@@ -50,7 +50,7 @@ export const workItemCreationTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-new-copilot-item",
+    name: "create-workitem-copilot",
     description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Optionally specify a specialized Copilot agent using the specializedAgent parameter. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, branch, gitHubCopilotGuid, areaPath, iterationPath, priority, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: newCopilotItemSchema,
@@ -74,7 +74,7 @@ export const workItemCreationTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-clone-work-item",
+    name: "clone-workitem",
     description: "Clone/duplicate an existing work item with optional modifications. Creates a copy with customizable title, area, iteration, assignments, and can optionally include children. Returns a query handle for the cloned item to enable immediate bulk operations. Useful for template-based creation and environment cloning. Supports linking back to source.",
     script: "",
     schema: cloneWorkItemSchema,

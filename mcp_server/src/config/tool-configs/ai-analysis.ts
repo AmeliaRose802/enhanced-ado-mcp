@@ -14,7 +14,7 @@ import {
  */
 export const aiAnalysisTools: ToolConfig[] = [
   {
-    name: "wit-intelligence-analyzer",
+    name: "analyze-workitem",
     description: "AI-powered work item analysis for completeness, AI-readiness, enhancement suggestions, and smart categorization using VS Code sampling",
     script: "",
     schema: workItemIntelligenceSchema,
@@ -37,7 +37,7 @@ export const aiAnalysisTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-ai-assignment-analyzer",
+    name: "analyze-assignment",
     description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. Automatically retrieves work item details from Azure DevOps. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
     script: "",
     schema: aiAssignmentAnalyzerSchema,
@@ -51,7 +51,7 @@ export const aiAnalysisTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-personal-workload-analyzer",
+    name: "analyze-workload",
     description: "AI-powered personal workload analysis to assess burnout risk, overspecialization, work-life balance issues, and professional health indicators for an individual over a time period. Automatically fetches completed and active work, calculates metrics, and provides actionable insights. Supports optional custom analysis intent (e.g., 'assess readiness for promotion', 'check for career growth opportunities'). Requires VS Code sampling support.",
     script: "",
     schema: personalWorkloadAnalyzerSchema,
@@ -69,7 +69,7 @@ export const aiAnalysisTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-sprint-planning-analyzer",
+    name: "plan-sprint",
     description: "🤖 AI-POWERED SPRINT PLANNING: Analyze team capacity, historical velocity, and propose optimal work assignments for a sprint. Considers team member skills, workload balance, dependencies, and historical performance to create a balanced sprint plan with confidence scoring and risk assessment.",
     script: "",
     schema: sprintPlanningAnalyzerSchema,
@@ -100,34 +100,36 @@ export const aiAnalysisTools: ToolConfig[] = [
         additionalConstraints: { type: "string", description: "Additional planning constraints (e.g., 'prioritize bugs', 'balance frontend/backend')" },
         organization: { type: "string", description: "Azure DevOps organization (uses config default if not provided)" },
         project: { type: "string", description: "Azure DevOps project (uses config default if not provided)" },
-        areaPath: { type: "string", description: "Area path to filter work items (uses config default if not provided)" }
+        areaPath: { type: "string", description: "Area path to filter work items (uses config default if not provided)" },
+        areaPathFilter: { type: "array", items: { type: "string" }, description: "Explicitly specify area paths to filter by (e.g., ['ProjectA\\\\TeamAlpha', 'ProjectA\\\\TeamBeta']). Takes precedence over single areaPath and config defaults. Use when planning sprints across multiple configured area paths." }
       },
       required: ["iterationPath", "teamMembers"]
     }
   },
   {
-    name: "wit-discover-tools",
-    description: "🤖 AI-POWERED TOOL DISCOVERY: Find the right tools for your task using natural language. Analyzes your intent and recommends the most appropriate tools from the MCP server with confidence scores, usage examples, and workflow guidance. Perfect when you're not sure which tool to use.",
+    name: "discover-tools",
+    description: "🤖 AI-POWERED TOOL DISCOVERY: Find the right tools for your task using natural language OR list all available tools. When listAll=true, returns a concise inventory of all tools. When listAll=false (default), analyzes your intent and recommends the most appropriate tools with confidence scores and workflow guidance. Perfect when you're not sure which tool to use.",
     script: "",
     schema: toolDiscoverySchema,
     inputSchema: {
       type: "object",
       properties: {
-        intent: { type: "string", description: "Natural language description of what you want to accomplish (e.g., 'I want to find all stale bugs and update their priority')" },
-        context: { type: "string", description: "Additional context about your project, team, or specific requirements" },
-        maxRecommendations: { type: "number", description: "Maximum number of tool recommendations to return (1-10, default 3)" },
-        includeExamples: { type: "boolean", description: "Include detailed usage examples for each recommended tool (default false, saves ~100-300 tokens per tool)" },
+        intent: { type: "string", description: "Natural language description of what you want to accomplish (e.g., 'I want to find all stale bugs and update their priority'). Required unless listAll=true." },
+        listAll: { type: "boolean", description: "List all available tools without AI analysis (default false). When true, returns concise tool inventory instead of recommendations." },
+        context: { type: "string", description: "Additional context about your project, team, or specific requirements (only used when listAll=false)" },
+        maxRecommendations: { type: "number", description: "Maximum number of tool recommendations to return (1-10, default 3, only used when listAll=false)" },
+        includeExamples: { type: "boolean", description: "Include detailed usage examples for each recommended tool (default false, saves ~100-300 tokens per tool, only used when listAll=false)" },
         filterCategory: { 
           type: "string", 
           enum: ["creation", "analysis", "bulk-operations", "query", "ai-powered", "all"],
-          description: "Filter recommendations to specific category: creation (create/new items), analysis (analyze/detect/validate), bulk-operations (bulk updates), query (WIQL/OData), ai-powered (AI tools), all (no filter, default)"
+          description: "Filter tools by category: creation (create/new items), analysis (analyze/detect/validate), bulk-operations (bulk updates), query (WIQL/OData), ai-powered (AI tools), all (no filter, default)"
         }
       },
-      required: ["intent"]
+      required: []
     }
   },
   {
-    name: "wit-find-parent-item-intelligent",
+    name: "find-parent",
     description: "🤖 AI-POWERED PARENT FINDER: Intelligently find and recommend the best parent work items for child items using AI analysis. Accepts a QUERY HANDLE containing child work items to prevent ID hallucination. Analyzes each child's context, searches potential parents IN THE SAME AREA PATH by default (enforces area path matching), and ranks candidates based on type hierarchy, scope alignment, and logical fit. ENFORCES valid parent-child type relationships per Azure DevOps hierarchy. Returns recommendations with confidence scores and can create a query handle for safe linking. Supports dry run mode for previewing recommendations. Requires VS Code sampling support.",
     script: "",
     schema: intelligentParentFinderSchema,

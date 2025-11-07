@@ -1,5 +1,5 @@
 /**
- * Handler for wit-wiql-query tool
+ * Handler for query-wiql tool
  * Unified handler for both direct WIQL execution and AI-powered query generation
  */
 
@@ -187,6 +187,7 @@ export async function handleWiqlQuery(
         return {
           success: true,
           data: {
+            generated_query: finalQuery,
             query: finalQuery,
             message: '⚠️ Query generated and validated, but execution failed. The query syntax is correct but there may be a temporary issue.'
           },
@@ -257,6 +258,7 @@ export async function handleWiqlQuery(
         return {
           success: true,
           data: {
+            ...(isAIGeneration && { generated_query: finalQuery }),
             query: queryArgs.wiqlQuery,
             resultCount: 0,
             message: '⚠️ Query is valid but returned 0 results - no query handle created for empty result set'
@@ -312,7 +314,7 @@ export async function handleWiqlQuery(
           project: queryArgs.project,
           queryType: 'wiql'
         },
-        60 * 60 * 1000, // 1 hour TTL
+        queryHandleService.getDefaultTTL(),
         workItemContext,
         analysisMetadata
       );
@@ -325,10 +327,11 @@ export async function handleWiqlQuery(
           success: true,
           data: {
             query_handle: handle,
+            ...(isAIGeneration && { generated_query: finalQuery }),
             work_item_count: workItemIds.length,
             total_count: result.totalCount,
             query: result.query,
-            summary: `Query handle created for ${workItemIds.length} work item(s). Handle-only mode: work item details not fetched for efficiency. Use the handle with bulk operation tools or wit-query-handle-get-items to retrieve items. Handle expires in 1 hour.`,
+            summary: `Query handle created for ${workItemIds.length} work item(s). Handle-only mode: work item details not fetched for efficiency. Use the handle with bulk operation tools or wit-query-handle-get-items to retrieve items. Handle expires in 24 hours.`,
             next_steps: [
               "Use wit-query-handle-get-items to retrieve work item details if needed",
               "Use wit-bulk-comment to add comments to all items",
@@ -337,7 +340,7 @@ export async function handleWiqlQuery(
               "Use wit-bulk-remove to remove all items",
               "Always use dryRun: true first to preview changes before applying them"
             ],
-            expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+            expires_at: new Date(Date.now() + queryHandleService.getDefaultTTL()).toISOString(),
             ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
               pagination: {
                 skip: result.skip,
@@ -370,14 +373,15 @@ export async function handleWiqlQuery(
         success: true,
         data: {
           query_handle: handle,
+          ...(isAIGeneration && { generated_query: finalQuery }),
           work_items: result.workItems,
           ...(fullPackages && { full_packages: fullPackages }),
           work_item_count: workItemIds.length,
           total_count: result.totalCount,
           query: result.query,
           summary: fullPackages 
-            ? `Query handle created for ${workItemIds.length} work item(s) with full context packages. Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`
-            : `Query handle created for ${workItemIds.length} work item(s) along with full work item details. Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 1 hour.`,
+            ? `Query handle created for ${workItemIds.length} work item(s) with full context packages. Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 24 hours.`
+            : `Query handle created for ${workItemIds.length} work item(s) along with full work item details. Use the handle with bulk operation tools (wit-bulk-*-by-query-handle) to perform safe operations. Handle expires in 24 hours.`,
           next_steps: [
             "Review the work_items array to see what will be affected",
             ...(fullPackages ? ["Review the full_packages array for detailed context including descriptions, comments, relations, and history"] : []),
@@ -387,7 +391,7 @@ export async function handleWiqlQuery(
             "Use wit-bulk-remove to remove all items",
             "Always use dryRun: true first to preview changes before applying them"
           ],
-          expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          expires_at: new Date(Date.now() + queryHandleService.getDefaultTTL()).toISOString(),
           ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
             pagination: {
               skip: result.skip,
@@ -434,6 +438,7 @@ export async function handleWiqlQuery(
     return {
       success: true,
       data: {
+        ...(isAIGeneration && { generated_query: finalQuery }),
         work_items: result.workItems,
         ...(fullPackages && { full_packages: fullPackages }),
         count: result.count,

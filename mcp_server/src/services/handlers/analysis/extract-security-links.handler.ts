@@ -1,5 +1,5 @@
 /**
- * Handler for wit-analyze-security tool
+ * Handler for extract-security-links tool
  * Extracts instruction links from security scan work items
  */
 

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-get-config tool
+ * Handler for get-config tool
  */
 
 import { ToolExecutionResult, asToolData } from "@/types/index.js";
@@ -28,14 +28,20 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
       };
     }
     
+    // Format area paths help text
+    const areaPaths = cfg.azureDevOps.areaPaths || (cfg.azureDevOps.areaPath ? [cfg.azureDevOps.areaPath] : []);
+    const areaPathHelp = areaPaths.length > 0
+      ? areaPaths.length === 1
+        ? `Default area path is configured as: ${areaPaths[0]}.`
+        : `${areaPaths.length} area paths configured: ${areaPaths.join(', ')}.`
+      : "No default area path configured.";
+    
     return {
       success: true,
       data: asToolData({
         configuration: configData,
         helpText: {
-          areaPath: cfg.azureDevOps.areaPath
-            ? `Default area path is configured as: ${cfg.azureDevOps.areaPath}.` 
-            : "No default area path configured.",
+          areaPath: areaPathHelp,
           iterationPath: cfg.azureDevOps.iterationPath
             ? `Default iteration path is configured as: ${cfg.azureDevOps.iterationPath}.` 
             : "No default iteration path configured.",

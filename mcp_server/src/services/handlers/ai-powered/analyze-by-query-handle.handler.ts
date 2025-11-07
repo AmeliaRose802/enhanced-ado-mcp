@@ -1,5 +1,5 @@
 /**
- * Handler for wit-analyze-items tool
+ * Handler for analyze-bulk tool
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
@@ -14,8 +14,7 @@ import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "@/utils/ado-http-client.js";
 import { loadConfiguration } from "@/config/config.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
-import { validateHierarchyFastSchema } from "@/config/schemas.js";
-import { handleValidateHierarchy } from "../analysis/validate-hierarchy.handler.js";
+import { performFastHierarchyValidation } from "@/services/analyzers/hierarchy-validator-fast.js";
 
 // Type definitions for analysis results
 interface EffortAnalysisResult {
@@ -106,7 +105,7 @@ interface WorkItemAnalysis {
 }
 
 /**
- * Handler for wit-analyze-items tool
+ * Handler for analyze-bulk tool
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
@@ -266,41 +265,18 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
                 analysis.results.priorities = analyzePriorities(workItems);
                 break;
               case 'hierarchy':
-                // Call hierarchy validation handler with query handle
-                const hierarchyArgs = {
-                  queryHandle,
-                  organization: org,
-                  project: proj,
-                  validateTypes: parsed.data.validateTypes,
-                  validateStates: parsed.data.validateStates,
-                  returnQueryHandles: parsed.data.returnQueryHandles,
-                  includeViolationDetails: parsed.data.includeViolationDetails
-                };
-                const hierarchyConfig: ToolConfig = {
-                  schema: validateHierarchyFastSchema,
-                  name: 'wit-validate-hierarchy',
-                  description: 'Validate hierarchy for analysis',
-                  script: '',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {},
-                    required: []
+                // Perform fast rule-based hierarchy validation
+                const hierarchyResult = await performFastHierarchyValidation(
+                  workItems,
+                  org,
+                  proj,
+                  {
+                    validateTypes: parsed.data.validateTypes,
+                    validateStates: parsed.data.validateStates,
+                    returnQueryHandles: parsed.data.returnQueryHandles
                   }
-                };
-                const hierarchyResult = await handleValidateHierarchy(hierarchyConfig, hierarchyArgs);
-                if (hierarchyResult.success && hierarchyResult.data) {
-                  analysis.results.hierarchy = hierarchyResult.data as HierarchyAnalysisResult;
-                } else {
-                  analysis.results.hierarchy = {
-                    summary: {
-                      totalItemsAnalyzed: 0,
-                      totalViolations: 0,
-                      errors: 0,
-                      warnings: 0
-                    },
-                    error: hierarchyResult.errors?.join('; ') || 'Hierarchy validation failed'
-                  };
-                }
+                );
+                analysis.results.hierarchy = hierarchyResult as unknown as HierarchyAnalysisResult;
                 break;
               default:
                 logger.warn(`Unknown analysis type: ${analysisTypeItem}`);

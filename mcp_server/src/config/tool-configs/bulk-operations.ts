@@ -15,7 +15,7 @@ import {
  */
 export const bulkOperationsTools: ToolConfig[] = [
   {
-    name: "wit-unified-bulk-operations-by-query-handle",
+    name: "execute-bulk-operations",
     description: "🎯 UNIFIED BULK OPERATIONS: Perform multiple operations (comment, update, assign, remove, transition-state, move-iteration, change-type, add-tag, remove-tag, enhance-descriptions, assign-story-points, add-acceptance-criteria) on work items identified by a query handle. Consolidates all bulk operations into a single tool that accepts an array of actions to execute sequentially. Supports dry-run mode, error handling strategies, item selection, and AI-powered enhancements. Reduces tool confusion by providing one entry point for all bulk modifications.",
     script: "",
     schema: unifiedBulkOperationsSchema,
@@ -183,7 +183,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-link-work-items-by-query-handles",
+    name: "link-workitems",
     description: "🔐 HANDLE-BASED LINKING: Create relationships between work items identified by two query handles. Supports multiple link types (Related, Parent, Child, Predecessor, Successor) and strategies (one-to-one, one-to-many, many-to-one, many-to-many). Essential for bulk relationship creation without ID hallucination risk.",
     script: "",
     schema: linkWorkItemsByQueryHandlesSchema,
@@ -245,7 +245,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-bulk-undo-by-query-handle",
+    name: "undo-bulk",
     description: "🔄 UNDO OPERATIONS: Undo bulk operations performed on a query handle. Can undo just the last operation (default) or all operations (undoAll: true). Reverts comments, field updates, assignments, state transitions, and iteration moves. Supports dry-run mode to preview undo actions. NOTE: Comments cannot be deleted via ADO API, so a reversal comment is added instead.",
     script: "",
     schema: bulkUndoByQueryHandleSchema,
@@ -263,7 +263,7 @@ export const bulkOperationsTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-forensic-undo-by-query-handle",
+    name: "undo-forensic",
     description: "🔍 FORENSIC UNDO: Analyze work item revision history to detect and revert changes made by a specific user within a time window. Unlike regular undo, this tool works on ANY work items (not just those changed via MCP) by directly examining ADO revision history. Detects type changes, state changes, field updates, and optionally link operations. Automatically detects if changes have already been manually reverted and only reverts items that still have unwanted changes. Essential for recovering from bulk mistakes across multiple work items.",
     script: "",
     schema: forensicUndoByQueryHandleSchema,

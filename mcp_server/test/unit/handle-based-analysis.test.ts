@@ -228,7 +228,7 @@ describe('Handle-Based Analysis Tools', () => {
       expect((result.data as any).active_handles).toBe(2);
       expect((result.data as any).expired_handles).toBe(0);
       expect((result.data as any).guidance).toBeDefined();
-      expect((result.data as any).guidance.handle_lifetime).toBe('1 hour (default)');
+      expect((result.data as any).guidance.handle_lifetime).toBe('24 hours (default)');
       
       // Verify handles array is populated
       expect((result.data as any).handles).toBeDefined();

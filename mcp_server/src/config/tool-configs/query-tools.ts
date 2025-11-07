@@ -1,8 +1,7 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   wiqlQuerySchema,
-  odataQuerySchema,
-  validateHierarchyFastSchema
+  odataQuerySchema
 } from "../schemas.js";
 
 /**
@@ -11,7 +10,7 @@ import {
  */
 export const queryTools: ToolConfig[] = [
   {
-    name: "wit-wiql-query",
+    name: "query-wiql",
     description: "🔐 UNIFIED WIQL TOOL: Execute WIQL queries (direct or AI-generated from natural language) and get both work item details AND a query handle for safe bulk operations. Supports AI-powered query generation with automatic validation, filtering by patterns, staleness analysis, and full context packages. ⚠️ CRITICAL: Do not reference work item IDs directly in subsequent operations - use the returned query_handle with bulk operation tools to prevent ID hallucination. Default returns handle + details for analysis workflows. Use handleOnly=true to return ONLY the query handle without fetching data (efficient for bulk operations). Limit: 200 items per page (use pagination for more). Can filter results by last substantive change date to find stale or recently active items.",
     script: "",
     schema: wiqlQuerySchema,
@@ -61,7 +60,7 @@ export const queryTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-odata-query",
+    name: "query-odata",
     description: "🔐 UNIFIED ODATA TOOL: Execute OData Analytics queries (direct or AI-generated from natural language) for metrics, aggregations, and trend analysis. Supports both predefined query types (counts, grouping by state/type/assignee, velocity metrics) and custom queries. AI-powered query generation validates and tests queries automatically. For aggregation queries, returns statistical summaries. For work item list queries, can return query handles for safe bulk operations. Requires 'View analytics' permission in Azure DevOps.",
     script: "",
     schema: odataQuerySchema,
@@ -106,25 +105,6 @@ export const queryTools: ToolConfig[] = [
         iterationPath: { type: "string", description: "Filter by Iteration Path" }
       },
       required: []
-    }
-  },
-  {
-    name: "wit-validate-hierarchy",
-    description: "Fast, rule-based validation of work item hierarchy using a query handle from wit-wiql-query. Checks parent-child type relationships (Epic->Feature, Feature->PBI, PBI->Task/Bug) and state consistency (parent state must align with children states). By DEFAULT, returns only summary counts and query handles for each violation category - use includeViolationDetails=true to get full violation arrays (not recommended due to size). Query handles enable bulk operations on specific violation groups (orphaned items, incorrect parent types, state issues). Use inspect-query-handle to view items in each category. ⚠️ REQUIRES query handle from wit-wiql-query - first run a WIQL query with returnQueryHandle=true, then pass the handle to this tool. 💡 TIP: You can also use wit-analyze-by-query-handle with analysisType=['hierarchy'] to include hierarchy validation alongside other analyses.",
-    script: "",
-    schema: validateHierarchyFastSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        queryHandle: { type: "string", description: "REQUIRED: Query handle from wit-wiql-query with returnQueryHandle=true. First execute a WIQL query to get work items, then pass the returned query handle here." },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" },
-        validateTypes: { type: "boolean", description: "Validate parent-child type relationships (default true)" },
-        validateStates: { type: "boolean", description: "Validate state consistency between parents and children (default true)" },
-        returnQueryHandles: { type: "boolean", description: "Create query handles for each granular violation category (e.g., bug_under_feature, orphaned_task) to enable bulk operations and inspection (default true). Handles expire after 1 hour." },
-        includeViolationDetails: { type: "boolean", description: "⚠️ Include full violation arrays in response (default false). WARNING: This triples response size by including the same data in multiple formats. Leave false and use query handles with inspect-query-handle to view specific violations on-demand instead." }
-      },
-      required: ["queryHandle"]
     }
   }
 ];

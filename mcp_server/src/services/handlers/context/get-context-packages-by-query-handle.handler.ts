@@ -1,5 +1,5 @@
 /**
- * Handler for wit-get-context-packages-by-query-handle tool
+ * Handler for get-context-bulk tool
  * Retrieves full context packages for multiple work items using query handle pattern
  */
 
@@ -58,7 +58,7 @@ export async function handleGetContextPackagesByQueryHandle(
         metadata: { source: "get-context-packages-by-query-handle" },
         errors: [
           `Query handle '${queryHandle}' not found or expired.`,
-          `Possible causes: 1) Handle expired (handles last 1 hour), 2) MCP server restarted (handles are stored in memory), or 3) Invalid handle ID.`,
+          `Possible causes: 1) Handle expired (handles last 24 hours), 2) MCP server restarted (handles are stored in memory), or 3) Invalid handle ID.`,
           `If the handle was created recently, check if the MCP server was restarted. Re-run the query to generate a new handle.`
         ],
         warnings: []

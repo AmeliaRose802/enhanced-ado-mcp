@@ -15,8 +15,6 @@
   specialized-agent-assignment.md
 - List Subagents (New!)
   list-subagents.md
-- List Team Members (New!)
-  list-team-members.md
 
 ## Utility & Testing
 - Get Prompts Tool (New!)
@@ -67,6 +65,8 @@
   AI_POWERED_FEATURES.md
 - AI Intelligence & Planning Tools
   AI_INTELLIGENCE_TOOLS.md
+- Sprint Planner Multi-Area Support (New!)
+  sprint-planner-multi-area-support.md
 - Model Selection
   MODEL_SELECTION.md
 

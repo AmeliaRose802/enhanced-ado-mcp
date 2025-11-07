@@ -107,9 +107,9 @@ interface OperationHistory {
 class QueryHandleService {
   private handles: Map<string, QueryHandleData> = new Map();
   private operationHistories: Map<string, OperationHistory> = new Map();
-  private defaultTTL = 30 * 60 * 1000; // 30 minutes in milliseconds (configurable)
-  private maxTTL = 2 * 60 * 60 * 1000; // 2 hours maximum
-  private warningThreshold = 5 * 60 * 1000; // Warn when 5 minutes remain
+  private defaultTTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds (configurable)
+  private maxTTL = 48 * 60 * 60 * 1000; // 48 hours maximum
+  private warningThreshold = 30 * 60 * 1000; // Warn when 30 minutes remain
   private cleanupInterval: NodeJS.Timeout | null = null;
   private serverStartTime: Date = new Date();
 
@@ -118,6 +118,13 @@ class QueryHandleService {
     this.startCleanup();
     logger.info(`Query Handle Service initialized at ${this.serverStartTime.toISOString()}`);
     logger.info(`Query handle expiration: ${this.defaultTTL / 60000} minutes (max: ${this.maxTTL / 60000} minutes)`);
+  }
+
+  /**
+   * Get the default TTL value
+   */
+  getDefaultTTL(): number {
+    return this.defaultTTL;
   }
 
   /**
@@ -133,7 +140,7 @@ class QueryHandleService {
    * @param workItemIds Array of work item IDs from the query
    * @param query Original WIQL query
    * @param metadata Optional metadata about the query
-   * @param ttlMs Time-to-live in milliseconds (default: 1 hour)
+   * @param ttlMs Time-to-live in milliseconds (default: 24 hours)
    * @param workItemContext Optional context data for each work item (staleness, titles, etc.)
    * @param analysisMetadata Optional metadata about analysis performed
    * @returns Query handle string

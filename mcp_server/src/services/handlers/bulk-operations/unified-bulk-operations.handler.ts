@@ -66,7 +66,7 @@ export async function handleUnifiedBulkOperations(
         success: false,
         data: null,
         metadata: { source: "unified-bulk-operations" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-list-subagents tool
+ * Handler for list-agents tool
  * Discovers available specialized Copilot agents in a repository
  */
 

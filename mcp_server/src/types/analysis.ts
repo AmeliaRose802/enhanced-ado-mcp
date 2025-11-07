@@ -369,6 +369,7 @@ export interface SprintPlanningAnalyzerArgs {
   organization?: string;
   project?: string;
   areaPath?: string;
+  areaPathFilter?: string[];
 }
 
 export interface TeamMemberAssignment {

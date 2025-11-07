@@ -122,15 +122,43 @@ When `handleOnly: true` is combined with `returnQueryHandle: true`, the tool ret
 }
 ```
 
-**Success Response (Handle-Only Mode with `handleOnly: true`):**
+**Success Response (Standard Mode with AI Generation):**
 ```json
 {
   "success": true,
   "data": {
     "query_handle": "qh_c1b1b9a3ab3ca2f2ae8af6114c4a50e3",
+    "generated_query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active'",
+    "work_items": [
+      {
+        "id": 12345,
+        "title": "Fix login issue",
+        "state": "Active",
+        "type": "Bug",
+        "assignedTo": "developer@company.com"
+      }
+    ],
+    "totalCount": 45,
+    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active'",
+    "summary": "Query handle created for 45 work item(s) along with full work item details..."
+  },
+  "errors": [],
+  "warnings": []
+}
+```
+
+**Note:** When natural language is used to generate a query via the `description` parameter (unified WIQL tool in AI generation mode), the `generated_query` field will always be present in the response, allowing you to verify and reuse the exact query that was executed. This ensures transparency and enables query refinement.
+
+**Success Response (Handle-Only Mode with `handleOnly: true` and AI generation):**
+```json
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_c1b1b9a3ab3ca2f2ae8af6114c4a50e3",
+    "generated_query": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
     "work_item_count": 45,
     "total_count": 45,
-    "query": "SELECT [System.Id] FROM WorkItems WHERE...",
+    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
     "summary": "Query handle created for 45 work item(s). Handle-only mode: work item details not fetched for efficiency. Use the handle with bulk operation tools or wit-query-handle-get-items to retrieve items. Handle expires in 1 hour.",
     "next_steps": [
       "Use wit-query-handle-get-items to retrieve work item details if needed",

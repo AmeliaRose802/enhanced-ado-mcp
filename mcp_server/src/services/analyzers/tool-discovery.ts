@@ -12,7 +12,8 @@ import { SamplingClient } from '../../utils/sampling-client.js';
 import { toolConfigs } from '../../config/tool-configs/index.js';
 
 export interface ToolDiscoveryArgs {
-  intent: string;
+  intent?: string;
+  listAll?: boolean;
   context?: string;
   maxRecommendations?: number;
   includeExamples?: boolean;
@@ -45,6 +46,23 @@ export class ToolDiscoveryAnalyzer {
 
   async discover(args: ToolDiscoveryArgs): Promise<ToolExecutionResult> {
     try {
+      // Auto-detect list all intent
+      const shouldListAll = args.listAll || this.isListAllIntent(args.intent);
+      
+      // Handle listAll mode - simple tool inventory
+      if (shouldListAll) {
+        return this.listAllTools(args);
+      }
+
+      if (!args.intent) {
+        return {
+          success: false,
+          errors: ['Intent is required when listAll is false'],
+          warnings: [],
+          metadata: {}
+        };
+      }
+
       logger.info('Starting AI-powered tool discovery', { intent: args.intent });
 
       // Check sampling support
@@ -123,6 +141,70 @@ export class ToolDiscoveryAnalyzer {
         metadata: { intent: args.intent }
       };
     }
+  }
+
+  /**
+   * Detect if the intent is asking to list all tools rather than get recommendations
+   */
+  private isListAllIntent(intent?: string): boolean {
+    if (!intent) return false;
+    
+    const lowerIntent = intent.toLowerCase();
+    const listAllPhrases = [
+      'list all tools',
+      'show all tools',
+      'show me all tools',
+      'list available tools',
+      'show available tools',
+      'what tools are available',
+      'all available tools',
+      'see all tools',
+      'view all tools',
+      'get all tools',
+      'display all tools'
+    ];
+    
+    return listAllPhrases.some(phrase => lowerIntent.includes(phrase));
+  }
+
+  private listAllTools(args: ToolDiscoveryArgs): ToolExecutionResult {
+    const filterCategory = args.filterCategory || 'all';
+    const availableTools = this.filterToolsByCategory(toolConfigs, filterCategory);
+
+    const toolList = availableTools.map(tool => ({
+      name: tool.name,
+      description: tool.description,
+      category: this.inferCategory(tool.name),
+      requiredParams: this.extractRequiredParams(tool),
+      optionalParams: this.extractOptionalParams(tool)
+    }));
+
+    return {
+      success: true,
+      data: asToolData({
+        tools: toolList,
+        totalTools: toolList.length,
+        filterCategory
+      }),
+      metadata: {
+        listAll: true,
+        filterCategory,
+        toolCount: toolList.length
+      },
+      errors: [],
+      warnings: []
+    };
+  }
+
+  private inferCategory(toolName: string): string {
+    const name = toolName.toLowerCase();
+    if (name.includes('create') || name.includes('new') || name.includes('clone')) return 'creation';
+    if (name.includes('analyze') || name.includes('intelligence') || name.includes('validate')) return 'analysis';
+    if (name.includes('bulk')) return 'bulk-operations';
+    if (name.includes('query') || name.includes('wiql') || name.includes('odata')) return 'query';
+    if (name.includes('config') || name.includes('prompt') || name.includes('discover')) return 'configuration';
+    if (name.includes('handle')) return 'query-handles';
+    return 'other';
   }
 
   private filterToolsByCategory(tools: typeof toolConfigs, category: string): typeof toolConfigs {

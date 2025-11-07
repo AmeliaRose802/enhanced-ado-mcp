@@ -1,5 +1,5 @@
 /**
- * Handler for wit-link-work-items-by-query-handles tool
+ * Handler for link-workitems tool
  * 
  * Creates relationships between work items identified by two query handles.
  * Supports multiple link types and strategies for efficient bulk relationship creation.
@@ -300,7 +300,7 @@ export async function handleBulkLinkByQueryHandles(
         data: null,
         metadata: { source: "bulk-link-by-query-handles" },
         errors: [
-          `Source query handle '${sourceQueryHandle}' not found or expired. Query handles expire after 1 hour.`
+          `Source query handle '${sourceQueryHandle}' not found or expired. Query handles expire after 24 hours.`
         ],
         warnings: []
       };
@@ -312,7 +312,7 @@ export async function handleBulkLinkByQueryHandles(
         data: null,
         metadata: { source: "bulk-link-by-query-handles" },
         errors: [
-          `Target query handle '${targetQueryHandle}' not found or expired. Query handles expire after 1 hour.`
+          `Target query handle '${targetQueryHandle}' not found or expired. Query handles expire after 24 hours.`
         ],
         warnings: []
       };

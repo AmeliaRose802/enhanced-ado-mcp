@@ -186,19 +186,7 @@ export interface DetectPatternsArgs {
   includeChildAreas?: boolean;
   maxItems?: number;
   organization?: string;
-  project?: string;
-}
-
-/**
- * Validate Hierarchy Arguments
- */
-export interface ValidateHierarchyArgs {
-  workItemIds?: number[];
-  areaPath?: string;
-  includeChildAreas?: boolean;
-  maxDepth?: number;
-  organization?: string;
-  project?: string;
+  queryType?: string;
 }
 
 /**

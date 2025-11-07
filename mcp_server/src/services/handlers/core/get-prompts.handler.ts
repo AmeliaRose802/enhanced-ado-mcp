@@ -28,7 +28,7 @@ interface PromptWithContent extends PromptMetadata {
 }
 
 /**
- * Handler for wit-get-prompts tool
+ * Handler for get-prompts tool
  * 
  * Retrieves pre-filled prompt templates by name or lists all available prompts.
  * This tool is useful for:

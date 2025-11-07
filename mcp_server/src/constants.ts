@@ -36,7 +36,6 @@ export const TOOL_NAMES = {
   ANALYZE_BY_QUERY_HANDLE: 'wit-analyze-by-query-handle',
   
   // Analysis Tools
-  VALIDATE_HIERARCHY: 'wit-validate-hierarchy',
   EXTRACT_SECURITY_LINKS: 'wit-extract-security-links',
   
   // Discovery Tools

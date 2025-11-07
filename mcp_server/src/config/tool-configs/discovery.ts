@@ -2,8 +2,7 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   getConfigurationSchema,
   getPromptsSchema,
-  listSubagentsSchema,
-  listTeamMembersSchema
+  listSubagentsSchema
 } from "../schemas.js";
 
 /**
@@ -12,7 +11,7 @@ import {
  */
 export const discoveryTools: ToolConfig[] = [
   {
-    name: "wit-get-configuration",
+    name: "get-config",
     description: "Get current MCP server configuration including area paths, repositories, GitHub Copilot settings, and other defaults that agents can use for work item creation",
     script: "",
     schema: getConfigurationSchema,
@@ -26,7 +25,7 @@ export const discoveryTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-get-prompts",
+    name: "get-prompts",
     description: "Retrieve pre-filled prompt templates by name or list all available prompts. Useful for testing prompt templates or for agents that need direct access to prompt content for specialized use cases.",
     script: "",
     schema: getPromptsSchema,
@@ -50,7 +49,7 @@ export const discoveryTools: ToolConfig[] = [
     }
   },
   {
-    name: "wit-list-subagents",
+    name: "list-agents",
     description: "Discover available specialized Copilot agents in an Azure DevOps repository by scanning /.azuredevops/policies directory. Returns agent names and descriptions parsed from YAML metadata.",
     script: "",
     schema: listSubagentsSchema,
@@ -71,35 +70,6 @@ export const discoveryTools: ToolConfig[] = [
         }
       },
       required: ["repository"]
-    }
-  },
-  {
-    name: "wit-list-team-members",
-    description: "List team members in the Azure DevOps organization, optionally filtered by manager. Returns user details or a comma-separated email list suitable for WIQL IN queries (e.g., 'WHERE [System.AssignedTo] IN (@TeamMembers)'). Essential for querying work items assigned to an entire team.",
-    script: "",
-    schema: listTeamMembersSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        managerEmail: {
-          type: "string",
-          description: "Filter team members by manager email address (returns direct reports only)"
-        },
-        includeManager: {
-          type: "boolean",
-          description: "Include the manager in the results (default: false, only direct reports)"
-        },
-        outputFormat: {
-          type: "string",
-          enum: ["detailed", "emails"],
-          description: "Output format: 'detailed' (full user info) or 'emails' (comma-separated list for WIQL queries)"
-        },
-        organization: {
-          type: "string",
-          description: "Azure DevOps organization (optional, uses default from config)"
-        }
-      },
-      required: []
     }
   }
 ];

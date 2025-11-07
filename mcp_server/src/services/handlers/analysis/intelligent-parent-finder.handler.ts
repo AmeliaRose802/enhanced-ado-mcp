@@ -1,5 +1,5 @@
 /**
- * Handler for wit-find-parent-item-intelligent tool
+ * Handler for find-parent tool
  * 
  * AI-powered intelligent parent finder that prevents ID hallucination by:
  * 1. Accepting a QUERY HANDLE containing child work items (not raw IDs)

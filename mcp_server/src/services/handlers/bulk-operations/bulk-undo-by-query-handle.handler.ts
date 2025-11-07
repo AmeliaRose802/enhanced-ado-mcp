@@ -1,5 +1,5 @@
 /**
- * Handler for wit-bulk-undo-by-query-handle tool
+ * Handler for undo-bulk tool
  * 
  * Undoes the last bulk operation performed on a query handle by reverting
  * the changes made to work items. Supports undoing:
@@ -43,7 +43,7 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
         success: false,
         data: null,
         metadata: { source: "bulk-undo-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

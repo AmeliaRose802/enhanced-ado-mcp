@@ -1,5 +1,5 @@
 /**
- * Handler for wit-create-copilot-item tool
+ * Handler for create-workitem-copilot tool
  * Creates a new work item and immediately assigns it to GitHub Copilot
  */
 

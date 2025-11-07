@@ -11,12 +11,32 @@ import { getTokenProvider } from '../../utils/token-provider.js';
 import type { ADOWorkItem } from '../../types/index.js';
 
 /**
+ * Build area path filter for WIQL queries
+ * Returns empty string if no area paths available (means query entire project)
+ */
+function buildAreaPathFilter(areaPaths: string[]): string {
+  if (!areaPaths || areaPaths.length === 0) {
+    return ''; // No filter - query entire project
+  }
+  
+  if (areaPaths.length === 1) {
+    return `[System.AreaPath] UNDER '${areaPaths[0].replace(/'/g, "''")}'`;
+  }
+  
+  // Multiple area paths - use OR condition
+  const conditions = areaPaths.map(path => 
+    `[System.AreaPath] UNDER '${path.replace(/'/g, "''")}'`
+  );
+  return `(${conditions.join(' OR ')})`;
+}
+
+/**
  * Fetch historical velocity data for team members
  */
 async function fetchHistoricalVelocity(
   organization: string,
   project: string,
-  areaPath: string,
+  areaPaths: string[],
   historicalSprintDays: number
 ): Promise<ADOWorkItem[]> {
   const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
@@ -24,16 +44,21 @@ async function fetchHistoricalVelocity(
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - historicalSprintDays);
   
+  const areaPathFilter = buildAreaPathFilter(areaPaths);
+  const whereConditions = [
+    areaPathFilter, // May be empty if no area paths
+    "[System.State] IN ('Done', 'Completed', 'Closed', 'Resolved')",
+    `[Microsoft.VSTS.Common.ClosedDate] >= '${startDate.toISOString().split('T')[0]}'`,
+    "[System.AssignedTo] <> ''"
+  ].filter(c => c !== ''); // Remove empty conditions
+  
   const wiql = `
     SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State],
            [System.AssignedTo], [Microsoft.VSTS.Scheduling.StoryPoints],
            [System.AreaPath], [System.IterationPath],
            [Microsoft.VSTS.Common.ClosedDate], [System.CreatedDate]
     FROM WorkItems
-    WHERE [System.AreaPath] UNDER '${areaPath}'
-      AND [System.State] IN ('Done', 'Completed', 'Closed', 'Resolved')
-      AND [Microsoft.VSTS.Common.ClosedDate] >= '${startDate.toISOString().split('T')[0]}'
-      AND [System.AssignedTo] <> ''
+    WHERE ${whereConditions.join('\n      AND ')}
     ORDER BY [Microsoft.VSTS.Common.ClosedDate] DESC
   `;
   
@@ -69,9 +94,16 @@ async function fetchHistoricalVelocity(
 async function fetchActiveWorkItems(
   organization: string,
   project: string,
-  areaPath: string
+  areaPaths: string[]
 ): Promise<ADOWorkItem[]> {
   const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
+  
+  const areaPathFilter = buildAreaPathFilter(areaPaths);
+  const whereConditions = [
+    areaPathFilter, // May be empty if no area paths
+    "[System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')",
+    "[System.AssignedTo] <> ''"
+  ].filter(c => c !== ''); // Remove empty conditions
   
   const wiql = `
     SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State],
@@ -79,9 +111,7 @@ async function fetchActiveWorkItems(
            [System.AreaPath], [System.IterationPath], [Microsoft.VSTS.Common.Priority],
            [System.CreatedDate], [System.ChangedDate]
     FROM WorkItems
-    WHERE [System.AreaPath] UNDER '${areaPath}'
-      AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')
-      AND [System.AssignedTo] <> ''
+    WHERE ${whereConditions.join('\n      AND ')}
     ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC
   `;
   
@@ -162,24 +192,50 @@ export class SprintPlanningAnalyzer {
       const config = loadConfiguration();
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
-      const areaPath = args.areaPath || config.azureDevOps.areaPath || '';
+      
+      // Get area paths with priority: explicit areaPathFilter > single areaPath > config defaults
+      let areaPaths: string[] = [];
+      if (args.areaPathFilter && args.areaPathFilter.length > 0) {
+        // Explicit filter takes highest priority
+        areaPaths = args.areaPathFilter;
+        logger.debug(`Using explicit area path filter (${areaPaths.length} paths)`);
+      } else if (args.areaPath) {
+        // Single area path provided
+        areaPaths = [args.areaPath];
+        logger.debug(`Using single area path from parameter`);
+      } else if (config.azureDevOps.areaPaths && config.azureDevOps.areaPaths.length > 0) {
+        // Multiple configured area paths
+        areaPaths = config.azureDevOps.areaPaths;
+        logger.debug(`Using ${areaPaths.length} configured area paths`);
+      } else if (config.azureDevOps.areaPath) {
+        // Single configured area path (legacy)
+        areaPaths = [config.azureDevOps.areaPath];
+        logger.debug(`Using single configured area path (legacy)`);
+      }
+      // If still empty, query entire project (no area path filter)
+      
       const historicalSprintsToAnalyze = args.historicalSprintsToAnalyze || 3;
       const historicalDays = historicalSprintsToAnalyze * 14; // Assume 2-week sprints
       
       logger.debug(`Starting sprint planning analysis for iteration: ${args.iterationPath}`);
+      if (areaPaths.length > 0) {
+        logger.info(`Sprint planning across ${areaPaths.length} area path(s): ${areaPaths.join(', ')}`);
+      } else {
+        logger.info(`Sprint planning across entire project (no area path filter)`);
+      }
 
       // Fetch historical velocity data
       logger.debug(`Fetching historical velocity data (last ${historicalDays} days)`);
       const historicalWorkItems = await fetchHistoricalVelocity(
         org,
         project,
-        areaPath,
+        areaPaths,
         historicalDays
       );
       
       // Fetch current active work
       logger.debug('Fetching active work items');
-      const activeWorkItems = await fetchActiveWorkItems(org, project, areaPath);
+      const activeWorkItems = await fetchActiveWorkItems(org, project, areaPaths);
       
       // Fetch candidate work items if IDs provided
       let candidateWorkItems: ADOWorkItem[] = [];
@@ -205,7 +261,7 @@ export class SprintPlanningAnalyzer {
         historical_sprints_to_analyze: historicalSprintsToAnalyze,
         organization: org,
         project: project,
-        area_path: areaPath,
+        area_path: areaPaths.length > 0 ? areaPaths.join(', ') : 'entire project',
         consider_dependencies: args.considerDependencies ?? true,
         consider_skills: args.considerSkills ?? true,
         additional_constraints: args.additionalConstraints || null,

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-clone-work-item tool
+ * Handler for clone-workitem tool
  * Clone/duplicate an existing work item with optional modifications
  */
 

@@ -1,5 +1,5 @@
 /**
- * Handler for wit-odata-query tool
+ * Handler for query-odata tool
  * Supports both direct OData execution and AI-powered query generation
  */
 
@@ -470,7 +470,7 @@ async function executeODataQueryForHandle(
       project: queryArgs.project,
       queryType: 'odata'
     },
-    60 * 60 * 1000, // 1 hour TTL
+    queryHandleService.getDefaultTTL(),
     workItemContext
   );
 
@@ -482,7 +482,7 @@ async function executeODataQueryForHandle(
       query_handle: handle,
       work_item_count: workItemIds.length,
       query: odataQuery,
-      summary: `Query handle created for ${workItemIds.length} work item(s). Use the handle with bulk operation tools. Handle expires in 1 hour.`,
+      summary: `Query handle created for ${workItemIds.length} work item(s). Use the handle with bulk operation tools. Handle expires in 24 hours.`,
       work_items: workItems.map((wi: any) => ({
         id: wi.WorkItemId,
         title: wi.Title,
@@ -492,7 +492,7 @@ async function executeODataQueryForHandle(
         iterationPath: wi.IterationPath,
         assignedTo: wi.AssignedTo?.displayName || wi.AssignedTo
       })),
-      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      expires_at: new Date(Date.now() + queryHandleService.getDefaultTTL()).toISOString()
     }),
     metadata: {
       source: "odata-query",

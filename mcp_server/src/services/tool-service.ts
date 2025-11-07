@@ -11,7 +11,6 @@ import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js"
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 import { handleListSubagents } from './handlers/core/list-subagents.handler.js';
-import { handleListTeamMembers } from './handlers/discovery/list-team-members.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -31,7 +30,6 @@ import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-que
 
 // Analysis handlers
 import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
-import { handleValidateHierarchy } from './handlers/analysis/validate-hierarchy.handler.js';
 import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-parent-finder.handler.js';
 
 // Integration handlers
@@ -99,27 +97,22 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Get configuration information
-  if (name === 'wit-get-configuration') {
+  if (name === 'get-config') {
     return await handleGetConfiguration(args);
   }
 
   // Get prompts (useful for testing and specialized agent workflows)
-  if (name === 'wit-get-prompts') {
+  if (name === 'get-prompts') {
     return await handleGetPrompts(args as Parameters<typeof handleGetPrompts>[0]);
   }
 
   // List available subagents in a repository
-  if (name === 'wit-list-subagents') {
+  if (name === 'list-agents') {
     return await handleListSubagents(args);
   }
 
-  // List team members in organization
-  if (name === 'wit-list-team-members') {
-    return await handleListTeamMembers(args);
-  }
-
   // AI-powered intelligence analysis (uses sampling if available)
-  if (name === 'wit-intelligence-analyzer') {
+  if (name === 'analyze-workitem') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -129,7 +122,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Enhanced AI assignment analysis (uses sampling if available)
-  if (name === 'wit-ai-assignment-analyzer') {
+  if (name === 'analyze-assignment') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -139,7 +132,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Personal workload analysis (uses sampling if available)
-  if (name === 'wit-personal-workload-analyzer') {
+  if (name === 'analyze-workload') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -149,7 +142,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Sprint planning analysis (uses sampling if available)
-  if (name === 'wit-sprint-planning-analyzer') {
+  if (name === 'plan-sprint') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -159,7 +152,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // AI-powered tool discovery (uses sampling if available)
-  if (name === 'wit-discover-tools') {
+  if (name === 'discover-tools') {
     if (!serverInstance) {
       throw new Error("Server instance not available for sampling");
     }
@@ -169,53 +162,48 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Create work item using REST API (TypeScript implementation)
-  if (name === 'wit-create-new-item') {
+  if (name === 'create-workitem') {
     return await handleCreateNewItem(config, args);
   }
 
   // Clone work item
-  if (name === 'wit-clone-work-item') {
+  if (name === 'clone-workitem') {
     return await handleCloneWorkItem(config, args);
   }
 
   // Unified WIQL query tool (supports both direct query and AI generation)
-  if (name === 'wit-wiql-query') {
+  if (name === 'query-wiql') {
     return await handleWiqlQuery(config, args, serverInstance ?? undefined);
   }
 
   // OData query tool (supports both AI generation and direct execution)
-  if (name === 'wit-odata-query') {
+  if (name === 'query-odata') {
     const { handleODataQuery } = await import('./handlers/query/odata-query.handler.js');
     return await handleODataQuery(config, args, serverInstance ?? undefined);
   }
 
   // Full context package (single work item)
-  if (name === 'wit-get-work-item-context-package') {
+  if (name === 'get-context') {
     return await handleGetWorkItemContextPackage(args as Parameters<typeof handleGetWorkItemContextPackage>[0]);
   }
 
   // Assign work item to GitHub Copilot with branch link
-  if (name === 'wit-assign-to-copilot') {
+  if (name === 'assign-copilot') {
     return await handleAssignToCopilot(config, args);
   }
 
   // Create work item and immediately assign to GitHub Copilot
-  if (name === 'wit-new-copilot-item') {
+  if (name === 'create-workitem-copilot') {
     return await handleNewCopilotItem(config, args);
   }
 
   // Extract security instruction links from work item
-  if (name === 'wit-extract-security-links') {
+  if (name === 'extract-security-links') {
     return await handleExtractSecurityLinks(config, args);
   }
 
-  // Fast hierarchy validation (types and states)
-  if (name === 'wit-validate-hierarchy') {
-    return await handleValidateHierarchy(config, args);
-  }
-
   // AI-powered intelligent parent finder
-  if (name === 'wit-find-parent-item-intelligent') {
+  if (name === 'find-parent') {
     if (!serverInstance) {
       return {
         success: false,
@@ -230,45 +218,45 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Bulk operations using query handles (eliminates ID hallucination)
-  if (name === 'wit-unified-bulk-operations-by-query-handle') {
+  if (name === 'execute-bulk-operations') {
     return await handleUnifiedBulkOperations(config, args, serverInstance || undefined);
   }
 
   // Link work items using query handles
-  if (name === 'wit-link-work-items-by-query-handles') {
+  if (name === 'link-workitems') {
     return await handleBulkLinkByQueryHandles(config, args);
   }
 
   // Undo last bulk operation on query handle
-  if (name === 'wit-bulk-undo-by-query-handle') {
+  if (name === 'undo-bulk') {
     const { handleBulkUndoByQueryHandle } = await import('./handlers/bulk-operations/bulk-undo-by-query-handle.handler.js');
     return await handleBulkUndoByQueryHandle(config, args);
   }
 
-  if (name === 'wit-forensic-undo-by-query-handle') {
+  if (name === 'undo-forensic') {
     const { handleForensicUndoByQueryHandle } = await import('./handlers/bulk-operations/forensic-undo-by-query-handle.handler.js');
     return await handleForensicUndoByQueryHandle(config, args);
   }
 
-  if (name === 'wit-analyze-by-query-handle') {
+  if (name === 'analyze-bulk') {
     return await handleAnalyzeByQueryHandle(config, args);
   }
 
-  if (name === 'wit-list-query-handles') {
+  if (name === 'list-handles') {
     return await handleListQueryHandles(config, args);
   }
 
-  if (name === 'wit-query-handle-info') {
+  if (name === 'inspect-handle') {
     return await handleQueryHandleInfo(config, args);
   }
 
   // Context packages by query handle
-  if (name === 'wit-get-context-packages-by-query-handle') {
+  if (name === 'get-context-bulk') {
     return await handleGetContextPackagesByQueryHandle(config, args);
   }
 
   // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)
-  // are now consolidated into wit-unified-bulk-operations-by-query-handle as actions
+  // are now consolidated into execute-bulk-operations as actions
 
   // All tools should be handled by the cases above
   // PowerShell script execution has been fully deprecated

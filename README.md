@@ -224,43 +224,43 @@ Relibly generating queries requires thosands of tokens of context, which will de
 ### Key Tools
 
 **Work Item Creation (4 tools):**
-- `wit-create-new-item` - Create work items with optional parent
-- `wit-assign-to-copilot` - Assign existing items to GitHub Copilot
-- `wit-new-copilot-item` - Create and auto-assign to Copilot
-- `wit-clone-work-item` - Clone/duplicate work items
+- `create-workitem` - Create work items with optional parent
+- `assign-copilot` - Assign existing items to GitHub Copilot
+- `create-workitem-copilot` - Create and auto-assign to Copilot
+- `clone-workitem` - Clone/duplicate work items
 
 **Work Item Context (2 tools):**
-- `wit-get-work-item-context-package` - Comprehensive work item details
-- `wit-extract-security-links` - Extract security scan instructions
+- `get-context` - Comprehensive work item details
+- `extract-security-links` - Extract security scan instructions
 
 **Query Tools (3 tools):**
-- `wit-wiql-query` - Execute WIQL or generate from natural language (includes substantive change analysis)
-- `wit-odata-query` - Execute OData analytics or generate from natural language
+- `query-wiql` - Execute WIQL or generate from natural language (includes substantive change analysis)
+- `query-odata` - Execute OData analytics or generate from natural language
 - `wit-validate-hierarchy` - Fast rule-based hierarchy validation
 
 **Query Handle Management (4 tools):**
-- `wit-analyze-by-query-handle` - Analyze work items via query handle
-- `wit-list-query-handles` - List all active query handles
-- `wit-query-handle-info` - Get comprehensive handle information
-- `wit-get-context-packages-by-query-handle` - Batch context retrieval
+- `analyze-bulk` - Analyze work items via query handle
+- `list-handles` - List all active query handles
+- `inspect-handle` - Get comprehensive handle information
+- `get-context-bulk` - Batch context retrieval
 
 **Bulk Operations (4 tools):**
-- `wit-unified-bulk-operations-by-query-handle` - All bulk operations in one tool
-- `wit-link-work-items-by-query-handles` - Create relationships between items
-- `wit-bulk-undo-by-query-handle` - Undo previous operations
-- `wit-forensic-undo-by-query-handle` - Undo changes by user/timestamp
+- `execute-bulk-operations` - All bulk operations in one tool
+- `link-workitems` - Create relationships between items
+- `undo-bulk` - Undo previous operations
+- `undo-forensic` - Undo changes by user/timestamp
 
 **AI Analysis (6 tools - requires VS Code + GitHub Copilot):**
-- `wit-intelligence-analyzer` - Work item completeness & AI-readiness
-- `wit-ai-assignment-analyzer` - Assignment suitability analysis
-- `wit-personal-workload-analyzer` - Burnout risk & workload health
-- `wit-sprint-planning-analyzer` - AI-powered sprint planning
-- `wit-discover-tools` - Find the right tool for your task
-- `wit-find-parent-item-intelligent` - AI-powered parent finder
+- `analyze-workitem` - Work item completeness & AI-readiness
+- `analyze-assignment` - Assignment suitability analysis
+- `analyze-workload` - Burnout risk & workload health
+- `plan-sprint` - AI-powered sprint planning
+- `discover-tools` - Find the right tool for your task
+- `find-parent` - AI-powered parent finder
 
 **Configuration (2 tools):**
-- `wit-get-configuration` - View current server configuration
-- `wit-get-prompts` - Access prompt templates
+- `get-config` - View current server configuration
+- `get-prompts` - Access prompt templates
 
 See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 
@@ -271,13 +271,13 @@ See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 ### Query with natural language
 ```javascript
 // AI-powered query generation
-callTool("wit-wiql-query", {
+callTool("query-wiql", {
   description: "All active bugs created in the last 7 days",
   testQuery: true
 });
 
 // Or direct WIQL execution
-callTool("wit-wiql-query", {
+callTool("query-wiql", {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.CreatedDate] >= @Today - 7",
   returnQueryHandle: true
 });
@@ -286,13 +286,13 @@ callTool("wit-wiql-query", {
 ### Safe bulk operations
 ```javascript
 // 1. Query with handle
-const result = await callTool("wit-wiql-query", {
+const result = await callTool("query-wiql", {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   returnQueryHandle: true
 });
 
 // 2. Unified bulk operations (preview + execute)
-await callTool("wit-unified-bulk-operations-by-query-handle", {
+await callTool("execute-bulk-operations", {
   queryHandle: result.query_handle,
   actions: [
     { type: "add-tag", tags: "needs-review" },
