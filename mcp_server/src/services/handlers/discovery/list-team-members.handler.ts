@@ -39,7 +39,7 @@ interface ODataResponse {
 
 /**
  * Discover team members by querying work items assigned to users
- * Uses OData Analytics to find all unique assignees
+ * Uses multiple strategies with fallbacks for maximum reliability
  */
 async function discoverTeamMembersByWorkItems(
   organization: string,
@@ -48,56 +48,147 @@ async function discoverTeamMembersByWorkItems(
 ): Promise<TeamMember[]> {
   const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   
+  // Strategy 1: Try OData with broader filter (last 6 months, all states)
   try {
-    // Use OData Analytics to get unique assignees with work item counts
-    // This discovers team composition based on actual work assignment
-    const odataQuery = `$apply=filter(StateCategory ne 'Completed')/groupby((AssignedTo/UserName, AssignedTo/UserEmail), aggregate($count as Count))&$orderby=Count desc`;
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const dateFilter = sixMonthsAgo.toISOString().split('T')[0] + 'Z';
     
-    logger.debug(`Fetching team members via OData Analytics query`);
+    const odataQuery = `$apply=filter(ChangedDate ge ${dateFilter})/groupby((AssignedTo/UserName, AssignedTo/UserEmail), aggregate($count as Count))&$orderby=Count desc&$top=100`;
+    
+    logger.debug(`Strategy 1: OData Analytics with 6-month filter`);
     
     const response = await httpClient.get<ODataResponse>(
       `_odata/v4.0-preview/WorkItems?${odataQuery}`
     );
     
     const users = response.data.value || [];
-    logger.debug(`Found ${users.length} users with assigned work items`);
+    logger.debug(`OData Strategy 1 found ${users.length} users`);
     
-    // Convert to TeamMember format
-    const teamMembers: TeamMember[] = users
-      .filter(u => u.UserName && u.UserName !== 'Unassigned')
-      .map(u => ({
-        displayName: u.UserName,
-        email: u.UserEmail || u.UserName,
-        uniqueName: u.UserEmail || u.UserName,
-        workItemCount: u.Count || 0
-      }));
-    
-    // If manager email provided, filter the list
-    if (managerEmail) {
-      // We can't directly filter by manager in ADO, but we found all team members
-      // The caller can manually filter or we return all and note the limitation
-      logger.debug(`Manager filter '${managerEmail}' requested, but returning all team members (ADO limitation)`);
-    }
-    
-    return teamMembers;
-    
-  } catch (error) {
-    logger.warn('OData Analytics query failed, falling back to identity search', error);
-    
-    // Fallback: If OData fails, try broad identity search
-    if (managerEmail) {
-      const results = await searchIdentities(organization, managerEmail);
-      if (results.length > 0) {
-        return [{
-          displayName: results[0].displayName,
-          email: results[0].mail || results[0].uniqueName || '',
-          uniqueName: results[0].uniqueName || results[0].mail || ''
-        }];
+    if (users.length > 0) {
+      const teamMembers = users
+        .filter(u => u.UserName && u.UserName !== 'Unassigned')
+        .map(u => ({
+          displayName: u.UserName,
+          email: u.UserEmail || u.UserName,
+          uniqueName: u.UserEmail || u.UserName,
+          workItemCount: u.Count || 0
+        }));
+      
+      if (teamMembers.length > 0) {
+        return teamMembers;
       }
     }
-    
-    return [];
+  } catch (error) {
+    logger.warn('OData Strategy 1 failed, trying fallback', error);
   }
+  
+  // Strategy 2: Try simpler OData without date filter
+  try {
+    const odataQuery = `$apply=groupby((AssignedTo/UserName, AssignedTo/UserEmail), aggregate($count as Count))&$orderby=Count desc&$top=100`;
+    
+    logger.debug(`Strategy 2: OData Analytics without date filter`);
+    
+    const response = await httpClient.get<ODataResponse>(
+      `_odata/v4.0-preview/WorkItems?${odataQuery}`
+    );
+    
+    const users = response.data.value || [];
+    logger.debug(`OData Strategy 2 found ${users.length} users`);
+    
+    if (users.length > 0) {
+      const teamMembers = users
+        .filter(u => u.UserName && u.UserName !== 'Unassigned')
+        .map(u => ({
+          displayName: u.UserName,
+          email: u.UserEmail || u.UserName,
+          uniqueName: u.UserEmail || u.UserName,
+          workItemCount: u.Count || 0
+        }));
+      
+      if (teamMembers.length > 0) {
+        return teamMembers;
+      }
+    }
+  } catch (error) {
+    logger.warn('OData Strategy 2 failed, trying WIQL fallback', error);
+  }
+  
+  // Strategy 3: Use WIQL to find assigned work items
+  try {
+    logger.debug(`Strategy 3: WIQL query for recent assignments`);
+    
+    const wiqlQuery = `SELECT [System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = '${project}' AND [System.AssignedTo] <> '' ORDER BY [System.ChangedDate] DESC`;
+    
+    const wiqlResponse = await httpClient.post<any>(
+      `wit/wiql?api-version=7.1`,
+      { query: wiqlQuery }
+    );
+    
+    const workItems = wiqlResponse.data.workItems || [];
+    logger.debug(`WIQL found ${workItems.length} work items with assignments`);
+    
+    if (workItems.length > 0) {
+      // Get unique work item IDs
+      const workItemIds = workItems.slice(0, 200).map((wi: any) => wi.id);
+      
+      // Fetch work items to get assignee details
+      const batchResponse = await httpClient.get<any>(
+        `wit/workitems?ids=${workItemIds.join(',')}&fields=System.AssignedTo&api-version=7.1`
+      );
+      
+      const items = batchResponse.data.value || [];
+      logger.debug(`Fetched ${items.length} work items for assignee extraction`);
+      
+      // Extract unique assignees
+      const assigneeMap = new Map<string, TeamMember>();
+      
+      for (const item of items) {
+        const assignedTo = item.fields?.['System.AssignedTo'];
+        if (assignedTo && assignedTo.uniqueName && assignedTo.displayName) {
+          const key = assignedTo.uniqueName.toLowerCase();
+          const existing = assigneeMap.get(key);
+          
+          assigneeMap.set(key, {
+            displayName: assignedTo.displayName,
+            email: assignedTo.uniqueName,
+            uniqueName: assignedTo.uniqueName,
+            workItemCount: existing ? existing.workItemCount! + 1 : 1
+          });
+        }
+      }
+      
+      const teamMembers = Array.from(assigneeMap.values())
+        .sort((a, b) => (b.workItemCount || 0) - (a.workItemCount || 0));
+      
+      if (teamMembers.length > 0) {
+        logger.debug(`WIQL strategy found ${teamMembers.length} unique assignees`);
+        return teamMembers;
+      }
+    }
+  } catch (error) {
+    logger.warn('WIQL Strategy 3 failed, trying identity search', error);
+  }
+  
+  // Strategy 4: Fallback to identity search if manager provided
+  if (managerEmail) {
+    try {
+      logger.debug(`Strategy 4: Identity search for '${managerEmail}'`);
+      const results = await searchIdentities(organization, managerEmail);
+      
+      if (results.length > 0) {
+        return results.slice(0, 20).map(r => ({
+          displayName: r.displayName,
+          email: r.mail || r.uniqueName || '',
+          uniqueName: r.uniqueName || r.mail || ''
+        }));
+      }
+    } catch (error) {
+      logger.warn('Identity search failed', error);
+    }
+  }
+  
+  return [];
 }
 
 /**
@@ -132,12 +223,29 @@ export async function handleListTeamMembers(args: unknown): Promise<ToolExecutio
     
     if (teamMembers.length === 0) {
       return buildErrorResponse(
-        new Error('No team members found. Ensure the project has work items with assigned users.'),
+        new Error('No team members found after trying multiple discovery strategies.'),
         { 
           source: 'list-team-members',
           organization,
           project,
-          hint: 'This tool discovers team members by finding users with assigned work items in the project.'
+          strategiesTried: [
+            '1. OData Analytics with 6-month filter',
+            '2. OData Analytics without filters',
+            '3. WIQL query for work item assignments',
+            '4. Identity search (if manager email provided)'
+          ],
+          possibleReasons: [
+            'Project has no work items with assigned users',
+            'OData Analytics not enabled or no permissions',
+            'Work items use non-standard assignment fields',
+            'All work items are unassigned'
+          ],
+          workarounds: [
+            'Manually provide team member emails in WIQL: WHERE [System.AssignedTo] IN (\'email1\', \'email2\')',
+            'Use area path filtering: WHERE [System.AreaPath] UNDER \'Project\\\\Team\'',
+            'Check Azure DevOps Analytics permissions',
+            'Try wit-search-users tool to find specific users'
+          ]
         }
       );
     }

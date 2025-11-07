@@ -22,7 +22,8 @@ type ListSubagentsInput = z.infer<typeof listSubagentsSchema>;
 interface SubagentMetadata {
   name: string;
   description: string;
-  filePath: string;
+  url: string;
+  tag?: string;
 }
 
 interface GitItem {
@@ -38,9 +39,15 @@ interface GitItemsResponse {
 
 /**
  * Parse YAML content to extract subagent metadata
- * Returns metadata object or debug info string if failed
+ * Returns metadata object or null if parsing fails
  */
-function parseSubagentMetadata(content: string, filePath: string): SubagentMetadata | null {
+function parseSubagentMetadata(
+  content: string, 
+  filePath: string, 
+  organization: string, 
+  project: string, 
+  repository: string
+): SubagentMetadata | null {
   try {
     logger.debug(`Parsing YAML from ${filePath}, first 200 chars: ${content.substring(0, 200)}`);
     
@@ -57,11 +64,39 @@ function parseSubagentMetadata(content: string, filePath: string): SubagentMetad
         const description = String(parsed.description || '').trim();
         
         if (name && description) {
-          logger.debug(`Found metadata at root: name="${name}", description="${description}"`);
+          // Extract tag from configuration section
+          // Looking for: configuration.pullRequestCopilotPrimitive.copilotAgentName
+          let tag: string | undefined;
+          
+          if ('configuration' in parsed && parsed.configuration && typeof parsed.configuration === 'object') {
+            const config = parsed.configuration as Record<string, any>;
+            
+            // Check for pullRequestCopilotPrimitive.copilotAgentName
+            if ('pullRequestCopilotPrimitive' in config && 
+                config.pullRequestCopilotPrimitive && 
+                typeof config.pullRequestCopilotPrimitive === 'object') {
+              const primitive = config.pullRequestCopilotPrimitive as Record<string, any>;
+              if ('copilotAgentName' in primitive && primitive.copilotAgentName) {
+                const agentName = String(primitive.copilotAgentName).trim();
+                if (agentName) {
+                  tag = `copilot:agent=${agentName}`;
+                  logger.debug(`Found agent tag: ${tag}`);
+                }
+              }
+            }
+          }
+          
+          // Build Azure DevOps URL for the file
+          const encodedPath = encodeURIComponent(filePath);
+          const url = `https://dev.azure.com/${organization}/${project}/_git/${repository}?path=${encodedPath}`;
+          
+          logger.debug(`Found metadata at root: name="${name}", description="${description}", tag="${tag || 'none'}"`);
+          
           return {
             name,
             description,
-            filePath
+            url,
+            tag
           };
         }
       }
@@ -203,7 +238,7 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
         
         logger.debug(`Fetched ${file.path}, content length: ${content.length}`);
         
-        const metadata = parseSubagentMetadata(content, file.path);
+        const metadata = parseSubagentMetadata(content, file.path, organization, project, repository);
         
         if (metadata) {
           subagents.push(metadata);
