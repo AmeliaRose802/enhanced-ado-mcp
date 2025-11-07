@@ -7,10 +7,14 @@
   WORK_ITEM_CONTEXT.md
 - Configuration & Discovery
   ANALYSIS_TOOLS.md
-- Automatic Project Extraction (New!)
+- Automatic Project Extraction
   automatic-project-extraction.md
 - Multi-Area Path Support (Planned)
   multi-area-path-support.md
+- Specialized Agent Assignment
+  specialized-agent-assignment.md
+- List Subagents (New!)
+  list-subagents.md
 
 ## Utility & Testing
 - Get Prompts Tool (New!)

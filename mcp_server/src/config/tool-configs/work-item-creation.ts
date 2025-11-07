@@ -34,7 +34,7 @@ export const workItemCreationTools: ToolConfig[] = [
   },
   {
     name: "wit-assign-to-copilot",
-    description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
+    description: "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. Optionally specify a specialized Copilot agent using the specializedAgent parameter. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: assignToCopilotSchema,
     inputSchema: {
@@ -43,14 +43,15 @@ export const workItemCreationTools: ToolConfig[] = [
         workItemId: { type: "number", description: "Existing work item ID to assign" },
         repository: { type: "string", description: "Git repository name (required)" },
         branch: { type: "string", description: "Override default branch from config" },
-        gitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" }
+        gitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" },
+        specializedAgent: { type: "string", description: "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'" }
       },
       required: ["workItemId", "repository"]
     }
   },
   {
     name: "wit-new-copilot-item",
-    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, branch, gitHubCopilotGuid, areaPath, iterationPath, priority, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
+    description: "Create a new Azure DevOps work item under a parent and immediately assign to GitHub Copilot. Optionally specify a specialized Copilot agent using the specializedAgent parameter. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, branch, gitHubCopilotGuid, areaPath, iterationPath, priority, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: newCopilotItemSchema,
     inputSchema: {
@@ -64,6 +65,7 @@ export const workItemCreationTools: ToolConfig[] = [
         workItemType: { type: "string", description: "Override default work item type from config" },
         branch: { type: "string", description: "Override default branch from config" },
         gitHubCopilotGuid: { type: "string", description: "Override default GitHub Copilot GUID from config" },
+        specializedAgent: { type: "string", description: "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'" },
         areaPath: { type: "string", description: "Override default area path from config" },
         iterationPath: { type: "string", description: "Override default iteration path from config" },
         priority: { type: "number", description: "Override default priority from config" }

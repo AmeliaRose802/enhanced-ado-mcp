@@ -111,6 +111,7 @@ interface AssignToCopilotArgs {
   repository: string;
   branch?: string;
   gitHubCopilotGuid: string;
+  specializedAgent?: string;
 }
 
 export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promise<{
@@ -120,7 +121,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   human_friendly_url: string;
   warnings?: string[];
 }> {
-  const { workItemId, organization, project, repository, branch = 'main', gitHubCopilotGuid } = args;
+  const { workItemId, organization, project, repository, branch = 'main', gitHubCopilotGuid, specializedAgent } = args;
   const workItemRepository = createWorkItemRepository(organization, project);
   const warnings: string[] = [];
 
@@ -148,8 +149,43 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
   }
 
   try {
-    await workItemRepository.update(workItemId, [{ op: 'add' as const, path: '/fields/System.AssignedTo', value: gitHubCopilotGuid }]);
-    logger.debug(`Assigned work item ${workItemId} to GitHub Copilot`);
+    const updates: ADOFieldOperation[] = [
+      { op: 'add' as const, path: '/fields/System.AssignedTo', value: gitHubCopilotGuid }
+    ];
+
+    // Add specialized agent tag if provided
+    if (specializedAgent) {
+      const agentTag = `copilot:agent=${specializedAgent}`;
+      
+      // Get current tags to merge properly
+      try {
+        const currentWorkItem = await workItemRepository.getById(workItemId);
+        const currentTags = currentWorkItem.fields['System.Tags'] as string || '';
+        const tagArray = currentTags.split(';').map(t => t.trim()).filter(t => t.length > 0);
+        
+        // Check if agent tag already exists
+        const hasAgentTag = tagArray.some(tag => tag.startsWith('copilot:agent='));
+        if (hasAgentTag) {
+          // Replace existing agent tag
+          const updatedTags = tagArray
+            .filter(tag => !tag.startsWith('copilot:agent='))
+            .concat(agentTag);
+          updates.push({ op: 'add' as const, path: '/fields/System.Tags', value: updatedTags.join('; ') });
+          logger.debug(`Replaced existing specialized agent tag with: ${agentTag}`);
+        } else {
+          // Add new agent tag
+          const updatedTags = [...tagArray, agentTag];
+          updates.push({ op: 'add' as const, path: '/fields/System.Tags', value: updatedTags.join('; ') });
+          logger.debug(`Added specialized agent tag: ${agentTag}`);
+        }
+      } catch (error) {
+        logger.warn(`Could not read current tags for work item ${workItemId}, appending agent tag`, error);
+        updates.push({ op: 'add' as const, path: '/fields/System.Tags', value: agentTag });
+      }
+    }
+
+    await workItemRepository.update(workItemId, updates);
+    logger.debug(`Assigned work item ${workItemId} to GitHub Copilot${specializedAgent ? ` with specialized agent: ${specializedAgent}` : ''}`);
   } catch (error) {
     throw new Error(`Failed to assign work item: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -276,6 +312,7 @@ interface CreateAndAssignToCopilotArgs extends CreateWorkItemArgs {
   repository: string;
   branch?: string;
   gitHubCopilotGuid: string;
+  specializedAgent?: string;
 }
 
 export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCopilotArgs): Promise<{
@@ -286,7 +323,7 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
   repository_linked: boolean;
   human_friendly_url: string;
 }> {
-  const { repository, branch = 'main', gitHubCopilotGuid, ...createArgs } = args;
+  const { repository, branch = 'main', gitHubCopilotGuid, specializedAgent, ...createArgs } = args;
 
   const createResult = await createWorkItem({ ...createArgs, assignedTo: '' });
   await new Promise(resolve => setTimeout(resolve, 2000)); // Allow work item to initialize
@@ -297,7 +334,8 @@ export async function createWorkItemAndAssignToCopilot(args: CreateAndAssignToCo
     project: args.project,
     repository,
     branch,
-    gitHubCopilotGuid
+    gitHubCopilotGuid,
+    specializedAgent
   });
   
   return {

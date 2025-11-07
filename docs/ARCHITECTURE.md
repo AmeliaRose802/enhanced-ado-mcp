@@ -81,15 +81,15 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 - `config.ts` - Configuration loading and validation
 - `schemas.ts` - Zod schemas for input validation
 - `tool-configs/` - Tool registry organized by category
-  - `index.ts` - Re-exports all tools
-  - `work-item-creation.ts` - Creation & assignment tools
-  - `bulk-operations.ts` - Bulk update/state tools
-  - `ai-analysis.ts` - AI-powered analysis tools
-  - `ai-enhancement.ts` - AI-powered enhancement tools
-  - `query-tools.ts` - WIQL/OData queries
-  - `query-handle.ts` - Handle operations
-  - `work-item-context.ts` - Context retrieval
-  - `discovery.ts` - Configuration & prompts
+  - `index.ts` - Re-exports all tools (25 total)
+  - `work-item-creation.ts` - Creation & assignment tools (4)
+  - `work-item-context.ts` - Context retrieval tools (2)
+  - `query-tools.ts` - WIQL/OData queries (3)
+  - `query-handle.ts` - Handle operations (4)
+  - `bulk-operations.ts` - Unified bulk operations, linking, undo (4)
+  - `ai-analysis.ts` - AI-powered analysis tools (6)
+  - `ai-enhancement.ts` - AI enhancements (consolidated into bulk operations)
+  - `discovery.ts` - Configuration & prompts (2)
 
 **Configuration Sources (Priority Order):**
 1. CLI arguments (highest priority)

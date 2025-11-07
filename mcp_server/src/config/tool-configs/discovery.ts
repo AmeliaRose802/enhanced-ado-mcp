@@ -1,7 +1,8 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   getConfigurationSchema,
-  getPromptsSchema
+  getPromptsSchema,
+  listSubagentsSchema
 } from "../schemas.js";
 
 /**
@@ -45,6 +46,30 @@ export const discoveryTools: ToolConfig[] = [
         }
       },
       required: []
+    }
+  },
+  {
+    name: "wit-list-subagents",
+    description: "Discover available specialized Copilot agents in an Azure DevOps repository by scanning /.azuredevops/policies directory. Returns agent names and descriptions parsed from YAML metadata.",
+    script: "",
+    schema: listSubagentsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        repository: {
+          type: "string",
+          description: "Repository name or ID to scan for specialized agents"
+        },
+        organization: {
+          type: "string",
+          description: "Azure DevOps organization (optional, uses default from config)"
+        },
+        project: {
+          type: "string",
+          description: "Azure DevOps project (optional, uses default from config)"
+        }
+      },
+      required: ["repository"]
     }
   }
 ];

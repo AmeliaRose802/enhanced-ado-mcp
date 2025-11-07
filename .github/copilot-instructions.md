@@ -28,12 +28,21 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 
 ## Available Tool Categories
 
-1. **Core Work Item Tools** - Create, assign, and manage work items
-2. **AI-Powered Analysis Tools** - Intelligent work item analysis, feature decomposition, hierarchy validation
-3. **Bulk Operations** - Safe bulk updates using query handle pattern
-4. **Query Tools** - WIQL and OData query generation and execution
-5. **Configuration & Discovery Tools** - View configuration and discover available resources
-6. **Prompt Templates** - Work item enhancement, AI suitability analysis, security item analysis
+**25 MCP Tools** organized into 8 categories:
+
+1. **Work Item Creation (4 tools)** - Create, clone, assign to Copilot
+2. **Work Item Context (2 tools)** - Retrieve comprehensive work item details
+3. **Query Tools (3 tools)** - WIQL/OData queries with AI generation, hierarchy validation
+4. **Query Handle Management (4 tools)** - Handle lifecycle, validation, inspection
+5. **Bulk Operations (4 tools)** - Unified bulk operations, linking, undo
+6. **AI Analysis (6 tools)** - Intelligence, assignment, workload, sprint planning
+7. **Configuration (2 tools)** - Server configuration and prompt templates
+
+**Key Changes:**
+- Unified bulk operations tool consolidates 10+ separate tools into one
+- Query handle pattern prevents ID hallucination
+- AI-powered tools require VS Code + GitHub Copilot
+- Natural language query generation built into WIQL/OData tools
 
 ## Best Practices
 
@@ -47,12 +56,13 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 
 - "Create a new Product Backlog Item for implementing authentication"
 - "Analyze work item 12345 for AI assignment suitability"
-- "List available area paths in my project"
-- "Extract security findings from work item 67890"
-- "Decompose this large feature into smaller work items"
 - "Show my current MCP server configuration"
-- "Generate a WIQL query to find all active bugs assigned to me"
-- "Bulk update all items in this sprint to add a tag"
+- "Find all active bugs created in the last week" (uses AI-powered WIQL generation)
+- "Extract security findings from work item 67890"
+- "Bulk update all items in this sprint to add a tag" (uses unified bulk operations)
+- "Clone work item 123 with modifications"
+- "Find the best parent for these orphaned tasks" (AI-powered parent finder)
+- "Analyze my team's sprint capacity and suggest assignments"
 
 ---
 

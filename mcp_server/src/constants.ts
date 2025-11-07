@@ -38,7 +38,6 @@ export const TOOL_NAMES = {
   // Analysis Tools
   VALIDATE_HIERARCHY: 'wit-validate-hierarchy',
   EXTRACT_SECURITY_LINKS: 'wit-extract-security-links',
-  GET_LAST_SUBSTANTIVE_CHANGE: 'wit-get-last-substantive-change',
   
   // Discovery Tools
   GET_CONFIGURATION: 'wit-get-configuration',

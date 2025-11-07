@@ -14,6 +14,18 @@ arguments:
 
 Analyze security and compliance work items in area path `{{area_path}}`. **Exclude Done/Completed/Closed/Resolved states.**
 
+## Efficiency Guidelines
+
+**⚡ Execute operations in parallel whenever possible:**
+- Query multiple security domains simultaneously (authentication, data protection, network)
+- Fetch context packages for different item categories in parallel
+- Run security link extraction concurrently for multiple items
+
+**🤖 Consider sub-agents for heavy operations:**
+- When analyzing >50 security items, delegate categorization to sub-agent
+- For deep vulnerability analysis requiring documentation lookup, use sub-agent
+- Sub-agents help when extracting and processing security remediation links across many items
+
 ## Tools
 
 **Discovery & Analysis:**

@@ -46,7 +46,19 @@ Patterns for building and querying work item hierarchies:
 
 **Use when:** Agent needs to work with parent-child relationships
 
-### 4. Common Workflow Examples (`common-workflows.md`)
+### 4. Hierarchy Analysis Guide (`hierarchy-analysis-guide.md`)
+**URI:** `ado://docs/hierarchy-analysis-guide`
+
+Fast, rule-based validation of work item hierarchies:
+- Parent-child type relationship validation
+- State consistency checking
+- Violation detection and grouping
+- Query handle creation for each violation type
+- Bulk remediation workflows
+
+**Use when:** Agent needs to validate hierarchy rules and fix structural issues
+
+### 5. Common Workflow Examples (`common-workflows.md`)
 **URI:** `ado://docs/common-workflows`
 
 End-to-end workflows combining multiple tools:
@@ -55,35 +67,39 @@ End-to-end workflows combining multiple tools:
 - Sprint planning
 - Quality improvement
 - AI-first development
+- Unified bulk operations patterns
+- Forensic undo for error recovery
 
 **Use when:** Agent needs to understand multi-step workflows
 
-### 5. Tool Selection Guide (`tool-selection-guide.md`)
+### 6. Tool Selection Guide (`tool-selection-guide.md`)
 **URI:** `ado://docs/tool-selection-guide`
 
 Decision guide for choosing the right tool:
-- **NEW:** AI-powered query generation (WIQL and OData from natural language)
+- AI-powered query generation (WIQL and OData from natural language)
 - Query vs metrics tools
 - Single vs batch operations
+- Unified bulk operations (single tool for all bulk modifications)
 - AI-powered analysis tools
-- Bulk operations
+- Query handle management
 - Performance considerations
 
 **Use when:** Agent is unsure which tool to use
 
-### 6. Query Handle Pattern (`query-handle-pattern.md`)
+### 7. Query Handle Pattern (`query-handle-pattern.md`)
 **URI:** `ado://docs/query-handle-pattern`
 
 Anti-hallucination architecture for bulk operations:
 - Why query handles eliminate ID hallucination
 - How to use query handles
+- Query handle inspection and validation
 - Complete workflow examples
 - Best practices and safety features
 - Troubleshooting
 
 **Use when:** Agent needs to perform bulk operations on multiple work items
 
-### 7. Bulk Intelligent Enhancement Guide (`bulk-intelligent-enhancement-guide.md`)
+### 8. Bulk Intelligent Enhancement Guide (`bulk-intelligent-enhancement-guide.md`)
 **URI:** `ado://docs/bulk-intelligent-enhancement-guide`
 
 AI-powered bulk enhancement tools for work items:
@@ -96,7 +112,7 @@ AI-powered bulk enhancement tools for work items:
 
 **Use when:** Agent needs to enhance multiple work items with AI-generated content (descriptions, estimates, acceptance criteria)
 
-### 8. Tool Discovery Guide (`tool-discovery-guide.md`)
+### 9. Tool Discovery Guide (`tool-discovery-guide.md`)
 **URI:** `ado://docs/tool-discovery-guide`
 
 AI-powered tool discovery for finding the right tools:
@@ -108,7 +124,7 @@ AI-powered tool discovery for finding the right tools:
 
 **Use when:** Agent is unsure which tool to use or wants to explore capabilities with natural language
 
-### 9. Handle-First Analysis Guide (`handle-first-analysis-guide.md`)
+### 10. Handle-First Analysis Guide (`handle-first-analysis-guide.md`)
 **URI:** `ado://docs/handle-first-analysis-guide`
 
 Query handle patterns for safe analysis workflows:
@@ -120,7 +136,7 @@ Query handle patterns for safe analysis workflows:
 
 **Use when:** Agent needs to analyze work items before performing bulk operations
 
-### 10. WIQL Generator Guide (`wiql-generator-guide.md`)
+### 11. WIQL Generator Guide (`wiql-generator-guide.md`)
 **URI:** `ado://docs/wiql-generator-guide`
 
 AI-powered WIQL query generation from natural language:
@@ -132,7 +148,7 @@ AI-powered WIQL query generation from natural language:
 
 **Use when:** Agent needs to construct complex WIQL queries from descriptions
 
-### 11. Personal Workload Analyzer Guide (`personal-workload-analyzer-guide.md`)
+### 12. Personal Workload Analyzer Guide (`personal-workload-analyzer-guide.md`)
 **URI:** `ado://docs/personal-workload-analyzer-guide`
 
 Individual workload health analysis for burnout prevention and career development:
@@ -145,7 +161,7 @@ Individual workload health analysis for burnout prevention and career developmen
 
 **Use when:** Agent needs to analyze an individual's work patterns for health risks, career development, or growth opportunities
 
-### 12. Sprint Planning Guide (`sprint-planning-guide.md`)
+### 13. Sprint Planning Guide (`sprint-planning-guide.md`)
 **URI:** `ado://docs/sprint-planning-guide`
 
 AI-powered sprint planning for optimal work assignment:
@@ -159,7 +175,7 @@ AI-powered sprint planning for optimal work assignment:
 
 **Use when:** Agent needs to create a sprint plan, analyze team capacity, or propose work assignments
 
-### 13. Tool Limitations and Constraints (`tool-limitations.md`)
+### 14. Tool Limitations and Constraints (`tool-limitations.md`)
 **URI:** `ado://docs/tool-limitations`
 
 Comprehensive guide to tool limitations, constraints, and restrictions:
@@ -269,6 +285,7 @@ resources/
 ├── wiql-quick-reference.md
 ├── odata-quick-reference.md
 ├── hierarchy-patterns.md
+├── hierarchy-analysis-guide.md
 ├── common-workflows.md
 ├── tool-selection-guide.md
 ├── query-handle-pattern.md

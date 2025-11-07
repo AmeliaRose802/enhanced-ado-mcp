@@ -32,7 +32,8 @@ export async function handleAssignToCopilot(config: ToolConfig, args: unknown): 
       project: input.project || requiredConfig.project,
       repository: input.repository, // Required
       branch: input.branch || requiredConfig.gitRepository?.defaultBranch || 'main',
-      gitHubCopilotGuid: input.gitHubCopilotGuid || requiredConfig.gitHubCopilot?.guid || ''
+      gitHubCopilotGuid: input.gitHubCopilotGuid || requiredConfig.gitHubCopilot?.guid || '',
+      specializedAgent: input.specializedAgent
     };
 
     if (!assignArgs.gitHubCopilotGuid) {

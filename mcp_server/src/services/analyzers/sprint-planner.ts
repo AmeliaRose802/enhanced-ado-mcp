@@ -6,6 +6,135 @@ import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
+import { createADOHttpClient } from '../../utils/ado-http-client.js';
+import { getTokenProvider } from '../../utils/token-provider.js';
+import type { ADOWorkItem } from '../../types/index.js';
+
+/**
+ * Fetch historical velocity data for team members
+ */
+async function fetchHistoricalVelocity(
+  organization: string,
+  project: string,
+  areaPath: string,
+  historicalSprintDays: number
+): Promise<ADOWorkItem[]> {
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
+  
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - historicalSprintDays);
+  
+  const wiql = `
+    SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State],
+           [System.AssignedTo], [Microsoft.VSTS.Scheduling.StoryPoints],
+           [System.AreaPath], [System.IterationPath],
+           [Microsoft.VSTS.Common.ClosedDate], [System.CreatedDate]
+    FROM WorkItems
+    WHERE [System.AreaPath] UNDER '${areaPath}'
+      AND [System.State] IN ('Done', 'Completed', 'Closed', 'Resolved')
+      AND [Microsoft.VSTS.Common.ClosedDate] >= '${startDate.toISOString().split('T')[0]}'
+      AND [System.AssignedTo] <> ''
+    ORDER BY [Microsoft.VSTS.Common.ClosedDate] DESC
+  `;
+  
+  try {
+    const response = await httpClient.post<{ workItems: Array<{ id: number }> }>(
+      'wit/wiql',
+      { query: wiql }
+    );
+    
+    const workItemIds = response.data.workItems?.map(wi => wi.id) || [];
+    
+    if (workItemIds.length === 0) {
+      return [];
+    }
+    
+    // Batch fetch work items (limit to 200 for historical data)
+    const batchSize = Math.min(workItemIds.length, 200);
+    const idsParam = workItemIds.slice(0, batchSize).join(',');
+    const itemsResponse = await httpClient.get<{ value: ADOWorkItem[] }>(
+      `wit/workitems?ids=${idsParam}&$expand=all`
+    );
+    
+    return itemsResponse.data.value || [];
+  } catch (error) {
+    logger.error('Failed to fetch historical velocity data:', error);
+    throw new Error(`Failed to fetch historical velocity: ${error}`);
+  }
+}
+
+/**
+ * Fetch active work in progress
+ */
+async function fetchActiveWorkItems(
+  organization: string,
+  project: string,
+  areaPath: string
+): Promise<ADOWorkItem[]> {
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
+  
+  const wiql = `
+    SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State],
+           [System.AssignedTo], [Microsoft.VSTS.Scheduling.StoryPoints],
+           [System.AreaPath], [System.IterationPath], [Microsoft.VSTS.Common.Priority],
+           [System.CreatedDate], [System.ChangedDate]
+    FROM WorkItems
+    WHERE [System.AreaPath] UNDER '${areaPath}'
+      AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')
+      AND [System.AssignedTo] <> ''
+    ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC
+  `;
+  
+  try {
+    const response = await httpClient.post<{ workItems: Array<{ id: number }> }>(
+      'wit/wiql',
+      { query: wiql }
+    );
+    
+    const workItemIds = response.data.workItems?.map(wi => wi.id) || [];
+    
+    if (workItemIds.length === 0) {
+      return [];
+    }
+    
+    const idsParam = workItemIds.join(',');
+    const itemsResponse = await httpClient.get<{ value: ADOWorkItem[] }>(
+      `wit/workitems?ids=${idsParam}&$expand=all`
+    );
+    
+    return itemsResponse.data.value || [];
+  } catch (error) {
+    logger.error('Failed to fetch active work items:', error);
+    throw new Error(`Failed to fetch active work items: ${error}`);
+  }
+}
+
+/**
+ * Fetch candidate work items for sprint planning
+ */
+async function fetchCandidateWorkItems(
+  organization: string,
+  project: string,
+  candidateIds?: number[]
+): Promise<ADOWorkItem[]> {
+  if (!candidateIds || candidateIds.length === 0) {
+    return [];
+  }
+  
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
+  
+  try {
+    const idsParam = candidateIds.join(',');
+    const response = await httpClient.get<{ value: ADOWorkItem[] }>(
+      `wit/workitems?ids=${idsParam}&$expand=all`
+    );
+    
+    return response.data.value || [];
+  } catch (error) {
+    logger.error('Failed to fetch candidate work items:', error);
+    throw new Error(`Failed to fetch candidate work items: ${error}`);
+  }
+}
 
 /**
  * Sprint Planning Analyzer - AI-powered sprint planning and work assignment
@@ -34,15 +163,46 @@ export class SprintPlanningAnalyzer {
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
       const areaPath = args.areaPath || config.azureDevOps.areaPath || '';
+      const historicalSprintsToAnalyze = args.historicalSprintsToAnalyze || 3;
+      const historicalDays = historicalSprintsToAnalyze * 14; // Assume 2-week sprints
       
       logger.debug(`Starting sprint planning analysis for iteration: ${args.iterationPath}`);
 
+      // Fetch historical velocity data
+      logger.debug(`Fetching historical velocity data (last ${historicalDays} days)`);
+      const historicalWorkItems = await fetchHistoricalVelocity(
+        org,
+        project,
+        areaPath,
+        historicalDays
+      );
+      
+      // Fetch current active work
+      logger.debug('Fetching active work items');
+      const activeWorkItems = await fetchActiveWorkItems(org, project, areaPath);
+      
+      // Fetch candidate work items if IDs provided
+      let candidateWorkItems: ADOWorkItem[] = [];
+      if (args.candidateWorkItemIds && args.candidateWorkItemIds.length > 0) {
+        logger.debug(`Fetching ${args.candidateWorkItemIds.length} candidate work items`);
+        candidateWorkItems = await fetchCandidateWorkItems(
+          org,
+          project,
+          args.candidateWorkItemIds
+        );
+      }
+
+      logger.debug(
+        `Data fetched: ${historicalWorkItems.length} historical, ` +
+        `${activeWorkItems.length} active, ${candidateWorkItems.length} candidates`
+      );
+
+      // Build analysis input with actual work item data
       const analysisInput = {
         iteration_path: args.iterationPath,
         team_members: args.teamMembers,
         sprint_capacity_hours: args.sprintCapacityHours,
-        historical_sprints_to_analyze: args.historicalSprintsToAnalyze || 3,
-        candidate_work_item_ids: args.candidateWorkItemIds,
+        historical_sprints_to_analyze: historicalSprintsToAnalyze,
         organization: org,
         project: project,
         area_path: areaPath,
@@ -50,7 +210,47 @@ export class SprintPlanningAnalyzer {
         consider_skills: args.considerSkills ?? true,
         additional_constraints: args.additionalConstraints || null,
         include_full_analysis: args.includeFullAnalysis ?? false,
-        raw_analysis_on_error: args.rawAnalysisOnError ?? false
+        
+        // Historical velocity data
+        historical_work_items: historicalWorkItems.map(wi => ({
+          id: wi.id,
+          title: wi.fields?.['System.Title'] || '',
+          type: wi.fields?.['System.WorkItemType'] || '',
+          state: wi.fields?.['System.State'] || '',
+          assigned_to: wi.fields?.['System.AssignedTo']?.displayName || '',
+          story_points: wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0,
+          closed_date: wi.fields?.['Microsoft.VSTS.Common.ClosedDate'] || '',
+          area_path: wi.fields?.['System.AreaPath'] || '',
+          iteration_path: wi.fields?.['System.IterationPath'] || ''
+        })),
+        
+        // Active work in progress
+        active_work_items: activeWorkItems.map(wi => ({
+          id: wi.id,
+          title: wi.fields?.['System.Title'] || '',
+          type: wi.fields?.['System.WorkItemType'] || '',
+          state: wi.fields?.['System.State'] || '',
+          assigned_to: wi.fields?.['System.AssignedTo']?.displayName || '',
+          story_points: wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0,
+          priority: wi.fields?.['Microsoft.VSTS.Common.Priority'] || 2,
+          created_date: wi.fields?.['System.CreatedDate'] || '',
+          changed_date: wi.fields?.['System.ChangedDate'] || ''
+        })),
+        
+        // Candidate work items for sprint
+        candidate_work_items: candidateWorkItems.map(wi => ({
+          id: wi.id,
+          title: wi.fields?.['System.Title'] || '',
+          description: wi.fields?.['System.Description'] || '',
+          type: wi.fields?.['System.WorkItemType'] || '',
+          state: wi.fields?.['System.State'] || '',
+          story_points: wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0,
+          priority: wi.fields?.['Microsoft.VSTS.Common.Priority'] || 2,
+          tags: wi.fields?.['System.Tags'] || '',
+          area_path: wi.fields?.['System.AreaPath'] || '',
+          iteration_path: wi.fields?.['System.IterationPath'] || '',
+          acceptance_criteria: wi.fields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || ''
+        }))
       };
 
       const result = await this.performAnalysis(analysisInput);
@@ -58,7 +258,10 @@ export class SprintPlanningAnalyzer {
       return buildSuccessResponse(result, { 
         source: 'sprint-planning-analysis',
         iterationPath: args.iterationPath,
-        teamSize: args.teamMembers.length
+        teamSize: args.teamMembers.length,
+        historicalItemsAnalyzed: historicalWorkItems.length,
+        activeItemsAnalyzed: activeWorkItems.length,
+        candidateItemsAnalyzed: candidateWorkItems.length
       });
     } catch (error) {
       logger.error('Sprint planning analysis failed:', error);

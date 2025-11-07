@@ -1,23 +1,26 @@
-- ✅ The backlog cleanup flow includes tools that do not exist
-   - ✅ Audit all prompts to make sure tools and queries referenced still exist
-   - Fixed: backlog_cleanup.md, sprint_plan.md, team_velocity_analyzer.md (15+ tool references corrected)
+✅ 1. **FIXED** - The odata tool 401 error has been resolved:
 
-- ✅ Extract the project name from the area path. We should not require providing both
+**ROOT CAUSE**: OData handler was constructing API URLs without validating organization/project parameters. When undefined (configuration issue), URLs contained literal "undefined" values causing TF400813 errors that appeared to be permissions issues.
 
-- ✅ Provide example area path and org during setup
-   - Added examples to all configuration error messages in config.ts
+**THE FIX**: Added parameter validation in all OData functions with clear error messages pointing to configuration issues.
 
-- ✅ During the backlog cleanup flow, specify that the look back period param must be a number of days not an arbitrary string
-   - Updated backlog_cleanup.md: staleness_threshold_days now explicitly states "Number of days"
+**COMMIT**: 01aea7b - "fix: Add parameter validation to OData handler to prevent undefined org/project in URLs"
 
-- ✅ Undo tool needs to allow undoing more than the most recent action. It should allow undoing all actions performed on the query handle
-   - Added undoAll parameter to wit-bulk-undo-by-query-handle (default: false for backward compatibility)
-   - Operations undone in reverse chronological order
+---
 
-- ✅ Add a prompt for sprint review. It should look at last n days (ask user how long) and review if planned work was completed. It should identify bottlenecks and opportunities.
-   - Created sprint_review.md with lookback_days parameter, completion analysis, bottleneck identification
+2. Add a tool to find aviable subagents in a given repo. The avaible subagents can be found under /.azuredevops/policies in any repo. 
 
-- ✅ Write a plan for supporting more than one area path
-   - Created comprehensive feature spec: docs/feature_specs/multi-area-path-support.md
-   - Covers configuration, tool changes, implementation approach, migration path
- 
+
+They always start with:
+
+```yml
+# metadata
+name: Copilot pair programmer, specialized agents
+description: A component governance agent that adds CG specific tools and instructions
+```
+
+The tool should return a list of names and descriptions for avabile subagents.
+
+3. Add a tool to get people on the team. 
+
+The hyerchey analysis tool returns the same data 3 times over creating a lot of bloat and token wasteage. Just return the handles by default so the user can fetch data on demand.

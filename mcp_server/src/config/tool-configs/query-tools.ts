@@ -2,7 +2,6 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   wiqlQuerySchema,
   odataQuerySchema,
-  getLastSubstantiveChangeSchema,
   validateHierarchyFastSchema
 } from "../schemas.js";
 
@@ -107,23 +106,6 @@ export const queryTools: ToolConfig[] = [
         iterationPath: { type: "string", description: "Filter by Iteration Path" }
       },
       required: []
-    }
-  },
-  {
-    name: "wit-get-last-substantive-change",
-    description: "Efficiently determine the last substantive (meaningful) change to a work item by analyzing revision history server-side and filtering out automated changes like iteration path bulk updates. Returns minimal data to avoid context window bloat.",
-    script: "",
-    schema: getLastSubstantiveChangeSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemId: { type: "number", description: "Work item ID to analyze" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" },
-        historyCount: { type: "number", description: "Number of revisions to analyze (default 50)" },
-        automatedPatterns: { type: "array", items: { type: "string" }, description: "Custom automation account patterns to filter (e.g., ['Bot Name', 'System Account'])" }
-      },
-      required: ["workItemId"]
     }
   },
   {

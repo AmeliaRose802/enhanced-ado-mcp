@@ -122,6 +122,7 @@ export const assignToCopilotSchema = z.object({
   repository: z.string().min(1, "Repository is required"),
   branch: optionalString(),
   gitHubCopilotGuid: optionalString(),
+  specializedAgent: optionalString().describe("Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'"),
   ...orgProjectFields()
 });
 
@@ -134,6 +135,7 @@ export const newCopilotItemSchema = z.object({
   workItemType: optionalString(),
   branch: optionalString(),
   gitHubCopilotGuid: optionalString(),
+  specializedAgent: optionalString().describe("Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'"),
   areaPath: optionalString(),
   iterationPath: optionalString(),
   priority: optionalNumber(),
@@ -420,11 +422,6 @@ export const getContextPackagesByQueryHandleSchema = z.object({
   ...orgProjectFields()
 });
 
-export const getLastSubstantiveChangeSchema = z.object({
-  workItemIds: z.array(z.number()).min(1, "At least one work item ID required"),
-  ...orgProjectFields()
-});
-
 // ============================================================================
 // Bulk Operations Schemas
 // ============================================================================
@@ -650,4 +647,9 @@ export const getPromptsSchema = z.object({
   promptName: optionalString(),
   includeContent: optionalBool(true),
   args: z.record(z.unknown()).optional()
+});
+
+export const listSubagentsSchema = z.object({
+  repository: z.string().min(1, "Repository name or ID is required"),
+  ...orgProjectFields()
 });

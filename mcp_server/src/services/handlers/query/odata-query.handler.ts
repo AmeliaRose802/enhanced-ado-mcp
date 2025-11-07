@@ -10,12 +10,27 @@ import { getRequiredConfig } from "@/config/config.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
+import { createAuthenticator } from '@/utils/ado-token.js';
 import { escapeAreaPath } from "@/utils/work-item-parser.js";
 import { cacheService } from "../../cache-service.js";
 import { SamplingClient } from "@/utils/sampling-client.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { asToolData } from "@/types/index.js";
 import crypto from 'crypto';
+
+/**
+ * Azure CLI token provider specifically for Analytics API
+ * The Analytics API requires Azure CLI tokens - OAuth tokens don't work
+ */
+let analyticsTokenProvider: (() => Promise<string>) | null = null;
+
+function getAnalyticsTokenProvider(): () => Promise<string> {
+  if (!analyticsTokenProvider) {
+    logger.info('Creating Azure CLI token provider for Analytics API');
+    analyticsTokenProvider = createAuthenticator('azcli');
+  }
+  return analyticsTokenProvider;
+}
 
 /**
  * Main OData query handler
@@ -237,7 +252,7 @@ async function executeODataAnalytics(
   } else {
     logger.debug(`Cache miss for OData query, executing: ${cacheKey.substring(0, 32)}...`);
     
-    const token = await getTokenProvider()();
+    const token = await getAnalyticsTokenProvider()();
     
     const response = await fetch(fullUrl, {
       method: 'GET',
@@ -372,7 +387,7 @@ async function executeODataQueryForHandle(
     };
   }
   
-  const token = await getTokenProvider()();
+  const token = await getAnalyticsTokenProvider()();
   const baseUrl = `https://analytics.dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_odata/v3.0-preview/WorkItems`;
   
   const fieldsToSelect = queryArgs.includeFields?.length > 0 
@@ -678,7 +693,7 @@ async function testODataQuery(
   }
   
   try {
-    const token = await getTokenProvider()();
+    const token = await getAnalyticsTokenProvider()();
     const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
     const url = `${baseUrl}?${query}${query.includes('$top') ? '' : '&$top=5'}`;
 

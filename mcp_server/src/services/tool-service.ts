@@ -10,6 +10,7 @@ import { handleGetConfiguration } from "./handlers/core/get-configuration.handle
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
+import { handleListSubagents } from './handlers/core/list-subagents.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -106,6 +107,11 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleGetPrompts(args as Parameters<typeof handleGetPrompts>[0]);
   }
 
+  // List available subagents in a repository
+  if (name === 'wit-list-subagents') {
+    return await handleListSubagents(args);
+  }
+
   // AI-powered intelligence analysis (uses sampling if available)
   if (name === 'wit-intelligence-analyzer') {
     if (!serverInstance) {
@@ -180,19 +186,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Full context package (single work item)
   if (name === 'wit-get-work-item-context-package') {
     return await handleGetWorkItemContextPackage(args as Parameters<typeof handleGetWorkItemContextPackage>[0]);
-  }
-
-  // Get last substantive change for a work item
-  if (name === 'wit-get-last-substantive-change') {
-    const { getLastSubstantiveChange } = await import('./handlers/analysis/get-last-substantive-change.handler.js');
-    const result = await getLastSubstantiveChange(args as Parameters<typeof getLastSubstantiveChange>[0]);
-    return { 
-      success: true, 
-      data: asToolData(result), 
-      metadata: { tool: name },
-      errors: [],
-      warnings: []
-    };
   }
 
   // Assign work item to GitHub Copilot with branch link

@@ -46,7 +46,8 @@ export async function handleNewCopilotItem(config: ToolConfig, args: unknown): P
       iterationPath: input.iterationPath || requiredConfig.defaultIterationPath || '',
       priority: input.priority !== undefined ? input.priority : (requiredConfig.defaultPriority || 2),
       tags: input.tags || '',
-      inheritParentPaths: input.inheritParentPaths !== undefined ? input.inheritParentPaths : true
+      inheritParentPaths: input.inheritParentPaths !== undefined ? input.inheritParentPaths : true,
+      specializedAgent: input.specializedAgent
     };
 
     if (!createArgs.gitHubCopilotGuid) {

@@ -10,33 +10,36 @@ End-to-end workflows combining multiple tools.
 
 ### Option A: Generate WIQL Query for Work Items
 ```json
-// Tool: wit-generate-wiql-query
+// Tool: wit-wiql-query (with description for AI generation)
 {
   "description": "Find all active bugs assigned to me created in the last 30 days with high priority",
   "includeExamples": true,
   "testQuery": true,
-  "maxIterations": 3
+  "maxIterations": 3,
+  "returnQueryHandle": true
 }
 ```
 
 **Returns:**
 - Validated WIQL query string
-- Sample results (if testQuery: true)
+- Query handle for bulk operations
+- Work items array for preview
 - Query summary and validation status
 
-**Then execute:**
+**Or use direct WIQL:**
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query (with direct WIQL)
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.AssignedTo] = @Me AND [System.CreatedDate] >= @Today - 30 AND [Microsoft.VSTS.Common.Priority] = 1",
   "includeFields": ["System.Title", "System.State", "Microsoft.VSTS.Common.Priority"],
+  "returnQueryHandle": true,
   "maxResults": 200
 }
 ```
 
 ### Option B: Generate OData Query for Analytics
 ```json
-// Tool: wit-generate-odata-query
+// Tool: wit-odata-query (with description for AI generation)
 {
   "description": "Count completed work items grouped by type in the last 90 days",
   "includeExamples": true,
@@ -50,12 +53,13 @@ End-to-end workflows combining multiple tools.
 - Sample results showing counts by type
 - Query summary and validation status
 
-**Then execute directly or use in further analysis:**
+**Or use predefined query type:**
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query (with predefined query)
 {
-  "queryType": "customQuery",
-  "customODataQuery": "$apply=filter(CompletedDate ge 2024-10-01Z)/groupby((WorkItemType), aggregate($count as Count))"
+  "queryType": "groupByType",
+  "dateRangeField": "CompletedDate",
+  "dateRangeStart": "2024-10-01"
 }
 ```
 
@@ -131,27 +135,29 @@ End-to-end workflows combining multiple tools.
 ### Step 1: Get All Items in Area
 ```json
 // Option A: Build query with AI
-// Tool: wit-generate-wiql-query
+// Tool: wit-wiql-query
 {
   "description": "all items in my area that are not removed or done",
   "includeExamples": false,
-  "testQuery": true
+  "testQuery": true,
+  "returnQueryHandle": true
 }
 
 // Option B: Use direct WIQL query
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",
   "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
+  "returnQueryHandle": true,
   "maxResults": 500
 }
 ```
 
 ### Step 2: Detect Patterns and Issues
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
-  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (100, 101, 102, ...)",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",
   "filterByPatterns": ["missing_description", "duplicates"],
   "returnQueryHandle": true
 }
@@ -171,10 +177,16 @@ End-to-end workflows combining multiple tools.
 
 ### Step 4: Bulk Notify Owners
 ```json
-// Tool: wit-bulk-comment-by-query-handle
+// Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_items_with_issues",
-  "comment": "Please review and update this work item. Missing required information."
+  "actions": [
+    {
+      "type": "comment",
+      "comment": "Please review and update this work item. Missing required information."
+    }
+  ],
+  "dryRun": true
 }
 ```
 
@@ -186,7 +198,7 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Check Team Velocity
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query
 {
   "queryType": "velocityMetrics",
   "dateRangeField": "CompletedDate",
@@ -198,10 +210,11 @@ End-to-end workflows combining multiple tools.
 
 ### Step 2: Get Candidate Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
   "includeFields": ["System.Title", "System.Priority", "Microsoft.VSTS.Scheduling.StoryPoints"],
+  "returnQueryHandle": true,
   "maxResults": 200
 }
 ```
@@ -240,10 +253,11 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Find Security Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'Security' OR [System.WorkItemType] = 'Security'",
   "includeFields": ["System.Title", "System.State", "System.Description"],
+  "returnQueryHandle": true,
   "maxResults": 200
 }
 ```
@@ -281,20 +295,22 @@ End-to-end workflows combining multiple tools.
 
 ### Step 1: Get Root Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
   "includeFields": ["System.Title", "System.WorkItemType"],
+  "returnQueryHandle": true,
   "maxResults": 100
 }
 ```
 
 ### Step 2: For Each Root, Get Children
 ```json
-// Tool: wit-get-work-items-by-query-wiql (repeat per root)
+// Tool: wit-wiql-query (repeat per root)
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
   "includeFields": ["System.Title", "System.WorkItemType", "System.Parent"],
+  "returnQueryHandle": true,
   "maxResults": 200
 }
 ```
@@ -318,10 +334,11 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 1: Get Recent Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.ChangedDate] >= @Today - 14 AND [System.State] = 'Active'",
   "includeFields": ["System.Title", "System.Description"],
+  "returnQueryHandle": true,
   "maxResults": 100
 }
 ```
@@ -345,9 +362,9 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 3: Detect Common Issues
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
-  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (12345, 12346, ...)",
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.State] = 'Active'",
   "filterByPatterns": ["missing_description"],
   "returnQueryHandle": true
 }
@@ -355,10 +372,16 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Notify Team
 ```json
-// Tool: wit-bulk-comment-by-query-handle
+// Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_analyzed_items",
-  "comment": "AI analysis suggests improvements. Please review attached recommendations."
+  "actions": [
+    {
+      "type": "comment",
+      "comment": "AI analysis suggests improvements. Please review attached recommendations."
+    }
+  ],
+  "dryRun": false
 }
 ```
 
@@ -370,7 +393,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 1: Overall Counts
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query
 {
   "queryType": "groupByState",
   "areaPath": "MyProject\\MyTeam"
@@ -379,7 +402,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 2: Type Distribution
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query
 {
   "queryType": "groupByType",
   "filters": {"State": "Active"}
@@ -388,7 +411,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 3: Team Velocity
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query
 {
   "queryType": "velocityMetrics",
   "dateRangeField": "CompletedDate",
@@ -399,7 +422,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Cycle Time
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query
 {
   "queryType": "cycleTimeMetrics",
   "computeCycleTime": true,
@@ -409,7 +432,7 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 5: Work Distribution
 ```json
-// Tool: wit-query-analytics-odata
+// Tool: wit-odata-query
 {
   "queryType": "groupByAssignee",
   "filters": {"State": "Active"},
@@ -426,10 +449,11 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 1: Get Backlog Items
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
   "includeFields": ["System.Title", "System.Description"],
+  "returnQueryHandle": true,
   "maxResults": 100
 }
 ```
@@ -457,11 +481,209 @@ Repeat Step 2 for each child until complete tree is built.
 
 ### Step 4: Monitor Progress
 ```json
-// Tool: wit-get-work-items-by-query-wiql
+// Tool: wit-wiql-query
 {
-  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = 'GitHub Copilot' AND [System.State] = 'Active'"
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = 'GitHub Copilot' AND [System.State] = 'Active'",
+  "returnQueryHandle": true
 }
 ```
+
+---
+
+## Workflow 9: Unified Bulk Operations (NEW)
+
+**Goal:** Use the unified bulk operations tool to perform multiple actions in sequence
+
+### Example: Complete Backlog Cleanup with Multiple Actions
+
+```typescript
+// Step 1: Query for stale items
+const response = await wit_wiql_query({
+  description: "all items created more than 180 days ago that are still new",
+  returnQueryHandle: true,
+  includeSubstantiveChange: true
+});
+
+// Step 2: Execute multiple operations in sequence with unified tool
+await wit_unified_bulk_operations_by_query_handle({
+  queryHandle: response.query_handle,
+  actions: [
+    // Action 1: Add audit comment
+    {
+      type: "comment",
+      comment: "🤖 Automated Backlog Review: Item inactive for >180 days. Please update or close."
+    },
+    // Action 2: Add tag for tracking
+    {
+      type: "add-tag",
+      tags: "BacklogReview;Stale"
+    },
+    // Action 3: Update priority to low
+    {
+      type: "update",
+      updates: [
+        {
+          op: "replace",
+          path: "/fields/Microsoft.VSTS.Common.Priority",
+          value: 4
+        }
+      ]
+    },
+    // Action 4: Assign to backlog owner for review
+    {
+      type: "assign",
+      assignTo: "backlog-owner@example.com",
+      comment: "Please review and determine if this item should be kept or removed."
+    }
+  ],
+  dryRun: true,  // Preview first
+  stopOnError: true
+});
+```
+
+### Example: AI Enhancement with State Transition
+
+```typescript
+// Enhance items and move them to ready state
+await wit_unified_bulk_operations_by_query_handle({
+  queryHandle: "qh_abc123",
+  actions: [
+    // Action 1: Enhance descriptions with AI
+    {
+      type: "enhance-descriptions",
+      enhancementStyle: "detailed",
+      preserveOriginal: true,  // Append to existing
+      minConfidenceScore: 0.7
+    },
+    // Action 2: Add acceptance criteria
+    {
+      type: "add-acceptance-criteria",
+      criteriaFormat: "gherkin",
+      minCriteria: 3,
+      maxCriteria: 7
+    },
+    // Action 3: Estimate story points
+    {
+      type: "assign-story-points",
+      estimationScale: "fibonacci",
+      includeReasoning: true
+    },
+    // Action 4: Transition to Ready state
+    {
+      type: "transition-state",
+      targetState: "Ready",
+      reason: "Enhanced with AI-generated content and estimates",
+      validateTransitions: true
+    }
+  ],
+  itemSelector: {
+    states: ["New"],
+    daysInactiveMax: 30  // Only recently active items
+  },
+  dryRun: false
+});
+```
+
+### Benefits of Unified Bulk Operations
+
+1. **Single Tool:** One tool for all bulk modifications
+2. **Sequential Actions:** Execute multiple operations in order
+3. **Item Selection:** Select subsets within query handle
+4. **Error Handling:** Choose to stop or continue on errors
+5. **Dry-Run Support:** Preview all actions before executing
+6. **Atomic Operations:** All actions tracked together
+
+---
+
+## Workflow 10: Forensic Undo (NEW)
+
+**Goal:** Analyze and revert changes made by a specific user within a time window
+
+### Example: Undo Accidental Bulk Removal
+
+```typescript
+// Scenario: User accidentally removed items yesterday between 2-4 PM
+
+// Step 1: Query for all items (including removed)
+const response = await wit_wiql_query({
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject'",
+  returnQueryHandle: true,
+  maxResults: 500
+});
+
+// Step 2: Forensic analysis - detect changes by user in time window
+await wit_forensic_undo_by_query_handle({
+  queryHandle: response.query_handle,
+  changedBy: "user@example.com",
+  afterTimestamp: "2025-11-06T14:00:00Z",
+  beforeTimestamp: "2025-11-06T16:00:00Z",
+  detectTypeChanges: true,
+  detectStateChanges: true,
+  detectFieldChanges: true,
+  maxRevisions: 50,
+  dryRun: true  // Preview what would be reverted
+});
+
+// Step 3: Review the preview, then execute revert
+await wit_forensic_undo_by_query_handle({
+  queryHandle: response.query_handle,
+  changedBy: "user@example.com",
+  afterTimestamp: "2025-11-06T14:00:00Z",
+  beforeTimestamp: "2025-11-06T16:00:00Z",
+  dryRun: false
+});
+```
+
+### Features of Forensic Undo
+
+- **Works on ANY items:** Not limited to MCP-changed items
+- **Revision history analysis:** Examines ADO revision history directly
+- **Smart detection:** Automatically detects already-reverted changes
+- **User filtering:** Revert only changes by specific user
+- **Time window:** Limit to specific time range
+- **Change type selection:** Detect type changes, state changes, field changes, link changes
+
+---
+
+## Workflow 11: Intelligent Parent Finding (NEW)
+
+**Goal:** Use AI to find and recommend appropriate parent work items for orphaned items
+
+### Example: Fix Orphaned Tasks
+
+```typescript
+// Step 1: Find orphaned items (items without parents)
+const orphans = await wit_wiql_query({
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] IN ('Task', 'Bug') AND [System.Parent] = '' AND [System.State] = 'Active'",
+  returnQueryHandle: true
+});
+
+// Step 2: Use AI to find appropriate parents
+const recommendations = await wit_find_parent_item_intelligent({
+  childQueryHandle: orphans.query_handle,
+  searchScope: "area",  // Search within same area path
+  includeSubAreas: false,  // Enforce same area path
+  parentWorkItemTypes: ["Feature", "Product Backlog Item"],
+  requireActiveParents: true,
+  maxParentCandidates: 20,
+  maxRecommendations: 3,  // Top 3 recommendations per child
+  confidenceThreshold: 0.5,
+  dryRun: false
+});
+
+// Step 3: Review recommendations and create links
+// The tool returns recommendations with confidence scores
+// Use wit-link-work-items-by-query-handles to create the links
+```
+
+### Features of Intelligent Parent Finder
+
+- **AI-powered matching:** Analyzes context, scope, and logical fit
+- **Type hierarchy enforcement:** Validates parent-child type relationships
+- **Area path enforcement:** By default, only searches same area path
+- **Confidence scoring:** Ranks candidates by suitability
+- **Bulk processing:** Handles multiple orphaned items at once
+- **Safe recommendations:** Dry-run mode to preview before linking
 
 ---
 

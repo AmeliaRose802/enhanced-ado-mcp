@@ -95,35 +95,35 @@ Practical guides for using the MCP server. See [guides/toc.yml](./guides/toc.yml
 
 ### Quick Reference by Task
 
-**Creating work items:**
-- [Work Item Creation](./feature_specs/WORK_ITEM_CREATION.md) - Create, assign to Copilot
+**Creating work items (4 tools):**
+- [Work Item Creation](./feature_specs/WORK_ITEM_CREATION.md) - Create, clone, assign to Copilot
 - [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - Intelligence analyzer for quality analysis
 
-**Retrieving information:**
-- [Work Item Context](./feature_specs/WORK_ITEM_CONTEXT.md) - Context packages, batch retrieval
-- [Analysis Tools](./feature_specs/ANALYSIS_TOOLS.md) - Configuration, staleness, security links
+**Retrieving information (2 tools):**
+- [Work Item Context](./feature_specs/WORK_ITEM_CONTEXT.md) - Context packages, security links
 
-**Building queries:**
-- [Query Tools](./feature_specs/QUERY_TOOLS.md) - WIQL, OData, AI generation
+**Building queries (3 tools):**
+- [Query Tools](./feature_specs/QUERY_TOOLS.md) - Unified WIQL/OData with AI generation, hierarchy validation
 - [WIQL Best Practices](./guides/WIQL_BEST_PRACTICES.md) - Query patterns
 - [WIQL Hierarchical Queries](./feature_specs/WIQL_HIERARCHICAL_QUERIES.md) - Hierarchy patterns
 - [OData Query Optimization](./feature_specs/ODATA_QUERY_OPTIMIZATION.md) - Analytics queries
 
-**Bulk operations:**
-- [Bulk Operations](./feature_specs/BULK_OPERATIONS.md) - Comment, update, assign, remove
-- [Bulk AI Enhancement](./feature_specs/BULK_AI_ENHANCEMENT.md) - AI-powered enhancements
+**Query handle management (4 tools):**
+- [Query Handle Operations](./feature_specs/QUERY_HANDLE_OPERATIONS.md) - Handle lifecycle, validation, inspection
 - [Enhanced Query Handle Pattern](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md) - Anti-hallucination architecture
-- [Query Handle Operations](./feature_specs/QUERY_HANDLE_OPERATIONS.md) - Handle management
 
-**Analysis and validation:**
-- [Analysis Tools](./feature_specs/ANALYSIS_TOOLS.md) - Pattern detection, hierarchy validation
-- [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - AI assignment analysis, workload analysis, sprint planning
+**Bulk operations (4 tools):**
+- [Bulk Operations](./feature_specs/BULK_OPERATIONS.md) - Unified bulk operations tool
+- [Bulk AI Enhancement](./feature_specs/BULK_AI_ENHANCEMENT.md) - AI enhancements via unified tool
+- [Enhanced Query Handle Pattern](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md) - Safe bulk patterns
 
-**AI-powered analysis:**
-- [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - Intelligence analyzer, AI assignment, sprint planning
-- [Bulk AI Enhancement](./feature_specs/BULK_AI_ENHANCEMENT.md) - Bulk enhancements
-- [AI-Powered Features](./feature_specs/AI_POWERED_FEATURES.md) - Overview
+**AI-powered analysis (6 tools - requires VS Code + GitHub Copilot):**
+- [AI Intelligence Tools](./feature_specs/AI_INTELLIGENCE_TOOLS.md) - Intelligence analyzer, assignment analyzer, workload analyzer
+- [AI-Powered Features](./feature_specs/AI_POWERED_FEATURES.md) - Sprint planning, tool discovery, parent finder
 - [Model Selection](./feature_specs/MODEL_SELECTION.md) - LLM configuration
+
+**Configuration (2 tools):**
+- Configuration viewer and prompt template access
 
 **Understanding the system:**
 - [Architecture](./ARCHITECTURE.md)

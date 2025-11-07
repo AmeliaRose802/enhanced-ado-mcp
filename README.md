@@ -71,6 +71,8 @@ Add to VS Code `settings.json`:
 
 **Step 5:** Reload VS Code (`Ctrl+Shift+P` → "Developer: Reload Window")
 
+**Note:** OData Analytics queries use Azure CLI authentication automatically for maximum compatibility. Other operations use the server's configured authentication method (defaults to interactive OAuth). You can override this with the `--authentication` flag if needed.
+
 **Real Example:**
 ```json
 {
@@ -213,34 +215,52 @@ Relibly generating queries requires thosands of tokens of context, which will de
 
 ## What It Does
 
-- **35 MCP Tools** for Azure DevOps work item management
+- **25 MCP Tools** for Azure DevOps work item management
 - **AI-Powered Analysis** (completeness, AI-readiness, assignment suitability)
-- **Natural Language Queries** (English → WIQL generation)
+- **Natural Language Queries** (English → WIQL/OData generation)
 - **Safe Bulk Operations** (query handle pattern prevents ID hallucination)
 - **GitHub Copilot Integration** (auto-assign work items to coding agents)
 
 ### Key Tools
 
-**Work Items:**
-- Create, update, assign work items
-- Auto-assign to GitHub Copilot with branch links
-- Extract security scan instructions
+**Work Item Creation (4 tools):**
+- `wit-create-new-item` - Create work items with optional parent
+- `wit-assign-to-copilot` - Assign existing items to GitHub Copilot
+- `wit-new-copilot-item` - Create and auto-assign to Copilot
+- `wit-clone-work-item` - Clone/duplicate work items
 
-**Queries:**
-- `wit-generate-wiql-query` - Natural language → WIQL
-- `wit-get-work-items-by-query-wiql` - Execute WIQL queries
-- Query handle pattern for safe bulk operations
+**Work Item Context (2 tools):**
+- `wit-get-work-item-context-package` - Comprehensive work item details
+- `wit-extract-security-links` - Extract security scan instructions
 
-**Bulk Operations:**
-- `wit-bulk-update-by-query-handle` - Safe batch updates
-- `wit-bulk-assign-by-query-handle` - Batch assignments  
-- `wit-bulk-remove-by-query-handle` - Batch removal (with dry-run)
-- Preview selection before executing
+**Query Tools (3 tools):**
+- `wit-wiql-query` - Execute WIQL or generate from natural language (includes substantive change analysis)
+- `wit-odata-query` - Execute OData analytics or generate from natural language
+- `wit-validate-hierarchy` - Fast rule-based hierarchy validation
 
-**Analysis (requires VS Code + GitHub Copilot):**
-- `wit-intelligence-analyzer` - Completeness & AI-readiness
+**Query Handle Management (4 tools):**
+- `wit-analyze-by-query-handle` - Analyze work items via query handle
+- `wit-list-query-handles` - List all active query handles
+- `wit-query-handle-info` - Get comprehensive handle information
+- `wit-get-context-packages-by-query-handle` - Batch context retrieval
+
+**Bulk Operations (4 tools):**
+- `wit-unified-bulk-operations-by-query-handle` - All bulk operations in one tool
+- `wit-link-work-items-by-query-handles` - Create relationships between items
+- `wit-bulk-undo-by-query-handle` - Undo previous operations
+- `wit-forensic-undo-by-query-handle` - Undo changes by user/timestamp
+
+**AI Analysis (6 tools - requires VS Code + GitHub Copilot):**
+- `wit-intelligence-analyzer` - Work item completeness & AI-readiness
 - `wit-ai-assignment-analyzer` - Assignment suitability analysis
-- `wit-validate-hierarchy-fast` - Rule-based hierarchy validation
+- `wit-personal-workload-analyzer` - Burnout risk & workload health
+- `wit-sprint-planning-analyzer` - AI-powered sprint planning
+- `wit-discover-tools` - Find the right tool for your task
+- `wit-find-parent-item-intelligent` - AI-powered parent finder
+
+**Configuration (2 tools):**
+- `wit-get-configuration` - View current server configuration
+- `wit-get-prompts` - Access prompt templates
 
 See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 
@@ -250,31 +270,47 @@ See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 
 ### Query with natural language
 ```javascript
-callTool("wit-generate-wiql-query", {
+// AI-powered query generation
+callTool("wit-wiql-query", {
   description: "All active bugs created in the last 7 days",
   testQuery: true
+});
+
+// Or direct WIQL execution
+callTool("wit-wiql-query", {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.CreatedDate] >= @Today - 7",
+  returnQueryHandle: true
 });
 ```
 
 ### Safe bulk operations
 ```javascript
 // 1. Query with handle
-const handle = await callTool("wit-get-work-items-by-query-wiql", {
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = ''Active''",
+const result = await callTool("wit-wiql-query", {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
   returnQueryHandle: true
 });
 
-// 2. Preview selection
-await callTool("wit-select-items-from-query-handle", {
-  queryHandle: handle.queryHandle,
-  itemSelector: { states: ["Active"], tags: ["critical"] }
+// 2. Unified bulk operations (preview + execute)
+await callTool("wit-unified-bulk-operations-by-query-handle", {
+  queryHandle: result.query_handle,
+  actions: [
+    { type: "add-tag", tags: "needs-review" },
+    { type: "comment", comment: "Flagged for review" }
+  ],
+  itemSelector: { states: ["Active"], tags: ["critical"] },
+  dryRun: true  // Preview first
 });
 
-// 3. Execute
-await callTool("wit-bulk-update-by-query-handle", {
-  queryHandle: handle.queryHandle,
+// 3. Execute for real
+await callTool("wit-unified-bulk-operations-by-query-handle", {
+  queryHandle: result.query_handle,
+  actions: [
+    { type: "add-tag", tags: "needs-review" },
+    { type: "comment", comment: "Flagged for review" }
+  ],
   itemSelector: { states: ["Active"], tags: ["critical"] },
-  fields: { "System.Tags": "needs-review" }
+  dryRun: false
 });
 ```
 
@@ -299,8 +335,21 @@ Server automatically selects fastest free model. No configuration needed.
 
 ### Common Errors
 
-**Analytics Permission Error (TF400813)**  
-**Fix:** Ask admin for "View analytics" permission, or use WIQL tools instead of OData.
+**OData 401 Authorization Error (TF400813)**  
+**Root Cause:** This error typically means you lack "View analytics" permission in Azure DevOps, OR you're not logged into Azure CLI.  
+
+**Fix:**
+1. **First, ensure Azure CLI is logged in:** Run `az login` in your terminal
+2. **Verify you have Analytics permissions:**
+   - Go to: `https://dev.azure.com/{YOUR_ORG}/{YOUR_PROJECT}/_settings/security`
+   - Search for your email address in the Members list
+   - Check for "View analytics" permission
+3. **If permission is missing:** Contact your Azure DevOps administrator to request "View analytics" at the project level
+
+**Technical Details:**  
+OData Analytics queries automatically use Azure CLI authentication (as of v1.10.1) because the Analytics API requires Azure CLI tokens. OAuth tokens from interactive authentication don't work with this API. This happens transparently - you don't need any special configuration.
+
+**Alternative:** If you can't get Analytics permissions, use WIQL queries (`wit-wiql-query`) instead of OData queries.
 
 **Missing Work Item Type ($undefined)**  
 **Fix:** Always specify `workItemType` when creating items.

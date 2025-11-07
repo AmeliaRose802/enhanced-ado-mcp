@@ -55,6 +55,20 @@ Analyze the backlog and create a balanced sprint plan that:
 4. **Considers dependencies** - Identify blockers and sequence work appropriately
 5. **Supports the sprint goal** - If provided, align assignments to the goal
 
+## Efficiency Guidelines
+
+**⚡ Execute operations in parallel whenever possible:**
+- Query sprint candidates AND current active work simultaneously
+- Run `wit-personal-workload-analyzer` for all team members in parallel
+- Fetch work item context packages concurrently when analyzing multiple items
+- Execute capacity analysis and skill discovery operations in parallel batches
+
+**🤖 Consider sub-agents for heavy operations:**
+- When analyzing >20 team members, delegate skill discovery to sub-agent
+- For deep backlog analysis (>100 items), use sub-agent to analyze candidate work
+- Sub-agents are useful for historical velocity analysis spanning multiple sprints
+- Delegate work item quality checks (descriptions, acceptance criteria) to sub-agent for large backlogs
+
 ## Analysis Process
 
 ### Step 1: Understand Team Capacity, Discover Members & Analyze Skills
