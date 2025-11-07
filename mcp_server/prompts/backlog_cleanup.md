@@ -47,17 +47,15 @@ Parameters:
 
 **Report Format**:
 - Count and query handle at top
-- To display items: Use `wit-select-items-from-query-handle` with the handle to retrieve work item details for user review
+- To display items: Use `wit-query-handle-info` with the handle to retrieve work item details for user review
 
 **Recommended Actions**:
 1. Review items with team before removing
-2. If approved: Use `wit-bulk-comment-by-query-handle` to add "Automated cleanup: Inactive for {daysInactive}+ days"
-3. Then use `wit-bulk-remove-by-query-handle` to move items to 'Removed' state
+2. If approved: Use `wit-unified-bulk-operations-by-query-handle` with action type "comment" to add "Automated cleanup: Inactive for {daysInactive}+ days"
+3. Then use `wit-unified-bulk-operations-by-query-handle` with action type "remove" to move items to 'Removed' state
 
 **Tools for Remediation**:
-- `wit-bulk-comment-by-query-handle` - Add comments to all items in query handle (supports template variables)
-- `wit-bulk-remove-by-query-handle` - Change state to 'Removed' for all items
-- `wit-bulk-update-by-query-handle` - Alternative for updating multiple fields at once
+- `wit-unified-bulk-operations-by-query-handle` - Consolidated tool for all bulk operations (comment, update, assign, remove, transition-state, enhance-descriptions, assign-story-points, etc.)
 
 **User Prompt**: "Found {count} stale items. Would you like to review these or proceed with removal?"
 
@@ -80,16 +78,15 @@ Parameters:
 
 **Report Format**:
 - Count and query handle at top
-- To display items: Use `wit-select-items-from-query-handle` with the handle if user requests details
+- To display items: Use `wit-query-handle-info` with the handle if user requests details
 
 **Recommended Actions**:
 1. Review items and determine which need descriptions
-2. Use `wit-bulk-enhance-descriptions-by-query-handle` to generate descriptions with AI
+2. Use `wit-unified-bulk-operations-by-query-handle` with action type "enhance-descriptions" to generate descriptions with AI
 3. Review generated content before applying
 
 **Tools for Remediation**:
-- `wit-bulk-enhance-descriptions-by-query-handle` - AI-powered description generation for multiple items
-- `wit-bulk-update-by-query-handle` - Update descriptions for multiple items with custom text
+- `wit-unified-bulk-operations-by-query-handle` - Use action type "enhance-descriptions" for AI-powered description generation, or action type "update" for manual descriptions
 
 **User Prompt**: "Found {count} items without descriptions. Would you like me to generate these using AI?"
 
@@ -111,16 +108,15 @@ Parameters:
 
 **Report Format**:
 - Count and query handle at top
-- To display items: Use `wit-select-items-from-query-handle` with the handle if user requests details
+- To display items: Use `wit-query-handle-info` with the handle if user requests details
 
 **Recommended Actions**:
 1. Review items and determine estimation approach
-2. Use `wit-bulk-assign-story-points-by-query-handle` for AI-powered estimation
+2. Use `wit-unified-bulk-operations-by-query-handle` with action type "assign-story-points" for AI-powered estimation
 3. Review and adjust estimates as needed
 
 **Tools for Remediation**:
-- `wit-bulk-assign-story-points-by-query-handle` - AI-powered story point estimation for multiple items
-- `wit-bulk-update-by-query-handle` - Set story points for multiple items with specific values
+- `wit-unified-bulk-operations-by-query-handle` - Use action type "assign-story-points" for AI-powered estimation, or action type "update" for manual story point values
 
 **User Prompt**: "Found {count} items without story points. Would you like me to estimate them using AI?"
 
@@ -142,7 +138,7 @@ Parameters:
 
 **Report Format**:
 - Count and query handle at top
-- To display items: Use `wit-select-items-from-query-handle` with the handle if user requests to review duplicate groups
+- To display items: Use `wit-query-handle-info` with the handle if user requests to review duplicate groups
 
 **Recommended Actions**:
 1. Review duplicate groups manually - some may be legitimate separate items
@@ -151,10 +147,8 @@ Parameters:
 4. Remove or close unnecessary duplicate items
 
 **Tools for Remediation**:
-- `wit-bulk-update-by-query-handle` - Merge information from duplicates
-- `wit-bulk-comment-by-query-handle` - Add comment explaining which items are duplicates
-- `wit-bulk-transition-state-by-query-handle` - Close duplicate items with appropriate reason
-- `wit-clone-work-item` - If needed to consolidate information
+- `wit-unified-bulk-operations-by-query-handle` - Use action type "update" to merge information, "comment" to explain duplicates, "transition-state" to close duplicates, or "remove" to remove items
+- `wit-clone-work-item` - If needed to consolidate information into a new work item
 
 **User Prompt**: "Found {count} potential duplicate items in {group_count} groups. Would you like to review and consolidate these?"
 
@@ -176,7 +170,7 @@ Parameters:
 
 **Report Format**:
 - Count and query handle at top
-- To display items: Use `wit-select-items-from-query-handle` with the handle if user requests to review placeholder titles
+- To display items: Use `wit-query-handle-info` with the handle if user requests to review placeholder titles
 
 **Recommended Actions**:
 1. Review items and update titles to be descriptive and actionable
@@ -184,10 +178,7 @@ Parameters:
 3. Update descriptions to provide context if titles need to remain brief
 
 **Tools for Remediation**:
-- `wit-bulk-update-by-query-handle` - Update titles to be more descriptive
-- `wit-bulk-enhance-descriptions-by-query-handle` - Use AI to suggest better titles/descriptions
-- `wit-bulk-comment-by-query-handle` - Add comments requesting title updates
-- `wit-bulk-transition-state-by-query-handle` - Remove items that are just placeholders with no content
+- `wit-unified-bulk-operations-by-query-handle` - Use action type "update" to update titles, "enhance-descriptions" for AI suggestions, "comment" to request updates, or "transition-state"/"remove" for placeholder cleanup
 
 **User Prompt**: "Found {count} items with placeholder titles. Would you like to review and improve these titles?"
 
@@ -209,7 +200,7 @@ Parameters:
 
 **Report Format**:
 - Count and query handle at top
-- To display items: Use `wit-select-items-from-query-handle` with the handle if user requests to review stale automation items
+- To display items: Use `wit-query-handle-info` with the handle if user requests to review stale automation items
 
 **Recommended Actions**:
 1. Review if these automated findings are still relevant
@@ -218,10 +209,8 @@ Parameters:
 4. Re-triage items that still need attention
 
 **Tools for Remediation**:
-- `wit-bulk-comment-by-query-handle` - Add triage comments to all items
-- `wit-bulk-transition-state-by-query-handle` - Close items that are no longer relevant
+- `wit-unified-bulk-operations-by-query-handle` - Use action type "comment" for triage comments, "transition-state" to close items, or "update" for status changes
 - `wit-extract-security-links` - For security items, extract remediation guidance
-- `wit-bulk-update-by-query-handle` - Update items with current status
 
 **User Prompt**: "Found {count} stale automation-generated items (180+ days old). Would you like to triage these for closure?"
 
@@ -252,8 +241,7 @@ Parameters:
 2. **For state issues**: Update parent/child states to be consistent
 
 **Tools for Remediation**:
-- `wit-bulk-update-by-query-handle` - Update item parents or remove invalid links
-- `wit-bulk-transition-state-by-query-handle` - Fix state inconsistencies across parent/child items
+- `wit-unified-bulk-operations-by-query-handle` - Use action type "update" to change parents or action type "transition-state" to fix state inconsistencies (if wit-validate-hierarchy returns query handles for violation groups)
 
 **User Prompt**: "Found hierarchy violations: {invalid_type_count} invalid parent types, {state_issue_count} state inconsistencies. Would you like to fix these?"
 

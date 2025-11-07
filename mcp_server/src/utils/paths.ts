@@ -1,45 +1,56 @@
-import { join, resolve, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join, resolve } from "path";
 import { cwd } from "process";
 
-// Calculate thisFileDir based on environment
+// Calculate paths based on environment
 let thisFileDir: string;
+let internalPromptsDir: string;
+let internalRepoRoot: string;
 
 if (process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test') {
-  // Test environment - use simple cwd-based calculation
+  // Test environment - use simple cwd-based calculation  
   thisFileDir = join(cwd(), 'src', 'utils');
+  internalRepoRoot = resolve(thisFileDir, "..", "..");
+  internalPromptsDir = join(internalRepoRoot, "prompts");
 } else {
-  // Production/development - use import.meta.url to get actual file location
-  // This works correctly regardless of where the process is started from
-  try {
-    // ES Module equivalent of __dirname
-    // Use eval to prevent TypeScript from checking import.meta at compile time
-    const importMetaUrl = eval('import.meta.url') as string;
-    thisFileDir = dirname(fileURLToPath(importMetaUrl));
-    
-    if (process.env.MCP_DEBUG === '1') {
-      console.error(`[paths.ts] Using import.meta.url-based path resolution: ${thisFileDir}`);
-    }
-  } catch (error) {
-    // Fallback to dist location if import.meta.url fails
-    thisFileDir = join(cwd(), 'dist', 'utils');
-    
-    if (process.env.MCP_DEBUG === '1') {
-      console.error(`[paths.ts] Fallback to cwd-based path resolution: ${thisFileDir}`);
-      console.error(`[paths.ts] Error using import.meta.url:`, error);
-    }
-  }
+  // Production/development - initialize with empty values, will be set async
+  thisFileDir = '';
+  internalPromptsDir = '';
+  internalRepoRoot = '';
 }
 
-// Calculate paths relative to THIS file's location
-// Structure: dist/utils/paths.js -> ../../ = mcp_server root (package root)
-//        OR: src/utils/paths.ts -> ../../ = mcp_server root (development)
-export const repoRoot = resolve(thisFileDir, "..", "..");
-export const promptsDir = join(repoRoot, "prompts");
+// Export initialization promise for production
+export const pathsReady = (process.env.JEST_WORKER_ID === undefined && process.env.NODE_ENV !== 'test')
+  ? (async () => {
+    try {
+      // Dynamic import of .mjs file
+      // @ts-ignore - .mjs file doesn't have TypeScript declarations
+      const moduleDirModule = await import('./module-dir.mjs') as any;
+      thisFileDir = moduleDirModule.moduleDir;
+      
+      // dist/utils -> dist -> mcp_server (repo root)
+      internalRepoRoot = resolve(thisFileDir, "..", "..");
+      
+      // Prompts are in dist/prompts (dist/utils -> dist)
+      const distDir = resolve(thisFileDir, "..");
+      internalPromptsDir = join(distDir, "prompts");
+      
+      if (process.env.MCP_DEBUG === '1') {
+        console.error(`[paths.ts] thisFileDir: ${thisFileDir}`);
+        console.error(`[paths.ts] repoRoot: ${internalRepoRoot}`);
+        console.error(`[paths.ts] promptsDir: ${internalPromptsDir}`);
+      }
+    } catch (error) {
+      console.error(`[paths.ts] Failed to initialize paths:`, error);
+      throw error;
+    }
+  })()
+  : Promise.resolve();
 
-// Debug logging
-if (process.env.MCP_DEBUG === '1') {
-  console.error(`[paths.ts] thisFileDir: ${thisFileDir}`);
-  console.error(`[paths.ts] repoRoot: ${repoRoot}`);
-  console.error(`[paths.ts] promptsDir: ${promptsDir}`);
+// Export path getters
+export function getPromptsDir(): string {
+  return internalPromptsDir;
+}
+
+export function getRepoRoot(): string {
+  return internalRepoRoot;
 }

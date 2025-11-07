@@ -106,7 +106,7 @@ export class SamplingClient {
   }
 
   async createMessage(request: SamplingRequest): Promise<SamplingResponse> {
-    const systemPrompt = loadSystemPrompt(request.systemPromptName, request.variables);
+    const systemPrompt = await loadSystemPrompt(request.systemPromptName, request.variables);
     
     const samplingParams = {
       systemPrompt,

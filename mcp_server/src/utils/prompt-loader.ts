@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { promptsDir } from './paths.js';
+import { getPromptsDir, pathsReady } from './paths.js';
 import { logger } from './logger.js';
 
 /**
@@ -14,13 +14,16 @@ const promptCache = new Map<string, string>();
  * @param variables - Optional variables to substitute in the prompt (e.g., {{VARIABLE_NAME}})
  * @returns The loaded prompt text with variables substituted
  */
-export function loadSystemPrompt(promptName: string, variables?: Record<string, string>): string {
+export async function loadSystemPrompt(promptName: string, variables?: Record<string, string>): Promise<string> {
+  // Wait for paths to be initialized in production
+  await pathsReady;
+  
   const cacheKey = promptName;
   
   // Check cache first
   if (!promptCache.has(cacheKey)) {
     try {
-      const promptPath = join(promptsDir, 'system', `${promptName}.md`);
+      const promptPath = join(getPromptsDir(), 'system', `${promptName}.md`);
       
       logger.debug(`Loading system prompt from: ${promptPath}`);
       
@@ -29,9 +32,9 @@ export function loadSystemPrompt(promptName: string, variables?: Record<string, 
       
       logger.debug(`System prompt '${promptName}' loaded and cached`);
     } catch (error) {
-      const promptPath = join(promptsDir, 'system', `${promptName}.md`);
+      const promptPath = join(getPromptsDir(), 'system', `${promptName}.md`);
       logger.error(`Failed to load system prompt '${promptName}' from ${promptPath}:`, error);
-      logger.error(`PromptsDir resolved to: ${promptsDir}`);
+      logger.error(`PromptsDir resolved to: ${getPromptsDir()}`);
       logger.error(`Please ensure the prompts directory is correctly copied during build.`);
       throw new Error(`Failed to load system prompt '${promptName}': ${error instanceof Error ? error.message : String(error)}`);
     }

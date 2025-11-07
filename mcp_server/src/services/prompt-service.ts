@@ -1,7 +1,7 @@
 import { readdir, readFile } from "fs/promises";
 import { join, basename } from "path";
 import type { Prompt, ParsedPrompt, PromptArgument } from "../types/index.js";
-import { promptsDir } from "../utils/paths.js";
+import { getPromptsDir } from "../utils/paths.js";
 import { logger } from "../utils/logger.js";
 import { applyTemplateVariables } from "../utils/prompt-loader.js";
 import { escapeAreaPath } from "../utils/work-item-parser.js";
@@ -38,6 +38,12 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     return date.toISOString().split('T')[0];
   };
   
+  // Get the primary area path (prefer singular areaPath, fallback to first in areaPaths array)
+  const primaryAreaPath = config.azureDevOps.areaPath || 
+    (config.azureDevOps.areaPaths && config.azureDevOps.areaPaths.length > 0 
+      ? config.azureDevOps.areaPaths[0] 
+      : '');
+  
   // Extract area substring for OData contains() filtering
   // OData doesn't support eq/startswith/under operators, so we use contains() with a unique substring
   const extractAreaSubstring = (areaPath: string): string => {
@@ -69,9 +75,9 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
   
   return {
     // Core config variables (escape area paths for use in WIQL/OData queries)
-    area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
-    area_substring: extractAreaSubstring(config.azureDevOps.areaPath || ''),
-    area_path_simple_substring: extractAreaSimpleSubstring(config.azureDevOps.areaPath || ''),
+    area_path: escapeAreaPath(primaryAreaPath),
+    area_substring: extractAreaSubstring(primaryAreaPath),
+    area_path_simple_substring: extractAreaSimpleSubstring(primaryAreaPath),
     project: config.azureDevOps.project || '',
     project_name: config.azureDevOps.project || '',
     org_url: `https://dev.azure.com/${config.azureDevOps.organization}`,
@@ -85,7 +91,7 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     // Config defaults with prefix
     default_organization: config.azureDevOps.organization,
     default_project: config.azureDevOps.project,
-    default_area_path: escapeAreaPath(config.azureDevOps.areaPath || ''),
+    default_area_path: escapeAreaPath(primaryAreaPath),
     default_iteration_path: escapeAreaPath(config.azureDevOps.iterationPath || ''),
     default_work_item_type: config.azureDevOps.defaultWorkItemType,
     default_priority: config.azureDevOps.defaultPriority?.toString(),
@@ -309,13 +315,17 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
  */
 export async function loadPrompts(): Promise<Prompt[]> {
   try {
-    const files = await readdir(promptsDir);
+    // Import pathsReady and wait for paths to be initialized
+    const { pathsReady } = await import('../utils/paths.js');
+    await pathsReady;
+    
+    const files = await readdir(getPromptsDir());
     const promptFiles = files.filter((f: string) => f.endsWith('.md'));
     
     const prompts: Prompt[] = [];
     
     for (const file of promptFiles) {
-      const filePath = join(promptsDir, file);
+      const filePath = join(getPromptsDir(), file);
       const parsed = await parsePromptFile(filePath);
       
       if (parsed) {
@@ -345,11 +355,15 @@ export async function loadPrompts(): Promise<Prompt[]> {
  */
 export async function getPromptContent(name: string, args: Record<string, unknown> = {}): Promise<string> {
   try {
-    const files = await readdir(promptsDir);
+    // Import pathsReady and wait for paths to be initialized
+    const { pathsReady } = await import('../utils/paths.js');
+    await pathsReady;
+    
+    const files = await readdir(getPromptsDir());
     const promptFiles = files.filter((f: string) => f.endsWith('.md'));
     
     for (const file of promptFiles) {
-      const filePath = join(promptsDir, file);
+      const filePath = join(getPromptsDir(), file);
       const parsed = await parsePromptFile(filePath);
       
       if (parsed && parsed.name === name) {

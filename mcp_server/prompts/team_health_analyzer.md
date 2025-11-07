@@ -21,7 +21,8 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 **Available Tools:**
 - `wit-personal-workload-analyzer` - For detailed per-person workload insights
 - `wit-analyze-by-query-handle` - For story points and effort analysis
-- `wit-bulk-assign-story-points-by-query-handle` - For AI estimation when needed
+- `wit-unified-bulk-operations-by-query-handle` - For AI estimation when needed
+  - `action: "assign-story-points"` - Assign story points to work items
 
 ---
 
@@ -46,7 +47,7 @@ Note: Uses `startswith(Area/AreaPath, '{{area_path}}')` for area path filtering 
 ### 3. Story Points Coverage
 For each query handle:
 1. `wit-analyze-by-query-handle` with `analysisType:["effort"]`
-2. If unestimated: `wit-bulk-assign-story-points-by-query-handle` (dryRun:false for active, true for closed)
+2. If unestimated: `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` (dryRun:false for active, true for closed)
 3. Record: manual %, AI high/low confidence %
 
 ### 4. Weighted Load Calculation

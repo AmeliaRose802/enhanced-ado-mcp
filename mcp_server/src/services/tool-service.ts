@@ -10,7 +10,6 @@ import { handleGetConfiguration } from "./handlers/core/get-configuration.handle
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
-import { handleHealthCheck } from './handlers/core/health-check.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -105,11 +104,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Get prompts (useful for testing and specialized agent workflows)
   if (name === 'wit-get-prompts') {
     return await handleGetPrompts(args as Parameters<typeof handleGetPrompts>[0]);
-  }
-
-  // Health check
-  if (name === 'wit-health-check') {
-    return await handleHealthCheck(config, args);
   }
 
   // AI-powered intelligence analysis (uses sampling if available)

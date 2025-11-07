@@ -95,7 +95,7 @@ Analyze the backlog and create a balanced sprint plan that:
 1. Query **Approved** items with `wit-generate-query` (natural language → WIQL)
 2. Execute with `wit-wiql-query` + `returnQueryHandle: true`
 3. Use `wit-analyze-by-query-handle` with `analysisType: ["effort"]` to check Story Points coverage
-4. If gaps exist: Use `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` to get AI estimates
+4. If gaps exist: Use `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` and `dryRun: true` to get AI estimates
 5. Use `wit-query-handle-info` to preview staleness data for prioritization
 
 **Why Query Handles?**
@@ -176,12 +176,15 @@ Returns aggregated team metrics: Story Points breakdown, estimation coverage, wo
 
 ### Phase 2: Estimate Missing Story Points (AI-Powered)
 
-**Tool: `wit-bulk-assign-story-points-by-query-handle`** - AI estimation for unestimated items
+**Tool: `wit-unified-bulk-operations-by-query-handle`** - AI estimation for unestimated items
 ```json
 {
   "queryHandle": "qh_abc123...",
-  "scale": "fibonacci",
-  "onlyUnestimated": true,
+  "action": "assign-story-points",
+  "storyPointsConfig": {
+    "scale": "fibonacci",
+    "onlyUnestimated": true
+  },
   "dryRun": true
 }
 ```
@@ -213,27 +216,33 @@ Then use `wit-analyze-by-query-handle` to get current workload distribution.
 
 If backlog items lack descriptions or acceptance criteria:
 
-**Tool: `wit-bulk-enhance-descriptions-by-query-handle`** - Generate descriptions with AI
+**Tool: `wit-unified-bulk-operations-by-query-handle`** - Generate descriptions with AI
 ```json
 {
   "queryHandle": "qh_abc123...",
+  "action": "enhance-descriptions",
   "itemSelector": {"states": ["New"]},
-  "sampleSize": 5,
-  "enhancementStyle": "detailed",
-  "dryRun": true,
-  "returnFormat": "summary"
+  "enhanceConfig": {
+    "sampleSize": 5,
+    "enhancementStyle": "detailed",
+    "returnFormat": "summary"
+  },
+  "dryRun": true
 }
 ```
 Use `returnFormat: "summary"` to save ~70% tokens (only shows counts and brief previews).
 
-**Tool: `wit-bulk-add-acceptance-criteria-by-query-handle`** - Generate testable criteria
+**Tool: `wit-unified-bulk-operations-by-query-handle`** - Generate testable criteria
 ```json
 {
   "queryHandle": "qh_abc123...",
+  "action": "add-acceptance-criteria",
   "itemSelector": {"states": ["New"]},
-  "criteriaFormat": "gherkin",
-  "minCriteria": 3,
-  "maxCriteria": 5,
+  "acceptanceCriteriaConfig": {
+    "criteriaFormat": "gherkin",
+    "minCriteria": 3,
+    "maxCriteria": 5
+  },
   "dryRun": true
 }
 ```
@@ -302,7 +311,7 @@ If capacity allows, consider:
 ### AI-Powered Features to Leverage
 
 **1. Story Point Estimation**
-Use `wit-bulk-assign-story-points-by-query-handle` to:
+Use `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` to:
 - Fill in missing estimates with AI
 - Get confidence scores (prioritize high-confidence items for sprint)
 - Understand reasoning behind estimates
@@ -331,8 +340,8 @@ Use `wit-validate-hierarchy` to:
 **DO:**
 - ✅ Use `wit-analyze-by-query-handle` for aggregated metrics (saves tokens!)
 - ✅ Use `wit-query-handle-info` to preview staleness data before bulk operations
-- ✅ Use `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` for AI estimates
-- ✅ Use `returnFormat: "summary"` for AI enhancement tools
+- ✅ Use `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` and `dryRun: true` for AI estimates
+- ✅ Use `returnFormat: "summary"` in enhance configs for AI enhancement tools
 - ✅ Request `returnQueryHandle: true` on ALL WIQL queries (enables all bulk operations)
 - ✅ Use `wit-generate-query` to convert natural language to validated WIQL
 
@@ -394,11 +403,14 @@ Returns:
 
 ### 4. Fill Missing Estimates (AI-Powered)
 ```json
-Tool: wit-bulk-assign-story-points-by-query-handle
+Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_c1b1b9a3...",
-  "scale": "fibonacci",
-  "onlyUnestimated": true,
+  "action": "assign-story-points",
+  "storyPointsConfig": {
+    "scale": "fibonacci",
+    "onlyUnestimated": true
+  },
   "dryRun": true
 }
 ```
@@ -517,9 +529,9 @@ Use aggregated data to:
 
 ### 8. User Reviews & Implements
 User can then use:
-1. `wit-bulk-assign-by-query-handle` to assign selected items to team members
-2. `wit-bulk-update-by-query-handle` to move items from **Approved** → **Committed**
-3. `wit-bulk-comment-by-query-handle` to notify team of assignments
+1. `wit-unified-bulk-operations-by-query-handle` with `action: "assign"` to assign selected items to team members
+2. `wit-unified-bulk-operations-by-query-handle` with `action: "update"` to move items from **Approved** → **Committed**
+3. `wit-unified-bulk-operations-by-query-handle` with `action: "comment"` to notify team of assignments
 4. Bulk operations handle individual adjustments as needed
 
 **Important:** Items in Approved state are sprint candidates. Once assigned and committed to the sprint, transition them to Committed state.
@@ -540,19 +552,23 @@ After user reviews the plan, they can use:
 
 **Assign Work Items & Move to Committed:**
 ```json
-Tool: wit-bulk-assign-by-query-handle
+Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_abc123...",
+  "action": "assign",
   "itemSelector": [0, 1, 2],  // Indices of items to assign
-  "assignedTo": "team.member@company.com"
+  "assignConfig": {
+    "assignedTo": "team.member@company.com"
+  }
 }
 ```
 
 Then update state to Committed:
 ```json
-Tool: wit-bulk-update-by-query-handle
+Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_abc123...",
+  "action": "update",
   "itemSelector": [0, 1, 2],  // Same items just assigned
   "updates": [
     {
@@ -566,9 +582,10 @@ Tool: wit-bulk-update-by-query-handle
 
 **Notify Team:**
 ```json
-Tool: wit-bulk-comment-by-query-handle
+Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_abc123...",
+  "action": "comment",
   "itemSelector": [0, 1, 2],
   "comment": "Assigned to you for this sprint. Priority: {priority}. Estimated effort: {storyPoints} SP."
 }
@@ -576,9 +593,10 @@ Tool: wit-bulk-comment-by-query-handle
 
 **Update Work Items (if needed):**
 ```json
-Tool: wit-bulk-update-by-query-handle
+Tool: wit-unified-bulk-operations-by-query-handle
 {
   "queryHandle": "qh_abc123...",
+  "action": "update",
   "itemSelector": "all",
   "updates": [
     {
@@ -598,12 +616,12 @@ Tool: wit-bulk-update-by-query-handle
 - Provides: Story Points totals, estimation coverage, workload distribution, aging patterns
 
 **Use Dry-Run Modes:**
-- `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` - AI estimates in-memory only
+- `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` and `dryRun: true` - AI estimates in-memory only
 - Completed items: Always dry-run (never update historical data in ADO)
 - Active items: Dry-run first, then execute if estimates look good
 
 **Use Summary Formats:**
-- `wit-bulk-enhance-descriptions-by-query-handle` with `returnFormat: "summary"` - Saves ~70% tokens
+- `wit-unified-bulk-operations-by-query-handle` with `action: "enhance-descriptions"` and `enhanceConfig.returnFormat: "summary"` - Saves ~70% tokens
 - Only fetch full details when user specifically requests them
 
 **Query Handle Inspection:**
@@ -629,7 +647,7 @@ Tool: wit-bulk-update-by-query-handle
 | Analyze effort | `wit-analyze-by-query-handle` | `queryHandle`, `analysisType: ["effort"]` |
 | Analyze workload | `wit-analyze-by-query-handle` | `queryHandle`, `analysisType: ["workload", "assignments"]` |
 | Discover skills | `wit-personal-workload-analyzer` | `assignedToEmail`, `analysisPeriodDays: 90` |
-| AI story points | `wit-bulk-assign-story-points-by-query-handle` | `queryHandle`, `scale: "fibonacci"`, `dryRun: true` |
+| AI story points | `wit-unified-bulk-operations-by-query-handle` | `queryHandle`, `action: "assign-story-points"`, `storyPointsConfig: {scale: "fibonacci"}`, `dryRun: true` |
 | Preview selection | `wit-select-items-from-query-handle` | `queryHandle`, `itemSelector`, `previewCount: 10` |
 | Check quality | `wit-wiql-query` | `wiqlQuery`, `filterByPatterns: ["placeholder_titles", "missing_description"]` |
 | Validate hierarchy | `wit-validate-hierarchy` | `areaPath`, `validateTypes: true`, `validateStates: true` |
@@ -715,10 +733,10 @@ Use this to ensure your queries target correct area paths and you know team stru
 Re-run the WIQL query to get a fresh handle. Handles expire after 1 hour.
 
 ### "Insufficient Story Points coverage"
-Use `wit-bulk-assign-story-points-by-query-handle` with `dryRun: true` to fill gaps with AI estimates.
+Use `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` and `dryRun: true` to fill gaps with AI estimates.
 
 ### "Items lack descriptions"
-Use `wit-bulk-enhance-descriptions-by-query-handle` with `returnFormat: "summary"` for quick preview, then execute if quality is good.
+Use `wit-unified-bulk-operations-by-query-handle` with `action: "enhance-descriptions"` and `enhanceConfig.returnFormat: "summary"` for quick preview, then execute if quality is good.
 
 ### "Too many items to analyze"
 Use `wit-analyze-by-query-handle` instead of fetching all items - it aggregates in-memory.

@@ -651,9 +651,3 @@ export const getPromptsSchema = z.object({
   includeContent: optionalBool(true),
   args: z.record(z.unknown()).optional()
 });
-
-export const healthCheckSchema = z.object({
-  includeMetrics: optionalBool(true),
-  includeADOStatus: optionalBool(true),
-  includeAzureCLIStatus: optionalBool(true)
-});

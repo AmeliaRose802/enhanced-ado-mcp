@@ -387,10 +387,7 @@ enhanced-ado-mcp myorg --area-path "Project\\Team" --authentication azcli --tena
 
 **Authentication Testing:**
 
-Use the `health-check` tool to verify authentication status:
-```bash
-# In MCP client (GitHub Copilot, Claude, etc.)
-"Run health-check tool"
+Authentication status is automatically managed. If authentication fails, you'll receive clear error messages indicating the need to run `az login`.
 
 # Response includes:
 # - Azure CLI availability

@@ -2,7 +2,14 @@
 name: security_items_analyzer
 description: Analyze security and compliance items with enhanced staleness analysis, categorize them, identify AI-suitable work, and create remediation plans.
 version: 6
-arguments: {}
+arguments:
+  - name: area_path
+    description: "Area path to analyze (auto-filled from configuration)"
+    required: false
+  - name: max_items
+    description: "Maximum number of security items to analyze"
+    required: false
+    default: 50
 ---
 
 Analyze security and compliance work items in area path `{{area_path}}`. **Exclude Done/Completed/Closed/Resolved states.**
@@ -21,9 +28,10 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 - `wit-new-copilot-item` - Create and assign to Copilot
 
 **Bulk Operations:**
-- `wit-bulk-comment-by-query-handle` - Add templated comments to security items
-- `wit-bulk-update-by-query-handle` - Update multiple security items
-- `wit-bulk-assign-by-query-handle` - Assign multiple security items
+- `wit-unified-bulk-operations-by-query-handle` - Unified bulk operations tool
+  - `action: "comment"` - Add templated comments to security items
+  - `action: "update"` - Update multiple security items
+  - `action: "assign"` - Assign multiple security items
 
 ## Workflow
 
@@ -39,6 +47,8 @@ Arguments: {
   maxResults: {{max_items}}
 }
 ```
+
+**Note**: The `{{area_path}}` variable will be filled with the configured area path at runtime. The prompt service automatically handles backslash escaping for WIQL queries, so you can use `{{area_path}}` directly in WIQL strings.
 
 This returns BOTH security items with staleness data AND a query handle for bulk operations.
 
