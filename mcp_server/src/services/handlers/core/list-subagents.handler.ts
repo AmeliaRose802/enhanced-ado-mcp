@@ -23,7 +23,7 @@ interface SubagentMetadata {
   name: string;
   description: string;
   url: string;
-  tag?: string;
+  tag: string;
 }
 
 interface GitItem {
@@ -65,13 +65,15 @@ function parseSubagentMetadata(
         
         if (name && description) {
           // Extract tag from configuration section
-          // Looking for: configuration.pullRequestCopilotPrimitive.copilotAgentName
+          // Support multiple configuration formats:
+          // 1. configuration.pullRequestCopilotPrimitive.copilotAgentName
+          // 2. configuration.copilotConfiguration.specializedAgent.name
           let tag: string | undefined;
           
           if ('configuration' in parsed && parsed.configuration && typeof parsed.configuration === 'object') {
             const config = parsed.configuration as Record<string, any>;
             
-            // Check for pullRequestCopilotPrimitive.copilotAgentName
+            // Format 1: pullRequestCopilotPrimitive.copilotAgentName
             if ('pullRequestCopilotPrimitive' in config && 
                 config.pullRequestCopilotPrimitive && 
                 typeof config.pullRequestCopilotPrimitive === 'object') {
@@ -80,7 +82,26 @@ function parseSubagentMetadata(
                 const agentName = String(primitive.copilotAgentName).trim();
                 if (agentName) {
                   tag = `copilot:agent=${agentName}`;
-                  logger.debug(`Found agent tag: ${tag}`);
+                  logger.debug(`Found agent tag (format 1): ${tag}`);
+                }
+              }
+            }
+            
+            // Format 2: copilotConfiguration.specializedAgent.name
+            if (!tag && 'copilotConfiguration' in config && 
+                config.copilotConfiguration && 
+                typeof config.copilotConfiguration === 'object') {
+              const copilotConfig = config.copilotConfiguration as Record<string, any>;
+              if ('specializedAgent' in copilotConfig && 
+                  copilotConfig.specializedAgent && 
+                  typeof copilotConfig.specializedAgent === 'object') {
+                const specializedAgent = copilotConfig.specializedAgent as Record<string, any>;
+                if ('name' in specializedAgent && specializedAgent.name) {
+                  const agentName = String(specializedAgent.name).trim();
+                  if (agentName) {
+                    tag = `copilot:agent=${agentName}`;
+                    logger.debug(`Found agent tag (format 2): ${tag}`);
+                  }
                 }
               }
             }
@@ -92,12 +113,15 @@ function parseSubagentMetadata(
           
           logger.debug(`Found metadata at root: name="${name}", description="${description}", tag="${tag || 'none'}"`);
           
-          return {
-            name,
-            description,
-            url,
-            tag
-          };
+          // Only return if we found a tag (assignable agent)
+          if (tag) {
+            return {
+              name,
+              description,
+              url,
+              tag
+            };
+          }
         }
       }
     }
@@ -179,13 +203,17 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
       throw error;
     }
 
-    // Filter for YAML/YML files
-    const yamlFiles = gitItems.filter(item => 
-      item.gitObjectType === 'blob' && 
-      (item.path.endsWith('.yml') || item.path.endsWith('.yaml'))
-    );
+    // Filter for YAML/YML files, excluding non-assignable config files
+    const excludedFiles = ['pullrequestcopilot', 'code-reviewer'];
+    const yamlFiles = gitItems.filter(item => {
+      if (item.gitObjectType !== 'blob') return false;
+      if (!item.path.endsWith('.yml') && !item.path.endsWith('.yaml')) return false;
+      
+      const lowerPath = item.path.toLowerCase();
+      return !excludedFiles.some(excluded => lowerPath.includes(excluded));
+    });
 
-    logger.debug(`Found ${yamlFiles.length} YAML files in ${policiesPath}`);
+    logger.debug(`Found ${yamlFiles.length} YAML files in ${policiesPath} (excluding non-assignable configs)`);
 
     if (yamlFiles.length === 0) {
       return buildSuccessResponse(
@@ -241,8 +269,13 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
         const metadata = parseSubagentMetadata(content, file.path, organization, project, repository);
         
         if (metadata) {
-          subagents.push(metadata);
-          logger.debug(`Found subagent: ${metadata.name}`);
+          // Only include agents that have a tag (assignable agents)
+          if (metadata.tag) {
+            subagents.push(metadata);
+            logger.debug(`Found assignable subagent: ${metadata.name} (${metadata.tag})`);
+          } else {
+            logger.debug(`Skipping ${metadata.name} - no assignment tag found`);
+          }
         } else {
           logger.debug(`No metadata found in ${file.path}`);
         }
