@@ -93,6 +93,15 @@ interface HierarchyAnalysisResult {
   [key: string]: unknown;
 }
 
+interface AIAnalysisResult {
+  total_analyzed: number;
+  results: Array<{
+    workItemId: number;
+    title: string;
+    analysis: unknown;
+  }>;
+}
+
 interface WorkItemAnalysisResults {
   effort?: EffortAnalysisResult;
   velocity?: VelocityAnalysisResult;
@@ -101,7 +110,10 @@ interface WorkItemAnalysisResults {
   completion?: CompletionAnalysisResult;
   priorities?: PriorityAnalysisResult;
   hierarchy?: HierarchyAnalysisResult;
-  [key: string]: EffortAnalysisResult | VelocityAnalysisResult | AssignmentAnalysisResult | RiskAnalysisResult | CompletionAnalysisResult | PriorityAnalysisResult | HierarchyAnalysisResult | { error: string } | undefined;
+  'work-item-intelligence'?: AIAnalysisResult | { error: string };
+  'assignment-suitability'?: AIAnalysisResult | { error: string };
+  'parent-recommendation'?: unknown | { error: string };
+  [key: string]: unknown;
 }
 
 interface WorkItemAnalysis {
@@ -309,13 +321,13 @@ export async function handleAnalyzeByQueryHandle(
                   for (const wi of workItems) {
                     try {
                       const analysisResult = await intelligenceAnalyzer.analyze({
-                        title: wi.fields?.['System.Title'] || '',
-                        description: wi.fields?.['System.Description'] || '',
-                        workItemType: wi.fields?.['System.WorkItemType'] || '',
-                        acceptanceCriteria: wi.fields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '',
-                        analysisType: parsed.data.intelligenceAnalysisType || 'full',
-                        contextInfo: parsed.data.contextInfo,
-                        enhanceDescription: parsed.data.enhanceDescription || false
+                        Title: wi.fields?.['System.Title'] || '',
+                        Description: wi.fields?.['System.Description'] || '',
+                        WorkItemType: wi.fields?.['System.WorkItemType'] || '',
+                        AcceptanceCriteria: wi.fields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '',
+                        AnalysisType: parsed.data.intelligenceAnalysisType || 'full',
+                        ContextInfo: parsed.data.contextInfo,
+                        EnhanceDescription: parsed.data.enhanceDescription || false
                       });
                       
                       if (analysisResult.success && analysisResult.data) {
@@ -398,10 +410,19 @@ export async function handleAnalyzeByQueryHandle(
                     project: proj
                   };
                   
+                  // Import the schema for parent finder
+                  const { intelligentParentFinderSchema } = await import('@/config/schemas.js');
+                  const samplingService = new SamplingService(serverInstance);
                   const parentResult = await handleIntelligentParentFinder(
-                    { schema: config.schema, name: 'recommend-parent', description: '', script: '', inputSchema: {} },
+                    { 
+                      schema: intelligentParentFinderSchema, 
+                      name: 'recommend-parent', 
+                      description: '', 
+                      script: '', 
+                      inputSchema: { type: 'object', properties: {} } as const
+                    },
                     parentFinderArgs,
-                    serverInstance
+                    samplingService
                   );
                   
                   analysis.results['parent-recommendation'] = parentResult.data || {

@@ -117,25 +117,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleListSubagents(args);
   }
 
-  // AI-powered intelligence analysis (uses sampling if available)
-  if (name === 'analyze-workitem') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    
-    const samplingService = new SamplingService(serverInstance);
-    return await samplingService.analyzeWorkItem(args as Parameters<typeof samplingService.analyzeWorkItem>[0]);
-  }
 
-  // Enhanced AI assignment analysis (uses sampling if available)
-  if (name === 'analyze-assignment') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    
-    const samplingService = new SamplingService(serverInstance);
-    return await samplingService.analyzeAIAssignment(args as Parameters<typeof samplingService.analyzeAIAssignment>[0]);
-  }
 
   // Personal workload analysis (uses sampling if available)
   if (name === 'analyze-workload') {
@@ -203,20 +185,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleExtractSecurityLinks(config, args);
   }
 
-  // AI-powered intelligent parent finder
-  if (name === 'recommend-parent') {
-    if (!serverInstance) {
-      return {
-        success: false,
-        data: null,
-        errors: ['VS Code sampling support not available'],
-        warnings: [],
-        metadata: { requiresSampling: true }
-      };
-    }
-    const samplingService = new SamplingService(serverInstance);
-    return await handleIntelligentParentFinder(config, args, samplingService);
-  }
+
 
   // Bulk operations using query handles (eliminates ID hallucination)
   if (name === 'execute-bulk-operations') {
@@ -240,7 +209,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   if (name === 'analyze-bulk') {
-    return await handleAnalyzeByQueryHandle(config, args);
+    return await handleAnalyzeByQueryHandle(config, args, serverInstance ?? undefined);
   }
 
   if (name === 'analyze-query-handle') {

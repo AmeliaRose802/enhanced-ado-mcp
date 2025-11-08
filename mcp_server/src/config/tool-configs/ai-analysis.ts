@@ -1,11 +1,8 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
-  workItemIntelligenceSchema,
-  aiAssignmentAnalyzerSchema,
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
   toolDiscoverySchema,
-  intelligentParentFinderSchema,
   aiQueryAnalysisSchema
 } from "../schemas.js";
 
@@ -14,43 +11,6 @@ import {
  * AI-powered analysis tools for intelligence, assignment suitability, and discovery
  */
 export const aiAnalysisTools: ToolConfig[] = [
-  {
-    name: "analyze-workitem",
-    description: "AI-powered work item analysis for completeness, AI-readiness, enhancement suggestions, and smart categorization using VS Code sampling",
-    script: "",
-    schema: workItemIntelligenceSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string", description: "Work item title to analyze" },
-        description: { type: "string", description: "Work item description/content to analyze" },
-        workItemType: { type: "string", description: "Type of work item (Task, Bug, PBI, etc.)" },
-        acceptanceCriteria: { type: "string", description: "Current acceptance criteria if any" },
-        analysisType: { type: "string", enum: ["completeness", "ai-readiness", "enhancement", "categorization", "full"], description: "Type of analysis to perform" },
-        contextInfo: { type: "string", description: "Additional context about the project, team, or requirements" },
-        enhanceDescription: { type: "boolean", description: "Generate an enhanced, AI-ready description" },
-        createInADO: { type: "boolean", description: "Automatically create the enhanced item in Azure DevOps" },
-        parentWorkItemId: { type: "number", description: "Parent work item ID if creating in ADO" },
-        organization: { type: "string", description: "Azure DevOps organization name" },
-        project: { type: "string", description: "Azure DevOps project name" }
-      },
-      required: ["title"]
-    }
-  },
-  {
-    name: "analyze-assignment",
-    description: "Enhanced AI assignment suitability analysis with detailed reasoning and confidence scoring using VS Code sampling. Automatically retrieves work item details from Azure DevOps. This tool provides analysis only - use wit-assign-to-copilot separately to perform the assignment.",
-    script: "",
-    schema: aiAssignmentAnalyzerSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemId: { type: "number", description: "Azure DevOps work item ID to analyze for AI assignment suitability" },
-        outputFormat: { type: "string", enum: ["detailed", "json"], description: "Output format: 'detailed' (default, comprehensive analysis) or 'json' (structured JSON for programmatic use)" }
-      },
-      required: ["workItemId"]
-    }
-  },
   {
     name: "analyze-workload",
     description: "AI-powered personal workload analysis to assess burnout risk, overspecialization, work-life balance issues, and professional health indicators for an individual over a time period. Automatically fetches completed and active work, calculates metrics, and provides actionable insights. Supports optional custom analysis intent (e.g., 'assess readiness for promotion', 'check for career growth opportunities'). Requires VS Code sampling support.",
@@ -127,31 +87,6 @@ export const aiAnalysisTools: ToolConfig[] = [
         }
       },
       required: []
-    }
-  },
-  {
-    name: "recommend-parent",
-    description: "🤖 AI-POWERED PARENT FINDER: Intelligently find and recommend the best parent work items for child items using AI analysis. Accepts a QUERY HANDLE containing child work items to prevent ID hallucination. Analyzes each child's context, searches potential parents IN THE SAME AREA PATH by default (enforces area path matching), and ranks candidates based on type hierarchy, scope alignment, and logical fit. ENFORCES valid parent-child type relationships per Azure DevOps hierarchy. Returns recommendations with confidence scores and can create a query handle for safe linking. Supports dry run mode for previewing recommendations. Requires VS Code sampling support.",
-    script: "",
-    schema: intelligentParentFinderSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        childQueryHandle: { type: "string", description: "Query handle containing child work items that need parents (prevents ID hallucination)" },
-        dryRun: { type: "boolean", description: "Preview recommendations without creating result query handle (default false)" },
-        areaPath: { type: "string", description: "Area path to search for parent candidates (uses child's area path if not provided)" },
-        includeSubAreas: { type: "boolean", description: "Include sub-areas in parent search (default FALSE - enforces same area path)" },
-        maxParentCandidates: { type: "number", description: "Maximum parent candidates to analyze per child (3-50, default 20)" },
-        maxRecommendations: { type: "number", description: "Maximum parent recommendations to return per child (1-5, default 3)" },
-        parentWorkItemTypes: { type: "array", items: { type: "string" }, description: "Specific parent work item types to search for (e.g., ['Epic', 'Feature']). If not provided, determines appropriate types based on child type." },
-        searchScope: { type: "string", enum: ["area", "project", "iteration"], description: "Scope of parent search: 'area' (default), 'project', or 'iteration'" },
-        iterationPath: { type: "string", description: "Iteration path filter when searchScope='iteration'" },
-        requireActiveParents: { type: "boolean", description: "Only consider parents in Active/New/Committed states (default true)" },
-        confidenceThreshold: { type: "number", description: "Minimum confidence score for recommendations (0-1, default 0.5)" },
-        organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
-        project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" }
-      },
-      required: ["childQueryHandle"]
     }
   },
   {

@@ -116,10 +116,14 @@ const argv = yargs(hideBin(process.argv))
   })
   .option("area-path", {
     alias: "a",
-    describe: "Default area path (e.g., 'MyProject\\\\TeamName\\\\Area'). Required. Can be specified multiple times for multi-area support. Project will be extracted automatically.",
+    describe: "Azure DevOps area path (e.g., 'ProjectName\\\\TeamName\\\\AreaName'). Can be specified multiple times for multi-area support. Project name is automatically extracted.",
     type: "string",
     array: true,
     demandOption: true
+  })
+  .option("team", {
+    describe: "Azure DevOps team name for iteration path discovery (optional). Use this if your area path structure is non-standard and auto-detection fails.",
+    type: "string"
   })
   .option("verbose", {
     alias: "v",
@@ -143,6 +147,7 @@ const argv = yargs(hideBin(process.argv))
     ['$0 myorg --area-path "MyProject\\Team\\Area"', 'Start with area path (project extracted automatically)'],
     ['$0 myorg --area-path "ProjectA\\Team1" --area-path "ProjectA\\Team2"', 'Multi-area support (same project)'],
     ['$0 myorg -a "MyProject\\Team"', 'Using short flag alias'],
+    ['$0 myorg -a "MyProject\\Team" --team "Krypton"', 'Override team name for iteration discovery'],
     ['$0 myorg -a "MyProject\\Team" --authentication azcli', 'Use Azure CLI authentication'],
     ['$0 myorg -a "MyProject\\Team" --tenant <tenant-id>', 'Specify tenant for multi-tenant scenarios']
   ])

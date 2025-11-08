@@ -66,6 +66,8 @@ export interface CLIArguments {
   areaPath?: string;
   /** Array of area paths (from repeated --area-path flags) - REQUIRED, project extracted automatically */
   areaPaths?: string[];
+  /** Optional team name override for iteration path discovery (from --team flag) */
+  team?: string;
   /** Optional GitHub Copilot user GUID (from --copilot-guid or -g flag) */
   copilotGuid?: string;
   /** Enable verbose logging (from --verbose or -v flag, default: false) */
@@ -88,6 +90,8 @@ export interface AzureDevOpsConfig {
   areaPath?: string;
   /** Array of configured area paths for multi-area support */
   areaPaths?: string[];
+  /** Optional team name override for iteration path discovery */
+  team?: string;
   iterationPath?: string;
   inheritParentPaths: boolean;
 }
@@ -286,6 +290,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       // Include both for backward compatibility
       ...(cliArgs.areaPath && { areaPath: cliArgs.areaPath }),
       ...(areaPaths.length > 0 && { areaPaths }),
+      // Include team override if provided
+      ...(cliArgs.team && { team: cliArgs.team }),
     },
     gitRepository: {},
     gitHubCopilot: {
@@ -395,7 +401,8 @@ export async function ensureCurrentIterationPath(): Promise<string | null> {
     const iterationPath = await getCurrentIterationPath(
       config.azureDevOps.organization,
       config.azureDevOps.project,
-      primaryAreaPath
+      primaryAreaPath,
+      config.azureDevOps.team  // Pass team override if configured
     );
     
     if (iterationPath) {

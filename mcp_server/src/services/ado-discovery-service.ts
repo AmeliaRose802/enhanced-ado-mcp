@@ -58,24 +58,36 @@ interface TeamIteration {
  * @param organization - Azure DevOps organization
  * @param project - Azure DevOps project
  * @param areaPath - Area path to determine team (e.g., "ProjectName\\Team\\Component")
+ * @param teamOverride - Optional explicit team name to use instead of extracting from area path
  * @returns Current iteration path or null if not found
  */
 export async function getCurrentIterationPath(
   organization: string,
   project: string,
-  areaPath: string
+  areaPath: string,
+  teamOverride?: string
 ): Promise<string | null> {
   try {
-    // Extract team name from area path
-    // Area path format: "ProjectName\TeamName\OptionalSubArea"
-    const segments = areaPath.split('\\').filter(s => s.length > 0);
-    if (segments.length < 2) {
-      logger.warn(`Area path "${areaPath}" does not contain team information. Cannot determine current iteration.`);
-      return null;
-    }
+    // Use explicit team override if provided, otherwise extract from area path
+    let teamName: string;
+    
+    if (teamOverride) {
+      teamName = teamOverride;
+      logger.debug(`Using explicit team name from configuration: ${teamName}`);
+    } else {
+      // Extract team name from area path
+      // Area path format: "ProjectName\TeamName\OptionalSubArea"
+      const segments = areaPath.split('\\').filter(s => s.length > 0);
+      if (segments.length < 2) {
+        logger.warn(`Area path "${areaPath}" does not contain team information. Cannot determine current iteration.`);
+        logger.warn(`Hint: If your area path structure is non-standard, use --team <team-name> to explicitly specify the team.`);
+        return null;
+      }
 
-    const teamName = segments[1]; // Second segment is typically the team name
-    logger.debug(`Attempting to get current iteration for team: ${teamName}`);
+      teamName = segments[1]; // Second segment is typically the team name
+      logger.debug(`Extracted team name from area path: ${teamName}`);
+      logger.debug(`Attempting to get current iteration for team: ${teamName}`);
+    }
 
     const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
     
@@ -97,6 +109,10 @@ export async function getCurrentIterationPath(
   } catch (error) {
     // Log error but don't fail - iteration path is optional
     logger.warn(`Failed to discover current iteration path: ${error instanceof Error ? error.message : String(error)}`);
+    if (!teamOverride) {
+      logger.warn(`Hint: If the auto-detected team name is incorrect, use --team <team-name> to explicitly specify the team.`);
+      logger.warn(`      For example: enhanced-ado-mcp myorg --area-path "${areaPath}" --team "CorrectTeamName"`);
+    }
     return null;
   }
 }
@@ -108,21 +124,30 @@ export async function getCurrentIterationPath(
  * @param organization - Azure DevOps organization
  * @param project - Azure DevOps project
  * @param areaPath - Area path to determine team
+ * @param teamOverride - Optional explicit team name to use instead of extracting from area path
  * @returns Array of team iterations
  */
 export async function getTeamIterations(
   organization: string,
   project: string,
-  areaPath: string
+  areaPath: string,
+  teamOverride?: string
 ): Promise<TeamIteration[]> {
   try {
-    const segments = areaPath.split('\\').filter(s => s.length > 0);
-    if (segments.length < 2) {
-      logger.warn(`Area path "${areaPath}" does not contain team information.`);
-      return [];
+    // Use explicit team override if provided, otherwise extract from area path
+    let teamName: string;
+    
+    if (teamOverride) {
+      teamName = teamOverride;
+    } else {
+      const segments = areaPath.split('\\').filter(s => s.length > 0);
+      if (segments.length < 2) {
+        logger.warn(`Area path "${areaPath}" does not contain team information.`);
+        return [];
+      }
+      teamName = segments[1];
     }
 
-    const teamName = segments[1];
     logger.debug(`Fetching all iterations for team: ${teamName}`);
 
     const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
