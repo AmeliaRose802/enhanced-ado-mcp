@@ -39,10 +39,9 @@ async function fetchHistoricalVelocity(
   areaPaths: string[],
   historicalSprintDays: number
 ): Promise<ADOWorkItem[]> {
-  logger.debug(`[fetchHistoricalVelocity] Creating HTTP client for org="${organization}" (org-level for WIQL)`);
-  // Use organization-level HTTP client for WIQL queries (more reliable than project-scoped)
-  // Area path filtering already provides project scope
-  const httpClient = createADOHttpClient(organization, getTokenProvider());
+  logger.debug(`[fetchHistoricalVelocity] Creating HTTP client for org="${organization}", project="${project}"`);
+  // WIQL queries require project-scoped HTTP client
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - historicalSprintDays);
@@ -114,10 +113,9 @@ async function fetchActiveWorkItems(
   project: string,
   areaPaths: string[]
 ): Promise<ADOWorkItem[]> {
-  logger.debug(`[fetchActiveWorkItems] Creating HTTP client for org="${organization}" (org-level for WIQL)`);
-  // Use organization-level HTTP client for WIQL queries (more reliable than project-scoped)
-  // Area path filtering already provides project scope
-  const httpClient = createADOHttpClient(organization, getTokenProvider());
+  logger.debug(`[fetchActiveWorkItems] Creating HTTP client for org="${organization}", project="${project}"`);
+  // WIQL queries require project-scoped HTTP client
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   
   const areaPathFilter = buildAreaPathFilter(areaPaths);
   const whereConditions = [
@@ -137,7 +135,6 @@ async function fetchActiveWorkItems(
   `;
   
   logger.debug(`[fetchActiveWorkItems] Executing WIQL query for active work items`);
-  logger.debug(`[fetchActiveWorkItems] URL will be: https://dev.azure.com/${organization}/${project}/_apis/wit/wiql`);
   
   try {
     const response = await httpClient.post<{ workItems: Array<{ id: number }> }>(

@@ -64,7 +64,7 @@ Identify and report (without mutating):
 
 ### Step 1: Generate WIQL Query with Query Handle
 
-Call `mcp_enhanced-ado-_query-wiql` with natural language description parameter or direct WIQL and `returnQueryHandle: true`:
+Call `_query-wiql` with natural language description parameter or direct WIQL and `returnQueryHandle: true`:
 ```json
 {
   "description": "Get all active work items (Tasks, PBIs, Bugs) not in terminal states under {{area_path}}",
@@ -105,7 +105,7 @@ Calculate `daysInactive` for each item based on last substantive change (returne
 
 ## Query Generation Guidelines
 
-When calling `mcp_enhanced-ado-_query-wiql`, provide clear natural language descriptions:
+When calling `_query-wiql`, provide clear natural language descriptions:
 
 ### Standard Analysis Query
 
@@ -368,7 +368,7 @@ Your output MUST include:
 
 **BEGIN ANALYSIS NOW:**
 
-1. Call `mcp_enhanced-ado-_query-wiql` with a clear natural language description and `returnQueryHandle: true`
+1. Call `_query-wiql` with a clear natural language description and `returnQueryHandle: true`
 2. Use the returned query handle to call `ado_get_work_items_by_query_handle` with all required fields
 3. Calculate `daysInactive` from last substantive change for each item
 4. Categorize items according to the heuristics defined

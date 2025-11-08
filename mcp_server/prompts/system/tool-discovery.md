@@ -65,46 +65,43 @@ Some tasks require multiple tools in sequence:
 ## Tool Categories
 
 ### Creation Tools
-- `wit-create-new-item`: Create single work item
-- `wit-assign-to-copilot`: Assign existing work item to Copilot
+- `_create-workitem`: Create single work item
+- `_assign-copilot`: Assign existing work item to Copilot
 
 ### Query Tools
-- `wit-wiql-query`: Execute WIQL queries
-- `wit-query-analytics-odata`: Analytics and metrics
-- `wit-generate-query`: AI-powered WIQL generation
-- `wit-generate-odata-query`: AI-powered OData generation
+- `_query-wiql`: Execute WIQL queries (supports AI-powered generation)
+- `_query-odata`: Analytics and metrics (supports AI-powered generation)
 
 ### Context & Analysis Tools
-- `wit-get-work-item-context-package`: Deep single item context
-- `wit-get-context-packages-by-query-handle`: Multiple items with relationships
-- `wit-ai-assignment-analyzer`: Analyze AI suitability
-- `wit-intelligence-analyzer`: Comprehensive work item analysis
-- `wit-analyze-by-query-handle`: Handle-based analysis
-- `wit-wiql-query` with `filterByPatterns`: Find common issues (duplicates, placeholders, missing fields)
-- `wit-validate-hierarchy`: Validate parent-child relationships
+- `_get-context`: Deep single item context
+- `_get-context-bulk`: Multiple items with relationships
+- `_analyze-bulk`: Handle-based analysis (assignment-suitability, work-item-intelligence, etc.)
+- `_query-wiql` with `filterByPatterns`: Find common issues (duplicates, placeholders, missing fields)
+- `_analyze-bulk` with `analysisType:["hierarchy"]`: Validate parent-child relationships
 
 ### Bulk Operation Tools (Query Handle Based)
-- `wit-bulk-comment-by-query-handle`: Add comments to multiple items
-- `wit-bulk-update-by-query-handle`: Update fields on multiple items
-- `wit-bulk-assign-by-query-handle`: Assign multiple items
-- `wit-bulk-remove-by-query-handle`: Remove multiple items (sets state to Removed)
+- `_execute-bulk-operations`: Unified bulk operations tool supporting:
+  - `actions: [{type: "comment"}]`: Add comments to multiple items
+  - `actions: [{type: "update"}]`: Update fields on multiple items
+  - `actions: [{type: "assign"}]`: Assign multiple items
+  - `actions: [{type: "remove"}]`: Remove multiple items (sets state to Removed)
 
 ### Bulk AI-Powered Enhancement Tools
-- `wit-bulk-enhance-descriptions-by-query-handle`: AI-enhance descriptions
-- `wit-bulk-assign-story-points-by-query-handle`: AI-estimate effort
-- `wit-bulk-add-acceptance-criteria-by-query-handle`: AI-generate criteria
+- `_execute-bulk-operations` with:
+  - `actions: [{type: "enhance-descriptions"}]`: AI-enhance descriptions
+  - `actions: [{type: "assign-story-points"}]`: AI-estimate effort
+  - `actions: [{type: "add-acceptance-criteria"}]`: AI-generate criteria
 
 ### Query Handle Management Tools
-- `wit-query-handle-info`: Check handle validity and inspect contents
-- `wit-select-items-from-query-handle`: Preview item selection
-- `wit-list-query-handles`: List all active handles
+- `_inspect-handle`: Check handle validity and inspect contents
+- `_list-handles`: List all active handles
 
 ### Configuration & Discovery
-- `wit-get-configuration`: View server configuration
+- `_get-config`: View server configuration
 
 ### Integration Tools
-- `wit-assign-to-copilot`: Assign existing item to Copilot
-- `wit-extract-security-links`: Extract security scan links
+- `_assign-copilot`: Assign existing item to Copilot
+- `_extract-security-links`: Extract security scan links
 
 ## Response Format
 
@@ -168,14 +165,14 @@ Respond with ONLY valid JSON (no markdown, no explanations outside JSON):
 
 ### Example 1: Simple Query
 **Intent**: "Find all active bugs"
-**Recommendation**: `wit-wiql-query` with WIQL query, or use `wit-generate-query` to create the query
+**Recommendation**: `_query-wiql` with WIQL query or natural language description parameter
 
 ### Example 2: Bulk Operations
 **Intent**: "Update priority on all stale items"
 **Workflow**: 
-1. Use `wit-wiql-query` with `returnQueryHandle=true` and staleness filters
-2. Use `wit-query-handle-info` to preview
-3. Use `wit-bulk-update-by-query-handle` with `dryRun=true`
+1. Use `_query-wiql` with `returnQueryHandle=true` and staleness filters
+2. Use `_inspect-handle` to preview
+3. Use `_execute-bulk-operations` with `dryRun=true`
 4. Apply with `dryRun=false`
 
 ### Example 3: Analysis

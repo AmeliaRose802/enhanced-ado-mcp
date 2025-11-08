@@ -711,7 +711,7 @@ describe('Bulk Link Work Items Handler', () => {
     });
 
     it('should return error when Azure CLI not available', async () => {
-      const { validateAzureCLI } = require('../../src/services/ado-discovery-service');
+      const { validateAzureCLI } = require('../../src/utils/azure-cli-validator');
       validateAzureCLI.mockReturnValueOnce({
         isAvailable: false,
         isLoggedIn: false

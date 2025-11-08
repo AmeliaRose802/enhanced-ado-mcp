@@ -10,10 +10,15 @@
     "outDir": "dist",
     "baseUrl": ".",
     "paths": {
+      "@/types": ["src/types"],
       "@/types/*": ["src/types/*"],
+      "@/utils": ["src/utils"],
       "@/utils/*": ["src/utils/*"],
+      "@/config": ["src/config"],
       "@/config/*": ["src/config/*"],
+      "@/services": ["src/services"],
       "@/services/*": ["src/services/*"],
+      "@/repositories": ["src/repositories"],
       "@/repositories/*": ["src/repositories/*"]
     }
   },

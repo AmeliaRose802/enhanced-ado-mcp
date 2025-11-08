@@ -2,7 +2,6 @@
   "schemas": [
     "wit-create-new-item.json",
     "wit-assign-to-copilot.json",
-    "wit-assign-to-copilot.json",
     "wit-clone-work-item.json",
     "wit-get-work-item-context-package.json",
     "wit-extract-security-links.json",
