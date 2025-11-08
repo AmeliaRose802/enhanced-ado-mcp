@@ -260,7 +260,7 @@ Returns just the query text with validation results.
 
 ### Step 2a: Use Generated Query Directly
 Copy the validated query from response and use it with:
-- `wit-wiql-query` - Execute the query
+- `query-wiql` - Execute the query
 - Save to documentation for reuse
 - Modify and refine as needed
 
@@ -309,3 +309,7 @@ Then use query handle with:
 - [WIQL Quick Reference](./wiql-quick-reference.md) - Manual WIQL patterns
 - [WIQL Best Practices](../docs/WIQL_BEST_PRACTICES.md) - Common pitfalls
 - [Query Handle Pattern](./query-handle-pattern.md) - Using queries with bulk operations
+
+
+
+

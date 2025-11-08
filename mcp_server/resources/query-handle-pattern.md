@@ -51,7 +51,7 @@ The Query Handle Pattern eliminates ID hallucination in bulk operations by ensur
 
 ### Step 1: Get Query Handle
 
-Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`:
+Use `query-wiql` with `returnQueryHandle: true`:
 
 ```json
 {
@@ -126,7 +126,7 @@ Use `wit-get-work-items-by-query-wiql` with `returnQueryHandle: true`:
 
 **Preview Selection:**
 ```json
-// Use wit-select-items-from-query-handle to see what items will be selected
+// Use analyze-bulk to see what items will be selected
 {
   "queryHandle": "qh_a1b2c3d4e5f6",
   "itemSelector": { "states": ["New"] },
@@ -273,19 +273,19 @@ itemSelector: {
 
 1. **Query** - Get work items with WIQL:
    ```
-   wit-get-work-items-by-query-wiql with returnQueryHandle: true
+   query-wiql with returnQueryHandle: true
    Result: queryHandle "qh_abc123"
    ```
 
 2. **Inspect** - Preview available items:
    ```
-   wit-query-handle-info with queryHandle: "qh_abc123"
+   inspect-handle with queryHandle: "qh_abc123"
    Shows: 10 items with indices, states, tags
    ```
 
 3. **Preview Selection** - Verify what will be selected:
    ```
-   wit-select-items-from-query-handle 
+   analyze-bulk 
      queryHandle: "qh_abc123"
      itemSelector: { states: ["Active"] }
    Result: "Would select 5 of 10 items"
@@ -304,7 +304,7 @@ itemSelector: {
 ❌ **DO NOT extract IDs manually:**
 ```
 // WRONG - causes hallucination
-queryResult = wit-get-work-items-by-query-wiql(...)
+queryResult = query-wiql(...)
 manualIds = [123, 456, 789]  // AI might hallucinate these
 wit-bulk-comment(workItemIds: manualIds, ...)
 ```
@@ -312,7 +312,7 @@ wit-bulk-comment(workItemIds: manualIds, ...)
 ✅ **DO use query handles:**
 ```
 // CORRECT - validated selection
-queryHandle = wit-get-work-items-by-query-wiql(returnQueryHandle: true)
+queryHandle = query-wiql(returnQueryHandle: true)
 wit-bulk-comment(queryHandle, itemSelector: "all")
 ```
 
@@ -325,7 +325,7 @@ wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]})
 ✅ **DO preview before destructive ops:**
 ```
 // CORRECT - verify first
-wit-select-items-from-query-handle(queryHandle, itemSelector: {states: ["Done"]})
+analyze-bulk(queryHandle, itemSelector: {states: ["Done"]})
 // User confirms: "Yes, remove those 5 items"
 wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
 ```
@@ -353,7 +353,7 @@ All tools support `dryRun: true` for safe preview:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-unified-bulk-operations-by-query-handle` | **SINGLE TOOL** for all bulk modifications - execute multiple actions sequentially | `queryHandle`, `actions[]`, `itemSelector`, `stopOnError` |
+| `execute-bulk-operations` | **SINGLE TOOL** for all bulk modifications - execute multiple actions sequentially | `queryHandle`, `actions[]`, `itemSelector`, `stopOnError` |
 
 **Supported Actions:**
 - `comment` - Add comments
@@ -381,18 +381,18 @@ All tools support `dryRun: true` for safe preview:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-query-handle-info` | Inspect query handle contents, validation, and stats | `queryHandle`, `detailed`, `itemSelector` |
-| `wit-list-query-handles` | List all active query handles for tracking | `includeExpired`, `top`, `skip` |
-| `wit-select-items-from-query-handle` | Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
+| `inspect-handle` | Inspect query handle contents, validation, and stats | `queryHandle`, `detailed`, `itemSelector` |
+| `list-handles` | List all active query handles for tracking | `includeExpired`, `top`, `skip` |
+| `analyze-bulk` | Preview item selection before bulk ops | `queryHandle`, `itemSelector` |
 
 ### Special Operations
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-forensic-undo-by-query-handle` | Analyze and revert changes by user/time window (works on ANY items) | `queryHandle`, `changedBy`, `afterTimestamp`, `beforeTimestamp` |
-| `wit-bulk-undo-by-query-handle` | Undo MCP bulk operations (last or all) | `queryHandle`, `undoAll` |
+| `undo-forensic` | Analyze and revert changes by user/time window (works on ANY items) | `queryHandle`, `changedBy`, `afterTimestamp`, `beforeTimestamp` |
+| `undo-bulk` | Undo MCP bulk operations (last or all) | `queryHandle`, `undoAll` |
 | `wit-find-parent-item-intelligent` | AI-powered parent recommendations for orphaned items | `childQueryHandle`, `parentWorkItemTypes`, `searchScope` |
-| `wit-link-work-items-by-query-handles` | Create relationships between two query handle result sets | `sourceQueryHandle`, `targetQueryHandle`, `linkType`, `linkStrategy` |
+| `link-workitems` | Create relationships between two query handle result sets | `sourceQueryHandle`, `targetQueryHandle`, `linkType`, `linkStrategy` |
 
 ## 📋 Best Practices
 
@@ -761,3 +761,7 @@ await wit_bulk_update_by_query_handle({
 - [WIQL Best Practices](./wiql-quick-reference.md)
 - [Tool Selection Guide](./tool-selection-guide.md)
 - [Common Workflows](./common-workflows.md)
+
+
+
+

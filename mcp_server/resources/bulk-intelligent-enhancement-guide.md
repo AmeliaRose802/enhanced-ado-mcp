@@ -26,7 +26,7 @@ Three AI-powered tools for enhancing work items in bulk using query handles. All
 **Example**:
 ```typescript
 // First, get items with missing descriptions
-const queryResult = await wit-get-work-items-by-query-wiql({
+const queryResult = await query-wiql({
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Description] = ''",
   returnQueryHandle: true
 });
@@ -83,7 +83,7 @@ const finalResult = await wit-bulk-enhance-descriptions-by-query-handle({
 **Example**:
 ```typescript
 // Get unestimated Product Backlog Items
-const queryResult = await wit-get-work-items-by-query-wiql({
+const queryResult = await query-wiql({
   wiqlQuery: `SELECT [System.Id] FROM WorkItems 
          WHERE [System.WorkItemType] = 'Product Backlog Item' 
          AND [Microsoft.VSTS.Scheduling.Effort] = ''`,
@@ -155,7 +155,7 @@ So that I can correct my input before submitting
 **Example**:
 ```typescript
 // Find items missing acceptance criteria
-const queryResult = await wit-get-work-items-by-query-wiql({
+const queryResult = await query-wiql({
   wiqlQuery: `SELECT [System.Id] FROM WorkItems 
          WHERE [System.WorkItemType] = 'User Story' 
          AND [Microsoft.VSTS.Common.AcceptanceCriteria] = ''`,
@@ -192,7 +192,7 @@ Enhance work items in stages with validation at each step:
 
 ```typescript
 // 1. Get items needing enhancement
-const items = await wit-get-work-items-by-query-wiql({
+const items = await query-wiql({
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
   returnQueryHandle: true
 });
@@ -223,7 +223,7 @@ await wit-bulk-assign-story-points-by-query-handle({
 Use itemSelector to target specific items:
 
 ```typescript
-const items = await wit-get-work-items-by-query-wiql({
+const items = await query-wiql({
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] = 'MyProject\\Backend'",
   returnQueryHandle: true,
   includeSubstantiveChange: true
@@ -315,3 +315,7 @@ Tools detect when work item context is insufficient and report low confidence.
 - Reduce sampleSize to 10-20
 - Process items in smaller batches
 - Increase timeout in system if possible
+
+
+
+

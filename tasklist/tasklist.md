@@ -23,3 +23,123 @@ Still broken:
   ],
   "warnings": []
 }
+
+Story point analysis tool reporting no story points for item that does have story points:
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_e9f01eb8730d02ef66c5982bef4056fa",
+    "item_count": 1,
+    "original_query": "SELECT [System.Id] FROM WorkItems WHERE [System.Id] = 35655356",
+    "analysis_types": [
+      "effort"
+    ],
+    "results": {
+      "effort": {
+        "total_items": 1,
+        "items_with_story_points": 0,
+        "items_without_story_points": 1,
+        "total_story_points": 0,
+        "average_story_points": 0,
+        "type_distribution": {
+          "Product Backlog Item": {
+            "count": 1,
+            "storyPoints": 0
+          }
+        },
+        "estimation_coverage": 0
+      }
+    }
+  },
+  "metadata": {
+    "source": "analyze-by-query-handle"
+  },
+  "errors": [],
+  "warnings": []
+}
+
+
+{
+  "success": true,
+  "data": {
+    "contextPackage": {
+      "id": 35655356,
+      "title": "Design document for CVM integrity protection via IMDS",
+      "type": "Product Backlog Item",
+      "state": "Done",
+      "areaPath": "One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway",
+      "iterationPath": "One\\Krypton",
+      "assignedTo": "Supriya Kumari",
+      "createdDate": "2025-10-21T16:24:43.013Z",
+      "createdBy": "Hemendra Rawat",
+      "changedDate": "2025-11-08T00:02:42.65Z",
+      "changedBy": "Hemendra Rawat",
+      "priority": 2,
+      "tags": [],
+      "url": "https://dev.azure.com/msazure/One/_workitems/edit/35655356",
+      "parent": {
+        "id": 35655336,
+        "title": "IMDS CVM support for digitally signing compute metadata",
+        "type": "Feature",
+        "state": "New"
+      },
+      "children": [],
+      "related": [
+        {
+          "type": "System.LinkTypes.Related",
+          "id": 35851457,
+          "title": "Cloned: CVM integrity protection design - Modified",
+          "state": "New"
+        }
+      ],
+      "pullRequests": [],
+      "commits": [],
+      "comments": [],
+      "_raw": {
+        "fields": {
+          "System.Id": 35655356,
+          "System.AreaPath": "One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway",
+          "System.TeamProject": "One",
+          "System.AreaLevel1": "One",
+          "System.AreaLevel2": "Azure Compute",
+          "System.AreaLevel3": "OneFleet Node",
+          "System.AreaLevel4": "Azure Host Agent",
+          "System.AreaLevel5": "Azure Host Gateway",
+          "System.IterationId": 369304,
+          "System.IterationPath": "One\\Krypton",
+          "System.IterationLevel1": "One",
+          "System.IterationLevel2": "Krypton",
+          "System.WorkItemType": "Product Backlog Item",
+          "System.State": "Done",
+          "System.Reason": "Moved out of state In Review",
+          "System.AssignedTo": "Supriya Kumari",
+          "System.CreatedDate": "2025-10-21T16:24:43.013Z",
+          "System.CreatedBy": "Hemendra Rawat",
+          "System.ChangedDate": "2025-11-08T00:02:42.65Z",
+          "System.ChangedBy": "Hemendra Rawat",
+          "System.Title": "Design document for CVM integrity protection via IMDS",
+          "System.BoardColumn": "Done",
+          "Microsoft.VSTS.Common.ClosedDate": "2025-11-08T00:02:42.65Z",
+          "Microsoft.VSTS.Scheduling.Effort": 5,
+          "Microsoft.VSTS.Common.ClosedBy": "Hemendra Rawat",
+          "Microsoft.VSTS.Common.ActivatedDate": "2025-10-21T16:25:58.827Z",
+          "Microsoft.VSTS.Common.ActivatedBy": "Hemendra Rawat",
+          "Microsoft.VSTS.Common.Priority": 2,
+          "Microsoft.VSTS.Common.ValueArea": "Business",
+          "Scrum_custom.IsException": false,
+          "Scrum_custom.OriginalRiskRating": "High",
+          "Scrum_custom.AdjustedRiskRating": "High",
+          "System.History": "<div>Transfer of knowledge done to Mayank Daruka. He has everything he needs to pick up the work </div>",
+          "Microsoft.VSTS.Common.Resolution": "<a href=\"https://azurewiki.cloudapp.net/Requesting%20an%20Exception\">Requesting exception</a>",
+          "System.Parent": 35655336
+        }
+      }
+    }
+  },
+  "metadata": {
+    "source": "get-work-item-context-package",
+    "samplingAvailable": true
+  },
+  "errors": [],
+  "warnings": []
+}

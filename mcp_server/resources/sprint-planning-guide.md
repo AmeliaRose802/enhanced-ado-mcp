@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Sprint Planning Analyzer** (`wit-sprint-planning-analyzer`) is an AI-powered tool that helps create optimal sprint plans by analyzing team capacity, historical velocity, and proposing balanced work assignments across all team members.
+The **Sprint Planning Analyzer** (`plan-sprint`) is an AI-powered tool that helps create optimal sprint plans by analyzing team capacity, historical velocity, and proposing balanced work assignments across all team members.
 
 ## When to Use This Tool
 
@@ -177,14 +177,14 @@ For each team member:
 ## Integration with Other Tools
 
 ### Before Sprint Planning
-1. **Query Backlog**: Use `wit-wiql-query` to identify candidate items
+1. **Query Backlog**: Use `query-wiql` to identify candidate items
 2. **Estimate Items**: Use `wit-bulk-assign-story-points-by-query-handle` to ensure all items have estimates
-3. **Analyze Velocity**: Use `wit-odata-query` to get historical completion data
+3. **Analyze Velocity**: Use `query-odata` to get historical completion data
 
 ### After Sprint Planning
 1. **Assign Work**: Use `wit-bulk-assign-by-query-handle` to assign items to team members
 2. **Update Iterations**: Move items to the sprint iteration
-3. **Track Progress**: Use `wit-personal-workload-analyzer` to monitor individual workload
+3. **Track Progress**: Use `analyze-workload-batch` to monitor individual workload
 
 ### During Sprint
 1. **Monitor Progress**: Use query handle tools to check sprint items
@@ -257,10 +257,10 @@ For each team member:
 
 ## Related Tools
 
-- `wit-personal-workload-analyzer` - Analyze individual team member workload
-- `wit-wiql-query` - Query backlog items
+- `analyze-workload-batch` - Analyze individual team member workload
+- `query-wiql` - Query backlog items
 - `wit-bulk-assign-story-points-by-query-handle` - Estimate work items
-- `wit-odata-query` - Historical velocity data
+- `query-odata` - Historical velocity data
 - `wit-bulk-assign-by-query-handle` - Batch assign work items
 
 ## Tips for Success
@@ -325,5 +325,9 @@ For each team member:
 For issues or questions:
 1. Check this guide for common solutions
 2. Review the sprint planning prompt for detailed algorithm
-3. Use `wit-discover-tools` to find related tools
+3. Use `discover-tools` to find related tools
 4. Contact your MCP server administrator
+
+
+
+

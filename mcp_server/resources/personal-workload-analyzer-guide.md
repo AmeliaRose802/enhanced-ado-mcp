@@ -242,9 +242,9 @@ Uses VS Code language model sampling for:
 ### Follow-up Actions
 After analysis, you might:
 - Use `wit-bulk-assign-by-query-handle` to rebalance workload
-- Use `wit-create-new-item` to create skill development tasks
+- Use `create-workitem` to create skill development tasks
 - Use `wit-bulk-comment-by-query-handle` to document discussion points on items
-- Use `wit-assign-to-copilot` for AI-suitable work to free capacity
+- Use `assign-copilot` for AI-suitable work to free capacity
 
 ## Example Scenarios
 
@@ -340,3 +340,7 @@ After analysis, you might:
 - [Unified Work Item Analyzer](../prompts/unified_work_item_analyzer.md) - Single item deep dive
 - [Common Workflows](./common-workflows.md) - Integration patterns
 - [Tool Selection Guide](./tool-selection-guide.md) - When to use which tool
+
+
+
+

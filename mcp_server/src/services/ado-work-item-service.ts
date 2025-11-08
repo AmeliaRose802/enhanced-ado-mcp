@@ -376,7 +376,8 @@ const SUBSTANTIVE_FIELDS = [
 
 const AUTOMATED_FIELDS = [
   'System.IterationPath', 'System.AreaPath', 'Microsoft.VSTS.Common.StackRank',
-  'Microsoft.VSTS.Common.BacklogPriority', 'Microsoft.VSTS.Scheduling.StoryPoints'
+  'Microsoft.VSTS.Common.BacklogPriority', 'Microsoft.VSTS.Scheduling.StoryPoints',
+  'Microsoft.VSTS.Scheduling.Effort'
 ];
 
 /**

@@ -116,9 +116,13 @@ export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Pr
       fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Common.Priority', value: sourceItem.fields['Microsoft.VSTS.Common.Priority'] });
     }
 
-    // Story Points (copy from source)
-    if (sourceItem.fields['Microsoft.VSTS.Scheduling.StoryPoints']) {
-      fields.push({ op: 'add', path: '/fields/Microsoft.VSTS.Scheduling.StoryPoints', value: sourceItem.fields['Microsoft.VSTS.Scheduling.StoryPoints'] });
+    // Story Points/Effort (copy from source, support both field names)
+    const effortValue = sourceItem.fields['Microsoft.VSTS.Scheduling.Effort'] || sourceItem.fields['Microsoft.VSTS.Scheduling.StoryPoints'];
+    if (effortValue) {
+      const effortFieldName = sourceItem.fields['Microsoft.VSTS.Scheduling.Effort'] 
+        ? 'Microsoft.VSTS.Scheduling.Effort' 
+        : 'Microsoft.VSTS.Scheduling.StoryPoints';
+      fields.push({ op: 'add', path: `/fields/${effortFieldName}`, value: effortValue });
     }
 
     // Create cloned work item

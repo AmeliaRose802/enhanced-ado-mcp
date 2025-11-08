@@ -140,3 +140,7 @@ Automatic aggregation when 1+ analyses succeed:
 - `analyze-workload` - Single person analysis with same features
 - `plan-sprint` - Sprint planning with team capacity analysis
 - `discover-tools` - Find the right tool for your task
+
+
+
+

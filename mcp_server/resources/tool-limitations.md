@@ -99,7 +99,7 @@ This guide documents important limitations, constraints, and restrictions across
   "includeFields": ["Microsoft.VSTS.Scheduling.StoryPoints"],
   "returnQueryHandle": true
 }
-// Then calculate sum in your code or use wit-analyze-by-query-handle
+// Then calculate sum in your code or use analyze-query-handle
 ```
 
 ### Query Handle Pattern
@@ -352,11 +352,11 @@ AI Response: { "confidence": 0.85, "description": "..." }
 
 ### Query Handle Management Tools
 
-**wit-query-handle-info:**
+**inspect-handle:**
 - **Fast:** <1 second for validation and preview
 - **Detailed Mode:** Adds 2-5 seconds for sample item fetching
 
-**wit-list-query-handles:**
+**list-handles:**
 - **Fast:** <1 second to list all handles
 - **Pagination:** Default 50 handles per page (max 200)
 
@@ -541,7 +541,7 @@ az login
   "returnQueryHandle": true
 }
 
-// Step 2: Use wit-analyze-by-query-handle to analyze
+// Step 2: Use analyze-query-handle to analyze
 {
   "queryHandle": "qh_abc123...",
   "analysisType": ["storyPointsSummary"]
@@ -654,8 +654,8 @@ az login
 ## 🎯 Decision Matrix: Which Tool to Use
 
 ### "I need to find work items..."
-- **By state/type/area** → WIQL query (`wit-wiql-query`)
-- **Historical trends** → OData query (`wit-odata-query`)
+- **By state/type/area** → WIQL query (`query-wiql`)
+- **Historical trends** → OData query (`query-odata`)
 - **Natural language** → AI query generation (`wit-generate-wiql-query` or `wit-generate-odata-query`)
 
 ### "I need to update multiple work items..."
@@ -665,13 +665,13 @@ az login
 
 ### "I need metrics/analytics..."
 - **Real-time counts** → WIQL query + count items in code
-- **Historical velocity** → OData query (`wit-odata-query`)
-- **StoryPoints sum** → WIQL + manual calculation or wit-analyze-by-query-handle
+- **Historical velocity** → OData query (`query-odata`)
+- **StoryPoints sum** → WIQL + manual calculation or analyze-query-handle
 
 ### "I need to analyze work items..."
-- **AI suitability** → `wit-ai-assignment-analyzer-analyzer`
-- **Completeness check** → `wit-intelligence-analyzer` with `analysisType: "full"`
-- **Bulk analysis** → Query handle + `wit-analyze-by-query-handle`
+- **AI suitability** → `analyze-workload-analyzer`
+- **Completeness check** → `analyze-workload` with `analysisType: "full"`
+- **Bulk analysis** → Query handle + `analyze-query-handle`
 
 ## 🚨 Critical Limitations Summary
 
@@ -699,3 +699,7 @@ az login
 
 **Last Updated:** 2024-10-08  
 **Version:** 1.5.0
+
+
+
+

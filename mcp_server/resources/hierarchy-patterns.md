@@ -88,7 +88,7 @@ Repeat Step 2 for each child until no more children found.
   "includeHistory": false
 }
 ```
-Tool: `wit-get-work-item-context-package`
+Tool: `get-context`
 
 ### Batch Hierarchy
 ```json
@@ -99,7 +99,7 @@ Tool: `wit-get-work-item-context-package`
   "includeExtendedFields": true
 }
 ```
-Tool: `wit-get-context-packages-by-query-handle`
+Tool: `get-context-bulk`
 
 ## Fast Validation
 
@@ -109,7 +109,7 @@ Tool: `wit-get-context-packages-by-query-handle`
   "workItemIds": [100, 101, 102, 103]
 }
 ```
-Tool: `wit-validate-hierarchy`
+Tool: `analyze-query-handle (with analysisType: ['hierarchy'])`
 
 **Returns:**
 - Type compatibility (parent-child type rules)
@@ -136,7 +136,7 @@ ORDER BY [System.WorkItemType], [System.CreatedDate] DESC
 SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject'
 
 -- Then validate each item's parent exists
--- (Use wit-validate-hierarchy for automatic checking)
+-- (Use analyze-query-handle (with analysisType: ['hierarchy']) for automatic checking)
 ```
 
 ### Find Childless Parents
@@ -237,7 +237,7 @@ Common parent-child type rules:
 - Task can have: (typically no children)
 - Bug can have: Task
 
-**Use `wit-validate-hierarchy` to check these automatically.**
+**Use `analyze-query-handle (with analysisType: ['hierarchy'])` to check these automatically.**
 
 ## Performance Tips
 
@@ -246,3 +246,7 @@ Common parent-child type rules:
 3. **Use MaxResults** to prevent huge datasets
 4. **Cache parent lookups** to avoid duplicate queries
 5. **Batch operations** when processing multiple hierarchies
+
+
+
+

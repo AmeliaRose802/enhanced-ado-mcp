@@ -11,6 +11,19 @@ import { getTokenProvider } from '../../utils/token-provider.js';
 import type { ADOWorkItem } from '../../types/index.js';
 
 /**
+ * Helper function to get story points/effort from work item (supports both field names)
+ */
+function getEffortValue(workItem: ADOWorkItem): number {
+  const effortField = workItem.fields?.['Microsoft.VSTS.Scheduling.Effort'];
+  const storyPointsField = workItem.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'];
+  
+  const effortValue = typeof effortField === 'number' ? effortField : 0;
+  const storyPointsValue = typeof storyPointsField === 'number' ? storyPointsField : 0;
+  
+  return effortValue || storyPointsValue;
+}
+
+/**
  * Fetch work items for a specific user using WIQL
  */
 async function fetchUserWorkItems(
@@ -27,7 +40,7 @@ async function fetchUserWorkItems(
   const completedWiql = `
     SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], 
            [System.AssignedTo], [System.Tags], [System.AreaPath], [System.IterationPath],
-           [Microsoft.VSTS.Scheduling.StoryPoints], [Microsoft.VSTS.Common.Priority],
+           [Microsoft.VSTS.Scheduling.StoryPoints], [Microsoft.VSTS.Scheduling.Effort], [Microsoft.VSTS.Common.Priority],
            [System.CreatedDate], [Microsoft.VSTS.Common.ClosedDate], [System.ChangedDate]
     FROM WorkItems
     WHERE [System.AssignedTo] CONTAINS '${assignedToEmail}'
@@ -42,7 +55,7 @@ async function fetchUserWorkItems(
   const activeWiql = `
     SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], 
            [System.AssignedTo], [System.Tags], [System.AreaPath], [System.IterationPath],
-           [Microsoft.VSTS.Scheduling.StoryPoints], [Microsoft.VSTS.Common.Priority],
+           [Microsoft.VSTS.Scheduling.StoryPoints], [Microsoft.VSTS.Scheduling.Effort], [Microsoft.VSTS.Common.Priority],
            [System.CreatedDate], [System.ChangedDate]
     FROM WorkItems
     WHERE [System.AssignedTo] CONTAINS '${assignedToEmail}'
@@ -148,7 +161,7 @@ export class PersonalWorkloadAnalyzer {
           title: wi.fields?.['System.Title'] || '',
           type: wi.fields?.['System.WorkItemType'] || '',
           state: wi.fields?.['System.State'] || '',
-          story_points: wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0,
+          story_points: getEffortValue(wi),
           priority: wi.fields?.['Microsoft.VSTS.Common.Priority'] || 2,
           tags: wi.fields?.['System.Tags'] || '',
           area_path: wi.fields?.['System.AreaPath'] || '',
@@ -162,7 +175,7 @@ export class PersonalWorkloadAnalyzer {
           title: wi.fields?.['System.Title'] || '',
           type: wi.fields?.['System.WorkItemType'] || '',
           state: wi.fields?.['System.State'] || '',
-          story_points: wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0,
+          story_points: getEffortValue(wi),
           priority: wi.fields?.['Microsoft.VSTS.Common.Priority'] || 2,
           tags: wi.fields?.['System.Tags'] || '',
           area_path: wi.fields?.['System.AreaPath'] || '',

@@ -115,7 +115,8 @@ When calling `_query-wiql`, provide clear natural language descriptions:
   "description": "Find all Tasks, Product Backlog Items, and Bugs that are not in Done, Completed, Closed, Resolved, or Removed states under the team's area path",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "returnQueryHandle": true
+  "returnQueryHandle": true,
+  "handleOnly": true
 }
 ```
 
@@ -127,7 +128,8 @@ When calling `_query-wiql`, provide clear natural language descriptions:
   "description": "Find all active Tasks, PBIs, and Bugs (not Done/Closed/Completed) that were changed in the last {{stalenessThresholdDays}} days under {{area_path}}",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "returnQueryHandle": true
+  "returnQueryHandle": true,
+  "handleOnly": true
 }
 ```
 
@@ -137,7 +139,8 @@ When calling `_query-wiql`, provide clear natural language descriptions:
   "description": "Find all active Tasks, PBIs, and Bugs (not in terminal states) under {{area_path}}, include all items regardless of age",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "returnQueryHandle": true
+  "returnQueryHandle": true,
+  "handleOnly": true
 }
 ```
 

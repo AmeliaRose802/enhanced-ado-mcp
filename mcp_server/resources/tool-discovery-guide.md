@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `wit-discover-tools` tool helps you find the right MCP server tools for your task. It can:
+The `discover-tools` tool helps you find the right MCP server tools for your task. It can:
 1. **List all tools** - Get a concise inventory of available tools
 2. **AI-powered recommendations** - Analyze your intent and recommend the best tools
 
@@ -82,7 +82,7 @@ Use tool discovery when:
 }
 ```
 
-**Result**: Recommends `wit-wiql-query` with brief reasoning.
+**Result**: Recommends `query-wiql` with brief reasoning.
 
 ### Example 4: Bulk Operations Workflow
 ```json
@@ -93,8 +93,8 @@ Use tool discovery when:
 ```
 
 **Result**: Recommends workflow:
-1. `wit-wiql-query` (with returnQueryHandle=true)
-2. `wit-unified-bulk-operations-by-query-handle` (with dryRun first)
+1. `query-wiql` (with returnQueryHandle=true)
+2. `execute-bulk-operations` (with dryRun first)
 
 ### Example 5: With Examples Enabled
 ```json
@@ -113,7 +113,7 @@ Use tool discovery when:
 {
   "tools": [
     {
-      "name": "wit-create-new-item",
+      "name": "create-workitem",
       "description": "Create a single work item...",
       "category": "creation",
       "requiredParams": ["title"],
@@ -130,7 +130,7 @@ Use tool discovery when:
 {
   "recommendations": [
     {
-      "toolName": "wit-create-new-item",
+      "toolName": "create-workitem",
       "confidence": 95,
       "reasoning": "Direct match for single item creation",
       "requiredParameters": ["title"],
@@ -138,7 +138,7 @@ Use tool discovery when:
     }
   ],
   "alternativeApproaches": [
-    "Use wit-create-new-item for basic creation, then wit-assign-to-copilot if assigning to Copilot separately"
+    "Use create-workitem for basic creation, then assign-copilot if assigning to Copilot separately"
   ],
   "warnings": []
 }
@@ -174,20 +174,20 @@ Use tool discovery when:
 ## Common Patterns
 
 ### Creating Items
-- Single: `wit-create-new-item`
-- Basic: `wit-create-new-item`
+- Single: `create-workitem`
+- Basic: `create-workitem`
 
 ### Querying
-- Known query: `wit-get-work-items-by-query-wiql`
+- Known query: `query-wiql`
 - Natural language: `wit-generate-wiql-query` → execute
 
 ### Bulk Operations
 Always: Query → Inspect → Bulk (dryRun) → Bulk (apply)
 
 ### Analysis
-- Single item: `wit-get-work-item-context-package`
-- AI suitability: `wit-ai-assignment-analyzer-analyzer`
-- Multiple items: `wit-analyze-by-query-handle`
+- Single item: `get-context`
+- AI suitability: `analyze-workload-analyzer`
+- Multiple items: `analyze-query-handle`
 
 ## Requirements
 
@@ -197,5 +197,9 @@ Always: Query → Inspect → Bulk (dryRun) → Bulk (apply)
 
 ## Related Tools
 
-- `wit-get-configuration`: View server setup and configured tools
+- `get-config`: View server setup and configured tools
 - Resource: `tool-selection-guide.md` for manual reference
+
+
+
+

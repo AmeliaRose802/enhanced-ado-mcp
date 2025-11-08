@@ -314,3 +314,7 @@ Resources are automatically loaded and exposed by the MCP server:
 - Tests: `src/test/resource-service.test.ts`
 
 No configuration needed - resources are available immediately upon server start.
+
+
+
+

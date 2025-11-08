@@ -240,8 +240,8 @@ export async function handleAnalyzeByQueryHandle(
         const fields = [
           'System.Id', 'System.Title', 'System.WorkItemType', 'System.State',
           'System.AssignedTo', 'System.CreatedDate', 'System.ChangedDate',
-          'Microsoft.VSTS.Scheduling.StoryPoints', 'Microsoft.VSTS.Common.Priority',
-          'System.Tags', 'System.Description'
+          'Microsoft.VSTS.Scheduling.StoryPoints', 'Microsoft.VSTS.Scheduling.Effort',
+          'Microsoft.VSTS.Common.Priority', 'System.Tags', 'System.Description'
         ];
         
         const batchSize = 50; // ADO batch limit
@@ -473,10 +473,21 @@ export async function handleAnalyzeByQueryHandle(
   }
 }
 
+// Helper function to get story points/effort from work item (supports both field names)
+function getEffortValue(workItem: ADOWorkItem): number {
+  const effortField = workItem.fields?.['Microsoft.VSTS.Scheduling.Effort'];
+  const storyPointsField = workItem.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'];
+  
+  const effortValue = typeof effortField === 'number' ? effortField : 0;
+  const storyPointsValue = typeof storyPointsField === 'number' ? storyPointsField : 0;
+  
+  return effortValue || storyPointsValue;
+}
+
 // Analysis functions
 function analyzeEffort(workItems: ADOWorkItem[]): EffortAnalysisResult {
-  const withStoryPoints = workItems.filter(wi => wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints']);
-  const totalStoryPoints = withStoryPoints.reduce((sum, wi) => sum + (wi.fields['Microsoft.VSTS.Scheduling.StoryPoints'] || 0), 0);
+  const withStoryPoints = workItems.filter(wi => getEffortValue(wi) > 0);
+  const totalStoryPoints = withStoryPoints.reduce((sum, wi) => sum + getEffortValue(wi), 0);
   
   const typeDistribution: { [key: string]: { count: number, storyPoints: number } } = {};
   workItems.forEach(wi => {
@@ -485,7 +496,7 @@ function analyzeEffort(workItems: ADOWorkItem[]): EffortAnalysisResult {
       typeDistribution[type] = { count: 0, storyPoints: 0 };
     }
     typeDistribution[type].count++;
-    typeDistribution[type].storyPoints += wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0;
+    typeDistribution[type].storyPoints += getEffortValue(wi);
   });
 
   return {
@@ -513,7 +524,7 @@ function analyzeVelocity(workItems: ADOWorkItem[]): VelocityAnalysisResult {
         completedByMonth[month] = { count: 0, storyPoints: 0 };
       }
       completedByMonth[month].count++;
-      completedByMonth[month].storyPoints += wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints'] || 0;
+      completedByMonth[month].storyPoints += getEffortValue(wi);
     }
   });
 
@@ -578,7 +589,7 @@ function analyzeRisks(workItems: ADOWorkItem[]): RiskAnalysisResult {
   }
 
   // Check for unestimated work
-  const unestimated = workItems.filter(wi => !wi.fields?.['Microsoft.VSTS.Scheduling.StoryPoints']);
+  const unestimated = workItems.filter(wi => getEffortValue(wi) === 0);
   if (unestimated.length > workItems.length * 0.2) {
     risks.push(`High unestimated work: ${unestimated.length}/${workItems.length} items (${Math.round((unestimated.length/workItems.length)*100)}%) lack Story Points`);
     riskScore += 25;

@@ -27,16 +27,13 @@ export const toolConfigs: ToolConfig[] = [
  * AI-powered tools that require VS Code sampling support
  */
 export const AI_POWERED_TOOLS = [
-  'wit-intelligence-analyzer',
-  'wit-ai-assignment-analyzer',
-  'wit-personal-workload-analyzer',
-  'wit-sprint-planning-analyzer',
-  'wit-bulk-enhance-descriptions-by-query-handle',
-  'wit-bulk-assign-story-points-by-query-handle',
-  'wit-bulk-add-acceptance-criteria-by-query-handle',
-  'wit-wiql-query', // Unified: supports AI generation when 'description' parameter is used
-  'wit-odata-query', // Unified: supports AI generation when 'description' parameter is used
-  'wit-discover-tools'
+  'analyze-workload',
+  'analyze-workload-batch',
+  'plan-sprint',
+  'query-wiql', // Unified: supports AI generation when 'description' parameter is used
+  'query-odata', // Unified: supports AI generation when 'description' parameter is used
+  'discover-tools',
+  'analyze-query-handle'
 ];
 
 /**

@@ -165,7 +165,7 @@ for (const group of analysis.data.violationGroups) {
 - `wit-bulk-assign-by-query-handle` - Assign items in violation groups
 - `wit-bulk-update-by-query-handle` - Update fields on violation groups  
 - `wit-bulk-comment-by-query-handle` - Add comments to violation groups
-- `wit-query-handle-info` - Inspect query handle contents
+- `inspect-handle` - Inspect query handle contents
 
 ## Performance
 
@@ -177,3 +177,7 @@ for (const group of analysis.data.violationGroups) {
 ---
 
 **Pro Tip:** Combine with bulk operations for powerful workflow automation!
+
+
+
+

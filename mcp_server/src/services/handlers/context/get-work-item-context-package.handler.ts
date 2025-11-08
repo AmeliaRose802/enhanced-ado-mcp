@@ -237,7 +237,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     ];
     const extendedFields = [
       'Microsoft.VSTS.Common.AcceptanceCriteria','Microsoft.VSTS.Common.Priority','Microsoft.VSTS.Scheduling.StoryPoints',
-      'Microsoft.VSTS.Scheduling.RemainingWork','Microsoft.VSTS.Common.Risk','Microsoft.VSTS.Common.ValueArea','Microsoft.VSTS.TCM.ReproSteps'
+      'Microsoft.VSTS.Scheduling.Effort','Microsoft.VSTS.Scheduling.RemainingWork','Microsoft.VSTS.Common.Risk','Microsoft.VSTS.Common.ValueArea','Microsoft.VSTS.TCM.ReproSteps'
     ];
     const fields = includeExtendedFields ? baseFields.concat(extendedFields) : baseFields;
     const fieldParam = fields.join(',');
@@ -402,7 +402,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       changedDate: fieldsMap['System.ChangedDate'],
       changedBy: fieldsMap['System.ChangedBy']?.displayName || fieldsMap['System.ChangedBy']?.uniqueName,
       priority: fieldsMap['Microsoft.VSTS.Common.Priority'],
-      storyPoints: fieldsMap['Microsoft.VSTS.Scheduling.StoryPoints'],
+      storyPoints: fieldsMap['Microsoft.VSTS.Scheduling.Effort'] || fieldsMap['Microsoft.VSTS.Scheduling.StoryPoints'],
       remainingWork: fieldsMap['Microsoft.VSTS.Scheduling.RemainingWork'],
       acceptanceCriteria: processHtmlField(fieldsMap['Microsoft.VSTS.Common.AcceptanceCriteria'] as string | undefined, includeHtmlFields, stripHtmlFormatting),
       reproSteps: fieldsMap['Microsoft.VSTS.TCM.ReproSteps'] ? processHtmlField(fieldsMap['Microsoft.VSTS.TCM.ReproSteps'] as string, includeHtmlFields, stripHtmlFormatting) : undefined,
