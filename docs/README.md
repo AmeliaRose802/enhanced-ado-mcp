@@ -280,7 +280,7 @@ None currently. All major features are documented.
 
 ### Planned Additions
 
-See [tasklist.md](../tasklist/tasklist.md) for planned documentation updates.
+Use `bd` (beads) issue tracker to track planned documentation updates. Run `bd list --label documentation` to see pending documentation work.
 
 ## 💬 Questions?
 

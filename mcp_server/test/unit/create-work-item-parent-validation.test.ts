@@ -2,7 +2,7 @@
  * Tests for parent work item validation in create-workitem tool
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
 import { handleCreateNewItem } from '../../src/services/handlers/core/create-new-item.handler';
 import { createNewItemSchema } from '../../src/config/schemas';
 import type { ToolConfig } from '../../src/types/index';
@@ -21,6 +21,10 @@ jest.mock('../../src/utils/logger.js', () => ({
 }));
 
 describe('Create Work Item - Parent Validation', () => {
+  afterAll(() => {
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+  });
   const toolConfig: ToolConfig = {
     name: 'create-workitem',
     description: 'Test',

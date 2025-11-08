@@ -26,7 +26,6 @@ enhanced-ado-mcp/
 │   ├── prompts/                    # AI prompt templates
 │   ├── resources/                  # Quick reference guides
 │   └── test/                       # Unit & integration tests
-├── tasklist/                       # Development notes (don't touch unless asked)
 └── README.md                       # Main documentation
 ```
 
@@ -54,7 +53,6 @@ enhanced-ado-mcp/
 - **Tests** → `/mcp_server/src/test`
 - **Prompts** → `/mcp_server/prompts`
 - **Quick references** → `/mcp_server/resources`
-- **Task tracking** → `/tasklist` (rarely modified)
 
 ## Documentation Standards
 

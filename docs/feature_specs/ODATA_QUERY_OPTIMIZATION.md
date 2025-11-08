@@ -22,120 +22,7 @@ The `wit-query-odata` tool supports these predefined query types:
 
 ## Changes Made
 
-### 1. team_velocity_analyzer.md
-
-#### Query A: Completion Velocity Over Time
-**Before:**
-```javascript
-{
-  customODataQuery: "$apply=filter(CompletedDate ge {{start_date}}Z and CompletedDate le {{end_date}}Z)/groupby((CompletedDate), aggregate($count as Count))&$orderby=CompletedDate asc",
-  queryType: "customQuery"
-}
-```
-
-**After:**
-```javascript
-{
-  queryType: "velocityMetrics",
-  dateRangeField: "CompletedDate",
-  dateRangeStart: "{{start_date}}",
-  dateRangeEnd: "{{end_date}}",
-  orderBy: "CompletedDate asc"
-}
-```
-
-**Benefit:** Uses built-in query type designed specifically for velocity tracking.
-
----
-
-#### Query C: Current Load by Assignee
-**Before:**
-```javascript
-{
-  customODataQuery: "$apply=filter(State eq 'Active')/groupby((AssignedTo/UserName, WorkItemType), aggregate($count as Count))&$orderby=Count desc",
-  queryType: "customQuery"
-}
-```
-
-**After:**
-```javascript
-{
-  queryType: "groupByAssignee",
-  filters: { State: "Active" },
-  orderBy: "Count desc"
-}
-```
-
-**Note:** Added documentation that if you need breakdown by WorkItemType per assignee, you still need a custom query since the built-in type only groups by assignee.
-
-**Benefit:** Simpler syntax for common use case of grouping by assignee only.
-
----
-
-#### Query D: Cycle Time Metrics
-**Before:**
-```javascript
-{
-  customODataQuery: "$apply=filter(CompletedDate ge {{start_date}}Z and State eq 'Done')/groupby((AssignedTo/UserName), aggregate(CycleTimeDays with average as AvgCycleTime, $count as CompletedCount))&$orderby=AvgCycleTime desc",
-  queryType: "customQuery"
-}
-```
-
-**After:**
-```javascript
-{
-  queryType: "cycleTimeMetrics",
-  computeCycleTime: true,
-  filters: { State: "Done" },
-  dateRangeField: "CompletedDate",
-  dateRangeStart: "{{start_date}}",
-  orderBy: "AvgCycleTime desc"
-}
-```
-
-**Benefit:** Uses built-in query type designed specifically for cycle time analysis.
-
----
-
-#### Query: Unassigned Backlog Items
-**Before:**
-```javascript
-{
-  customODataQuery: "$apply=filter(State eq 'New' and AssignedTo eq null)/groupby((WorkItemType), aggregate($count as Count))&$orderby=Count desc",
-  queryType: "customQuery"
-}
-```
-
-**After:**
-```javascript
-{
-  queryType: "groupByType",
-  filters: { State: "New" },
-  orderBy: "Count desc"
-}
-```
-
-**Note:** Added documentation that this includes all items in New state. To filter only unassigned items, you need a custom query since the filters object doesn't support null checks.
-
-**Benefit:** Simpler for the common case; custom query option documented for null filtering.
-
----
-
-#### Query B: Work Distribution by Assignee and Type (UNCHANGED)
-**Status:** Kept as custom query
-
-**Reason:** Requires grouping by multiple fields (AssignedTo/UserName, WorkItemType), which is not supported by the built-in `groupByAssignee` query type.
-
-```javascript
-{
-  customODataQuery: "$apply=filter(State eq 'Done' and CompletedDate ge {{start_date}}Z)/groupby((AssignedTo/UserName, WorkItemType), aggregate($count as Count))&$orderby=Count desc",
-  queryType: "customQuery"
-}
-```
-
----
-
-### 2. backlog_cleanup.md
+### 1. backlog_cleanup.md
 
 #### Fixed Invalid Filter Syntax
 **Before:**
@@ -229,9 +116,8 @@ To validate OData queries, consider:
 
 ## Files Modified
 
-1. `mcp_server/prompts/team_velocity_analyzer.md` - Optimized 4 queries to use built-in types
-2. `mcp_server/prompts/backlog_cleanup.md` - Fixed invalid filter syntax
-3. `docs/ODATA_QUERY_OPTIMIZATION.md` - This document
+1. `mcp_server/prompts/backlog_cleanup.md` - Fixed invalid filter syntax
+2. `docs/ODATA_QUERY_OPTIMIZATION.md` - This document
 
 ## Build Status
 

@@ -236,7 +236,6 @@ Uses VS Code language model sampling for:
 ## Integration with Other Tools
 
 ### Complementary Analysis
-- **Team Velocity Analyzer:** Compare individual to team patterns
 - **Unified Work Item Analyzer:** Deep dive on specific concerning items
 - **Hierarchy Validator:** Check if work is properly scoped/parented
 
@@ -338,7 +337,6 @@ After analysis, you might:
 - Low confidence AI estimates flagged for review
 
 ## Related Documentation
-- [Team Velocity Analyzer](../prompts/team_velocity_analyzer.md) - Team-wide analysis
 - [Unified Work Item Analyzer](../prompts/unified_work_item_analyzer.md) - Single item deep dive
 - [Common Workflows](./common-workflows.md) - Integration patterns
 - [Tool Selection Guide](./tool-selection-guide.md) - When to use which tool

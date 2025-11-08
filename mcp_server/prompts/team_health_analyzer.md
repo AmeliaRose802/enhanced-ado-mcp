@@ -1,10 +1,9 @@
 ---
 name: team_health_analyzer
 description: Team & individual health analyzer producing flow metrics, risk signals, workload + growth recommendations with development plans.
-version: 1.2
+version: 1.3
 arguments:
    analysis_period_days: { type: number, required: false, default: 90, description: "Days to analyze" }
-   max_recommendations_per_person: { type: number, required: false, default: 5, description: "Max recommendations per person" }
 ---
 
 # 🚀 EXECUTION DIRECTIVE
@@ -161,7 +160,7 @@ Detect misalignment by comparing actual work to role expectations:
 - Devs doing primarily DevOps/infrastructure work when hired as feature developers
 
 ### 9. Recommendations (Role-Aware)
-Up to `{{max_recommendations_per_person}}` per person covering: Workload, Balance, Growth, Variety, Complexity, Collaboration, Career.
+Up to 5 recommendations per person covering: Workload, Balance, Growth, Variety, Complexity, Collaboration, Career.
 
 **Tailor to Role:**
 - **Junior:** Focus on skill building, mentorship, progressive complexity
@@ -330,7 +329,6 @@ Each: Category, Priority, Action, Rationale, Owner, Timeframe, Success Metric.
 - `{{end_date}}` - End date (YYYY-MM-DD)
 - `{{today}}` - Today (YYYY-MM-DD)
 - `{{analysis_period_days}}` - Days to analyze (default: 90)
-- `{{max_recommendations_per_person}}` - Max recommendations (default: 5)
 
 **Date Formatting:**
 - OData: `{{start_date_iso}}Z` and `{{end_date_iso}}Z` (format: YYYY-MM-DDZ without timestamp)

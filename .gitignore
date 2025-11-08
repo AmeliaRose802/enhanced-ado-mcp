@@ -375,3 +375,8 @@ packages/
 
 # Internal documentation (exclude from public repo)
 tasklist/
+
+# Prevent .github directory from being copied into subdirectories during build
+mcp_server/prompts/.github/
+mcp_server/resources/.github/
+mcp_server/dist/.github/

@@ -83,8 +83,11 @@ async function fetchHistoricalVelocity(
     
     return itemsResponse.data.value || [];
   } catch (error) {
-    logger.error('Failed to fetch historical velocity data:', error);
-    throw new Error(`Failed to fetch historical velocity: ${error}`);
+    logger.error(`Failed to fetch historical velocity from org="${organization}", project="${project}":`, error);
+    throw new Error(
+      `Failed to fetch historical velocity from org="${organization}", project="${project}": ${error}. ` +
+      `Verify the project exists and you have access to it.`
+    );
   }
 }
 
@@ -134,8 +137,11 @@ async function fetchActiveWorkItems(
     
     return itemsResponse.data.value || [];
   } catch (error) {
-    logger.error('Failed to fetch active work items:', error);
-    throw new Error(`Failed to fetch active work items: ${error}`);
+    logger.error(`Failed to fetch active work items from org="${organization}", project="${project}":`, error);
+    throw new Error(
+      `Failed to fetch active work items from org="${organization}", project="${project}": ${error}. ` +
+      `Verify the project exists and you have access to it.`
+    );
   }
 }
 
@@ -192,6 +198,23 @@ export class SprintPlanningAnalyzer {
       const config = loadConfiguration();
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
+      
+      // Validate that we have both organization and project
+      if (!org) {
+        return buildErrorResponse(
+          'Organization is required for sprint planning analysis. Provide via args.organization or configuration.',
+          { source: 'sprint-planning-analysis-failed' }
+        );
+      }
+      
+      if (!project) {
+        return buildErrorResponse(
+          'Project is required for sprint planning analysis. Provide via args.project or ensure project is extracted from area path.',
+          { source: 'sprint-planning-analysis-failed' }
+        );
+      }
+      
+      logger.debug(`Sprint planning analysis: org="${org}", project="${project}"`);
       
       // Get area paths with priority: explicit areaPathFilter > single areaPath > config defaults
       let areaPaths: string[] = [];

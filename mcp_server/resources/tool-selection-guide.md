@@ -570,18 +570,6 @@ User: "Update the first 3 unassigned PBIs"
 
 ## AI-Powered Prompts
 
-### Team Velocity Analysis
-**Prompt:** `team_velocity_analyzer`  
-**When:** Analyze team performance and get work assignment recommendations  
-**Example:** Evaluate team capacity and optimize assignments
-
-```json
-{
-  "analysis_period_days": 90,
-  "max_recommendations": 3
-}
-```
-
 ### Project Completion Planning
 **Prompt:** `project_completion_planner`  
 **When:** Need comprehensive project timeline and completion forecast  
