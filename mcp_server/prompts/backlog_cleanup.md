@@ -64,13 +64,14 @@ Identify and report (without mutating):
 
 ### Step 1: Generate WIQL Query with Query Handle
 
-Call `_query-wiql` with natural language description parameter or direct WIQL and `returnQueryHandle: true`:
+Call `_query-wiql` with natural language description parameter or direct WIQL and `returnQueryHandle: true`, `handleOnly: true`:
 ```json
 {
   "description": "Get all active work items (Tasks, PBIs, Bugs) not in terminal states under {{area_path}}",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "returnQueryHandle": true
+  "returnQueryHandle": true,
+  "handleOnly": true
 }
 ```
 

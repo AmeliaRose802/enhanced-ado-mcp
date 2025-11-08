@@ -46,7 +46,7 @@ Tool: _query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Done', 'Closed', 'Completed', 'Resolved') AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - {{lookback_days}}"
   returnQueryHandle: true
-  includeFields: ["System.Title", "System.WorkItemType", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.State", "Microsoft.VSTS.Common.ClosedDate", "System.CreatedDate"]
+  handleOnly: true
 ```
 
 ### Step 2: Query Planned Work (Committed State)
@@ -58,7 +58,7 @@ Tool: _query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Committed', 'Active', 'In Progress', 'In Review') AND [System.CreatedDate] <= @Today - {{lookback_days}}"
   returnQueryHandle: true
-  includeFields: ["System.Title", "System.WorkItemType", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.State", "System.CreatedDate"]
+  handleOnly: true
 ```
 
 ### Step 3: Analyze Effort Distribution

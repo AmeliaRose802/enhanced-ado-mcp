@@ -173,11 +173,10 @@ Returns a validated WIQL query for sprint-ready items. Execute with `wit-wiql-qu
 {
   "wiqlQuery": "[generated query]",
   "returnQueryHandle": true,
-  "includeSubstantiveChange": true,
-  "includeFields": ["System.Title", "System.State", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints", "Microsoft.VSTS.Common.Priority", "System.WorkItemType", "System.Description"]
+  "handleOnly": true
 }
 ```
-**CRITICAL:** Always set `returnQueryHandle: true` to enable safe bulk operations and analysis.
+**CRITICAL:** Always set `returnQueryHandle: true` and `handleOnly: true` for efficient query handle creation without fetching full data.
 
 **Tool: `wit-analyze-by-query-handle`** - Analyze work without fetching all items (saves tokens!)
 ```json
@@ -220,10 +219,10 @@ Returns aggregated team metrics: Story Points breakdown, estimation coverage, wo
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Committed', 'Active', 'In Progress', 'In Review')",
   "returnQueryHandle": true,
-  "includeSubstantiveChange": true
+  "handleOnly": true
 }
 ```
-**Note:** Include 'Committed' state to capture items already assigned to current sprint.
+**Note:** Include 'Committed' state to capture items already assigned to current sprint. Use `handleOnly: true` for efficiency.
 Then use `wit-analyze-by-query-handle` to get current workload distribution.
 
 ### Phase 4: Enhance Incomplete Items (Optional, AI-Powered)
@@ -356,7 +355,7 @@ Use `wit-validate-hierarchy` to:
 - ✅ Use `wit-query-handle-info` to preview staleness data before bulk operations
 - ✅ Use `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` and `dryRun: true` for AI estimates
 - ✅ Use `returnFormat: "summary"` in enhance configs for AI enhancement tools
-- ✅ Request `returnQueryHandle: true` on ALL WIQL queries (enables all bulk operations)
+- ✅ Request `returnQueryHandle: true` and `handleOnly: true` on ALL WIQL queries (efficient handle creation)
 - ✅ Use `wit-generate-query` to convert natural language to validated WIQL
 
 **DON'T:**
@@ -370,7 +369,7 @@ Use `wit-validate-hierarchy` to:
 
 **Every sprint planning session should:**
 1. Generate queries with `wit-generate-query` (natural language)
-2. Execute with `returnQueryHandle: true` (get handle)
+2. Execute with `returnQueryHandle: true` and `handleOnly: true` (get handle efficiently)
 3. Analyze with `wit-analyze-by-query-handle` (aggregated metrics)
 4. Enhance with AI tools using handles (story points, descriptions)
 5. Preview with `wit-query-handle-info` or `wit-select-items-from-query-handle`
@@ -395,10 +394,10 @@ Tool: wit-wiql-query
 {
   "wiqlQuery": "[generated from step 1]",
   "returnQueryHandle": true,
-  "includeSubstantiveChange": true
+  "handleOnly": true
 }
 ```
-Returns query handle like `qh_c1b1b9a3ab3ca2f2ae8af6114c4a50e3`.
+Returns query handle like `qh_c1b1b9a3ab3ca2f2ae8af6114c4a50e3` without fetching full work item data.
 
 ### 3. Analyze Backlog Effort (Token-Efficient!)
 ```json
@@ -441,10 +440,11 @@ Now you have 100% effort coverage (15 manual + 8 AI = 23 total items) for accura
 Tool: wit-wiql-query
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project\\Team' AND [System.State] IN ('Committed', 'Active', 'In Progress', 'In Review')",
-  "returnQueryHandle": true
+  "returnQueryHandle": true,
+  "handleOnly": true
 }
 ```
-**Note:** 'Committed' state represents items assigned to the sprint.
+**Note:** 'Committed' state represents items assigned to the sprint. Use `handleOnly: true` for efficient handle creation.
 
 ### 6. Analyze Current Workload & Discover Team Members
 ```json
@@ -657,7 +657,7 @@ Tool: wit-unified-bulk-operations-by-query-handle
 | Goal | Tool | Key Parameters |
 |------|------|----------------|
 | Generate WIQL query | `wit-generate-query` | `description`, `returnQueryHandle: true` |
-| Execute query | `wit-wiql-query` | `wiqlQuery`, `returnQueryHandle: true`, `includeSubstantiveChange: true` |
+| Execute query | `wit-wiql-query` | `wiqlQuery`, `returnQueryHandle: true`, `handleOnly: true` |
 | Analyze effort | `wit-analyze-by-query-handle` | `queryHandle`, `analysisType: ["effort"]` |
 | Analyze workload | `wit-analyze-by-query-handle` | `queryHandle`, `analysisType: ["workload", "assignments"]` |
 | Discover skills | `wit-personal-workload-analyzer` | `assignedToEmail`, `analysisPeriodDays: 90` |
