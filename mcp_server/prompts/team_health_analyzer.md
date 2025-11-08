@@ -42,8 +42,18 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 ## Workflow
 
 ### 1. Team Roster (OData, paginate $top=200, $skip+=200)
-`$apply=filter(CompletedDate ge {{start_date_iso}}Z and CompletedDate le {{end_date_iso}}Z and AssignedTo/UserEmail ne null and startswith(Area/AreaPath, '{{area_path}}'))/groupby((AssignedTo/UserEmail,AssignedTo/UserName),aggregate($count as Count))&$orderby=Count desc`
-Note: Uses `startswith(Area/AreaPath, '{{area_path}}')` for area path filtering in OData. Date format must be YYYY-MM-DDZ (without the T00:00:00 timestamp). The AreaSK field doesn't exist - use Area/AreaPath with startswith() for reliable filtering.
+**Recommended:** Use AI-powered query generation with `wit-query-analytics-odata` tool:
+```
+description: "Get all team members who have completed work items in the last {{analysis_period_days}} days, grouped by assignee email and name with count"
+dateRangeStart: "{{start_date}}"
+dateRangeEnd: "{{end_date}}"
+dateRangeField: "CompletedDate"
+groupBy: ["AssignedTo/UserEmail", "AssignedTo/UserName"]
+```
+
+**Alternative (Direct Query):**
+`$apply=filter(CompletedDate ge {{start_date_iso}}Z and CompletedDate le {{end_date_iso}}Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail,AssignedTo/UserName),aggregate($count as Count))&$orderby=Count desc`
+Note: Area path filtering in OData is complex. For area-specific queries, filter results programmatically or use the AI query generator with area path specified in the description. Date format must be YYYY-MM-DDZ (without the T00:00:00 timestamp).
 
 ### 2. Per-Person Data
 **Primary Tool:** Use `wit-personal-workload-analyzer` for each team member to get:

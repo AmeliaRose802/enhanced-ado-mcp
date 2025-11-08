@@ -39,7 +39,10 @@ async function fetchHistoricalVelocity(
   areaPaths: string[],
   historicalSprintDays: number
 ): Promise<ADOWorkItem[]> {
-  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
+  logger.debug(`[fetchHistoricalVelocity] Creating HTTP client for org="${organization}" (org-level for WIQL)`);
+  // Use organization-level HTTP client for WIQL queries (more reliable than project-scoped)
+  // Area path filtering already provides project scope
+  const httpClient = createADOHttpClient(organization, getTokenProvider());
   
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - historicalSprintDays);
@@ -84,10 +87,22 @@ async function fetchHistoricalVelocity(
     return itemsResponse.data.value || [];
   } catch (error) {
     logger.error(`Failed to fetch historical velocity from org="${organization}", project="${project}":`, error);
-    throw new Error(
-      `Failed to fetch historical velocity from org="${organization}", project="${project}": ${error}. ` +
-      `Verify the project exists and you have access to it.`
-    );
+    
+    // Enhanced error message with diagnostic information
+    const errorMessage = [
+      `Failed to fetch historical velocity data:`,
+      `  Organization: "${organization}"`,
+      `  Project: "${project}"`,
+      `  Error: ${error}`,
+      ``,
+      `Troubleshooting:`,
+      `  1. Verify the project name is correct (check Azure DevOps portal)`,
+      `  2. Ensure you have access to this project`,
+      `  3. Try running 'az devops project show --project "${project}" --org "https://dev.azure.com/${organization}"'`,
+      `  4. If project name has spaces or special characters, ensure proper escaping in area path`
+    ].join('\n');
+    
+    throw new Error(errorMessage);
   }
 }
 
@@ -99,7 +114,10 @@ async function fetchActiveWorkItems(
   project: string,
   areaPaths: string[]
 ): Promise<ADOWorkItem[]> {
-  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
+  logger.debug(`[fetchActiveWorkItems] Creating HTTP client for org="${organization}" (org-level for WIQL)`);
+  // Use organization-level HTTP client for WIQL queries (more reliable than project-scoped)
+  // Area path filtering already provides project scope
+  const httpClient = createADOHttpClient(organization, getTokenProvider());
   
   const areaPathFilter = buildAreaPathFilter(areaPaths);
   const whereConditions = [
@@ -117,6 +135,9 @@ async function fetchActiveWorkItems(
     WHERE ${whereConditions.join('\n      AND ')}
     ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC
   `;
+  
+  logger.debug(`[fetchActiveWorkItems] Executing WIQL query for active work items`);
+  logger.debug(`[fetchActiveWorkItems] URL will be: https://dev.azure.com/${organization}/${project}/_apis/wit/wiql`);
   
   try {
     const response = await httpClient.post<{ workItems: Array<{ id: number }> }>(
@@ -138,10 +159,22 @@ async function fetchActiveWorkItems(
     return itemsResponse.data.value || [];
   } catch (error) {
     logger.error(`Failed to fetch active work items from org="${organization}", project="${project}":`, error);
-    throw new Error(
-      `Failed to fetch active work items from org="${organization}", project="${project}": ${error}. ` +
-      `Verify the project exists and you have access to it.`
-    );
+    
+    // Enhanced error message with diagnostic information
+    const errorMessage = [
+      `Failed to fetch active work items:`,
+      `  Organization: "${organization}"`,
+      `  Project: "${project}"`,
+      `  Error: ${error}`,
+      ``,
+      `Troubleshooting:`,
+      `  1. Verify the project name is correct (check Azure DevOps portal)`,
+      `  2. Ensure you have access to this project`,
+      `  3. Try running 'az devops project show --project "${project}" --org "https://dev.azure.com/${organization}"'`,
+      `  4. If project name has spaces or special characters, ensure proper escaping in area path`
+    ].join('\n');
+    
+    throw new Error(errorMessage);
   }
 }
 
