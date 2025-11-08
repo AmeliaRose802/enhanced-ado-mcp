@@ -9,8 +9,10 @@
   ANALYSIS_TOOLS.md
 - Automatic Project Extraction
   automatic-project-extraction.md
-- Current Iteration Path Discovery (New!)
+- Current Iteration Path Discovery
   current-iteration-path-discovery.md
+- Team Override for Iteration Discovery (New!)
+  team-override-for-iteration-discovery.md
 - Multi-Area Path Support (Planned)
   multi-area-path-support.md
 - Specialized Agent Assignment

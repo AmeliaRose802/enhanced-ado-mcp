@@ -36,7 +36,6 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 
 **Work Item Management:**
 - `wit-create-new-item` - Create work items
-- `wit-assign-to-copilot` - Assign to GitHub Copilot
 - `wit-assign-to-copilot` - Assign existing item to Copilot
 
 **Bulk Operations:**
@@ -53,7 +52,7 @@ Find security items using WIQL with staleness data and query handle:
 Tool: wit-wiql-query
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] NOT IN ('Closed', 'Done', 'Completed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"],
+  includeFields: ["System.Id"],
   includeSubstantiveChange: true,
   returnQueryHandle: true,
   maxResults: {{max_items}}
@@ -62,53 +61,112 @@ Arguments: {
 
 **Note**: The `{{area_path}}` variable will be filled with the configured area path at runtime. The prompt service automatically handles backslash escaping for WIQL queries, so you can use `{{area_path}}` directly in WIQL strings.
 
-This returns BOTH security items with staleness data AND a query handle for bulk operations.
+This returns a query handle for aggregation and bulk operations.
 
-### 1a. Verify Query Handle Contents
+### 2. Analyze Query Handle for Statistics
 ```
 Tool: wit-query-handle-info
 Arguments: {
-  queryHandle: "qh_from_previous_response",
+  queryHandle: "qh_from_step_1",
   includePreview: true,
-  includeStats: true
+  includeStats: true,
+  includeExamples: false
 }
 ```
 
-Use `wit-extract-security-links` to get documentation URLs from items.
+This provides:
+- **Item count** - Total security items found
+- **Staleness statistics** - How many items haven't been updated in >30, >90, >180 days
+- **Preview** - Sample of 5 items with title/state/tags for quick assessment
 
-### 2. Categorization
-Group by security domain:
-- **Authentication & Authorization** - Identity, RBAC, permissions
-- **Data Protection** - Encryption, data handling, privacy
-- **Network Security** - Firewall, TLS, network policies
-- **Code Security** - Static analysis, dependency vulnerabilities
-- **Infrastructure** - Configuration, hardening, patches
-- **Compliance** - Regulatory, audit findings
-- **Monitoring & Logging** - Security events, audit trails
+**Cost:** ~200 tokens (vs ~5000+ tokens for full item details)
 
-Rate each: Severity (Critical/High/Medium/Low), Exposure, Impact, Effort.
+### 3. Strategic Context Fetching (Only When Needed)
+**Option A: Small Dataset (<25 items)**
+```
+Tool: wit-get-context-packages-by-query-handle
+Arguments: {
+  queryHandle: "qh_from_step_1",
+  itemSelector: "all",
+  includeFields: ["System.Title", "System.State", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"]
+}
+```
 
-### 3. AI Suitability
-**AI_SUITABLE:**
-- Well-defined configuration changes
-- Template-based implementations
-- Repetitive security hygiene
-- Clear acceptance criteria
-- Limited scope, predictable outcomes
+**Option B: Large Dataset (>25 items) - Use Sampling**
+```
+Tool: wit-get-context-packages-by-query-handle
+Arguments: {
+  queryHandle: "qh_from_step_1",
+  itemSelector: "sample",
+  sampleSize: 20,
+  includeFields: ["System.Title", "System.State", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"]
+}
+```
 
-**HUMAN_REQUIRED:**
-- Architecture decisions
-- Complex integrations
-- Stakeholder coordination
-- Custom security implementations
-- Risk/policy interpretation
+**Option C: Targeted Analysis - Fetch Specific Categories**
+Use `wit-query-handle-info` preview to identify high-value items, then:
+```
+Tool: wit-get-context-packages
+Arguments: {
+  workItemIds: [12345, 12346, 12347],
+  includeFields: ["System.Title", "System.State", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"]
+}
+```
 
-Score AI-suitable items 1-10: Clarity, Scope, Testability, Documentation.
+Use `wit-extract-security-links` on sampled items to get documentation URLs.
 
-### 4. Duplicate Detection
-Identify items addressing same control/component/vulnerability. Keep most comprehensive, link duplicates.
+### 4. Categorization & AI Analysis (Using Query Handles)
 
-### 5. Action Planning
+**Efficient Approach: Let the tools do the heavy lifting**
+
+Instead of manually categorizing every item, use aggregation tools:
+
+```
+Tool: wit-analyze-by-query-handle
+Arguments: {
+  queryHandle: "qh_from_step_1",
+  analysisType: ["ai_intelligence"]
+}
+```
+
+This returns:
+- **AI readiness scores** for all items (no manual scoring needed)
+- **Quality metrics** (description completeness, clarity, testability)
+- **Automatic categorization** based on content analysis
+- **Duplicate detection** via similarity analysis
+
+**Cost:** ~500 tokens for full analysis (vs 10,000+ tokens for manual review)
+
+### 5. Targeted Deep Dive (Only for High-Value Items)
+
+Based on AI intelligence analysis, fetch detailed context for:
+- **Critical severity** items with high AI readiness
+- **Items with missing descriptions** (needs enhancement)
+- **Potential duplicates** (needs consolidation)
+
+Use `wit-get-context-packages` for specific IDs identified in Step 4.
+
+### 6. Bulk Enhancement (Optional)
+
+For items flagged as "missing description" or "low quality":
+
+```
+Tool: wit-unified-bulk-operations-by-query-handle
+Arguments: {
+  queryHandle: "qh_from_step_1",
+  action: "ai-enhance",
+  itemSelector: "filter",
+  filterCriteria: {
+    aiReadinessScore: { max: 5 }
+  },
+  dryRun: true
+}
+```
+
+Preview enhancements before applying.
+
+### 7. Action Planning (Template-Based)
+
 For AI-suitable items, create Copilot-ready descriptions:
 ```
 ## Objective
@@ -133,39 +191,50 @@ For AI-suitable items, create Copilot-ready descriptions:
 
 ## Output Format
 
-### Executive Summary
-- Total: [count] security items
-- AI-suitable: [count] ([percentage]%)
-- High-priority: [count]
-- Domains: [list]
+### Executive Summary (From Query Handle Analysis)
 
-### Category Breakdown
-| Domain | Total | AI | Human | High Priority |
-|--------|-------|-----|-------|---------------|
-| [Name] | [N]   | [N] | [N]   | [N]           |
+Based on `wit-query-handle-info` and `wit-analyze-by-query-handle`:
 
-### AI-Ready Items
-Per item:
-- **ID & Title**
-- **Priority Level**
-- **AI Readiness Score** (1-10)
-- **Enhanced Description** (Copilot-ready)
-- **Effort** (hours/complexity)
+- **Total Security Items**: [count] from query handle
+- **Staleness**:
+  - Not updated in 30+ days: [count]
+  - Not updated in 90+ days: [count]
+  - Not updated in 180+ days: [count]
+- **AI Analysis** (from aggregation):
+  - AI-suitable: [count] ([percentage]%)
+  - High AI readiness (score >7): [count]
+  - Needs enhancement (score <5): [count]
+- **Duplicate clusters detected**: [count] groups
 
-### Human-Required Items
-Per item:
-- **ID & Title**
-- **Why Human Required**
-- **Recommended Assignee Type**
-- **Prerequisites**
+### Security Domain Breakdown (From AI Intelligence)
 
-### Duplicates
-- Items consolidated: [IDs]
-- Primary items: [IDs]
-- Links created: [count]
+Automatic categorization from `wit-analyze-by-query-handle`:
 
-### Next Steps
-1. **Immediate** - Critical items
-2. **AI Queue** - Ready for automation
-3. **Human Review** - Need expert attention
-4. **Documentation** - Missing guides 
+| Category | Count | Avg AI Score | Critical | Stale (90d+) |
+|----------|-------|--------------|----------|--------------|
+| [Auto-detected] | [N] | [X.X] | [N] | [N] |
+
+### Top Priority Items for Action
+
+**High-Value, AI-Ready Items** (Score >7, Critical/High Priority):
+
+List 5-10 items with:
+- **ID & Title** (from context packages)
+- **AI Readiness Score** (from aggregation)
+- **Staleness** (days since last update)
+- **Recommended Action** (assign to Copilot / enhance description / review)
+
+### Items Needing Enhancement
+
+**Low AI Readiness** (Score <5, from aggregation):
+
+- [ID]: [Title] - Missing: [description/acceptance criteria/etc]
+- Suggested bulk enhancement query handle available
+
+### Recommended Next Steps
+
+1. **Assign to Copilot** - [count] items ready (use query handle for bulk assignment)
+2. **Bulk Enhancement** - [count] items need better descriptions (preview enhancement available)
+3. **Manual Review** - [count] items flagged for human attention
+4. **Duplicate Resolution** - [count] clusters found (link related items)
+5. **Documentation** - Extract security links from [count] items for reference

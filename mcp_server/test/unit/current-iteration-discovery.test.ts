@@ -43,6 +43,29 @@ describe('Current Iteration Path Discovery', () => {
       expect(result).toBe('MyProject\\Iteration\\Sprint 10');
     });
 
+    it('should use explicit team override when provided', async () => {
+      const mockResponse = {
+        data: {
+          value: [{
+            id: 'iter-456',
+            name: 'Sprint 15',
+            path: 'One\\Krypton',
+            attributes: { timeFrame: 'current' }
+          }]
+        }
+      };
+
+      (mockGet as any).mockResolvedValue(mockResponse);
+
+      // Area path structure doesn't match standard format, but team override works
+      const result = await getCurrentIterationPath('myorg', 'One', 'One\\Custom\\Azure\\Path', 'Krypton');
+
+      expect(result).toBe('One\\Krypton');
+      expect(mockGet).toHaveBeenCalledWith(
+        expect.stringContaining('/Krypton/_apis/work/teamsettings/iterations')
+      );
+    });
+
     it('should return null if area path insufficient', async () => {
       const result = await getCurrentIterationPath('myorg', 'MyProject', 'MyProject');
       expect(result).toBeNull();
