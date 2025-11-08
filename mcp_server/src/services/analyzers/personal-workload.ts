@@ -23,13 +23,14 @@ async function fetchUserWorkItems(
   const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   
   // Query for completed work items in the time period
+  // Note: Using CONTAINS because System.AssignedTo stores "Display Name <email@domain.com>" format
   const completedWiql = `
     SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], 
            [System.AssignedTo], [System.Tags], [System.AreaPath], [System.IterationPath],
            [Microsoft.VSTS.Scheduling.StoryPoints], [Microsoft.VSTS.Common.Priority],
            [System.CreatedDate], [Microsoft.VSTS.Common.ClosedDate], [System.ChangedDate]
     FROM WorkItems
-    WHERE [System.AssignedTo] = '${assignedToEmail}'
+    WHERE [System.AssignedTo] CONTAINS '${assignedToEmail}'
       AND [System.State] IN ('Done', 'Completed', 'Closed', 'Resolved')
       AND [Microsoft.VSTS.Common.ClosedDate] >= '${startDate}'
       AND [Microsoft.VSTS.Common.ClosedDate] <= '${endDate}'
@@ -37,13 +38,14 @@ async function fetchUserWorkItems(
   `;
   
   // Query for active work items
+  // Note: Using CONTAINS because System.AssignedTo stores "Display Name <email@domain.com>" format
   const activeWiql = `
     SELECT [System.Id], [System.Title], [System.WorkItemType], [System.State], 
            [System.AssignedTo], [System.Tags], [System.AreaPath], [System.IterationPath],
            [Microsoft.VSTS.Scheduling.StoryPoints], [Microsoft.VSTS.Common.Priority],
            [System.CreatedDate], [System.ChangedDate]
     FROM WorkItems
-    WHERE [System.AssignedTo] = '${assignedToEmail}'
+    WHERE [System.AssignedTo] CONTAINS '${assignedToEmail}'
       AND [System.State] NOT IN ('Done', 'Completed', 'Closed', 'Resolved', 'Removed')
     ORDER BY [System.ChangedDate] DESC
   `;

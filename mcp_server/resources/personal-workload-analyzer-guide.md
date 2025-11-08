@@ -307,15 +307,25 @@ After analysis, you might:
 
 ## Troubleshooting
 
+### "No work items found" despite having work assigned
+**Cause:** The tool uses `CONTAINS` to match the email against Azure DevOps' `System.AssignedTo` field, which stores the full identity (`Display Name <email@domain.com>`).
+
+**Solutions:**
+1. **Verify exact email**: Ensure the email address matches what's in Azure DevOps
+2. **Check area path**: The person must have work in the configured area path(s)
+3. **Expand time period**: Try `analysisPeriodDays: 180` instead of 90
+4. **Test with WIQL**: Run a test query:
+   ```json
+   {
+     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] CONTAINS 'your.email@domain.com'",
+     "maxResults": 10
+   }
+   ```
+
 ### "Analysis returned in markdown format"
 - AI didn't return structured JSON
 - Result still useful - full markdown analysis preserved
 - Check `detailedAnalysis.workloadBalance.assessment` for full text
-
-### "No work items found"
-- Check email address is exact match (case-sensitive)
-- Verify person has work in configured area path
-- Try expanding analysis period (e.g., 180 days)
 
 ### "Timeout exceeded"
 - Analysis period may be too long (>365 days)

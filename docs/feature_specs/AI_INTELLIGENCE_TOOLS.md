@@ -224,6 +224,8 @@ AI-powered personal workload analysis for burnout risk assessment.
 
 **Required:**
 - `assignedToEmail` (string) - Email address of person to analyze
+  - **Note:** Queries use `CONTAINS` operator to match against Azure DevOps' full identity format (`Display Name <email@domain.com>`)
+  - Works with partial email matches (e.g., `john.doe@company.com` will match `John Doe <john.doe@company.com>`)
 
 **Optional:**
 - `analysisPeriodDays` (number) - Days to analyze (default 90, min 7, max 365)
