@@ -128,6 +128,12 @@ const resourceDefinitions: MCPResource[] = [
     mimeType: "text/markdown"
   },
   {
+    uri: "ado://docs/batch-workload-analysis-guide",
+    name: "Batch Workload Analysis Guide - Team Health Assessments",
+    description: "Parallel workload analysis for multiple team members. 5-10x faster than sequential analysis. Includes team metrics, concurrency control, and manager review patterns.",
+    mimeType: "text/markdown"
+  },
+  {
     uri: "ado://docs/sprint-planning-guide",
     name: "Sprint Planning Guide - AI-Powered Sprint Planning",
     description: "AI-powered sprint planning tool for optimal work assignment. Includes velocity analysis, capacity assessment, balanced work distribution, and risk mitigation.",
@@ -171,6 +177,7 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
     "ado://docs/tool-discovery-guide": "tool-discovery-guide.md",
     "ado://docs/wiql-generator-guide": "wiql-generator-guide.md",
     "ado://docs/personal-workload-analyzer-guide": "personal-workload-analyzer-guide.md",
+    "ado://docs/batch-workload-analysis-guide": "batch-workload-analysis-guide.md",
     "ado://docs/sprint-planning-guide": "sprint-planning-guide.md",
     "ado://docs/tool-limitations": "tool-limitations.md"
   };

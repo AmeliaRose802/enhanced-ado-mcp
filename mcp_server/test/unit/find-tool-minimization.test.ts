@@ -74,8 +74,10 @@ describe('Tool Discovery Token Minimization', () => {
     });
 
     it('should have token savings mentioned in description', () => {
-      const schema = toolDiscoverySchema.shape.includeExamples;
-      const description = schema.description;
+      // toolDiscoverySchema is a ZodEffects (due to .refine()), so we need to access the inner schema
+      const innerSchema = (toolDiscoverySchema as any)._def.schema;
+      const includeExamplesField = innerSchema.shape.includeExamples;
+      const description = includeExamplesField.description;
       
       expect(description).toContain('token');
       expect(description).toContain('saves');

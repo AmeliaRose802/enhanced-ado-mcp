@@ -162,7 +162,7 @@ describe('Resource Service', () => {
       
       // Check for current tool names (tools have been updated/renamed)
       expect(content.text).toContain('wit-get-work-items-by-query-wiql');
-      expect(content.text).toContain('wit-query-analytics-odata');
+      expect(content.text).toContain('wit-odata-query');
       expect(content.text).toContain('wit-create-new-item');
       expect(content.text).toContain('wit-ai-assignment-analyzer');
       expect(content.text).toContain('wit-validate-hierarchy');

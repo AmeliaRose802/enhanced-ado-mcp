@@ -8,12 +8,14 @@ import type {
   WorkItemIntelligenceArgs,
   AIAssignmentAnalyzerArgs,
   PersonalWorkloadAnalyzerArgs,
+  BatchPersonalWorkloadAnalyzerArgs,
   SprintPlanningAnalyzerArgs
 } from '../types/analysis.js';
 
 import { WorkItemIntelligenceAnalyzer } from './analyzers/work-item-intelligence.js';
 import { AIAssignmentAnalyzer } from './analyzers/ai-assignment.js';
 import { PersonalWorkloadAnalyzer } from './analyzers/personal-workload.js';
+import { BatchPersonalWorkloadAnalyzer } from './analyzers/batch-personal-workload.js';
 import { SprintPlanningAnalyzer } from './analyzers/sprint-planner.js';
 import { ToolDiscoveryAnalyzer, type ToolDiscoveryArgs } from './analyzers/tool-discovery.js';
 
@@ -21,6 +23,7 @@ export class SamplingService {
   private workItemAnalyzer: WorkItemIntelligenceAnalyzer;
   private aiAssignmentAnalyzer: AIAssignmentAnalyzer;
   private personalWorkloadAnalyzer: PersonalWorkloadAnalyzer;
+  private batchPersonalWorkloadAnalyzer: BatchPersonalWorkloadAnalyzer;
   private sprintPlanningAnalyzer: SprintPlanningAnalyzer;
   private toolDiscoveryAnalyzer: ToolDiscoveryAnalyzer;
   
@@ -28,6 +31,7 @@ export class SamplingService {
     this.workItemAnalyzer = new WorkItemIntelligenceAnalyzer(server);
     this.aiAssignmentAnalyzer = new AIAssignmentAnalyzer(server);
     this.personalWorkloadAnalyzer = new PersonalWorkloadAnalyzer(server);
+    this.batchPersonalWorkloadAnalyzer = new BatchPersonalWorkloadAnalyzer(server);
     this.sprintPlanningAnalyzer = new SprintPlanningAnalyzer(server);
     this.toolDiscoveryAnalyzer = new ToolDiscoveryAnalyzer(server);
   }
@@ -48,6 +52,10 @@ export class SamplingService {
     return this.personalWorkloadAnalyzer.analyze(args);
   }
 
+  async analyzeBatchPersonalWorkload(args: BatchPersonalWorkloadAnalyzerArgs): Promise<ToolExecutionResult> {
+    return this.batchPersonalWorkloadAnalyzer.analyze(args);
+  }
+
   async analyzeSprintPlanning(args: SprintPlanningAnalyzerArgs): Promise<ToolExecutionResult> {
     return this.sprintPlanningAnalyzer.analyze(args);
   }
@@ -61,6 +69,7 @@ export type {
   WorkItemIntelligenceArgs,
   AIAssignmentAnalyzerArgs,
   PersonalWorkloadAnalyzerArgs,
+  BatchPersonalWorkloadAnalyzerArgs,
   SprintPlanningAnalyzerArgs
 } from '../types/analysis.js';
 export type { ToolDiscoveryArgs } from './analyzers/tool-discovery.js';

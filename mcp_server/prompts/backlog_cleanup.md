@@ -45,7 +45,6 @@ Identify and report (without mutating):
 
 ## Guardrails
 
-1. Execute a single comprehensive query and categorize results client-side
 2. Always use `returnQueryHandle: true` for all queries
 3. Display complete data tables before providing remediation suggestions
 4. Provide dry-run payload examples only—never execute mutations
@@ -65,7 +64,7 @@ Identify and report (without mutating):
 
 ### Step 1: Generate WIQL Query with Query Handle
 
-Call `wit-generate-wiql-query` with `returnQueryHandle: true`:
+Call `mcp_enhanced-ado-_query-wiql` with natural language description parameter or direct WIQL and `returnQueryHandle: true`:
 ```json
 {
   "description": "Get all active work items (Tasks, PBIs, Bugs) not in terminal states under {{area_path}}",
@@ -88,21 +87,6 @@ Use the query handle returned from Step 1 to retrieve work items with `ado_get_w
   "queryHandle": "<handle_from_step_1>",
   "organization": "{{organization}}",
   "project": "{{project}}",
-  "includeFields": [
-    "System.Id",
-    "System.WorkItemType",
-    "System.Title",
-    "System.State",
-    "System.AssignedTo",
-    "System.IterationPath",
-    "System.CreatedDate",
-    "System.ChangedDate",
-    "System.CreatedBy",
-    "System.Description",
-    "Microsoft.VSTS.Scheduling.StoryPoints",
-    "Microsoft.VSTS.Common.AcceptanceCriteria",
-    "Microsoft.VSTS.Common.Priority"
-  ],
   "includeSubstantiveChange": true
 }
 ```
@@ -121,7 +105,7 @@ Calculate `daysInactive` for each item based on last substantive change (returne
 
 ## Query Generation Guidelines
 
-When calling `wit-generate-wiql-query`, provide clear natural language descriptions:
+When calling `mcp_enhanced-ado-_query-wiql`, provide clear natural language descriptions:
 
 ### Standard Analysis Query
 
@@ -384,7 +368,7 @@ Your output MUST include:
 
 **BEGIN ANALYSIS NOW:**
 
-1. Call `wit-generate-wiql-query` with a clear natural language description and `returnQueryHandle: true`
+1. Call `mcp_enhanced-ado-_query-wiql` with a clear natural language description and `returnQueryHandle: true`
 2. Use the returned query handle to call `ado_get_work_items_by_query_handle` with all required fields
 3. Calculate `daysInactive` from last substantive change for each item
 4. Categorize items according to the heuristics defined

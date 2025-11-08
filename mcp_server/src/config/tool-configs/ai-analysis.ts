@@ -1,6 +1,7 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   personalWorkloadAnalyzerSchema,
+  batchPersonalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
   toolDiscoverySchema,
   aiQueryAnalysisSchema
@@ -27,6 +28,30 @@ export const aiAnalysisTools: ToolConfig[] = [
         areaPath: { type: "string", description: "Area path to filter work items (uses configured default if not provided)" }
       },
       required: ["assignedToEmail"]
+    }
+  },
+  {
+    name: "analyze-workload-batch",
+    description: "🚀 BATCH WORKLOAD ANALYSIS: Analyze multiple team members' workloads in parallel and return all results at once. Significantly faster than running individual analyses. Processes up to 20 people concurrently with configurable concurrency (default 5). Returns individual analyses plus team-level metrics (average health score, health distribution, top concerns). Perfect for team health assessments and manager reviews. Requires VS Code sampling support.",
+    script: "",
+    schema: batchPersonalWorkloadAnalyzerSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        assignedToEmails: { 
+          type: "array", 
+          items: { type: "string" },
+          description: "Array of email addresses to analyze (1-20 people, e.g., ['user1@domain.com', 'user2@domain.com'])" 
+        },
+        analysisPeriodDays: { type: "number", description: "Number of days to analyze backwards from today (default 90, min 7, max 365)" },
+        additionalIntent: { type: "string", description: "Optional custom analysis intent applied to all team members" },
+        continueOnError: { type: "boolean", description: "Continue analyzing remaining people if one fails (default true)" },
+        maxConcurrency: { type: "number", description: "Maximum concurrent analyses (1-10, default 5). Lower values reduce API load." },
+        organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
+        project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" },
+        areaPath: { type: "string", description: "Area path to filter work items (uses configured default if not provided)" }
+      },
+      required: ["assignedToEmails"]
     }
   },
   {

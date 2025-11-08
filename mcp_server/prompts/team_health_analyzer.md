@@ -18,9 +18,9 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 6. Use clear markdown formatting with sections, tables, and emoji indicators
 
 **Available Tools:**
-- `wit-personal-workload-analyzer` - For detailed per-person workload insights
-- `wit-analyze-by-query-handle` - For story points and effort analysis
-- `wit-unified-bulk-operations-by-query-handle` - For AI estimation when needed
+- `mcp_enhanced-ado-_analyze-workload` - For detailed per-person workload insights
+- `mcp_enhanced-ado-_analyze-bulk` - For story points and effort analysis
+- `mcp_enhanced-ado-_execute-bulk-operations` - For AI estimation when needed
   - `action: "assign-story-points"` - Assign story points to work items
 
 ---
@@ -29,7 +29,7 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 
 **⚡ Execute operations in parallel whenever possible:**
 - Query OData team roster AND active work (WIQL) simultaneously
-- Run `wit-personal-workload-analyzer` for all team members in parallel batches
+- Run `mcp_enhanced-ado-_analyze-workload` for all team members in parallel batches
 - Execute story points analysis concurrently for multiple query handles
 - Fetch context packages for different team members in parallel when deep analysis is needed
 
@@ -42,7 +42,7 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 ## Workflow
 
 ### 1. Team Roster (OData, paginate $top=200, $skip+=200)
-**Recommended:** Use AI-powered query generation with `wit-query-analytics-odata` tool:
+**Recommended:** Use AI-powered query generation with `mcp_enhanced-ado-_query-odata` tool:
 ```
 description: "Get all team members who have completed work items in the last {{analysis_period_days}} days, grouped by assignee email and name with count"
 dateRangeStart: "{{start_date}}"
@@ -56,7 +56,7 @@ groupBy: ["AssignedTo/UserEmail", "AssignedTo/UserName"]
 Note: Area path filtering in OData is complex. For area-specific queries, filter results programmatically or use the AI query generator with area path specified in the description. Date format must be YYYY-MM-DDZ (without the T00:00:00 timestamp).
 
 ### 2. Per-Person Data
-**Primary Tool:** Use `wit-personal-workload-analyzer` for each team member to get:
+**Primary Tool:** Use `mcp_enhanced-ado-_analyze-workload` for each team member to get:
 - Work type distribution (Feature/Bug/PBI/Task/Compliance/Test/DevOps)
 - WIP metrics and aging
 - Cycle time patterns
@@ -69,8 +69,8 @@ Note: Area path filtering in OData is complex. For area-specific queries, filter
 
 ### 3. Story Points Coverage
 For each query handle:
-1. `wit-analyze-by-query-handle` with `analysisType:["effort"]`
-2. If unestimated: `wit-unified-bulk-operations-by-query-handle` with `action: "assign-story-points"` (dryRun:false for active, true for closed)
+1. `mcp_enhanced-ado-_analyze-bulk` with `analysisType:["effort"]`
+2. If unestimated: `mcp_enhanced-ado-_execute-bulk-operations` with `actions: [{type: "assign-story-points"}]` (dryRun:false for active, true for closed)
 3. Record: manual %, AI high/low confidence %
 
 ### 4. Weighted Load Calculation

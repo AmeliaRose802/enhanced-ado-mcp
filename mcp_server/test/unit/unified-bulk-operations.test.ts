@@ -10,7 +10,7 @@ import { unifiedBulkOperationsSchema } from '../../src/config/schemas.js';
 import type { ToolConfig } from '../../src/types/index.js';
 
 // Mock the dependencies
-jest.mock('../../src/services/ado-discovery-service.js', () => ({
+jest.mock('../../src/utils/azure-cli-validator', () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
     isLoggedIn: true

@@ -252,6 +252,41 @@ export interface PersonalWorkloadAnalyzerArgs {
   areaPath?: string;
 }
 
+export interface BatchPersonalWorkloadAnalyzerArgs {
+  assignedToEmails: string[];
+  analysisPeriodDays?: number;
+  additionalIntent?: string;
+  organization?: string;
+  project?: string;
+  areaPath?: string;
+  continueOnError?: boolean;
+  maxConcurrency?: number;
+}
+
+export interface BatchPersonalWorkloadAnalysisResult {
+  summary: {
+    totalAnalyzed: number;
+    successCount: number;
+    errorCount: number;
+    analysisPeriodDays: number;
+    startDate: string;
+    endDate: string;
+    additionalIntent?: string;
+  };
+  results: Array<{
+    email: string;
+    success: boolean;
+    analysis?: PersonalWorkloadAnalysisResult;
+    error?: string;
+  }>;
+  teamMetrics?: {
+    averageHealthScore: number;
+    healthDistribution: Record<string, number>;
+    topConcerns: Array<{ concern: string; count: number }>;
+    totalWorkItems: { completed: number; active: number };
+  };
+}
+
 export interface PersonalWorkloadAnalysisResult {
   executiveSummary: {
     email: string;

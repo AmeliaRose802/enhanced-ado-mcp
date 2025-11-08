@@ -21,7 +21,7 @@ jest.mock('../../src/utils/token-provider.js', () => ({
   setTokenProvider: jest.fn()
 }));
 
-jest.mock('../../src/services/ado-discovery-service', () => ({
+jest.mock('../../src/utils/azure-cli-validator', () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
     isLoggedIn: true

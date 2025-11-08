@@ -29,7 +29,7 @@ jest.mock('../../src/config/config.js', () => ({
 }));
 
 // Mock Azure CLI validation
-jest.mock('../../src/services/ado-discovery-service.js', () => ({
+jest.mock('../../src/utils/azure-cli-validator', () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
     isLoggedIn: true,

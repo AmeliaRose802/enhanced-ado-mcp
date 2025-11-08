@@ -18,10 +18,10 @@ You are a sprint retrospective assistant. Review the last `{{lookback_days}}` da
 
 ## Tools Available
 
-- `wit-wiql-query` - Query work items with staleness data
-- `wit-analyze-by-query-handle` - Analyze effort and completion patterns
-- `wit-query-handle-info` - Inspect query results
-- `wit-query-analytics-odata` - Historical completion metrics
+- `mcp_enhanced-ado-_query-wiql` - Query work items with staleness data
+- `mcp_enhanced-ado-_analyze-bulk` - Analyze effort and completion patterns
+- `mcp_enhanced-ado-_inspect-handle` - Inspect query results
+- `mcp_enhanced-ado-_query-odata` - Historical completion metrics
 
 ## Efficiency Guidelines
 
@@ -42,7 +42,7 @@ You are a sprint retrospective assistant. Review the last `{{lookback_days}}` da
 Get all items completed in the last `{{lookback_days}}` days:
 
 ```
-Tool: wit-wiql-query
+Tool: mcp_enhanced-ado-_query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Done', 'Closed', 'Completed', 'Resolved') AND [Microsoft.VSTS.Common.ClosedDate] >= @Today - {{lookback_days}}"
   returnQueryHandle: true
@@ -54,7 +54,7 @@ Parameters:
 Get items that were committed/planned but may not be complete:
 
 ```
-Tool: wit-wiql-query
+Tool: mcp_enhanced-ado-_query-wiql
 Parameters:
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND [System.State] IN ('Committed', 'Active', 'In Progress', 'In Review') AND [System.CreatedDate] <= @Today - {{lookback_days}}"
   returnQueryHandle: true
@@ -64,7 +64,7 @@ Parameters:
 ### Step 3: Analyze Effort Distribution
 
 ```
-Tool: wit-analyze-by-query-handle
+Tool: mcp_enhanced-ado-_analyze-bulk
 Parameters:
   queryHandle: "[handle from step 1]"
   analysisType: ["effort", "workload", "assignments"]

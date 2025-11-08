@@ -200,14 +200,14 @@ describe('Query Handle Service', () => {
   });
 
   describe('TTL behavior', () => {
-    it('should use default TTL (30 minutes)', () => {
+    it('should use default TTL (24 hours)', () => {
       const handle = queryHandleService.storeQuery([1, 2, 3], 'query');
       const data = queryHandleService.getQueryData(handle);
       
       expect(data).not.toBeNull();
       const ttl = data!.expiresAt.getTime() - data!.createdAt.getTime();
-      expect(ttl).toBeGreaterThanOrEqual(30 * 60 * 1000 - 100); // Allow 100ms tolerance
-      expect(ttl).toBeLessThanOrEqual(30 * 60 * 1000 + 100);
+      expect(ttl).toBeGreaterThanOrEqual(24 * 60 * 60 * 1000 - 100); // Allow 100ms tolerance
+      expect(ttl).toBeLessThanOrEqual(24 * 60 * 60 * 1000 + 100);
     });
 
     it('should use custom TTL', () => {
