@@ -259,7 +259,7 @@ Failed to access repository 'MyRepo': Insufficient permissions
 
 ### Used By
 - `wit-assign-copilot` - Could use this to validate specialized agent names
-- `wit-new-copilot-item` - Could use this to suggest available agents
+- `wit-assign-to-copilot` - Could use this to suggest available agents when assigning work
 
 ### Dependencies
 - Azure DevOps REST API (Git Items API)

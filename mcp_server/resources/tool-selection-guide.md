@@ -500,20 +500,6 @@ User: "Update the first 3 unassigned PBIs"
 }
 ```
 
-### Create and Assign to Copilot
-**Tool:** `wit-new-copilot-item`  
-**When:** Creating an item for Copilot to work on  
-**Example:** Create task and auto-assign with branch
-
-```json
-{
-  "title": "Implement user authentication",
-  "workItemType": "Task",
-  "repository": "abc-123",
-  "parentWorkItemId": 12345
-}
-```
-
 ### Assign Existing Item to Copilot
 **Tool:** `wit-assign-to-copilot`  
 **When:** Assigning existing work to Copilot  
@@ -881,7 +867,7 @@ Need data?
 
 Creating items?
 ├─ Standard creation? → wit-create-new-item
-├─ For Copilot? → wit-new-copilot-item
+├─ Creating? → wit-create-new-item
 ├─ Clone existing? → wit-clone-work-item
 └─ Assign existing? → wit-assign-to-copilot
 

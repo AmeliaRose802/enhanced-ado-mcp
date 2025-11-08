@@ -3,10 +3,14 @@
  * 
  * Analyzes work items identified by a query handle without revealing IDs.
  * Forces the use of query handles for analysis workflows to prevent ID hallucination.
+ * 
+ * Supports both rule-based analyses (effort, velocity, etc.) and AI-powered analyses
+ * (work-item-intelligence, assignment-suitability, parent-recommendation).
  */
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
 import type { ADOWorkItem, ADOApiResponse } from '@/types/index.js';
+import type { MCPServer, MCPServerLike } from '@/types/mcp.js';
 import { validateAzureCLI } from "../../ado-discovery-service.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";
@@ -15,6 +19,10 @@ import { ADOHttpClient } from "@/utils/ado-http-client.js";
 import { loadConfiguration } from "@/config/config.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
 import { performFastHierarchyValidation } from "@/services/analyzers/hierarchy-validator-fast.js";
+import { SamplingService } from '../../sampling-service.js';
+import { WorkItemIntelligenceAnalyzer } from '../../analyzers/work-item-intelligence.js';
+import { AIAssignmentAnalyzer } from '../../analyzers/ai-assignment.js';
+import { handleIntelligentParentFinder } from '../analysis/intelligent-parent-finder-new.handler.js';
 
 // Type definitions for analysis results
 interface EffortAnalysisResult {
@@ -107,25 +115,31 @@ interface WorkItemAnalysis {
 /**
  * Handler for analyze-bulk tool
  * 
- * Analyzes work items identified by a query handle without revealing IDs.
- * Forces the use of query handles for analysis workflows to prevent ID hallucination.
+ * Unified analysis tool for work items identified by a query handle.
+ * Supports both rule-based analyses and AI-powered analyses.
  * 
  * This handler fetches work items from Azure DevOps based on a query handle and performs
  * various types of analysis including effort estimation, velocity tracking, assignment
- * distribution, risk identification, completion status, and priority distribution.
+ * distribution, risk identification, completion status, priority distribution, hierarchy validation,
+ * work item intelligence, assignment suitability, and parent recommendation.
  * 
  * @param config - Tool configuration containing the Zod schema for validation
  * @param args - Arguments object expected to contain:
  *   - queryHandle: string - The query handle ID from a previous WIQL query
  *   - analysisType: string[] - Array of analysis types to perform:
- *       * 'effort': Analyzes story points and estimation coverage
- *       * 'velocity': Tracks completion rates and trends over time
- *       * 'assignments': Reviews work distribution across team members
- *       * 'risks': Identifies blocked, stale, and high-risk items
- *       * 'completion': Evaluates progress and state distribution
- *       * 'priorities': Analyzes priority balance and distribution
+ *       * 'effort': Analyzes story points and estimation coverage (rule-based)
+ *       * 'velocity': Tracks completion rates and trends over time (rule-based)
+ *       * 'assignments': Reviews work distribution across team members (rule-based)
+ *       * 'risks': Identifies blocked, stale, and high-risk items (rule-based)
+ *       * 'completion': Evaluates progress and state distribution (rule-based)
+ *       * 'priorities': Analyzes priority balance and distribution (rule-based)
+ *       * 'hierarchy': Validates parent-child relationships (rule-based)
+ *       * 'work-item-intelligence': AI-powered completeness/enhancement analysis (requires serverInstance)
+ *       * 'assignment-suitability': AI-powered Copilot assignment readiness (requires serverInstance)
+ *       * 'parent-recommendation': AI-powered intelligent parent matching (requires serverInstance)
  *   - organization?: string - Azure DevOps organization (defaults to config value)
  *   - project?: string - Azure DevOps project (defaults to config value)
+ * @param serverInstance - Optional MCPServer instance for AI-powered analyses
  * @returns Promise<ToolExecutionResult> with the following structure:
  *   - success: boolean - True if analysis completed without errors
  *   - data: WorkItemAnalysis object containing:
@@ -136,7 +150,7 @@ interface WorkItemAnalysis {
  *       * results: Record of analysis results keyed by type
  *   - metadata: Source identifier and context
  *   - errors: Array of error messages if failures occurred
- *   - warnings: Array of warnings (e.g., empty query results)
+ *   - warnings: Array of warnings (e.g., empty query results, missing serverInstance for AI analyses)
  * @throws {Error} Returns error result (does not throw) if:
  *   - Azure CLI is not available or not logged in
  *   - Query handle is invalid, not found, or expired
@@ -144,26 +158,28 @@ interface WorkItemAnalysis {
  *   - Analysis execution encounters errors
  * @example
  * ```typescript
- * // Analyze effort and risks for a query handle
+ * // Rule-based analysis (no serverInstance needed)
  * const result = await handleAnalyzeByQueryHandle(config, {
  *   queryHandle: 'qh_abc123',
  *   analysisType: ['effort', 'risks']
  * });
- * // Returns analysis with story point coverage and identified risks
  * ```
  * @example
  * ```typescript
- * // Comprehensive analysis across all categories
+ * // AI-powered analysis (requires serverInstance)
  * const result = await handleAnalyzeByQueryHandle(config, {
  *   queryHandle: 'qh_abc123',
- *   analysisType: ['effort', 'velocity', 'assignments', 'risks', 'completion', 'priorities'],
- *   organization: 'myorg',
- *   project: 'myproject'
- * });
+ *   analysisType: ['work-item-intelligence', 'assignment-suitability']
+ * }, serverInstance);
  * ```
  * @since 1.4.0
+ * @since 1.5.0 - Added AI-powered analysis types
  */
-export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
+export async function handleAnalyzeByQueryHandle(
+  config: ToolConfig, 
+  args: unknown,
+  serverInstance?: MCPServer | MCPServerLike
+): Promise<ToolExecutionResult> {
   try {
     const azValidation = validateAzureCLI();
     if (!azValidation.isAvailable || !azValidation.isLoggedIn) {
@@ -277,6 +293,121 @@ export async function handleAnalyzeByQueryHandle(config: ToolConfig, args: unkno
                   }
                 );
                 analysis.results.hierarchy = hierarchyResult as unknown as HierarchyAnalysisResult;
+                break;
+              case 'work-item-intelligence':
+                // AI-powered work item intelligence analysis
+                if (!serverInstance) {
+                  analysis.results['work-item-intelligence'] = {
+                    error: 'AI-powered work item intelligence analysis requires VS Code sampling support. Ensure VS Code MCP integration is enabled.'
+                  };
+                  logger.warn('work-item-intelligence analysis requires serverInstance for sampling');
+                } else {
+                  const intelligenceResults = [];
+                  const intelligenceAnalyzer = new WorkItemIntelligenceAnalyzer(serverInstance);
+                  
+                  // Analyze each work item
+                  for (const wi of workItems) {
+                    try {
+                      const analysisResult = await intelligenceAnalyzer.analyze({
+                        title: wi.fields?.['System.Title'] || '',
+                        description: wi.fields?.['System.Description'] || '',
+                        workItemType: wi.fields?.['System.WorkItemType'] || '',
+                        acceptanceCriteria: wi.fields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '',
+                        analysisType: parsed.data.intelligenceAnalysisType || 'full',
+                        contextInfo: parsed.data.contextInfo,
+                        enhanceDescription: parsed.data.enhanceDescription || false
+                      });
+                      
+                      if (analysisResult.success && analysisResult.data) {
+                        intelligenceResults.push({
+                          workItemId: wi.id,
+                          title: wi.fields?.['System.Title'],
+                          analysis: analysisResult.data
+                        });
+                      }
+                    } catch (error) {
+                      logger.error(`Failed to analyze work item ${wi.id}: ${error}`);
+                    }
+                  }
+                  
+                  analysis.results['work-item-intelligence'] = {
+                    total_analyzed: intelligenceResults.length,
+                    results: intelligenceResults
+                  };
+                }
+                break;
+              case 'assignment-suitability':
+                // AI-powered assignment suitability analysis
+                if (!serverInstance) {
+                  analysis.results['assignment-suitability'] = {
+                    error: 'AI-powered assignment suitability analysis requires VS Code sampling support. Ensure VS Code MCP integration is enabled.'
+                  };
+                  logger.warn('assignment-suitability analysis requires serverInstance for sampling');
+                } else {
+                  const assignmentResults = [];
+                  const assignmentAnalyzer = new AIAssignmentAnalyzer(serverInstance);
+                  
+                  // Analyze each work item
+                  for (const wi of workItems) {
+                    try {
+                      const analysisResult = await assignmentAnalyzer.analyze({
+                        workItemId: wi.id || 0,
+                        outputFormat: parsed.data.outputFormat || 'detailed'
+                      });
+                      
+                      if (analysisResult.success && analysisResult.data) {
+                        assignmentResults.push({
+                          workItemId: wi.id,
+                          title: wi.fields?.['System.Title'],
+                          analysis: analysisResult.data
+                        });
+                      }
+                    } catch (error) {
+                      logger.error(`Failed to analyze assignment suitability for work item ${wi.id}: ${error}`);
+                    }
+                  }
+                  
+                  analysis.results['assignment-suitability'] = {
+                    total_analyzed: assignmentResults.length,
+                    results: assignmentResults
+                  };
+                }
+                break;
+              case 'parent-recommendation':
+                // AI-powered parent recommendation
+                if (!serverInstance) {
+                  analysis.results['parent-recommendation'] = {
+                    error: 'AI-powered parent recommendation requires VS Code sampling support. Ensure VS Code MCP integration is enabled.'
+                  };
+                  logger.warn('parent-recommendation analysis requires serverInstance for sampling');
+                } else {
+                  // Delegate to the intelligent parent finder handler
+                  const parentFinderArgs = {
+                    childQueryHandle: queryHandle,
+                    dryRun: parsed.data.dryRun,
+                    areaPath: parsed.data.areaPath,
+                    includeSubAreas: parsed.data.includeSubAreas,
+                    maxParentCandidates: parsed.data.maxParentCandidates,
+                    maxRecommendations: parsed.data.maxRecommendations,
+                    parentWorkItemTypes: parsed.data.parentWorkItemTypes,
+                    searchScope: parsed.data.searchScope,
+                    iterationPath: parsed.data.iterationPath,
+                    requireActiveParents: parsed.data.requireActiveParents,
+                    confidenceThreshold: parsed.data.confidenceThreshold,
+                    organization: org,
+                    project: proj
+                  };
+                  
+                  const parentResult = await handleIntelligentParentFinder(
+                    { schema: config.schema, name: 'recommend-parent', description: '', script: '', inputSchema: {} },
+                    parentFinderArgs,
+                    serverInstance
+                  );
+                  
+                  analysis.results['parent-recommendation'] = parentResult.data || {
+                    error: parentResult.errors?.[0] || 'Parent recommendation failed'
+                  };
+                }
                 break;
               default:
                 logger.warn(`Unknown analysis type: ${analysisTypeItem}`);

@@ -158,7 +158,7 @@ This document describes the architectural design of the Enhanced ADO MCP Server,
 - `query/` - Query operations (wiql-query, odata-analytics, generate-wiql-query, generate-odata-query)
 - `query-handles/` - Query handle management (inspect, validate, select, list)
 - `bulk-operations/` - Bulk updates (bulk-comment, bulk-update, bulk-assign, bulk-remove)
-- `integration/` - External integrations (assign-to-copilot, new-copilot-item)
+- `integration/` - External integrations (assign-to-copilot)
 - `analysis/` - Pattern detection and validation (validate-hierarchy, get-last-substantive-change, extract-security-links)
 - `ai-powered/` - AI-enhanced operations (analyze-by-query-handle, bulk-enhance-descriptions, bulk-assign-story-points, bulk-add-acceptance-criteria)
 

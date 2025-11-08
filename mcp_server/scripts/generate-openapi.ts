@@ -35,7 +35,7 @@ const projectRoot = join(__dirname, '..');
 const schemaCategories: Record<string, { title: string; category: string; aiPowered?: boolean }> = {
   createNewItemSchema: { title: 'Create Work Item', category: 'Work Item Operations' },
   assignToCopilotSchema: { title: 'Assign to Copilot', category: 'Copilot Integration' },
-  newCopilotItemSchema: { title: 'Create Copilot Work Item', category: 'Copilot Integration' },
+
   extractSecurityLinksSchema: { title: 'Extract Security Links', category: 'Security Analysis' },
   workItemIntelligenceSchema: { title: 'Work Item Intelligence', category: 'AI-Powered Analysis', aiPowered: true },
   aiAssignmentAnalyzerSchema: { title: 'AI Assignment Analyzer', category: 'AI-Powered Analysis', aiPowered: true },

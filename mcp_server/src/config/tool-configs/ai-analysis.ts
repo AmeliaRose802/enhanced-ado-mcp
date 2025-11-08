@@ -5,7 +5,8 @@ import {
   personalWorkloadAnalyzerSchema,
   sprintPlanningAnalyzerSchema,
   toolDiscoverySchema,
-  intelligentParentFinderSchema
+  intelligentParentFinderSchema,
+  aiQueryAnalysisSchema
 } from "../schemas.js";
 
 /**
@@ -129,7 +130,7 @@ export const aiAnalysisTools: ToolConfig[] = [
     }
   },
   {
-    name: "find-parent",
+    name: "recommend-parent",
     description: "🤖 AI-POWERED PARENT FINDER: Intelligently find and recommend the best parent work items for child items using AI analysis. Accepts a QUERY HANDLE containing child work items to prevent ID hallucination. Analyzes each child's context, searches potential parents IN THE SAME AREA PATH by default (enforces area path matching), and ranks candidates based on type hierarchy, scope alignment, and logical fit. ENFORCES valid parent-child type relationships per Azure DevOps hierarchy. Returns recommendations with confidence scores and can create a query handle for safe linking. Supports dry run mode for previewing recommendations. Requires VS Code sampling support.",
     script: "",
     schema: intelligentParentFinderSchema,
@@ -151,6 +152,31 @@ export const aiAnalysisTools: ToolConfig[] = [
         project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" }
       },
       required: ["childQueryHandle"]
+    }
+  },
+  {
+    name: "analyze-query-handle",
+    description: "🤖 AI-POWERED INTELLIGENT ANALYSIS: Perform custom AI-powered analysis on work items in a query handle using natural language intent. Accepts any analysis request (e.g., 'find work items ready for deployment', 'identify items needing more detail', 'assess technical debt risk'). Retrieves full context packages and provides intelligent, concise analysis based on your intent. Perfect for complex analysis requiring intelligence, not simple deterministic checks. Requires VS Code sampling support.",
+    script: "",
+    schema: aiQueryAnalysisSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle containing work items to analyze (prevents ID hallucination)" },
+        intent: { type: "string", description: "Natural language description of the analysis you want (e.g., 'find items that are blockers for the release', 'identify work items with insufficient technical detail', 'assess readiness for AI assignment')" },
+        itemSelector: { 
+          description: "Item selection: 'all', array of IDs, or selection criteria object" 
+        },
+        maxItemsToAnalyze: { type: "number", description: "Maximum items to analyze (1-100, default 50)" },
+        includeContextPackages: { type: "boolean", description: "Retrieve full context packages for deeper analysis (default true)" },
+        contextDepth: { type: "string", enum: ["basic", "standard", "deep"], description: "Context detail level: basic (fields only), standard (default, with relations/comments), deep (full history)" },
+        outputFormat: { type: "string", enum: ["concise", "detailed", "json"], description: "Output format: concise (brief), detailed (comprehensive), json (structured)" },
+        confidenceThreshold: { type: "number", description: "Minimum confidence for recommendations (0-1, default 0.0)" },
+        temperature: { type: "number", description: "AI temperature (0-2, default 0.3 for factual)" },
+        organization: { type: "string", description: "Azure DevOps organization (uses config default if not provided)" },
+        project: { type: "string", description: "Azure DevOps project (uses config default if not provided)" }
+      },
+      required: ["queryHandle", "intent"]
     }
   }
 ];

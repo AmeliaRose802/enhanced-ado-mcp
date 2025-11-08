@@ -270,8 +270,7 @@ If auto-discovery fails, you can manually specify the GUID in your arguments:
 
 - **Handler:** `src/services/handlers/core/create-new-item.handler.ts`
 - **Handler:** `src/services/handlers/integration/assign-to-copilot.handler.ts`
-- **Handler:** `src/services/handlers/integration/new-copilot-item.handler.ts`
-- **Schema:** `src/config/schemas.ts` (createNewItemSchema, assignToCopilotSchema, newCopilotItemSchema)
+- **Schema:** `src/config/schemas.ts` (createNewItemSchema, assignToCopilotSchema)
 - **Service:** `src/services/ado-work-item-service.ts`
 
 ### Integration Points

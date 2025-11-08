@@ -9,9 +9,8 @@ The Specialized Agent Assignment feature allows users to assign work items to sp
 ### Affected Tools
 
 1. **`wit-assign-to-copilot`** - Assign existing work items to GitHub Copilot
-2. **`wit-new-copilot-item`** - Create new work items and assign to GitHub Copilot
 
-Both tools now support an optional `specializedAgent` parameter.
+The tool now supports an optional `specializedAgent` parameter.
 
 ### How It Works
 
@@ -35,20 +34,6 @@ When a `specializedAgent` parameter is provided:
 | specializedAgent | string | No | Name of specialized agent (e.g., 'ComponentGovernanceAgent') |
 | organization | string | No | Azure DevOps organization (defaults to config) |
 | project | string | No | Azure DevOps project (defaults to config) |
-
-### wit-new-copilot-item
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| title | string | Yes | Title of the work item |
-| parentWorkItemId | number | Yes | Parent work item ID |
-| repository | string | Yes | Git repository name |
-| description | string | No | Markdown description |
-| tags | string | No | Semicolon or comma separated tags |
-| workItemType | string | No | Work item type (defaults to config) |
-| branch | string | No | Branch name (defaults to config) |
-| gitHubCopilotGuid | string | No | GitHub Copilot GUID (defaults to config) |
-| specializedAgent | string | No | Name of specialized agent (e.g., 'ComponentGovernanceAgent') |
 | areaPath | string | No | Area path (defaults to config) |
 | iterationPath | string | No | Iteration path (defaults to config) |
 | priority | number | No | Priority (defaults to config) |
@@ -215,14 +200,6 @@ Modified schemas in `config/schemas.ts`:
    )
    ```
 
-2. **`newCopilotItemSchema`**
-   ```typescript
-   specializedAgent: optionalString().describe(
-     "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). " +
-     "Will be added as tag 'copilot:agent=<name>'"
-   )
-   ```
-
 ## Testing
 
 ### Unit Tests
@@ -254,18 +231,7 @@ To manually test:
    }
    ```
 
-2. **Create new work item with specialized agent:**
-   ```bash
-   # Via MCP tool
-   wit-new-copilot-item {
-     "title": "Test Item",
-     "parentWorkItemId": 67890,
-     "repository": "my-repo",
-     "specializedAgent": "SecurityScanAgent"
-   }
-   ```
-
-3. **Verify in Azure DevOps:**
+2. **Verify in Azure DevOps:**
    - Navigate to the work item
    - Check the Tags field contains `copilot:agent=<AgentName>`
    - Verify work item is assigned to GitHub Copilot
@@ -330,7 +296,7 @@ This feature is **fully backward compatible**:
 
 ### Version 1.10.1
 - Added `specializedAgent` optional parameter to `wit-assign-to-copilot`
-- Added `specializedAgent` optional parameter to `wit-new-copilot-item`
+- Added `specializedAgent` optional parameter to `wit-assign-to-copilot`
 - Implemented automatic tag management (add/replace `copilot:agent=*` tags)
 - Added comprehensive unit tests
 - Fully backward compatible with existing workflows

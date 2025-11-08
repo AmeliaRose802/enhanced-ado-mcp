@@ -13,7 +13,7 @@ import {
 export const queryHandleTools: ToolConfig[] = [
   {
     name: "analyze-bulk",
-    description: "🔐 HANDLE-BASED ANALYSIS: Analyze work items using a query handle instead of explicit IDs. Prevents ID hallucination in analysis workflows. Provides effort estimates, velocity trends, assignment distribution, risk assessment, completion status, priority analysis, and hierarchy validation. Forces safe analysis patterns.",
+    description: "🔐 HANDLE-BASED ANALYSIS: Unified analysis tool for work items using query handles. Prevents ID hallucination in analysis workflows. Supports: effort (Story Points), velocity (completion trends), assignments (team workload), risks (blockers/stale), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child validation), work-item-intelligence (AI-powered completeness/enhancement analysis), assignment-suitability (Copilot assignment readiness), and parent-recommendation (intelligent parent matching). Forces safe analysis patterns.",
     script: "",
     schema: analyzeByQueryHandleSchema,
     inputSchema: {
@@ -24,14 +24,28 @@ export const queryHandleTools: ToolConfig[] = [
           type: "array", 
           items: { 
             type: "string", 
-            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities", "hierarchy"] 
+            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities", "hierarchy", "work-item-intelligence", "assignment-suitability", "parent-recommendation"] 
           },
-          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child type validation and state progression checks)"
+          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child type validation and state progression checks), work-item-intelligence (AI-powered work item completeness and enhancement analysis), assignment-suitability (AI-powered Copilot assignment readiness), parent-recommendation (AI-powered intelligent parent finder)"
         },
         validateTypes: { type: "boolean", description: "Validate parent-child type relationships (only for hierarchy analysis, default true)" },
         validateStates: { type: "boolean", description: "Validate state progression consistency (only for hierarchy analysis, default true)" },
         returnQueryHandles: { type: "boolean", description: "Create query handles for violation categories (only for hierarchy analysis, default true)" },
         includeViolationDetails: { type: "boolean", description: "Include full violation details in response (only for hierarchy analysis, default false)" },
+        intelligenceAnalysisType: { type: "string", enum: ["completeness", "ai-readiness", "enhancement", "categorization", "full"], description: "Type of work item intelligence analysis (only for work-item-intelligence, default: full)" },
+        contextInfo: { type: "string", description: "Additional context for work item analysis (only for work-item-intelligence)" },
+        enhanceDescription: { type: "boolean", description: "Generate enhanced descriptions (only for work-item-intelligence, default: false)" },
+        outputFormat: { type: "string", enum: ["detailed", "json"], description: "Output format for assignment suitability analysis (only for assignment-suitability, default: detailed)" },
+        dryRun: { type: "boolean", description: "Preview parent recommendations without creating query handle (only for parent-recommendation, default: false)" },
+        areaPath: { type: "string", description: "Area path to search for parent candidates (only for parent-recommendation)" },
+        includeSubAreas: { type: "boolean", description: "Include sub-areas in parent search (only for parent-recommendation, default: false - enforces same area path)" },
+        maxParentCandidates: { type: "number", description: "Maximum parent candidates to analyze per child (only for parent-recommendation, default: 20, min: 3, max: 50)" },
+        maxRecommendations: { type: "number", description: "Maximum parent recommendations per child (only for parent-recommendation, default: 3, min: 1, max: 5)" },
+        parentWorkItemTypes: { type: "array", items: { type: "string" }, description: "Specific parent work item types to search for (only for parent-recommendation, e.g., ['Epic', 'Feature'])" },
+        searchScope: { type: "string", enum: ["area", "project", "iteration"], description: "Scope of parent search (only for parent-recommendation, default: area)" },
+        iterationPath: { type: "string", description: "Iteration path filter when searchScope='iteration' (only for parent-recommendation)" },
+        requireActiveParents: { type: "boolean", description: "Only consider parents in Active/New/Committed states (only for parent-recommendation, default: true)" },
+        confidenceThreshold: { type: "number", description: "Minimum confidence score for parent recommendations (only for parent-recommendation, 0-1, default: 0.5)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
       },

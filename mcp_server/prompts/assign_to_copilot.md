@@ -183,21 +183,7 @@ Options:
 Your choice?
 ```
 
-### Step 6: Create or Assign to Copilot
-
-**For NEW work items:**
-
-```json
-Tool: wit-new-copilot-item
-{
-  "title": "[Enhanced title]",
-  "description": "[Enhanced description with context]",
-  "parentWorkItemId": <parent-id, if applicable>,
-  "repository": "<repo-name>",
-  "specializedAgent": "[agent-name or omit for default]",
-  "tags": "ai-assigned; [other-relevant-tags]"
-}
-```
+### Step 6: Assign to Copilot
 
 **For EXISTING work items:**
 
@@ -294,20 +280,6 @@ Tool: wit-ai-assignment-analyzer
 }
 ```
 Returns analysis of whether the work item is suitable for AI assignment.
-
-### Create New Work Item & Assign to Copilot
-```json
-Tool: wit-new-copilot-item
-{
-  "title": "string",
-  "description": "string (markdown)",
-  "parentWorkItemId": <number, optional>,
-  "repository": "string (required)",
-  "specializedAgent": "string (optional)",
-  "tags": "semicolon-separated"
-}
-```
-Creates work item under parent and immediately assigns to Copilot.
 
 ### Assign Existing Work Item to Copilot
 ```json
@@ -410,7 +382,7 @@ Options:
 
 User: "1"
 
-[AI calls wit-new-copilot-item with specializedAgent: "SecurityScanAgent"]
+[AI calls wit-assign-to-copilot with specializedAgent: "SecurityScanAgent"]
 
 AI: ✅ Work item created and assigned to GitHub Copilot!
 

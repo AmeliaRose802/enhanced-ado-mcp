@@ -25,6 +25,7 @@ import { handleUnifiedBulkOperations } from './handlers/bulk-operations/unified-
 
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
+import { handleAIQueryAnalysis, initializeAIQueryAnalyzer } from './handlers/ai-powered/ai-query-analysis.handler.js';
 // NOTE: AI enhancement handlers (enhance-descriptions, assign-story-points, add-acceptance-criteria)
 // are now consolidated into unified-bulk-operations.handler.ts
 
@@ -47,6 +48,11 @@ let serverInstance: MCPServer | MCPServerLike | null = null;
  */
 export function setServerInstance(server: MCPServer | MCPServerLike | null): void {
   serverInstance = server;
+  
+  // Initialize AI query analyzer if server is available
+  if (server) {
+    initializeAIQueryAnalyzer(server);
+  }
 }
 
 /**
@@ -198,7 +204,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // AI-powered intelligent parent finder
-  if (name === 'find-parent') {
+  if (name === 'recommend-parent') {
     if (!serverInstance) {
       return {
         success: false,
@@ -235,6 +241,10 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
 
   if (name === 'analyze-bulk') {
     return await handleAnalyzeByQueryHandle(config, args);
+  }
+
+  if (name === 'analyze-query-handle') {
+    return await handleAIQueryAnalysis(config, args);
   }
 
   if (name === 'list-handles') {

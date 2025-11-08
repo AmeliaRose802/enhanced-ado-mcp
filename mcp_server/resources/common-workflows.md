@@ -244,15 +244,23 @@ End-to-end workflows combining multiple tools.
 - Complexity level
 - Missing information
 
-### Step 4: Assign Work
+### Step 4: Create Work Item
 ```json
-// Tool: wit-new-copilot-item (for AI-suitable items)
+// Tool: wit-create-new-item
 {
   "title": "Implement user service",
   "workItemType": "Task",
-  "repository": "repo-abc-123",
   "areaPath": "MyProject\\MyTeam",
   "parentWorkItemId": 12300
+}
+```
+
+### Step 5: Assign to Copilot if AI-suitable
+```json
+// Tool: wit-assign-to-copilot
+{
+  "workItemId": <created-item-id>,
+  "repository": "repo-abc-123"
 }
 ```
 
@@ -487,19 +495,27 @@ Repeat Step 2 for each child until complete tree is built.
 }
 ```
 
-### Step 3: Create AI-Ready Tasks
+### Step 3: Create Task
 ```json
-// Tool: wit-new-copilot-item
+// Tool: wit-create-new-item
 {
   "title": "Well-defined task from analysis",
   "workItemType": "Task",
   "description": "Clear requirements based on AI analysis",
-  "repository": "repo-abc-123",
   "parentWorkItemId": 12300
 }
 ```
 
-### Step 4: Monitor Progress
+### Step 4: Assign to Copilot
+```json
+// Tool: wit-assign-to-copilot
+{
+  "workItemId": <created-task-id>,
+  "repository": "repo-abc-123"
+}
+```
+
+### Step 5: Monitor Progress
 ```json
 // Tool: wit-wiql-query
 {

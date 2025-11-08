@@ -1,5 +1,5 @@
 /**
- * Handler for find-parent tool
+ * Handler for recommend-parent tool
  * 
  * AI-powered intelligent parent finder that prevents ID hallucination by:
  * 1. Accepting a QUERY HANDLE containing child work items (not raw IDs)
@@ -343,10 +343,7 @@ export async function handleIntelligentParentFinder(
             childAreaPath,
             recommendations: [],
             warnings: [
-              `No parent candidates found in area path '${childAreaPath}'`,
-              `Searched for types: ${appropriateParentTypes.join(', ')}`,
-              `Query executed: ${candidateQuery.substring(0, 200)}...`,
-              `Check if parent work items of these types exist in this exact area path`
+              `No parent candidates of type ${appropriateParentTypes.join(', ')} found in area path '${childAreaPath}'`
             ],
             candidatesAnalyzed: 0
           });
@@ -370,11 +367,6 @@ export async function handleIntelligentParentFinder(
         logger.info(`🔍 After area path validation: ${validCandidates.length}/${candidatesResult.workItems.length} candidates remain`);
 
         if (validCandidates.length === 0) {
-          const sampleMismatches = candidatesResult.workItems.slice(0, 3).map(wi => {
-            const candidateAreaPath = wi.additionalFields?.['System.AreaPath'] as string || '';
-            return `  • ${wi.id} (${wi.type}): '${candidateAreaPath}'`;
-          });
-          
           allResults.push({
             childWorkItemId,
             childTitle,
@@ -382,10 +374,7 @@ export async function handleIntelligentParentFinder(
             childAreaPath,
             recommendations: [],
             warnings: [
-              `All ${candidatesResult.workItems.length} candidates rejected due to area path mismatch`,
-              `Child area path: '${childAreaPath}'`,
-              `Sample candidate area paths:`,
-              ...sampleMismatches
+              `No matching parent candidates found in area path '${childAreaPath}'`
             ],
             candidatesAnalyzed: candidatesResult.workItems.length
           });

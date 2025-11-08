@@ -256,7 +256,7 @@ Relibly generating queries requires thosands of tokens of context, which will de
 - `analyze-workload` - Burnout risk & workload health
 - `plan-sprint` - AI-powered sprint planning
 - `discover-tools` - Find the right tool for your task
-- `find-parent` - AI-powered parent finder
+- `recommend-parent` - AI-powered parent finder
 
 **Configuration (2 tools):**
 - `get-config` - View current server configuration

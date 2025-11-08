@@ -537,13 +537,46 @@ export const analyzeByQueryHandleSchema = z.object({
     "risks",
     "completion",
     "priorities",
-    "hierarchy"
+    "hierarchy",
+    "work-item-intelligence",
+    "assignment-suitability",
+    "parent-recommendation"
   ])).min(1, "At least one analysis type required"),
   // Hierarchy validation options (only used when analysisType includes "hierarchy")
   validateTypes: optionalBool(true).describe("Validate parent-child type relationships (only for hierarchy analysis)"),
   validateStates: optionalBool(true).describe("Validate state progression consistency (only for hierarchy analysis)"),
   returnQueryHandles: optionalBool(true).describe("Create query handles for violation categories (only for hierarchy analysis)"),
   includeViolationDetails: optionalBool(false).describe("Include full violation details in response (only for hierarchy analysis)"),
+  // Work item intelligence options (only used when analysisType includes "work-item-intelligence")
+  intelligenceAnalysisType: z.enum(["completeness", "ai-readiness", "enhancement", "categorization", "full"]).optional().default("full").describe("Type of work item analysis (only for work-item-intelligence)"),
+  contextInfo: optionalString().describe("Additional context for work item analysis (only for work-item-intelligence)"),
+  enhanceDescription: optionalBool(false).describe("Generate enhanced descriptions (only for work-item-intelligence)"),
+  // Assignment suitability options (only used when analysisType includes "assignment-suitability")
+  outputFormat: z.enum(["detailed", "json"]).optional().default("detailed").describe("Output format for assignment analysis (only for assignment-suitability)"),
+  // Parent recommendation options (only used when analysisType includes "parent-recommendation")
+  dryRun: optionalBool(false).describe("Preview parent recommendations without creating query handle (only for parent-recommendation)"),
+  areaPath: optionalString().describe("Area path to search for parent candidates (only for parent-recommendation)"),
+  includeSubAreas: optionalBool(false).describe("Include sub-areas in parent search (only for parent-recommendation)"),
+  maxParentCandidates: z.number().int().min(3).max(50).optional().default(20).describe("Maximum parent candidates per child (only for parent-recommendation)"),
+  maxRecommendations: z.number().int().min(1).max(5).optional().default(3).describe("Maximum parent recommendations per child (only for parent-recommendation)"),
+  parentWorkItemTypes: z.array(z.string()).optional().describe("Specific parent types to search for (only for parent-recommendation)"),
+  searchScope: z.enum(["area", "project", "iteration"]).optional().default("area").describe("Parent search scope (only for parent-recommendation)"),
+  iterationPath: optionalString().describe("Iteration path filter when searchScope='iteration' (only for parent-recommendation)"),
+  requireActiveParents: optionalBool(true).describe("Only consider active/new/committed parents (only for parent-recommendation)"),
+  confidenceThreshold: z.number().min(0).max(1).optional().default(0.5).describe("Minimum confidence for parent recommendations (only for parent-recommendation)"),
+  ...orgProjectFields()
+});
+
+export const aiQueryAnalysisSchema = z.object({
+  queryHandle: z.string().min(1, "Query handle is required"),
+  intent: z.string().min(1, "Natural language analysis intent is required"),
+  itemSelector: itemSelectorSchema.optional().default("all"),
+  maxItemsToAnalyze: z.number().int().min(1).max(100).optional().default(50).describe("Maximum number of items to analyze from query handle (default: 50, max: 100)"),
+  includeContextPackages: optionalBool(true).describe("Retrieve full context packages for deeper analysis (default: true)"),
+  contextDepth: z.enum(["basic", "standard", "deep"]).optional().default("standard").describe("Level of context detail: basic (no history/relations), standard (default), deep (full history/relations)"),
+  outputFormat: z.enum(["concise", "detailed", "json"]).optional().default("concise").describe("Output format: concise (brief summary), detailed (comprehensive), json (structured data)"),
+  confidenceThreshold: z.number().min(0).max(1).optional().default(0.0).describe("Minimum confidence score for recommendations (0-1, default 0.0 - no filtering)"),
+  temperature: z.number().min(0).max(2).optional().default(0.3).describe("AI temperature for analysis (0-2, default 0.3 for factual analysis)"),
   ...orgProjectFields()
 });
 
