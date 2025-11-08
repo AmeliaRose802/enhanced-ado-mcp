@@ -37,7 +37,7 @@ export const workItemContextTools: ToolConfig[] = [
   },
   {
     name: "extract-security-links",
-    description: "Extract instruction links from security scan work items. organization and project are automatically filled from configuration - only provide them to override defaults.",
+    description: "Extract instruction links from security scan work items. Use this tool when: 1) Items have 'CG' or 'Component Governance' tags, 2) Titles contain '[Component Governance Alert]' or security scanner names (BinSkim, CodeQL, CredScan), 3) You need to extract remediation documentation URLs, 4) Working with security compliance or vulnerability findings. Sample 5-10 items max to avoid API rate limits. organization and project are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: extractSecurityLinksSchema,
     inputSchema: {

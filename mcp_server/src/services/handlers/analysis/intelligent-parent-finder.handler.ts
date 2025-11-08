@@ -15,7 +15,7 @@
  */
 
 import { ToolConfig, ToolExecutionResult } from "@/types/index.js";
-import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
 import { logger } from "@/utils/logger.js";
@@ -557,22 +557,49 @@ export async function handleIntelligentParentFinder(
           validParentTypesOnly: true,
           'hallucinationPrevention': 'Query handles used throughout'
         },
-        nextSteps: dryRun
-          ? [
+        nextSteps: (() => {
+          // Check if we have any recommendations at all
+          if (totalRecommendations === 0) {
+            // Determine if we had candidates but none were good enough, or no candidates at all
+            const hadNoCandidates = allResults.every(r => 
+              r.warnings.some(w => w.includes('No matching parent candidates found'))
+            );
+            
+            if (hadNoCandidates) {
+              return [
+                'No parent candidates found in the specified area paths',
+                'Consider widening search with includeSubAreas=true',
+                'Or create new parent work items (Feature/Epic) in the same area path'
+              ];
+            } else {
+              return [
+                'No recommendations met confidence threshold',
+                'Consider adjusting confidenceThreshold parameter (currently requires high confidence)',
+                'Or create new parent work items that better match the child work items'
+              ];
+            }
+          }
+          
+          // We have recommendations - provide appropriate next steps
+          if (dryRun) {
+            return [
               'Review recommendations and confidence scores',
               'Run again without dryRun=true to create parent query handle',
               'Use wit-link-work-items-by-query-handles to create parent-child links'
-            ]
-          : parentQueryHandle
-            ? [
-                'Review recommendations and confidence scores',
-                `Use parent query handle "${parentQueryHandle}" with wit-link-work-items-by-query-handles`,
-                `Link children (handle: ${childQueryHandle}) to recommended parents (handle: ${parentQueryHandle})`
-              ]
-            : [
-                'No recommendations met confidence threshold',
-                'Consider adjusting search parameters or creating new parent work items'
-              ]
+            ];
+          } else if (parentQueryHandle) {
+            return [
+              'Review recommendations and confidence scores',
+              `Use parent query handle "${parentQueryHandle}" with wit-link-work-items-by-query-handles`,
+              `Link children (handle: ${childQueryHandle}) to recommended parents (handle: ${parentQueryHandle})`
+            ];
+          } else {
+            return [
+              'Parent query handle not created (unexpected state)',
+              'Please review the results and try again'
+            ];
+          }
+        })()
       },
       {
         source: 'intelligent-parent-finder',

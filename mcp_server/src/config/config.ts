@@ -68,6 +68,8 @@ export interface CLIArguments {
   areaPaths?: string[];
   /** Optional team name override for iteration path discovery (from --team flag) */
   team?: string;
+  /** Optional iteration path override (from --iteration-path or -i flag) */
+  iterationPath?: string;
   /** Optional GitHub Copilot user GUID (from --copilot-guid or -g flag) */
   copilotGuid?: string;
   /** Enable verbose logging (from --verbose or -v flag, default: false) */
@@ -115,6 +117,7 @@ export interface MCPServerConfig {
   gitHubCopilot: GitHubCopilotConfig;
   authentication: AuthenticationConfig;
   verboseLogging: boolean;
+  enableDebugTools: boolean;
 }
 
 // ============================================================================
@@ -154,6 +157,7 @@ export const mcpServerConfigSchema = z.object({
   gitHubCopilot: gitHubCopilotConfigSchema,
   authentication: authenticationConfigSchema,
   verboseLogging: z.boolean().default(false),
+  enableDebugTools: z.boolean().default(false),
 });
 
 export type MCPServerConfigSchema = z.infer<typeof mcpServerConfigSchema>;
@@ -292,6 +296,8 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       ...(areaPaths.length > 0 && { areaPaths }),
       // Include team override if provided
       ...(cliArgs.team && { team: cliArgs.team }),
+      // Include iteration path override if provided
+      ...(cliArgs.iterationPath && { iterationPath: cliArgs.iterationPath }),
     },
     gitRepository: {},
     gitHubCopilot: {
@@ -302,6 +308,7 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       ...(cliArgs.tenant && { tenantId: cliArgs.tenant }),
     },
     verboseLogging: cliArgs.verbose || false,
+    enableDebugTools: process.env.MCP_ENABLE_DEBUG_TOOLS === "1",
   };
 
   // Validate and apply schema defaults
@@ -367,61 +374,21 @@ export async function ensureGitHubCopilotGuid(): Promise<string | null> {
 }
 
 /**
- * Asynchronously discover and cache the current iteration path if not already configured
- * This should be called after initial configuration load to automatically set current iteration
- * 
- * The current iteration is determined by querying the team's iteration settings.
- * Team is inferred from the area path (second segment).
+ * Check if iteration path is configured (from CLI)
+ * Automatic discovery has been removed - users must specify --iteration-path
  */
 export async function ensureCurrentIterationPath(): Promise<string | null> {
   const config = loadConfiguration();
   
-  // If already configured, return it
+  // Only use explicitly configured iteration path (no auto-discovery)
   if (config.azureDevOps.iterationPath) {
+    logger.info(`Using configured iteration path: ${config.azureDevOps.iterationPath}`);
     return config.azureDevOps.iterationPath;
   }
   
-  // Need area path to determine team
-  const areaPaths = config.azureDevOps.areaPaths || 
-    (config.azureDevOps.areaPath ? [config.azureDevOps.areaPath] : []);
-  
-  if (areaPaths.length === 0) {
-    logger.debug('No area paths configured - cannot discover current iteration');
-    return null;
-  }
-  
-  // Use first area path to determine team
-  const primaryAreaPath = areaPaths[0];
-  
-  logger.info('Attempting to auto-discover current iteration path...');
-  
-  try {
-    const { getCurrentIterationPath } = await import('../services/ado-discovery-service.js');
-    
-    const iterationPath = await getCurrentIterationPath(
-      config.azureDevOps.organization,
-      config.azureDevOps.project,
-      primaryAreaPath,
-      config.azureDevOps.team  // Pass team override if configured
-    );
-    
-    if (iterationPath) {
-      // Cache the discovered iteration path
-      config.azureDevOps.iterationPath = iterationPath;
-      cachedConfig = config;
-      logger.info(`Current iteration path discovered: ${iterationPath}`);
-      return iterationPath;
-    }
-    
-    // Not found via auto-discovery
-    logger.debug('Current iteration path not found via auto-discovery.');
-    logger.debug('New work items will not have a default iteration path unless explicitly specified.');
-    return null;
-  } catch (error) {
-    logger.warn('Current iteration auto-discovery failed:', error instanceof Error ? error.message : String(error));
-    logger.debug('New work items will not have a default iteration path unless explicitly specified.');
-    return null;
-  }
+  logger.debug('No iteration path configured. Use --iteration-path to specify one.');
+  logger.debug('New work items will not have a default iteration path unless explicitly specified.');
+  return null;
 }
 
 export function updateConfigFromCLI(args: CLIArguments): void {

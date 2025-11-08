@@ -113,6 +113,7 @@ export class WorkItemIntelligenceAnalyzer {
           getNestedValue(jsonData, ['aiReadiness', 'overallScore']) || jsonData.overallScore,
           5
         ),
+        outOf: 10,  // All scores are out of 10
         category: getStringOrDefault(
           jsonData.category || getNestedValue(jsonData, ['categorization', 'category']),
           'General'

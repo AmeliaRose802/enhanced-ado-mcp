@@ -629,6 +629,8 @@ class QueryHandleService {
       id: string;
       created_at: string;
       expires_at: string;
+      expires_in_hours: number;
+      expires_in_minutes: number;
       item_count: number;
       has_context: boolean;
     }>;
@@ -646,6 +648,8 @@ class QueryHandleService {
       id: string;
       created_at: string;
       expires_at: string;
+      expires_in_hours: number;
+      expires_in_minutes: number;
       item_count: number;
       has_context: boolean;
     }> = [];
@@ -657,10 +661,16 @@ class QueryHandleService {
         continue;
       }
 
+      const expiresInMs = data.expiresAt.getTime() - now.getTime();
+      const expiresInMinutes = Math.max(0, Math.floor(expiresInMs / (1000 * 60)));
+      const expiresInHours = Math.max(0, Math.floor(expiresInMs / (1000 * 60 * 60)));
+
       allHandles.push({
         id: handle,
         created_at: data.createdAt.toISOString(),
         expires_at: data.expiresAt.toISOString(),
+        expires_in_hours: expiresInHours,
+        expires_in_minutes: expiresInMinutes,
         item_count: data.workItemIds.length,
         has_context: data.itemContext && data.itemContext.length > 0
       });

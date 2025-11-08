@@ -108,7 +108,28 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   }
 
   // Get prompts (useful for testing and specialized agent workflows)
+  // Only available when MCP_ENABLE_DEBUG_TOOLS=1
   if (name === 'get-prompts') {
+    const { loadConfiguration } = await import('../config/config.js');
+    const config = loadConfiguration();
+    
+    if (!config.enableDebugTools) {
+      return {
+        success: false,
+        data: null,
+        metadata: {
+          tool: 'get-prompts',
+          timestamp: new Date().toISOString()
+        },
+        errors: [
+          'get-prompts tool is only available in debug mode.',
+          'Set environment variable MCP_ENABLE_DEBUG_TOOLS=1 to enable debug tools.',
+          'This tool is disabled in production for security reasons.'
+        ],
+        warnings: []
+      };
+    }
+    
     return await handleGetPrompts(args as Parameters<typeof handleGetPrompts>[0]);
   }
 

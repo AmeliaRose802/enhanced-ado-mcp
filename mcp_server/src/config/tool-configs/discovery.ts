@@ -26,7 +26,7 @@ export const discoveryTools: ToolConfig[] = [
   },
   {
     name: "get-prompts",
-    description: "Retrieve pre-filled prompt templates by name or list all available prompts. Useful for testing prompt templates or for agents that need direct access to prompt content for specialized use cases.",
+    description: "[DEBUG ONLY] Retrieve pre-filled prompt templates by name or list all available prompts. This tool is disabled in production and only available when MCP_ENABLE_DEBUG_TOOLS=1 environment variable is set. Useful for testing prompt templates or for agents that need direct access to prompt content for specialized use cases.",
     script: "",
     schema: getPromptsSchema,
     inputSchema: {

@@ -7,7 +7,7 @@
 import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
 import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
 import type { ADOWorkItem } from '@/types/index.js';
-import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";

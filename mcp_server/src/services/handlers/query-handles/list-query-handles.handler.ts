@@ -6,7 +6,7 @@
  */
 
 import type { ToolConfig, ToolExecutionResult } from "@/types/index.js";
-import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";

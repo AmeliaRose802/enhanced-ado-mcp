@@ -341,6 +341,8 @@ export async function handleWiqlQuery(
               "Always use dryRun: true first to preview changes before applying them"
             ],
             expires_at: new Date(Date.now() + queryHandleService.getDefaultTTL()).toISOString(),
+            expires_in_hours: 24,
+            expires_in_minutes: 1440,
             ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
               pagination: {
                 skip: result.skip,
@@ -392,6 +394,8 @@ export async function handleWiqlQuery(
             "Always use dryRun: true first to preview changes before applying them"
           ],
           expires_at: new Date(Date.now() + queryHandleService.getDefaultTTL()).toISOString(),
+          expires_in_hours: 24,
+          expires_in_minutes: 1440,
           ...((result.totalCount > result.top || queryArgs.includePaginationDetails) && {
             pagination: {
               skip: result.skip,

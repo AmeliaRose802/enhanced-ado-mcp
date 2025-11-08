@@ -12,14 +12,14 @@ import {
 export const workItemCreationTools: ToolConfig[] = [
   {
     name: "create-workitem",
-    description: "Create a new Azure DevOps work item with optional parent relationship. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, priority, assignedTo, areaPath, iterationPath, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
+    description: "Create a new Azure DevOps work item with parent relationship. IMPORTANT: All work item types except 'Epic' and 'Key Result' REQUIRE a parent. Use 'wit-analyze-by-query-handle' with analysisType=['parent-recommendation'] to find suitable parents if you don't have a parentWorkItemId. Returns a query handle for the created item to enable immediate bulk operations. organization, project, workItemType, priority, assignedTo, areaPath, iterationPath, and inheritParentPaths are automatically filled from configuration - only provide them to override defaults.",
     script: "",
     schema: createNewItemSchema,
     inputSchema: {
       type: "object",
       properties: {
         title: { type: "string", description: "Title of the work item (mandatory)" },
-        parentWorkItemId: { type: "number", description: "Optional parent work item ID" },
+        parentWorkItemId: { type: "number", description: "Parent work item ID (REQUIRED for all types except Epic and Key Result). Use 'wit-analyze-by-query-handle' with analysisType=['parent-recommendation'] to find suitable parents." },
         description: { type: "string", description: "Markdown description / repro steps" },
         tags: { type: "string", description: "Semicolon or comma separated tags" },
         workItemType: { type: "string", description: "Override default work item type from config" },

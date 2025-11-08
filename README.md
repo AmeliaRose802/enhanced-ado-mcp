@@ -363,6 +363,16 @@ export MCP_DEBUG=1  # macOS/Linux
 $env:MCP_DEBUG=1    # PowerShell
 ```
 
+### Debug Tools
+The `get-prompts` tool is **disabled by default** in production for security reasons. To enable debug tools (e.g., for testing prompt templates):
+
+```bash
+export MCP_ENABLE_DEBUG_TOOLS=1  # macOS/Linux
+$env:MCP_ENABLE_DEBUG_TOOLS='1'  # PowerShell
+```
+
+**Note:** Debug tools expose internal prompt templates and should only be enabled in development/testing environments.
+
 ---
 
 ## Development

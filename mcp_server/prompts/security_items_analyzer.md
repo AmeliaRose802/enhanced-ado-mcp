@@ -1,7 +1,7 @@
 ---
 name: security_items_analyzer
-description: Analyze security and compliance items with enhanced staleness analysis, categorize them, identify AI-suitable work, and create remediation plans.
-version: 6
+description: Analyze security and compliance items using query handle aggregation for efficient context window management. Identifies AI-suitable work without fetching verbose fields.
+version: 7
 arguments:
   - name: area_path
     description: "Area path to analyze (auto-filled from configuration)"
@@ -10,29 +10,62 @@ arguments:
     description: "Maximum number of security items to analyze"
     required: false
     default: 50
+changelog:
+  - version: 7
+    date: 2025-11-07
+    changes: "MAJOR REFACTOR: Use query handle aggregation instead of verbose field fetching. Reduces token usage by 67% while providing better AI intelligence analysis."
+  - version: 6
+    changes: "Enhanced staleness analysis and query handle support"
 ---
 
 Analyze security and compliance work items in area path `{{area_path}}`. **Exclude Done/Completed/Closed/Resolved states.**
 
+**Optimization Strategy**: This prompt uses query handle aggregation to analyze security items efficiently, fetching full details only for high-value items identified through AI intelligence analysis.
+
+## Context Efficiency Guidelines
+
+**🎯 Key Principle: Aggregate First, Fetch Details Selectively**
+
+This prompt is designed to analyze security items **without fetching verbose fields** for every item:
+
+1. **Query Handle Pattern**: Get item IDs and staleness data (~200 tokens)
+2. **Aggregation Analysis**: Use `wit-analyze-by-query-handle` to get AI scores and categorization (~500 tokens)
+3. **Selective Fetching**: Only get full details for high-value items identified in step 2
+
+**Traditional Approach (INEFFICIENT):**
+- Fetch all items with description, tags, state, priority: ~500 tokens × 50 items = **25,000 tokens**
+- Manually categorize and score each item
+- High context window usage
+
+**Query Handle Approach (EFFICIENT):**
+- Query handle + aggregation: ~700 tokens total
+- Fetch details for top 10-15 items only: ~500 tokens × 15 = **7,500 tokens**
+- **Total: ~8,200 tokens (67% reduction)**
+
 ## Efficiency Guidelines
 
 **⚡ Execute operations in parallel whenever possible:**
-- Query multiple security domains simultaneously (authentication, data protection, network)
+- Query discovery AND current active work simultaneously
+- Run `wit-query-handle-info` and `wit-analyze-by-query-handle` in parallel
 - Fetch context packages for different item categories in parallel
-- Run security link extraction concurrently for multiple items
+- Extract security links concurrently for sampled items
 
 **🤖 Consider sub-agents for heavy operations:**
-- When analyzing >50 security items, delegate categorization to sub-agent
-- For deep vulnerability analysis requiring documentation lookup, use sub-agent
-- Sub-agents help when extracting and processing security remediation links across many items
+- When analyzing >50 security items, delegate deep analysis to sub-agent
+- For vulnerability remediation planning requiring documentation lookup, use sub-agent
+- Sub-agents useful for extracting and processing security links across many items
 
 ## Tools
 
-**Discovery & Analysis:**
-- `wit-wiql-query` - ⭐ **ENHANCED** Query security items with staleness data and query handles
-- `wit-query-handle-info` - ⭐ **NEW** Verify query handle contents and staleness statistics
-- `wit-get-context-packages-by-query-handle` - Batch details (max 20-25 items)
-- `wit-extract-security-links` - Extract documentation links
+**Discovery & Aggregation (Prefer These):**
+- `wit-wiql-query` - ⭐ Query security items with staleness data and query handles
+- `wit-query-handle-info` - ⭐ Verify query handle, get statistics and preview (use `includeExamples: false` to save tokens)
+- `wit-analyze-by-query-handle` - ⭐ **PRIMARY TOOL** - AI intelligence analysis on entire query handle
+- `wit-extract-security-links` - Extract documentation links from sampled items
+
+**Targeted Context Fetching (Use Sparingly):**
+- `wit-get-context-packages-by-query-handle` - Batch details for specific items (max 20-25 items)
+- `wit-get-context-packages` - Individual item details (use after identifying high-value items)
 
 **Work Item Management:**
 - `wit-create-new-item` - Create work items
@@ -43,6 +76,7 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
   - `action: "comment"` - Add templated comments to security items
   - `action: "update"` - Update multiple security items
   - `action: "assign"` - Assign multiple security items
+  - `action: "ai-enhance"` - Bulk enhance descriptions (preview with dryRun)
 
 ## Workflow
 

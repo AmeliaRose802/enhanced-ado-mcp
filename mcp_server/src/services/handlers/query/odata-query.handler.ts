@@ -5,7 +5,7 @@
 
 import type { ToolConfig, ToolExecutionResult, ToolExecutionData, ToolExecutionMetadata, JSONValue, ODataAnalyticsArgs, ODataResponse } from "@/types/index.js";
 import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
-import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";

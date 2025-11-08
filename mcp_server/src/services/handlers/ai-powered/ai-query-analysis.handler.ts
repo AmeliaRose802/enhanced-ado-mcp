@@ -6,7 +6,7 @@
  */
 
 import { ToolConfig, ToolExecutionResult } from "@/types/index.js";
-import { validateAzureCLI } from "@/services/ado-discovery-service.js";
+import { validateAzureCLI } from "@/utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";
 import { AIQueryAnalyzer } from "@/services/analyzers/ai-query-analyzer.js";

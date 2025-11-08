@@ -33,8 +33,8 @@ jest.mock('../../src/config/config.js', () => ({
   updateConfigFromCLI: jest.fn()
 }));
 
-// Mock Azure CLI validation
-jest.mock('../../src/services/ado-discovery-service.js', () => ({
+// Mock Azure CLI validator
+jest.mock('../../src/utils/azure-cli-validator.js', () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
     isLoggedIn: true
@@ -160,6 +160,12 @@ describe('Query Handle Info Handler', () => {
       expect(data.work_item_count).toBe(3);
       expect(data.created_at).toBeDefined();
       expect(data.expires_at).toBeDefined();
+      expect(data.expires_in_hours).toBeDefined();
+      expect(data.expires_in_minutes).toBeDefined();
+      expect(typeof data.expires_in_hours).toBe('number');
+      expect(typeof data.expires_in_minutes).toBe('number');
+      expect(data.expires_in_hours).toBeGreaterThanOrEqual(0);
+      expect(data.expires_in_minutes).toBeGreaterThanOrEqual(0);
       expect(data.query).toBeDefined();
       expect(data.has_item_context).toBe(true);
       expect(data.selection_enabled).toBe(true);
@@ -248,7 +254,6 @@ describe('Query Handle Info Handler', () => {
       expect(data.validation.valid).toBe(true);
       expect(data.validation.item_count).toBe(3);
       expect(data.validation.time_remaining_minutes).toBeGreaterThanOrEqual(0);
-      expect(data.validation.original_query).toBeDefined();
     });
 
     it('should include selection analysis when detailed=true and itemSelector provided', async () => {

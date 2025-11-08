@@ -4,7 +4,7 @@
 
 import { ZodSchema } from 'zod';
 import { ToolExecutionResult } from '../types/index.js';
-import { validateAzureCLI } from '../services/ado-discovery-service.js';
+import { validateAzureCLI } from './azure-cli-validator.js';
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from './response-builder.js';
 
 /**

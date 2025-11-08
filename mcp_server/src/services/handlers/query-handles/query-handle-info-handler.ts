@@ -8,7 +8,7 @@
 
 import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } from "@/types/index.js";
 import type { ADOWorkItem } from '@/types/index.js';
-import { validateAzureCLI } from "../../ado-discovery-service.js";
+import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "@/utils/response-builder.js";
 import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
@@ -76,11 +76,18 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
     logger.info(`Getting info for query handle: ${queryHandle} (${queryData.workItemIds.length} items, detailed=${detailed})`);
 
     // Build base response (always included)
+    const now = new Date();
+    const expiresInMs = queryData.expiresAt.getTime() - now.getTime();
+    const expiresInMinutes = Math.max(0, Math.floor(expiresInMs / (1000 * 60)));
+    const expiresInHours = Math.max(0, Math.floor(expiresInMs / (1000 * 60 * 60)));
+    
     const response: Record<string, JSONValue> = {
       query_handle: queryHandle,
       work_item_count: queryData.workItemIds.length,
       created_at: queryData.createdAt.toISOString(),
       expires_at: queryData.expiresAt.toISOString(),
+      expires_in_hours: expiresInHours,
+      expires_in_minutes: expiresInMinutes,
       query: queryData.query,
       metadata: queryData.metadata || {},
       has_item_context: !!queryData.itemContext,
@@ -219,8 +226,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
       }
     }
 
-    // Time until expiration
-    const now = new Date();
+    // Time until expiration (reuse 'now' from earlier - already declared at line 79)
     const timeUntilExpiration = queryData.expiresAt.getTime() - now.getTime();
     const minutesUntilExpiration = Math.floor(timeUntilExpiration / (1000 * 60));
 

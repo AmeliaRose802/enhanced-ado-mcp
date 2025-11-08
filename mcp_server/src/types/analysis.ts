@@ -33,6 +33,7 @@ export interface WorkItemIntelligenceArgs {
 export interface AnalysisResult {
   completenessScore: number;
   aiReadinessScore: number;
+  outOf: number;  // Maximum score value for completeness and aiReadiness scores (default: 10)
   category: string;
   priority: "Low" | "Medium" | "High" | "Critical";
   complexity: "Simple" | "Medium" | "Complex" | "Expert";

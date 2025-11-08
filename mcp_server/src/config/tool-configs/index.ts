@@ -47,17 +47,25 @@ export function isAIPoweredTool(toolName: string): boolean {
 }
 
 /**
- * Filter tool configs based on sampling availability
+ * Filter tool configs based on sampling availability and debug mode
  * @param hasSampling Whether sampling is supported
+ * @param enableDebugTools Whether debug tools should be enabled (default: false)
  * @returns Filtered tool configurations
  */
-export function getAvailableToolConfigs(hasSampling: boolean): ToolConfig[] {
-  if (hasSampling) {
-    return toolConfigs; // All tools available
-  }
+export function getAvailableToolConfigs(hasSampling: boolean, enableDebugTools: boolean = false): ToolConfig[] {
+  let available = toolConfigs;
   
   // Filter out AI-powered tools when sampling not available
-  return toolConfigs.filter(tool => !isAIPoweredTool(tool.name));
+  if (!hasSampling) {
+    available = available.filter(tool => !isAIPoweredTool(tool.name));
+  }
+  
+  // Filter out debug-only tools unless explicitly enabled
+  if (!enableDebugTools) {
+    available = available.filter(tool => tool.name !== 'get-prompts');
+  }
+  
+  return available;
 }
 
 /**

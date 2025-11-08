@@ -38,7 +38,8 @@ server.fallbackRequestHandler = async (request: any) => {
   
   if (request.method === "tools/list") {
     const hasSampling = checkSamplingSupport(server);
-    const availableToolConfigs = getAvailableToolConfigs(hasSampling);
+    const config = loadConfiguration();
+    const availableToolConfigs = getAvailableToolConfigs(hasSampling, config.enableDebugTools);
     const availableTools = availableToolConfigs.map(tc => ({
       name: tc.name,
       description: tc.description,
@@ -47,6 +48,10 @@ server.fallbackRequestHandler = async (request: any) => {
     
     if (!hasSampling) {
       logger.info('Sampling not supported - AI-powered tools disabled');
+    }
+    
+    if (config.enableDebugTools) {
+      logger.info('Debug tools enabled (MCP_ENABLE_DEBUG_TOOLS=1)');
     }
     
     return { tools: availableTools };
@@ -123,6 +128,11 @@ const argv = yargs(hideBin(process.argv))
   })
   .option("team", {
     describe: "Azure DevOps team name for iteration path discovery (optional). Use this if your area path structure is non-standard and auto-detection fails.",
+    type: "string"
+  })
+  .option("iteration-path", {
+    alias: "i",
+    describe: "Azure DevOps iteration path (e.g., 'ProjectName\\\\IterationName'). If specified, auto-discovery is skipped.",
     type: "string"
   })
   .option("verbose", {
@@ -208,8 +218,8 @@ async function main() {
     // Automatically look up GitHub Copilot GUID if not provided
     await ensureGitHubCopilotGuid();
     
-    // Automatically discover current iteration path if not provided
-    await ensureCurrentIterationPath();
+    // Note: Automatic iteration path discovery removed - use --iteration-path flag to specify
+    // Example: enhanced-ado-mcp myorg --area-path "Project\\Area" --iteration-path "Project\\Iteration"
 
     const useHybrid = process.env.MCP_HYBRID === "1";
     

@@ -67,6 +67,24 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
       priority: parsed.data.priority !== undefined ? parsed.data.priority : requiredConfig.defaultPriority
     };
 
+    // Validate parent requirement for non-root work item types
+    const rootTypes = ['Epic', 'Key Result'];
+    const workItemType = workItemData.workItemType?.trim();
+    
+    if (workItemType && !rootTypes.includes(workItemType) && !workItemData.parentWorkItemId) {
+      return {
+        success: false,
+        data: null,
+        metadata: { source: "rest-api" },
+        errors: [
+          `Work item type '${workItemType}' requires a parent. Only Epic and Key Result can be created without a parent. ` +
+          `To find a suitable parent, use the 'wit-analyze-by-query-handle' tool with analysisType=['parent-recommendation'] on a query handle containing this work item, ` +
+          `or provide a parentWorkItemId parameter.`
+        ],
+        warnings: []
+      };
+    }
+
     logger.debug(`Creating work item with REST API: ${workItemData.title} (type: ${workItemData.workItemType})`);
     
     const result = await createWorkItem(workItemData);

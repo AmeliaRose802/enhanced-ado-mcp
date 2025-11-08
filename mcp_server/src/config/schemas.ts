@@ -77,7 +77,23 @@ export const createNewItemSchema = z.object({
   assignedTo: optionalString(),
   priority: optionalNumber(),
   ...orgProjectFields()
-});
+}).refine(
+  (data) => {
+    // Root-level work item types that don't require parents
+    const rootTypes = ['Epic', 'Key Result'];
+    const workItemType = data.workItemType?.trim();
+    
+    // If a work item type is specified and it's not a root type, parent is required
+    if (workItemType && !rootTypes.includes(workItemType) && !data.parentWorkItemId) {
+      return false;
+    }
+    
+    return true;
+  },
+  {
+    message: "A parent work item is required for all work item types except Epic and Key Result. Use the 'wit-analyze-by-query-handle' tool with analysisType=['parent-recommendation'] to find suitable parents, or provide a parentWorkItemId."
+  }
+);
 
 export const cloneWorkItemSchema = z.object({
   sourceWorkItemId: workItemIdField(),
