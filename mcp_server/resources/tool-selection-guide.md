@@ -553,21 +553,6 @@ User: "Update the first 3 unassigned PBIs"
 }
 ```
 
-### Sprint Planning Analysis
-**Tool:** `plan-sprint`  
-**When:** Create optimal sprint plan with balanced work assignments  
-**Example:** Plan next sprint with team capacity
-
-```json
-{
-  "iterationPath": "Project\\Sprint 10",
-  "teamMembers": [
-    {"email": "alice@company.com", "name": "Alice", "capacityHours": 60}
-  ],
-  "historicalSprintsToAnalyze": 3
-}
-```
-
 ## AI-Powered Prompts
 
 ### Project Completion Planning
@@ -865,7 +850,6 @@ Analysis needed?
 ├─ Find issues? → query-wiql (with filterByPatterns)
 ├─ Validate hierarchy? → analyze-query-handle (with analysisType: ['hierarchy'])
 ├─ Personal workload? → analyze-workload-batch
-├─ Sprint planning? → plan-sprint
 └─ Analyze by handle? → analyze-query-handle
 
 Bulk operations?
@@ -898,9 +882,7 @@ Configuration?
 
 ### Slower Operations (Use AI)
 - `analyze-workload` - AI analysis (~5-10s)
-- `analyze-workload` - AI analysis (~5-10s)
 - `analyze-workload-batch` - AI analysis (~30-90s)
-- `plan-sprint` - AI analysis (~30-90s)
 - `wit-find-parent-item-intelligent` - AI matching (~10-30s)
 
 ## Common Combinations
@@ -932,10 +914,10 @@ Configuration?
 
 ### Sprint Planning
 1. `query-odata` - Get velocity metrics
-2. `plan-sprint` - Create optimal sprint plan
+2. `query-wiql` - Query items for sprint with returnQueryHandle
 3. `execute-bulk-operations` - Assign work to team members
-5. `analyze-workload-analyzer` - Check Copilot suitability
-6. `assign-copilot` - Delegate to AI
+4. `analyze-workload` - Check Copilot suitability
+5. `assign-copilot` - Delegate to AI
 
 ### Project Completion Planning
 1. `project_completion_planner` prompt - Comprehensive project analysis

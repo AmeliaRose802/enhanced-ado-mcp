@@ -244,12 +244,14 @@ export interface HierarchyValidationResult {
  */
 
 export interface PersonalWorkloadAnalyzerArgs {
-  assignedToEmail: string;
+  assignedToEmail: string | string[];
   analysisPeriodDays?: number;
   additionalIntent?: string;
   organization?: string;
   project?: string;
   areaPath?: string;
+  continueOnError?: boolean;
+  maxConcurrency?: number;
 }
 
 export interface BatchPersonalWorkloadAnalyzerArgs {
@@ -379,112 +381,4 @@ export interface PersonalWorkloadAnalysisResult {
   }>;
 }
 
-/**
- * =============================================================================
- * SPRINT PLANNING
- * =============================================================================
- */
 
-export interface SprintPlanningAnalyzerArgs {
-  iterationPath: string;
-  teamMembers: Array<{
-    email: string;
-    name: string;
-    capacityHours?: number;
-    skills?: string[];
-    preferredWorkTypes?: string[];
-  }>;
-  sprintCapacityHours?: number;
-  historicalSprintsToAnalyze?: number;
-  candidateWorkItemIds?: number[];
-  considerDependencies?: boolean;
-  considerSkills?: boolean;
-  additionalConstraints?: string;
-  includeFullAnalysis?: boolean;
-  rawAnalysisOnError?: boolean;
-  organization?: string;
-  project?: string;
-  areaPath?: string;
-  areaPathFilter?: string[];
-}
-
-export interface TeamMemberAssignment {
-  email: string;
-  name: string;
-  allocatedCapacityHours: number;
-  assignedWorkItems: Array<{
-    workItemId: number;
-    title: string;
-    type: string;
-    storyPoints?: number;
-    estimatedHours?: number;
-    priority: number;
-    rationale: string;
-  }>;
-  totalStoryPoints: number;
-  totalEstimatedHours: number;
-  capacityUtilization: number;
-  workloadBalance: "Under" | "Optimal" | "Over";
-  skillMatch: "Poor" | "Good" | "Excellent";
-}
-
-export interface SprintPlanningResult {
-  sprintSummary: {
-    iterationPath: string;
-    teamSize: number;
-    totalCapacityHours: number;
-    totalCandidateItems: number;
-    healthScore: number;
-    confidenceLevel?: "High" | "Medium" | "Low";
-  };
-  velocityAnalysis: {
-    historicalVelocity: {
-      averagePointsPerSprint: number;
-      trendDirection: "Increasing" | "Stable" | "Decreasing" | "Unknown";
-      consistency: "High" | "Moderate" | "Low" | "Unknown";
-      lastThreeSprints: Array<{
-        iterationPath: string;
-        completedPoints: number;
-        plannedPoints: number;
-        commitmentAccuracy: number;
-      }>;
-    };
-    predictedVelocity: {
-      estimatedPoints: number;
-      confidenceRange: { min: number; max: number };
-      assumptions: string[];
-    };
-  };
-  teamAssignments: TeamMemberAssignment[];
-  unassignedItems: Array<{
-    workItemId: number;
-    title: string;
-    type: string;
-    reason: string;
-    recommendation: string;
-  }>;
-  sprintRisks?: {
-    critical: Array<{ title: string; description: string; mitigation: string }>;
-    warnings: Array<{ title: string; description: string }>;
-    recommendations: string[];
-  };
-  balanceMetrics?: {
-    workloadBalance: { score: number; assessment: string };
-    skillCoverage: { score: number; assessment: string };
-    dependencyRisk: { score: number; assessment: string };
-    overallBalance: { score: number; assessment: string };
-  };
-  alternativePlans?: Array<{
-    planName: string;
-    description: string;
-    keyDifferences: string[];
-    tradeoffs: string[];
-  }>;
-  dependencies?: Array<{
-    workItemId: number;
-    dependsOn: number[];
-    blockedBy: number[];
-  }>;
-  actionableSteps: string[];
-  fullAnalysisText?: string;
-}

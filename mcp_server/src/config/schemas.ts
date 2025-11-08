@@ -175,42 +175,15 @@ export const aiAssignmentAnalyzerSchema = z.object({
 });
 
 export const personalWorkloadAnalyzerSchema = z.object({
-  assignedToEmail: z.string().email("Must provide a valid email address"),
-  analysisPeriodDays: z.number().int().min(7).max(365).optional().default(90),
-  additionalIntent: optionalString(),
-  areaPath: optionalString(),
-  ...orgProjectFields()
-});
-
-export const batchPersonalWorkloadAnalyzerSchema = z.object({
-  assignedToEmails: z.array(z.string().email("Must provide valid email addresses")).min(1, "At least one email address is required").max(20, "Maximum 20 email addresses allowed"),
+  assignedToEmail: z.union([
+    z.string().email("Must provide a valid email address"),
+    z.array(z.string().email("Must provide valid email addresses")).min(1, "At least one email address is required").max(20, "Maximum 20 email addresses allowed")
+  ]),
   analysisPeriodDays: z.number().int().min(7).max(365).optional().default(90),
   additionalIntent: optionalString(),
   areaPath: optionalString(),
   continueOnError: optionalBool(true),
   maxConcurrency: z.number().int().min(1).max(10).optional().default(5),
-  ...orgProjectFields()
-});
-
-export const sprintPlanningAnalyzerSchema = z.object({
-  iterationPath: z.string().min(1, "Iteration path is required"),
-  teamMembers: z.array(z.object({
-    email: z.string().min(1, "Email is required"),
-    name: z.string().min(1, "Name is required"),
-    capacityHours: optionalNumber(),
-    skills: z.array(z.string()).optional(),
-    preferredWorkTypes: z.array(z.string()).optional()
-  })).min(1, "At least one team member is required"),
-  sprintCapacityHours: optionalNumber(),
-  historicalSprintsToAnalyze: z.number().int().min(1).max(10).optional().default(3),
-  candidateWorkItemIds: z.array(z.number().int()).optional(),
-  considerDependencies: optionalBool(true),
-  considerSkills: optionalBool(true),
-  additionalConstraints: optionalString(),
-  includeFullAnalysis: optionalBool(false),
-  rawAnalysisOnError: optionalBool(false),
-  areaPath: optionalString(),
-  areaPathFilter: z.array(z.string()).optional(),
   ...orgProjectFields()
 });
 

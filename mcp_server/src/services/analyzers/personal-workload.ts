@@ -120,14 +120,26 @@ export class PersonalWorkloadAnalyzer {
       return buildSamplingUnavailableResponse();
     }
 
+    // Handle both single email and array of emails
+    const isArray = Array.isArray(args.assignedToEmail);
+    
+    if (isArray) {
+      return this.analyzeBatch(args);
+    } else {
+      return this.analyzeSingle(args);
+    }
+  }
+
+  private async analyzeSingle(args: PersonalWorkloadAnalyzerArgs): Promise<ToolExecutionResult> {
     try {
+      const email = args.assignedToEmail as string;
       const config = loadConfiguration();
       const org = args.organization || config.azureDevOps.organization;
       const project = args.project || config.azureDevOps.project;
       const areaPath = args.areaPath || config.azureDevOps.areaPath || '';
       const analysisPeriodDays = args.analysisPeriodDays || 90;
       
-      logger.debug(`Starting personal workload analysis for ${args.assignedToEmail} over ${analysisPeriodDays} days`);
+      logger.debug(`Starting personal workload analysis for ${email} over ${analysisPeriodDays} days`);
 
       // Calculate date range
       const endDate = new Date();
@@ -135,11 +147,11 @@ export class PersonalWorkloadAnalyzer {
       startDate.setDate(startDate.getDate() - analysisPeriodDays);
 
       // Fetch work items from Azure DevOps
-      logger.debug(`Fetching work items for ${args.assignedToEmail} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
+      logger.debug(`Fetching work items for ${email} from ${startDate.toISOString()} to ${endDate.toISOString()}`);
       const { completed, active } = await fetchUserWorkItems(
         org,
         project,
-        args.assignedToEmail,
+        email,
         startDate.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0]
       );
@@ -148,7 +160,7 @@ export class PersonalWorkloadAnalyzer {
 
       // Build analysis input with actual work item data
       const analysisInput = {
-        assigned_to_email: args.assignedToEmail,
+        assigned_to_email: email,
         analysis_period_days: analysisPeriodDays,
         start_date: startDate.toISOString().split('T')[0],
         end_date: endDate.toISOString().split('T')[0],
@@ -372,5 +384,191 @@ export class PersonalWorkloadAnalyzer {
     if (score >= 50) return "Concerning";
     if (score >= 30) return "At Risk";
     return "Critical";
+  }
+
+  /**
+   * Batch analysis for multiple team members
+   * Processes people in parallel with configurable concurrency
+   */
+  private async analyzeBatch(args: PersonalWorkloadAnalyzerArgs): Promise<ToolExecutionResult> {
+    try {
+      const emails = args.assignedToEmail as string[];
+      const analysisPeriodDays = args.analysisPeriodDays || 90;
+      const maxConcurrency = args.maxConcurrency || 5;
+      const continueOnError = args.continueOnError !== false; // Default true
+      
+      logger.info(`Starting batch workload analysis for ${emails.length} team members`);
+      
+      const startTime = Date.now();
+      const results: Array<{
+        email: string;
+        success: boolean;
+        analysis?: PersonalWorkloadAnalysisResult;
+        error?: string;
+      }> = [];
+
+      // Calculate date range (same for all analyses)
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - analysisPeriodDays);
+
+      logger.debug(`Processing with max concurrency: ${maxConcurrency}, continueOnError: ${continueOnError}`);
+
+      // Process in batches
+      for (let i = 0; i < emails.length; i += maxConcurrency) {
+        const batch = emails.slice(i, i + maxConcurrency);
+        logger.debug(`Processing batch ${Math.floor(i / maxConcurrency) + 1}: ${batch.join(', ')}`);
+
+        const batchPromises = batch.map(async (email) => {
+          try {
+            logger.debug(`Analyzing workload for ${email}`);
+            
+            // Create single-email args for individual analysis
+            const singleArgs: PersonalWorkloadAnalyzerArgs = {
+              assignedToEmail: email,
+              analysisPeriodDays: args.analysisPeriodDays,
+              additionalIntent: args.additionalIntent,
+              organization: args.organization,
+              project: args.project,
+              areaPath: args.areaPath
+            };
+            
+            const result = await this.analyzeSingle(singleArgs);
+
+            if (result.success && result.data) {
+              logger.debug(`Successfully analyzed ${email}`);
+              return {
+                email,
+                success: true,
+                analysis: result.data as unknown as PersonalWorkloadAnalysisResult
+              };
+            } else {
+              const errorMsg = result.errors.join('; ') || 'Unknown error';
+              logger.warn(`Failed to analyze ${email}: ${errorMsg}`);
+              
+              if (!continueOnError) {
+                throw new Error(`Analysis failed for ${email}: ${errorMsg}`);
+              }
+              
+              return {
+                email,
+                success: false,
+                error: errorMsg
+              };
+            }
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            logger.error(`Error analyzing ${email}:`, error);
+            
+            if (!continueOnError) {
+              throw error;
+            }
+            
+            return {
+              email,
+              success: false,
+              error: errorMsg
+            };
+          }
+        });
+
+        // Wait for batch to complete
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+      }
+
+      // Calculate team-level metrics
+      const successfulResults = results.filter(r => r.success && r.analysis);
+      const teamMetrics = this.calculateTeamMetrics(successfulResults.map(r => r.analysis!));
+
+      const duration = Date.now() - startTime;
+      logger.info(`Batch analysis completed in ${duration}ms: ${successfulResults.length}/${results.length} successful`);
+
+      const batchResult = {
+        summary: {
+          totalAnalyzed: results.length,
+          successCount: successfulResults.length,
+          errorCount: results.filter(r => !r.success).length,
+          analysisPeriodDays,
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          additionalIntent: args.additionalIntent
+        },
+        results,
+        teamMetrics: successfulResults.length > 0 ? teamMetrics : undefined
+      };
+
+      return buildSuccessResponse(batchResult, {
+        source: 'batch-personal-workload-analysis',
+        duration,
+        concurrency: maxConcurrency,
+        continueOnError
+      });
+
+    } catch (error) {
+      logger.error('Batch personal workload analysis failed:', error);
+      return buildErrorResponse(`Batch workload analysis failed: ${error}`, {
+        source: 'batch-workload-analysis-failed'
+      });
+    }
+  }
+
+  /**
+   * Calculate team-level metrics from individual analyses
+   */
+  private calculateTeamMetrics(analyses: PersonalWorkloadAnalysisResult[]): {
+    averageHealthScore: number;
+    healthDistribution: Record<string, number>;
+    topConcerns: Array<{ concern: string; count: number }>;
+    totalWorkItems: { completed: number; active: number };
+  } {
+    if (analyses.length === 0) {
+      return {
+        averageHealthScore: 0,
+        healthDistribution: {},
+        topConcerns: [],
+        totalWorkItems: { completed: 0, active: 0 }
+      };
+    }
+
+    // Average health score
+    const totalHealthScore = analyses.reduce((sum, a) => sum + a.executiveSummary.overallHealthScore, 0);
+    const averageHealthScore = Math.round(totalHealthScore / analyses.length);
+
+    // Health status distribution
+    const healthDistribution: Record<string, number> = {};
+    analyses.forEach(a => {
+      const status = a.executiveSummary.healthStatus;
+      healthDistribution[status] = (healthDistribution[status] || 0) + 1;
+    });
+
+    // Aggregate top concerns
+    const concernCounts = new Map<string, number>();
+    analyses.forEach(a => {
+      a.executiveSummary.primaryConcerns.forEach(concern => {
+        concernCounts.set(concern, (concernCounts.get(concern) || 0) + 1);
+      });
+    });
+
+    const topConcerns = Array.from(concernCounts.entries())
+      .map(([concern, count]) => ({ concern, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 concerns
+
+    // Total work items
+    const totalWorkItems = analyses.reduce(
+      (acc, a) => ({
+        completed: acc.completed + a.workSummary.completed.totalItems,
+        active: acc.active + a.workSummary.active.totalItems
+      }),
+      { completed: 0, active: 0 }
+    );
+
+    return {
+      averageHealthScore,
+      healthDistribution,
+      topConcerns,
+      totalWorkItems
+    };
   }
 }

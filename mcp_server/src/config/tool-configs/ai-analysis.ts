@@ -1,8 +1,6 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   personalWorkloadAnalyzerSchema,
-  batchPersonalWorkloadAnalyzerSchema,
-  sprintPlanningAnalyzerSchema,
   toolDiscoverySchema,
   aiQueryAnalysisSchema
 } from "../schemas.js";
@@ -14,82 +12,28 @@ import {
 export const aiAnalysisTools: ToolConfig[] = [
   {
     name: "analyze-workload",
-    description: "AI-powered personal workload analysis to assess burnout risk, overspecialization, work-life balance issues, and professional health indicators for an individual over a time period. Automatically fetches completed and active work, calculates metrics, and provides actionable insights. Supports optional custom analysis intent (e.g., 'assess readiness for promotion', 'check for career growth opportunities'). Requires VS Code sampling support.",
+    description: "AI-powered workload analysis to assess burnout risk, overspecialization, work-life balance issues, and professional health indicators. Accepts EITHER a single email (for individual analysis) OR an array of emails (for batch team analysis). When analyzing multiple people, processes up to 20 team members concurrently with configurable concurrency (default 5) and returns individual analyses plus team-level metrics (average health score, health distribution, top concerns). Automatically fetches completed and active work, calculates metrics, and provides actionable insights. Supports optional custom analysis intent (e.g., 'assess readiness for promotion', 'check for career growth opportunities'). Requires VS Code sampling support.",
     script: "",
     schema: personalWorkloadAnalyzerSchema,
     inputSchema: {
       type: "object",
       properties: {
-        assignedToEmail: { type: "string", description: "Email address of the person to analyze (e.g., user@domain.com)" },
+        assignedToEmail: { 
+          oneOf: [
+            { type: "string", description: "Single email address to analyze (e.g., 'user@domain.com')" },
+            { type: "array", items: { type: "string" }, description: "Array of email addresses for batch analysis (1-20 people, e.g., ['user1@domain.com', 'user2@domain.com'])" }
+          ],
+          description: "Email address(es) of person/people to analyze. Provide a single string for individual analysis or an array for batch team analysis."
+        },
         analysisPeriodDays: { type: "number", description: "Number of days to analyze backwards from today (default 90, min 7, max 365)" },
-        additionalIntent: { type: "string", description: "Optional custom analysis intent (e.g., 'check for career growth opportunities', 'assess readiness for promotion', 'evaluate technical skill development')" },
+        additionalIntent: { type: "string", description: "Optional custom analysis intent (e.g., 'check for career growth opportunities', 'assess readiness for promotion', 'evaluate technical skill development'). Applied to all team members in batch mode." },
+        continueOnError: { type: "boolean", description: "[Batch mode only] Continue analyzing remaining people if one fails (default true)" },
+        maxConcurrency: { type: "number", description: "[Batch mode only] Maximum concurrent analyses (1-10, default 5). Lower values reduce API load." },
         organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
         project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" },
         areaPath: { type: "string", description: "Area path to filter work items (uses configured default if not provided)" }
       },
       required: ["assignedToEmail"]
-    }
-  },
-  {
-    name: "analyze-workload-batch",
-    description: "🚀 BATCH WORKLOAD ANALYSIS: Analyze multiple team members' workloads in parallel and return all results at once. Significantly faster than running individual analyses. Processes up to 20 people concurrently with configurable concurrency (default 5). Returns individual analyses plus team-level metrics (average health score, health distribution, top concerns). Perfect for team health assessments and manager reviews. Requires VS Code sampling support.",
-    script: "",
-    schema: batchPersonalWorkloadAnalyzerSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        assignedToEmails: { 
-          type: "array", 
-          items: { type: "string" },
-          description: "Array of email addresses to analyze (1-20 people, e.g., ['user1@domain.com', 'user2@domain.com'])" 
-        },
-        analysisPeriodDays: { type: "number", description: "Number of days to analyze backwards from today (default 90, min 7, max 365)" },
-        additionalIntent: { type: "string", description: "Optional custom analysis intent applied to all team members" },
-        continueOnError: { type: "boolean", description: "Continue analyzing remaining people if one fails (default true)" },
-        maxConcurrency: { type: "number", description: "Maximum concurrent analyses (1-10, default 5). Lower values reduce API load." },
-        organization: { type: "string", description: "Azure DevOps organization name (uses configured default if not provided)" },
-        project: { type: "string", description: "Azure DevOps project name (uses configured default if not provided)" },
-        areaPath: { type: "string", description: "Area path to filter work items (uses configured default if not provided)" }
-      },
-      required: ["assignedToEmails"]
-    }
-  },
-  {
-    name: "plan-sprint",
-    description: "🤖 AI-POWERED SPRINT PLANNING: Analyze team capacity, historical velocity, and propose optimal work assignments for a sprint. Considers team member skills, workload balance, dependencies, and historical performance to create a balanced sprint plan with confidence scoring and risk assessment.",
-    script: "",
-    schema: sprintPlanningAnalyzerSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        iterationPath: { type: "string", description: "Target iteration/sprint path (e.g., 'Project\\Sprint 10')" },
-        teamMembers: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              email: { type: "string", description: "Team member email address" },
-              name: { type: "string", description: "Team member display name" },
-              capacityHours: { type: "number", description: "Available capacity in hours for this sprint (default 60)" },
-              skills: { type: "array", items: { type: "string" }, description: "Team member skills/specializations" },
-              preferredWorkTypes: { type: "array", items: { type: "string" }, description: "Preferred work item types" }
-            },
-            required: ["email", "name"]
-          },
-          description: "Team members participating in the sprint"
-        },
-        sprintCapacityHours: { type: "number", description: "Total team capacity in hours (overrides individual capacities)" },
-        historicalSprintsToAnalyze: { type: "number", description: "Number of previous sprints to analyze for velocity (default 3, max 10)" },
-        candidateWorkItemIds: { type: "array", items: { type: "number" }, description: "Work item IDs to consider for sprint assignment" },
-        considerDependencies: { type: "boolean", description: "Consider work item dependencies in planning (default true)" },
-        considerSkills: { type: "boolean", description: "Match work items to team member skills (default true)" },
-        additionalConstraints: { type: "string", description: "Additional planning constraints (e.g., 'prioritize bugs', 'balance frontend/backend')" },
-        organization: { type: "string", description: "Azure DevOps organization (uses config default if not provided)" },
-        project: { type: "string", description: "Azure DevOps project (uses config default if not provided)" },
-        areaPath: { type: "string", description: "Area path to filter work items (uses config default if not provided)" },
-        areaPathFilter: { type: "array", items: { type: "string" }, description: "Explicitly specify area paths to filter by (e.g., ['ProjectA\\\\TeamAlpha', 'ProjectA\\\\TeamBeta']). Takes precedence over single areaPath and config defaults. Use when planning sprints across multiple configured area paths." }
-      },
-      required: ["iterationPath", "teamMembers"]
     }
   },
   {

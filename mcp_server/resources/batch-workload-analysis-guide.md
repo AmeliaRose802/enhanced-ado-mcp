@@ -1,25 +1,39 @@
-# Batch Workload Analysis - Quick Reference
+# Workload Analysis - Quick Reference
 
-## When to Use
+## Unified Tool: `analyze-workload`
 
-✅ **Use `analyze-workload-batch` when:**
-- Analyzing 2+ team members at once
-- Conducting team health assessments
+The `analyze-workload` tool **automatically detects** whether you're analyzing one person or multiple people based on the `assignedToEmail` parameter type:
+
+✅ **Single Person Mode** (pass a string):
+```json
+{ "assignedToEmail": "user@domain.com" }
+```
+
+✅ **Batch Team Mode** (pass an array):
+```json
+{ "assignedToEmail": ["user1@domain.com", "user2@domain.com"] }
+```
+
+### Batch Mode Benefits
+- Analyzing 2+ team members at once (5-10x faster)
+- Team health assessments with aggregated metrics
 - Manager reviewing direct reports
-- Need team-level aggregated metrics
-- Want faster performance (5-10x speedup)
-
-❌ **Use `analyze-workload` (single) when:**
-- Analyzing just one person
-- Need to customize analysis parameters per person
-- Doing deep-dive on individual
+- Concurrent processing (up to 10 parallel analyses)
 
 ## Quick Examples
 
-### Basic Team Analysis
+### Single Person Analysis
 ```json
 {
-  "assignedToEmails": [
+  "assignedToEmail": "alice@contoso.com",
+  "analysisPeriodDays": 90
+}
+```
+
+### Basic Team Analysis (Batch)
+```json
+{
+  "assignedToEmail": [
     "alice@contoso.com",
     "bob@contoso.com",
     "charlie@contoso.com"
@@ -27,18 +41,18 @@
 }
 ```
 
-### Custom Intent for All
+### Custom Intent for All (Batch)
 ```json
 {
-  "assignedToEmails": ["user1@contoso.com", "user2@contoso.com"],
+  "assignedToEmail": ["user1@contoso.com", "user2@contoso.com"],
   "additionalIntent": "assess readiness for promotion"
 }
 ```
 
-### Faster Processing (High Concurrency)
+### Faster Processing - High Concurrency (Batch)
 ```json
 {
-  "assignedToEmails": ["user1@contoso.com", /* ... 15 more */],
+  "assignedToEmail": ["user1@contoso.com", /* ... 15 more */],
   "maxConcurrency": 10
 }
 ```
@@ -138,7 +152,6 @@ Automatic aggregation when 1+ analyses succeed:
 ## Related Tools
 
 - `analyze-workload` - Single person analysis with same features
-- `plan-sprint` - Sprint planning with team capacity analysis
 - `discover-tools` - Find the right tool for your task
 
 

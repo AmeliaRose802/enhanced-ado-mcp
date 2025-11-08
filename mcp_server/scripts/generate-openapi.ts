@@ -57,8 +57,7 @@ const schemaCategories: Record<string, { title: string; category: string; aiPowe
   bulkAddAcceptanceCriteriaByQueryHandleSchema: { title: 'Bulk Add Acceptance Criteria', category: 'Bulk Operations', aiPowered: true },
   generateWiqlQuerySchema: { title: 'Generate WIQL Query', category: 'AI-Powered Query Generation', aiPowered: true },
   toolDiscoverySchema: { title: 'Tool Discovery', category: 'Discovery' },
-  personalWorkloadAnalyzerSchema: { title: 'Personal Workload Analyzer', category: 'AI-Powered Analysis', aiPowered: true },
-  sprintPlanningAnalyzerSchema: { title: 'Sprint Planning Analyzer', category: 'AI-Powered Analysis', aiPowered: true }
+  personalWorkloadAnalyzerSchema: { title: 'Personal Workload Analyzer', category: 'AI-Powered Analysis', aiPowered: true }
 };
 
 /**

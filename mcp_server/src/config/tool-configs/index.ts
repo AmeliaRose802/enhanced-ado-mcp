@@ -28,8 +28,6 @@ export const toolConfigs: ToolConfig[] = [
  */
 export const AI_POWERED_TOOLS = [
   'analyze-workload',
-  'analyze-workload-batch',
-  'plan-sprint',
   'query-wiql', // Unified: supports AI generation when 'description' parameter is used
   'query-odata', // Unified: supports AI generation when 'description' parameter is used
   'discover-tools',

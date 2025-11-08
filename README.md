@@ -250,11 +250,10 @@ Relibly generating queries requires thosands of tokens of context, which will de
 - `undo-bulk` - Undo previous operations
 - `undo-forensic` - Undo changes by user/timestamp
 
-**AI Analysis (6 tools - requires VS Code + GitHub Copilot):**
+**AI Analysis (5 tools - requires VS Code + GitHub Copilot):**
 - `analyze-workitem` - Work item completeness & AI-readiness
 - `analyze-assignment` - Assignment suitability analysis
 - `analyze-workload` - Burnout risk & workload health
-- `plan-sprint` - AI-powered sprint planning
 - `discover-tools` - Find the right tool for your task
 - `recommend-parent` - AI-powered parent finder
 

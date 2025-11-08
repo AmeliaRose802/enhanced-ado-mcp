@@ -1,11 +1,11 @@
-# Batch Personal Workload Analysis
+# Workload Analysis (Single & Batch)
 
 ## Overview
 
-The `analyze-workload-batch` tool enables efficient analysis of multiple team members' workloads in parallel. This significantly improves performance for team health assessments by processing up to 20 people concurrently and returning all results in a single response.
+The `analyze-workload` tool provides flexible workload analysis that accepts **either a single email or an array of emails**. When given an array, it efficiently analyzes multiple team members' workloads in parallel, processing up to 20 people concurrently and returning all results with team-level aggregated metrics in a single response.
 
-**Version:** 1.0.0  
-**Added:** November 2025  
+**Version:** 2.0.0 (Unified from separate tools)  
+**Updated:** November 2025  
 **Category:** AI Analysis Tools  
 **Requires:** VS Code + GitHub Copilot with sampling support
 
@@ -22,7 +22,7 @@ The `analyze-workload-batch` tool enables efficient analysis of multiple team me
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `assignedToEmails` | `string[]` | Array of email addresses to analyze (1-20 people). Example: `["user1@domain.com", "user2@domain.com"]` |
+| `assignedToEmail` | `string \| string[]` | **Single email** for individual analysis (e.g., `"user@domain.com"`) **OR** **array of emails** for batch team analysis (1-20 people, e.g., `["user1@domain.com", "user2@domain.com"]`). Tool automatically detects mode based on type. |
 
 ### Optional Parameters
 
@@ -30,8 +30,8 @@ The `analyze-workload-batch` tool enables efficient analysis of multiple team me
 |-----------|------|---------|-------------|
 | `analysisPeriodDays` | `number` | `90` | Days to analyze backward from today (min 7, max 365) |
 | `additionalIntent` | `string` | - | Custom analysis intent applied to all team members |
-| `continueOnError` | `boolean` | `true` | Continue analyzing remaining people if one fails |
-| `maxConcurrency` | `number` | `5` | Maximum concurrent analyses (1-10). Lower values reduce API load. |
+| `continueOnError` | `boolean` | `true` | **[Batch mode only]** Continue analyzing remaining people if one fails |
+| `maxConcurrency` | `number` | `5` | **[Batch mode only]** Maximum concurrent analyses (1-10). Lower values reduce API load. |
 | `organization` | `string` | config | Azure DevOps organization name |
 | `project` | `string` | config | Azure DevOps project name |
 | `areaPath` | `string` | config | Area path to filter work items |
@@ -121,11 +121,20 @@ When 1+ successful analyses complete, team-level aggregations are provided:
 
 ## Examples
 
-### Basic Team Health Assessment
+### Individual Analysis (Single Email)
 
 ```json
 {
-  "assignedToEmails": [
+  "assignedToEmail": "user@contoso.com",
+  "analysisPeriodDays": 90
+}
+```
+
+### Basic Team Health Assessment (Array of Emails)
+
+```json
+{
+  "assignedToEmail": [
     "alice@contoso.com",
     "bob@contoso.com",
     "charlie@contoso.com"
@@ -133,31 +142,31 @@ When 1+ successful analyses complete, team-level aggregations are provided:
 }
 ```
 
-### Custom Analysis Intent
+### Custom Analysis Intent (Batch)
 
 ```json
 {
-  "assignedToEmails": ["user1@contoso.com", "user2@contoso.com"],
+  "assignedToEmail": ["user1@contoso.com", "user2@contoso.com"],
   "analysisPeriodDays": 60,
   "additionalIntent": "assess readiness for promotion to senior engineer"
 }
 ```
 
-### High-Concurrency for Large Teams
+### High-Concurrency for Large Teams (Batch)
 
 ```json
 {
-  "assignedToEmails": ["user1@contoso.com", /* ... 15 more */],
+  "assignedToEmail": ["user1@contoso.com", /* ... 15 more */],
   "maxConcurrency": 10,
   "continueOnError": true
 }
 ```
 
-### Strict Error Handling
+### Strict Error Handling (Batch)
 
 ```json
 {
-  "assignedToEmails": ["user1@contoso.com", "user2@contoso.com"],
+  "assignedToEmail": ["user1@contoso.com", "user2@contoso.com"],
   "continueOnError": false
 }
 ```
@@ -238,10 +247,10 @@ With `continueOnError: true` (default), partial failures are reported in individ
 ### Unit Tests
 
 ```typescript
-describe('BatchPersonalWorkloadAnalyzer', () => {
-  it('should process multiple people in parallel', async () => {
+describe('PersonalWorkloadAnalyzer', () => {
+  it('should process multiple people in parallel (batch mode)', async () => {
     const result = await analyzer.analyze({
-      assignedToEmails: ['user1@test.com', 'user2@test.com'],
+      assignedToEmail: ['user1@test.com', 'user2@test.com'],
       maxConcurrency: 2
     });
     expect(result.success).toBe(true);
@@ -251,16 +260,16 @@ describe('BatchPersonalWorkloadAnalyzer', () => {
   it('should continue on error when continueOnError=true', async () => {
     // Mock one failure
     const result = await analyzer.analyze({
-      assignedToEmails: ['valid@test.com', 'invalid@test.com'],
+      assignedToEmail: ['valid@test.com', 'invalid@test.com'],
       continueOnError: true
     });
     expect(result.data.summary.successCount).toBe(1);
     expect(result.data.summary.errorCount).toBe(1);
   });
 
-  it('should calculate team metrics', async () => {
+  it('should calculate team metrics in batch mode', async () => {
     const result = await analyzer.analyze({
-      assignedToEmails: ['user1@test.com', 'user2@test.com']
+      assignedToEmail: ['user1@test.com', 'user2@test.com']
     });
     expect(result.data.teamMetrics.averageHealthScore).toBeGreaterThan(0);
   });
@@ -275,6 +284,14 @@ describe('BatchPersonalWorkloadAnalyzer', () => {
 4. **Custom Intent**: Verify intent propagation to all analyses
 
 ## Changelog
+
+### 2.0.0 (November 2025)
+- **BREAKING**: Unified `analyze-workload-batch` into `analyze-workload`
+- Tool now accepts either `string` (single person) or `string[]` (batch mode)
+- Automatic mode detection based on parameter type
+- Batch-specific parameters (`continueOnError`, `maxConcurrency`) only used in array mode
+- Maintains backward compatibility for single-person analysis
+- All batch functionality preserved with improved API simplicity
 
 ### 1.0.0 (November 2025)
 - Initial release

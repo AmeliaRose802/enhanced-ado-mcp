@@ -147,27 +147,7 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     }
     
     const samplingService = new SamplingService(serverInstance);
-    return await samplingService.analyzePersonalWorkload(args as Parameters<typeof samplingService.analyzePersonalWorkload>[0]);
-  }
-
-  // Batch personal workload analysis (uses sampling if available)
-  if (name === 'analyze-workload-batch') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    
-    const samplingService = new SamplingService(serverInstance);
     return await samplingService.analyzeBatchPersonalWorkload(args as Parameters<typeof samplingService.analyzeBatchPersonalWorkload>[0]);
-  }
-
-  // Sprint planning analysis (uses sampling if available)
-  if (name === 'plan-sprint') {
-    if (!serverInstance) {
-      throw new Error("Server instance not available for sampling");
-    }
-    
-    const samplingService = new SamplingService(serverInstance);
-    return await samplingService.analyzeSprintPlanning(args as Parameters<typeof samplingService.analyzeSprintPlanning>[0]);
   }
 
   // AI-powered tool discovery (uses sampling if available)
