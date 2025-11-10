@@ -143,7 +143,7 @@ export async function handleBulkAddAcceptanceCriteria(config: ToolConfig, args: 
         success: false,
         data: null,
         metadata: { source: "bulk-add-acceptance-criteria" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

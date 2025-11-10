@@ -147,7 +147,7 @@ Undo bulk operations performed on a query handle (last operation or all operatio
   "success": false,
   "data": null,
   "errors": [
-    "Query handle 'qh_c1b1b9a3...' not found or expired. Query handles expire after 1 hour."
+    "Query handle 'qh_c1b1b9a3...' not found or expired. Query handles expire after 24 hours."
   ],
   "warnings": []
 }

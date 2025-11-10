@@ -143,3 +143,64 @@ Story point analysis tool reporting no story points for item that does have stor
   "errors": [],
   "warnings": []
 }
+
+Fix:
+
+{
+  "success": false,
+  "data": null,
+  "metadata": {
+    "source": "sprint-planning-analysis-failed",
+    "samplingAvailable": true,
+    "errorCategory": "not-found",
+    "errorMetadata": {
+      "category": "not-found",
+      "context": {
+        "source": "sprint-planning-analysis-failed"
+      },
+      "timestamp": "2025-11-08T01:48:33.689Z",
+      "retryable": false
+    }
+  },
+  "errors": [
+    "Sprint planning analysis failed: Error: Failed to fetch active work items:\n  Organization: \"msazure\"\n  Project: \"One\"\n  Error: ADOHttpError: HTTP 404: Not Found\n\nTroubleshooting:\n  1. Verify the project name is correct (check Azure DevOps portal)\n  2. Ensure you have access to this project\n  3. Try running 'az devops project show --project \"One\" --org \"https://dev.azure.com/msazure\"'\n  4. If project name has spaces or special characters, ensure proper escaping in area path"
+  ],
+  "warnings": []
+}
+
+
+Why did this return only 8 items?
+{
+  "handleOnly": true,
+  "returnQueryHandle": true,
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway' AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed', 'Resolved')"
+}
+{
+  "success": true,
+  "data": {
+    "query_handle": "qh_581d77ea5e4207905f912cd9f0d8aa4f",
+    "work_item_count": 8,
+    "total_count": 8,
+    "query": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway' AND [System.State] NOT IN ('Done', 'Removed', 'Closed', 'Completed', 'Resolved')",
+    "summary": "Query handle created for 8 work item(s). Handle-only mode: work item details not fetched for efficiency. Use the handle with bulk operation tools or wit-query-handle-get-items to retrieve items. Handle expires in 1 hour.",
+    "next_steps": [
+      "Use wit-query-handle-get-items to retrieve work item details if needed",
+      "Use wit-bulk-comment to add comments to all items",
+      "Use wit-bulk-update to update fields on all items",
+      "Use wit-bulk-assign to assign all items to a user",
+      "Use wit-bulk-remove to remove all items",
+      "Always use dryRun: true first to preview changes before applying them"
+    ],
+    "expires_at": "2025-11-11T00:50:38.917Z"
+  },
+  "metadata": {
+    "source": "rest-api-wiql",
+    "queryHandleMode": true,
+    "handleOnlyMode": true,
+    "handle": "qh_581d77ea5e4207905f912cd9f0d8aa4f",
+    "count": 8,
+    "totalCount": 8
+  },
+  "errors": [],
+  "warnings": []
+}

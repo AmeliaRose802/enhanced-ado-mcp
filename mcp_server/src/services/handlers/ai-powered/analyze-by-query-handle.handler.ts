@@ -213,7 +213,7 @@ export async function handleAnalyzeByQueryHandle(
         success: false,
         data: null,
         metadata: { source: "analyze-by-query-handle" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

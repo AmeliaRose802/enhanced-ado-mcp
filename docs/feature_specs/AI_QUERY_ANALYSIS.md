@@ -214,7 +214,7 @@ The AI can perform various types of analysis based on intent:
 ```json
 {
   "success": false,
-  "errors": ["Query handle 'qh_xyz' not found or expired. Query handles expire after 1 hour."]
+  "errors": ["Query handle 'qh_xyz' not found or expired. Query handles expire after 24 hours."]
 }
 ```
 
@@ -311,7 +311,7 @@ The AI can perform various types of analysis based on intent:
 - Maximum 100 items per analysis
 - 2-minute timeout for analysis
 - Requires VS Code sampling support (not available in CLI)
-- Query handles expire after 1 hour
+- Query handles expire after 24 hours
 - AI responses may vary slightly between runs
 
 ## Examples

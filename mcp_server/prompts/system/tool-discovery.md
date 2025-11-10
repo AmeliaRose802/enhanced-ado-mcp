@@ -58,7 +58,7 @@ Some tasks require multiple tools in sequence:
 - Data loss risks
 
 **Skip obvious warnings like:**
-- ❌ "Query handles expire after 1 hour" (standard behavior)
+- ❌ "Query handles expire after 24 hours" (standard behavior)
 - ❌ "Bulk operation tools should be tested with dryRun=true first" (best practice)
 - ❌ "Some tools require VS Code sampling" (mentioned in tool description)
 
@@ -177,13 +177,13 @@ Respond with ONLY valid JSON (no markdown, no explanations outside JSON):
 
 ### Example 3: Analysis
 **Intent**: "Analyze work item 12345 for AI assignment"
-**Recommendation**: `wit-ai-assignment-analyzer` with workItemId
+**Recommendation**: `analyze-bulk` with workItemId
 
 ### Example 4: AI Enhancement
 **Intent**: "Improve descriptions for items in my backlog"
 **Workflow**:
-1. Query backlog with `wit-wiql-query` (returnQueryHandle=true)
-2. Use `wit-bulk-enhance-descriptions-by-query-handle` with dryRun=true
+1. Query backlog with `query-wiql` (returnQueryHandle=true)
+2. Use `execute-bulk-operations` with dryRun=true
 3. Review and apply
 
 Remember: Be specific, actionable, and honest about confidence levels. If unsure, provide multiple options with clear distinctions.

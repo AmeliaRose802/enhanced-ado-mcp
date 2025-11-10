@@ -13,8 +13,9 @@ Analyzes work item hierarchies, groups violations by type, and creates query han
 ## Basic Usage
 
 ```typescript
-const result = await callTool('wit-analyze-hierarchy-with-handles', {
-  AreaPath: "MyProject\\Team"
+const result = await callTool('analyze-bulk', {
+  queryHandle: "qh_...",  // From query-wiql with returnQueryHandle: true
+  analysisType: ["hierarchy"]
 });
 ```
 
@@ -56,55 +57,87 @@ Each group includes:
 ### Fix Orphaned Items
 
 ```typescript
-// 1. Analyze
-const analysis = await callTool('wit-analyze-hierarchy-with-handles', {
-  AreaPath: "MyProject\\Team"
+// 1. Query items
+const query = await callTool('query-wiql', {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\Team'",
+  returnQueryHandle: true
 });
 
-// 2. Get orphaned items handle
+// 2. Analyze hierarchy
+const analysis = await callTool('analyze-bulk', {
+  queryHandle: query.data.query_handle,
+  analysisType: ["hierarchy"]
+});
+
+// 3. Get orphaned items handle
 const handle = analysis.data.queryHandles.orphaned_items;
 
-// 3. Assign for review
-await callTool('wit-bulk-assign-by-query-handle', {
+// 4. Assign for review
+await callTool('execute-bulk-operations', {
   queryHandle: handle,
-  assignee: "tech-lead@company.com"
+  actions: [{
+    type: "assign",
+    assignTo: "tech-lead@company.com"
+  }]
 });
 
-// 4. Add comment
-await callTool('wit-bulk-comment-by-query-handle', {
+// 5. Add comment
+await callTool('execute-bulk-operations', {
   queryHandle: handle,
-  comment: "Please link to appropriate parent Feature"
+  actions: [{
+    type: "comment",
+    comment: "Please link to appropriate parent Feature"
+  }]
 });
 ```
 
 ### Fix State Inconsistencies
 
 ```typescript
-// 1. Analyze
-const analysis = await callTool('wit-analyze-hierarchy-with-handles', {
-  AreaPath: "MyProject\\Sprint10"
+// 1. Query items
+const query = await callTool('query-wiql', {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\Sprint10'",
+  returnQueryHandle: true
 });
 
-// 2. Get state issues handle
+// 2. Analyze hierarchy
+const analysis = await callTool('analyze-bulk', {
+  queryHandle: query.data.query_handle,
+  analysisType: ["hierarchy"]
+});
+
+// 3. Get state issues handle
 const handle = analysis.data.queryHandles.state_progression_issues;
 
-// 3. Bulk update states
-await callTool('wit-bulk-update-by-query-handle', {
+// 4. Bulk update states
+await callTool('execute-bulk-operations', {
   queryHandle: handle,
-  updates: {
-    "System.State": "Active",
-    "System.Tags": "StateReview"
-  }
+  actions: [{
+    type: "update",
+    updates: [
+      { op: "replace", path: "/fields/System.State", value: "Active" },
+      { op: "add", path: "/fields/System.Tags", value: "StateReview" }
+    ]
+  }]
 });
 ```
 
 ### Analyze Specific Epic Tree
 
 ```typescript
-const analysis = await callTool('wit-analyze-hierarchy-with-handles', {
-  WorkItemIds: [12345], // Epic ID
-  AnalysisDepth: "deep", // Analyzes full tree
-  ExcludeStates: ["Closed", "Removed"]
+// First query for the Epic and its descendants
+const query = await callTool('query-wiql', {
+  wiqlQuery: "SELECT [System.Id] FROM WorkItemLinks WHERE [Source].[System.Id] = 12345 AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward' MODE (Recursive)",
+  returnQueryHandle: true
+});
+
+// Then analyze the hierarchy
+const analysis = await callTool('analyze-bulk', {
+  queryHandle: query.data.query_handle,
+  analysisType: ["hierarchy"],
+  filters: {
+    excludeStates: ["Closed", "Removed"]
+  }
 });
 
 // Handle each violation group
@@ -162,10 +195,9 @@ for (const group of analysis.data.violationGroups) {
 
 ## Related Tools
 
-- `wit-bulk-assign-by-query-handle` - Assign items in violation groups
-- `wit-bulk-update-by-query-handle` - Update fields on violation groups  
-- `wit-bulk-comment-by-query-handle` - Add comments to violation groups
+- `execute-bulk-operations` - Perform bulk actions on violation groups (assign, update, comment)
 - `inspect-handle` - Inspect query handle contents
+- `query-wiql` - Query work items for analysis
 
 ## Performance
 

@@ -9,35 +9,40 @@ description: >-
 
 # Assign to Copilot Workflow
 
-You are an AI assistant helping users create or assign work items to GitHub Copilot for automated resolution.
+## EXECUTION
 
-## 🎯 Workflow Overview
+**1. Get work item** - Ask: "Enter work item ID or describe new item"
+   - Numeric → existing item
+   - Text → new item to create
 
-This is an **interactive workflow** that guides users through:
+**2. Detect repository** - Check git remote or ask user
 
-1. **Item Discovery** - Ask user what to assign or create
-2. **Repository Context** - Detect current repo or ask user
-3. **Context Gathering** - Enhance description with repo insights
-4. **Agent Selection** - Find specialized Copilot agent via MCP tools
-5. **Assignment** - Create/assign item to Copilot with branch link
+**3. Gather context** - Read README, package.json, recent commits. For existing items: fetch with `get-context`
 
-## User Interaction Flow
+**4. Discover agents** - Use `list-agents` with repository name
 
-### Step 1: Ask About the Work Item
+**5. Assign to Copilot** - Use `assign-copilot` with optional `specializedAgent`
 
-**DO NOT accept item info as parameters - always ask conversationally:**
+## User Interactions
 
+**Step 1 - Get Work Item:**
 ```
 What would you like to assign to GitHub Copilot?
-
-Options:
-- Enter an existing work item ID (e.g., "12345")
-- Describe a new work item to create (e.g., "Fix authentication bug in login service")
+- Enter work item ID (e.g., "12345")
+- Describe new item (e.g., "Fix auth bug")
 ```
 
-**Parse user response:**
-- If numeric (e.g., "12345") → Existing work item to assign
-- If descriptive text → New work item to create
+**Step 2 - Repository:**
+Auto-detect from git or ask: "Which repository?"
+
+**Step 4 - Agent Selection:**
+```
+Recommended agent: [Name]
+Options:
+1. Use [recommended]
+2. Use [other agent]
+3. Default Copilot
+```
 
 ### Step 2: Detect Repository Context
 
@@ -50,7 +55,7 @@ Options:
 ```
 Which repository should this work item be linked to?
 
-Available repositories in your ADO project: [list from wit-get-configuration]
+Available repositories in your ADO project: [list from get-config]
 ```
 
 ### Step 3: Gather Context for AI Enhancement
@@ -78,7 +83,7 @@ git branch --show-current  # Current branch for linking
 
 **For existing work items:**
 ```json
-Tool: wit-get-work-item-context-package
+Tool: get-context
 {
   "workItemId": <id>,
   "includeParent": true,
@@ -120,7 +125,7 @@ Tool: wit-get-work-item-context-package
 
 **AI Enhancement Tool (if needed):**
 ```json
-Tool: wit-ai-assignment-analyzer
+Tool: analyze-bulk
 {
   "workItemId": <id>,
   "outputFormat": "detailed"
@@ -130,7 +135,7 @@ Use this to validate the item is AI-suitable before assignment.
 
 ### Step 5: Discover Specialized Copilot Agents
 
-**Tool: `wit-list-subagents`**
+**Tool: `list-agents`**
 ```json
 {
   "repository": "<repo-name>"
@@ -188,7 +193,7 @@ Your choice?
 **For EXISTING work items:**
 
 ```json
-Tool: wit-assign-to-copilot
+Tool: assign-copilot
 {
   "workItemId": <id>,
   "repository": "<repo-name>",
@@ -241,7 +246,7 @@ Next steps:
 
 ### Configuration Discovery
 ```json
-Tool: wit-get-configuration
+Tool: get-config
 {
   "section": "all"
 }
@@ -250,7 +255,7 @@ Returns available repositories, area paths, default assignees, GitHub Copilot GU
 
 ### List Specialized Agents
 ```json
-Tool: wit-list-subagents
+Tool: list-agents
 {
   "repository": "<repo-name>"
 }
@@ -259,7 +264,7 @@ Returns all specialized Copilot agents configured for the repository.
 
 ### Get Work Item Context
 ```json
-Tool: wit-get-work-item-context-package
+Tool: get-context
 {
   "workItemId": <id>,
   "includeParent": true,
@@ -273,7 +278,7 @@ Returns comprehensive work item details for context enhancement.
 
 ### Validate AI Suitability
 ```json
-Tool: wit-ai-assignment-analyzer
+Tool: analyze-bulk
 {
   "workItemId": <id>,
   "outputFormat": "detailed"
@@ -283,7 +288,7 @@ Returns analysis of whether the work item is suitable for AI assignment.
 
 ### Assign Existing Work Item to Copilot
 ```json
-Tool: wit-assign-to-copilot
+Tool: assign-copilot
 {
   "workItemId": <number>,
   "repository": "string (required)",
@@ -382,7 +387,7 @@ Options:
 
 User: "1"
 
-[AI calls wit-assign-to-copilot with specializedAgent: "SecurityScanAgent"]
+[AI calls assign-copilot with specializedAgent: "SecurityScanAgent"]
 
 AI: ✅ Work item created and assigned to GitHub Copilot!
 
@@ -404,7 +409,7 @@ AI: Found work item #12345: "Update dependencies in package.json"
 [AI detects repository from current directory]
 Detected repository: "my-app"
 
-[AI calls wit-list-subagents for "my-app"]
+[AI calls list-agents for "my-app"]
 
 AI: I found these specialized Copilot agents:
 
@@ -421,7 +426,7 @@ Options:
 
 User: "1"
 
-[AI calls wit-assign-to-copilot with specializedAgent: "ComponentGovernanceAgent"]
+[AI calls assign-copilot with specializedAgent: "ComponentGovernanceAgent"]
 
 AI: ✅ Work item assigned to GitHub Copilot!
 
@@ -440,7 +445,7 @@ Enhance descriptions with repository, git, and work item context.
 Analyze work item keywords to recommend the right specialized agent.
 
 ### 3. Validate Before Assignment
-Use wit-ai-assignment-analyzer to check AI suitability.
+Use analyze-bulk to check AI suitability.
 
 ### 4. Preserve User Intent
 Show recommendations but let user choose or cancel.

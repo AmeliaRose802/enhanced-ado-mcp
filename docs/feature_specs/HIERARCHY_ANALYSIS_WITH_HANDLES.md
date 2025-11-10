@@ -400,7 +400,7 @@ await callTool('wit-bulk-update-by-query-handle', {
 1. **Creation:** Handles created during analysis (1-hour TTL)
 2. **Storage:** Stored in `QueryHandleService` with work item context
 3. **Usage:** Can be used immediately with any bulk operation tool
-4. **Expiration:** Handles expire after 1 hour, but can be recreated
+4. **Expiration:** Handles expire after 24 hours, but can be recreated
 
 ## Testing
 

@@ -10,7 +10,7 @@ import { logger } from '../utils/logger.js';
  * 
  * Key features:
  * - Generate unique handles for query results
- * - Store work item IDs with configurable expiration (default 30 minutes, max 2 hours)
+ * - Store work item IDs with configurable expiration (default 24 hours, max 48 hours)
  * - Retrieve work item IDs by handle
  * - Automatic cleanup of expired handles
  * - Expiration warnings when handle is close to expiring

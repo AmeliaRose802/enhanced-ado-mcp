@@ -13,6 +13,7 @@ import { loadPrompts, getPromptContent } from "./services/prompt-service.js";
 import { executeTool, setServerInstance } from "./services/tool-service.js";
 import { checkSamplingSupport } from "./utils/sampling-client.js";
 import { listResources, getResourceContent } from "./services/resource-service.js";
+import { startPromptWatcher, setPromptsChangedCallback, stopPromptWatcher } from "./utils/prompt-loader.js";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { updateConfigFromCLI, ensureGitHubCopilotGuid, ensureCurrentIterationPath, loadConfiguration, type CLIArguments } from "./config/config.js";
@@ -228,10 +229,33 @@ async function main() {
     // Set server instance with type assertion to handle SDK generic complexity
     setServerInstance(server as any);
     
+    // Set up prompt change notification
+    setPromptsChangedCallback(() => {
+      logger.info('Prompts changed - sending notification to client');
+      // Send notification to client to reload prompts
+      server.notification({
+        method: 'notifications/prompts/list_changed',
+        params: {}
+      } as any);
+    });
+    
     const transport = useHybrid ? new HybridStdioServerTransport() : new StdioServerTransport();
     await server.connect(transport as any);
     
     logger.markMCPConnected();
+    
+    // Start watching prompts directory for changes
+    await startPromptWatcher();
+    
+    // Clean up watcher on exit
+    process.on('SIGINT', () => {
+      stopPromptWatcher();
+      process.exit(0);
+    });
+    process.on('SIGTERM', () => {
+      stopPromptWatcher();
+      process.exit(0);
+    });
     
   } catch (error) {
     logger.error("Failed to start MCP server:", error);

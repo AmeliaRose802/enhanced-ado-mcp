@@ -215,28 +215,26 @@ Relibly generating queries requires thosands of tokens of context, which will de
 
 ## What It Does
 
-- **25 MCP Tools** for Azure DevOps work item management
-- **AI-Powered Analysis** (completeness, AI-readiness, assignment suitability)
+- **21 MCP Tools** for Azure DevOps work item management
+- **AI-Powered Analysis** (workload health, query handle analysis, tool discovery)
 - **Natural Language Queries** (English → WIQL/OData generation)
 - **Safe Bulk Operations** (query handle pattern prevents ID hallucination)
 - **GitHub Copilot Integration** (auto-assign work items to coding agents)
 
 ### Key Tools
 
-**Work Item Creation (4 tools):**
+**Work Item Creation (3 tools):**
 - `create-workitem` - Create work items with optional parent
 - `assign-copilot` - Assign existing items to GitHub Copilot
-
 - `clone-workitem` - Clone/duplicate work items
 
 **Work Item Context (2 tools):**
 - `get-context` - Comprehensive work item details
 - `extract-security-links` - Extract security scan instructions
 
-**Query Tools (3 tools):**
-- `query-wiql` - Execute WIQL or generate from natural language (includes substantive change analysis)
+**Query Tools (2 tools):**
+- `query-wiql` - Execute WIQL or generate from natural language
 - `query-odata` - Execute OData analytics or generate from natural language
-- `wit-validate-hierarchy` - Fast rule-based hierarchy validation
 
 **Query Handle Management (4 tools):**
 - `analyze-bulk` - Analyze work items via query handle
@@ -245,21 +243,20 @@ Relibly generating queries requires thosands of tokens of context, which will de
 - `get-context-bulk` - Batch context retrieval
 
 **Bulk Operations (4 tools):**
-- `execute-bulk-operations` - All bulk operations in one tool
+- `execute-bulk-operations` - Unified bulk operations (update fields, tags, comments, links, state transitions, AI enhancements)
 - `link-workitems` - Create relationships between items
 - `undo-bulk` - Undo previous operations
 - `undo-forensic` - Undo changes by user/timestamp
 
-**AI Analysis (5 tools - requires VS Code + GitHub Copilot):**
-- `analyze-workitem` - Work item completeness & AI-readiness
-- `analyze-assignment` - Assignment suitability analysis
+**AI Analysis (3 tools - requires VS Code + GitHub Copilot):**
 - `analyze-workload` - Burnout risk & workload health
+- `analyze-query-handle` - AI-powered analysis of query handle results
 - `discover-tools` - Find the right tool for your task
-- `recommend-parent` - AI-powered parent finder
 
-**Configuration (2 tools):**
+**Configuration (3 tools):**
 - `get-config` - View current server configuration
 - `get-prompts` - Access prompt templates
+- `list-agents` - List available specialized agents
 
 See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 

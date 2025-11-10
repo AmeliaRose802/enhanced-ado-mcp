@@ -361,7 +361,7 @@ AI Response: { "confidence": 0.85, "description": "..." }
 - **Pagination:** Default 50 handles per page (max 200)
 
 **Limitations:**
-- Query handles expire after 1 hour (not configurable)
+- Query handles expire after 24 hours (not configurable)
 - Handle inspection doesn't extend expiration time
 - Large query result sets (>1000 items) may have slow preview generation
 
@@ -588,7 +588,7 @@ az login
 
 **Solution:** Re-run query to get fresh handle
 ```json
-// Query handle expired after 1 hour
+// Query handle expired after 24 hours
 // ❌ Error: "Query handle not found or expired"
 
 // ✅ Solution: Re-run the original query
@@ -676,7 +676,7 @@ az login
 ## 🚨 Critical Limitations Summary
 
 **Always Remember:**
-1. **Query handles expire after 1 hour** - complete operations within this window
+1. **Query handles expire after 24 hours** - complete operations within this window
 2. **OData cannot aggregate StoryPoints** - use WIQL instead
 3. **OData has 5-15 minute data delay** - use WIQL for real-time
 4. **Bulk AI tools require VS Code** - not available in all environments

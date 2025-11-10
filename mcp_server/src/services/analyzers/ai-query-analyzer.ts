@@ -50,7 +50,7 @@ export class AIQueryAnalyzer {
       const queryData = queryHandleService.getQueryData(args.queryHandle);
       if (!queryData) {
         return buildErrorResponse(
-          `Query handle '${args.queryHandle}' not found or expired. Query handles expire after 1 hour.`,
+          `Query handle '${args.queryHandle}' not found or expired. Query handles expire after 24 hours.`,
           { source: 'ai-query-analyzer' }
         );
       }

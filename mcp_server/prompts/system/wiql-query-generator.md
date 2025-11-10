@@ -53,7 +53,7 @@ Generate valid, syntactically correct WIQL queries based on natural language des
    - **If user asks for empty acceptance criteria, descriptions, etc.**:
      - Explain the limitation in your response
      - Suggest retrieving all items and filtering client-side
-     - Recommend using wit-query-analytics-odata for more advanced field content queries
+     - Recommend using query-odata for more advanced field content queries
 
 5. **Filtering:**
    - **Include area path filter ONLY when {{AREA_PATH}} is provided (not empty)**: [System.AreaPath] UNDER '{{AREA_PATH}}'

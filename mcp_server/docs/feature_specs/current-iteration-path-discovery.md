@@ -295,16 +295,16 @@ File: `mcp_server/test/unit/current-iteration-discovery.test.ts`
 
 3. Create work item without iteration - should use discovered iteration
 
-4. Call `wit-get-configuration` to verify cached value
+4. Call `get-config` to verify cached value
 
 ## Integration Points
 
 ### Work Item Creation
 
 Tools that create work items automatically use discovered iteration:
-- `wit-create-new-item`
-- `wit-create-copilot-item`
-- `wit-clone-item`
+- `create-workitem`
+- `assign-copilot`
+- `clone-workitem`
 
 **Precedence:**
 1. User-provided `iterationPath` parameter (highest priority)
@@ -314,7 +314,7 @@ Tools that create work items automatically use discovered iteration:
 
 ### Configuration Tool
 
-`wit-get-configuration` displays discovered iteration:
+`get-config` displays discovered iteration:
 
 ```json
 {

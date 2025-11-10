@@ -2,20 +2,35 @@
 
 ## Overview
 
-Three AI-powered tools for enhancing work items in bulk using query handles. All tools process items in batches, use AI sampling for intelligent generation, and support dry-run mode for safety.
+⚠️ **DEPRECATED**: Individual AI-powered enhancement tools have been consolidated into `execute-bulk-operations`.
 
-## Tools
+Use `execute-bulk-operations` with the following action types for AI-powered enhancements:
+- `enhance-description` - Generate AI-enhanced descriptions for work items
+- `estimate-story-points` - AI-powered story point estimation
+- `add-acceptance-criteria` - Generate testable acceptance criteria
 
-### 1. wit-bulk-enhance-descriptions-by-query-handle
+## Using execute-bulk-operations for AI Enhancements
+
+### 1. Enhance Descriptions
 **Purpose**: Generate AI-enhanced descriptions for work items
 
-**Key Parameters**:
-- `queryHandle`: Query handle from WIQL query (returnQueryHandle=true)
-- `itemSelector`: 'all', indices [0,1,2], or criteria object
-- `sampleSize`: Max items to process (default 10, max 100)
+**Using execute-bulk-operations**:
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "enhance-description",
+    "enhancementStyle": "detailed",
+    "preserveExisting": true
+  }],
+  "itemSelector": "all",
+  "dryRun": true
+}
+```
+
+**Enhancement Parameters**:
 - `enhancementStyle`: 'detailed' | 'concise' | 'technical' | 'business'
 - `preserveExisting`: Append vs replace (default true)
-- `dryRun`: Preview mode (default true)
 
 **Enhancement Styles**:
 - **detailed**: Comprehensive explanation with context and implementation notes
@@ -24,43 +39,60 @@ Three AI-powered tools for enhancing work items in bulk using query handles. All
 - **business**: Stakeholder-focused with business value and outcomes
 
 **Example**:
-```typescript
+```json
 // First, get items with missing descriptions
-const queryResult = await query-wiql({
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.Description] = ''",
-  returnQueryHandle: true
-});
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Description] = ''",
+  "returnQueryHandle": true
+}
 
 // Enhance descriptions (dry run first)
-const enhanceResult = await wit-bulk-enhance-descriptions-by-query-handle({
-  queryHandle: queryResult.query_handle,
-  itemSelector: 'all',
-  sampleSize: 20,
-  enhancementStyle: 'technical',
-  preserveExisting: false,
-  dryRun: true  // Review results first
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "enhance-description",
+    "enhancementStyle": "technical",
+    "preserveExisting": false
+  }],
+  "itemSelector": "all",
+  "dryRun": true
+}
 
 // Apply changes
-const finalResult = await wit-bulk-enhance-descriptions-by-query-handle({
-  queryHandle: queryResult.query_handle,
-  // ... same parameters
-  dryRun: false  // Actually update
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "enhance-description",
+    "enhancementStyle": "technical",
+    "preserveExisting": false
+  }],
+  "itemSelector": "all",
+  "dryRun": false
+}
 ```
 
 ---
 
-### 2. wit-bulk-assign-story-points-by-query-handle
+### 2. Estimate Story Points
 **Purpose**: AI-powered story point estimation for work items
 
-**Key Parameters**:
-- `queryHandle`: Query handle from WIQL query
-- `itemSelector`: 'all', indices, or criteria
-- `sampleSize`: Max items to process (default 10, max 100)
+**Using execute-bulk-operations**:
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "estimate-story-points",
+    "pointScale": "fibonacci",
+    "onlyUnestimated": true
+  }],
+  "itemSelector": "all",
+  "dryRun": true
+}
+```
+
+**Estimation Parameters**:
 - `pointScale`: 'fibonacci' | 'linear' | 't-shirt'
 - `onlyUnestimated`: Only estimate items without effort (default true)
-- `dryRun`: Preview mode (default true)
 
 **Point Scales**:
 - **fibonacci**: 1, 2, 3, 5, 8, 13 (recommended for agile teams)
@@ -81,47 +113,64 @@ const finalResult = await wit-bulk-enhance-descriptions-by-query-handle({
 - Decomposition suggestion if too large
 
 **Example**:
-```typescript
+```json
 // Get unestimated Product Backlog Items
-const queryResult = await query-wiql({
-  wiqlQuery: `SELECT [System.Id] FROM WorkItems 
-         WHERE [System.WorkItemType] = 'Product Backlog Item' 
-         AND [Microsoft.VSTS.Scheduling.Effort] = ''`,
-  returnQueryHandle: true
-});
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Product Backlog Item' AND [Microsoft.VSTS.Scheduling.Effort] = ''",
+  "returnQueryHandle": true
+}
 
 // Estimate using fibonacci scale (dry run)
-const estimateResult = await wit-bulk-assign-story-points-by-query-handle({
-  queryHandle: queryResult.query_handle,
-  itemSelector: 'all',
-  pointScale: 'fibonacci',
-  onlyUnestimated: true,
-  dryRun: true
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "estimate-story-points",
+    "pointScale": "fibonacci",
+    "onlyUnestimated": true
+  }],
+  "itemSelector": "all",
+  "dryRun": true
+}
 
 // Review results, then apply
-const finalResult = await wit-bulk-assign-story-points-by-query-handle({
-  queryHandle: queryResult.query_handle,
-  pointScale: 'fibonacci',
-  onlyUnestimated: true,
-  dryRun: false
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "estimate-story-points",
+    "pointScale": "fibonacci",
+    "onlyUnestimated": true
+  }],
+  "itemSelector": "all",
+  "dryRun": false
+}
 ```
 
 ---
 
-### 3. wit-bulk-add-acceptance-criteria-by-query-handle
+### 3. Add Acceptance Criteria
 **Purpose**: Generate testable acceptance criteria for work items
 
-**Key Parameters**:
-- `queryHandle`: Query handle from WIQL query
-- `itemSelector`: 'all', indices, or criteria
-- `sampleSize`: Max items to process (default 10, max 100)
+**Using execute-bulk-operations**:
+```json
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "add-acceptance-criteria",
+    "criteriaFormat": "gherkin",
+    "minCriteria": 3,
+    "maxCriteria": 7,
+    "preserveExisting": true
+  }],
+  "itemSelector": "all",
+  "dryRun": true
+}
+```
+
+**Criteria Parameters**:
 - `criteriaFormat`: 'gherkin' | 'checklist' | 'user-story'
 - `minCriteria`: Minimum criteria to generate (default 3)
 - `maxCriteria`: Maximum criteria to generate (default 7)
 - `preserveExisting`: Append vs replace (default true)
-- `dryRun`: Preview mode (default true)
 
 **Criteria Formats**:
 
@@ -153,34 +202,40 @@ So that I can correct my input before submitting
 - Avoids vague terms like "works well"
 
 **Example**:
-```typescript
+```json
 // Find items missing acceptance criteria
-const queryResult = await query-wiql({
-  wiqlQuery: `SELECT [System.Id] FROM WorkItems 
-         WHERE [System.WorkItemType] = 'User Story' 
-         AND [Microsoft.VSTS.Common.AcceptanceCriteria] = ''`,
-  returnQueryHandle: true
-});
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'User Story' AND [Microsoft.VSTS.Common.AcceptanceCriteria] = ''",
+  "returnQueryHandle": true
+}
 
 // Generate criteria (dry run)
-const criteriaResult = await wit-bulk-add-acceptance-criteria-by-query-handle({
-  queryHandle: queryResult.query_handle,
-  itemSelector: 'all',
-  criteriaFormat: 'gherkin',
-  minCriteria: 3,
-  maxCriteria: 7,
-  preserveExisting: false,
-  dryRun: true
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "add-acceptance-criteria",
+    "criteriaFormat": "gherkin",
+    "minCriteria": 3,
+    "maxCriteria": 7,
+    "preserveExisting": false
+  }],
+  "itemSelector": "all",
+  "dryRun": true
+}
 
 // Apply criteria
-const finalResult = await wit-bulk-add-acceptance-criteria-by-query-handle({
-  queryHandle: queryResult.query_handle,
-  criteriaFormat: 'gherkin',
-  minCriteria: 3,
-  maxCriteria: 7,
-  dryRun: false
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "add-acceptance-criteria",
+    "criteriaFormat": "gherkin",
+    "minCriteria": 3,
+    "maxCriteria": 7,
+    "preserveExisting": false
+  }],
+  "itemSelector": "all",
+  "dryRun": false
+}
 ```
 
 ---
@@ -190,75 +245,85 @@ const finalResult = await wit-bulk-add-acceptance-criteria-by-query-handle({
 ### Pattern 1: Progressive Enhancement
 Enhance work items in stages with validation at each step:
 
-```typescript
+```json
 // 1. Get items needing enhancement
-const items = await query-wiql({
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
-  returnQueryHandle: true
-});
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
+  "returnQueryHandle": true
+}
 
-// 2. Enhance descriptions first
-await wit-bulk-enhance-descriptions-by-query-handle({
-  queryHandle: items.query_handle,
-  enhancementStyle: 'detailed',
-  dryRun: false
-});
-
-// 3. Add acceptance criteria
-await wit-bulk-add-acceptance-criteria-by-query-handle({
-  queryHandle: items.query_handle,
-  criteriaFormat: 'gherkin',
-  dryRun: false
-});
-
-// 4. Estimate story points
-await wit-bulk-assign-story-points-by-query-handle({
-  queryHandle: items.query_handle,
-  pointScale: 'fibonacci',
-  dryRun: false
-});
+// 2. Enhance descriptions, add criteria, and estimate points in one call
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [
+    {
+      "type": "enhance-description",
+      "enhancementStyle": "detailed"
+    },
+    {
+      "type": "add-acceptance-criteria",
+      "criteriaFormat": "gherkin"
+    },
+    {
+      "type": "estimate-story-points",
+      "pointScale": "fibonacci"
+    }
+  ],
+  "itemSelector": "all",
+  "dryRun": false
+}
 ```
 
 ### Pattern 2: Selective Enhancement
 Use itemSelector to target specific items:
 
-```typescript
-const items = await query-wiql({
-  wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] = 'MyProject\\Backend'",
-  returnQueryHandle: true,
-  includeSubstantiveChange: true
-});
+```json
+// Get items
+{
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] = 'MyProject\\Backend'",
+  "returnQueryHandle": true
+}
 
 // Only enhance high-priority incomplete items
-await wit-bulk-enhance-descriptions-by-query-handle({
-  queryHandle: items.query_handle,
-  itemSelector: {
-    states: ['New', 'Active'],
-    tags: ['High-Priority']
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "enhance-description",
+    "enhancementStyle": "technical"
+  }],
+  "itemSelector": {
+    "states": ["New", "Active"],
+    "tags": ["High-Priority"]
   },
-  enhancementStyle: 'technical',
-  dryRun: false
-});
+  "dryRun": false
+}
 ```
 
 ### Pattern 3: Dry Run → Review → Apply
 Always use dry run first to preview AI-generated content:
 
-```typescript
+```json
 // Step 1: Dry run
-const preview = await wit-bulk-enhance-descriptions-by-query-handle({
-  queryHandle: handle,
-  dryRun: true
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "enhance-description",
+    "enhancementStyle": "detailed"
+  }],
+  "dryRun": true
+}
 
-// Step 2: Review preview.results
-console.log(preview.results);
+// Step 2: Review results
 
 // Step 3: Apply if satisfied
-const final = await wit-bulk-enhance-descriptions-by-query-handle({
-  queryHandle: handle,
-  dryRun: false
-});
+{
+  "queryHandle": "qh_abc123...",
+  "actions": [{
+    "type": "enhance-description",
+    "enhancementStyle": "detailed"
+  }],
+  "dryRun": false
+}
 ```
 
 ---
@@ -294,7 +359,7 @@ Tools detect when work item context is insufficient and report low confidence.
 ## Troubleshooting
 
 **"Query handle not found or expired"**
-- Query handles expire after 1 hour
+- Query handles expire after 24 hours
 - Re-run the WIQL query to get a fresh handle
 
 **"Server instance not available for sampling"**

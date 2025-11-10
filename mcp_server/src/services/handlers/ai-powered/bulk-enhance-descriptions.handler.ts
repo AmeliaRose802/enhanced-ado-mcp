@@ -154,7 +154,7 @@ export async function handleBulkEnhanceDescriptions(config: ToolConfig, args: un
         success: false,
         data: null,
         metadata: { source: "bulk-enhance-descriptions" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

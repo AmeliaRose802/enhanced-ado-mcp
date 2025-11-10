@@ -69,6 +69,27 @@ npm run test:coverage
 - **Testing**: `jest` - Unit and integration testing
 - **Build**: `typescript` + `tsx` - TypeScript compilation and execution
 
+## Development Features
+
+### Hot Reload for Prompts
+
+The MCP server automatically watches the `prompts/` directory for changes and notifies all connected VS Code windows to reload prompts when files are modified.
+
+**How it works:**
+1. File watcher monitors `prompts/` directory (recursive)
+2. When a `.md` file changes, the prompt cache is cleared
+3. Server sends `notifications/prompts/list_changed` to all connected clients
+4. VS Code automatically reloads prompts without requiring server restart
+
+**Benefits:**
+- Edit prompts and see changes immediately in all VS Code windows
+- No need to restart the MCP server or reload VS Code
+- Supports development across multiple workspaces
+
+**Implementation:**
+- `mcp_server/src/utils/prompt-loader.ts` - File watcher and cache management
+- `mcp_server/src/index.ts` - Notification setup and lifecycle management
+
 ## Code Quality Standards
 
 ### TypeScript Conventions

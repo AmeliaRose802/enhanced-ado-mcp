@@ -1,7 +1,7 @@
 ---
 name: team_health_analyzer
 description: Team & individual health analyzer producing flow metrics, risk signals, workload + growth recommendations with development plans.
-version: 1.3
+version: 1.4
 arguments:
    analysis_period_days: { type: number, required: false, default: 90, description: "Days to analyze" }
 ---
@@ -18,7 +18,7 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 6. Use clear markdown formatting with sections, tables, and emoji indicators
 
 **Available Tools:**
-- `analyze-workload` - **PRIMARY TOOL** for analyzing multiple team members in parallel (up to 20 people)
+- `analyze-workload` - For detailed per-person workload insights
 - `analyze-bulk` - For story points and effort analysis
 - `execute-bulk-operations` - For AI estimation when needed
   - `action: "assign-story-points"` - Assign story points to work items
@@ -40,26 +40,37 @@ You are a **Team Health & Flow Analyst**. Generate a comprehensive markdown repo
 
 ## Workflow
 
-### 1. Team Roster (OData, paginate $top=200, $skip+=200)
+### 1. Team Roster Discovery (OData, paginate $top=200, $skip+=200)
+Query OData to discover all team members who have been active in the analysis period.
+
 **Recommended:** Use AI-powered query generation with `query-odata` tool:
 ```
-description: "Get all team members who have completed work items in the last {{analysis_period_days}} days, grouped by assignee email and name with count"
+description: "Get all team members who have completed work items in the last {{analysis_period_days}} days in the configured area path, grouped by assignee email and name with count"
 dateRangeStart: "{{start_date}}"
 dateRangeEnd: "{{end_date}}"
 dateRangeField: "CompletedDate"
 groupBy: ["AssignedTo/UserEmail", "AssignedTo/UserName"]
+useDefaultAreaPaths: true
+handleOnly: true
 ```
 
 **Alternative (Direct Query):**
-`$apply=filter(CompletedDate ge {{start_date_iso}}Z and CompletedDate le {{end_date_iso}}Z and AssignedTo/UserEmail ne null)/groupby((AssignedTo/UserEmail,AssignedTo/UserName),aggregate($count as Count))&$orderby=Count desc`
-Note: Area path filtering in OData is complex. For area-specific queries, filter results programmatically or use the AI query generator with area path specified in the description. Date format must be YYYY-MM-DDZ (without the T00:00:00 timestamp).
+`$apply=filter(CompletedDate ge {{start_date_iso}}Z and CompletedDate le {{end_date_iso}}Z and AssignedTo/UserEmail ne null and startswith(Area/AreaPath, '{{area_path}}'))/groupby((AssignedTo/UserEmail,AssignedTo/UserName),aggregate($count as Count))&$orderby=Count desc`
+Note: The `useDefaultAreaPaths: true` parameter automatically filters by configured area paths. Date format must be YYYY-MM-DDZ (without the T00:00:00 timestamp).
 
-### 2. Per-Person Data
-**Primary Tool:** Use `analyze-workload` with array of team member emails from step 1:
+**Collect all email addresses** from the OData results into an array for batch analysis in step 2.
+
+### 2. Batch Workload Analysis
+**Primary Tool:** Use `analyze-workload` **ONCE** with the **complete array** of all team member emails from step 1:
 ```
-assignedToEmails: ["email1@microsoft.com", "email2@microsoft.com", ...]
+assignedToEmails: ["email1@microsoft.com", "email2@microsoft.com", "email3@microsoft.com", ...]
 analysisPeriodDays: {{analysis_period_days}}
 ```
+
+**⚡ CRITICAL:** Pass ALL team member emails in a **single batch call** - do NOT call analyze-workload multiple times individually.
+
+**⚡ IMPORTANT:** The analysis tools will query work items internally - do NOT retrieve work items yourself. Pass parameters and let the tools handle data retrieval efficiently.
+
 Returns for each team member:
 - Work type distribution (Feature/Bug/PBI/Task/Compliance/Test/DevOps)
 - WIP metrics and aging
@@ -73,10 +84,13 @@ Returns for each team member:
 Use `analyze-workload` for each team member individually (slower but provides same data)
 
 ### 3. Story Points Coverage
-For each query handle:
-1. `analyze-bulk` with `analysisType:["effort"]`
-2. If unestimated: `execute-bulk-operations` with `actions: [{type: "assign-story-points"}]` (dryRun:false for active, true for closed)
-3. Record: manual %, AI high/low confidence %
+For story point analysis:
+1. Generate WIQL query with `handleOnly: true` to get query handle
+2. Pass query handle to `analyze-bulk` with `analysisType:["effort"]`
+3. If unestimated: Pass query handle to `execute-bulk-operations` with `actions: [{type: "assign-story-points"}]` (dryRun:false for active, true for closed)
+4. Record: manual %, AI high/low confidence %
+
+**⚡ CRITICAL:** Always use query handles - never manually retrieve work items or pass ID arrays
 
 ### 4. Weighted Load Calculation
 Formula: `Σ(StoryPoints × AgeFactor × TypeMultiplier)`

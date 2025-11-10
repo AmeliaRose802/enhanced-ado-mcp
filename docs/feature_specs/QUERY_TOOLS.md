@@ -608,7 +608,7 @@ Uses defaults from `.ado-mcp-config.json`:
 
 - WIQL queries return max 1000 items per page
 - Use pagination for large result sets
-- Query handles expire after 1 hour
+- Query handles expire after 24 hours
 - OData queries optimized for aggregations
 - AI generation uses 2-10 API calls for validation
 

@@ -541,7 +541,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 ### Personal Workload Analysis
-**Tool:** `analyze-workload-batch`  
+**Tool:** `analyze-workload`  
 **When:** Analyze individual workload for burnout risk, career development  
 **Example:** Quarterly check-in or promotion readiness
 
@@ -555,29 +555,7 @@ User: "Update the first 3 unassigned PBIs"
 
 ## AI-Powered Prompts
 
-### Project Completion Planning
-**Prompt:** `project_completion_planner`  
-**When:** Need comprehensive project timeline and completion forecast  
-**Example:** Analyze entire project, estimate completion date, optimize AI/human assignments
-
-```json
-{
-  "project_epic_id": 12345,
-  "target_completion_date": "2025-12-31",
-  "planning_horizon_weeks": 26,
-  "include_buffer": true
-}
-```
-
-### AI Assignment Analysis
-**Prompt:** `ai_assignment_analyzer`  
-**When:** Evaluate multiple items for GitHub Copilot assignment suitability  
-**Example:** Batch analyze backlog for AI opportunities
-
-### Work Item Enhancement
-**Prompt:** `work_item_enhancer`  
-**When:** Improve work item descriptions, acceptance criteria, and clarity  
-**Example:** Enhance PBI before sprint planning
+Available prompts can be listed using `get-prompts` tool. Common prompts include sprint planning, backlog cleanup, and team health analysis.
 
 ## Bulk Operations
 
@@ -715,62 +693,72 @@ User: "Update the first 3 unassigned PBIs"
 
 ### Individual Bulk Operations (Legacy)
 
-#### Bulk Comment by Query Handle
-**Tool:** `wit-bulk-comment-by-query-handle`  
+#### Bulk Comment by Query Handle (Legacy)
+**Tool:** `execute-bulk-operations` (recommended) or legacy individual tools  
 **When:** Add same comment to multiple items safely  
 **Example:** Document bulk state change reason
-**Note:** Consider using `execute-bulk-operations` instead
 
 ```json
 {
   "queryHandle": "qh_abc123...",
-  "comment": "Moving to backlog cleanup phase",
+  "actions": [{
+    "type": "comment",
+    "comment": "Moving to backlog cleanup phase"
+  }],
   "dryRun": true
 }
 ```
 
-#### Bulk Update by Query Handle
-**Tool:** `wit-bulk-update-by-query-handle`  
+#### Bulk Update by Query Handle (Legacy)
+**Tool:** `execute-bulk-operations` (recommended) or legacy individual tools  
 **When:** Update fields on multiple items  
 **Example:** Change state on all matching items
-**Note:** Consider using `execute-bulk-operations` instead
 
 ```json
 {
   "queryHandle": "qh_abc123...",
-  "updates": [
-    {
-      "op": "replace",
-      "path": "/fields/System.State",
-      "value": "Removed"
-    }
-  ],
+  "actions": [{
+    "type": "update",
+    "updates": [
+      {
+        "op": "replace",
+        "path": "/fields/System.State",
+        "value": "Removed"
+      }
+    ]
+  }],
   "dryRun": true
 }
 ```
 
-#### Bulk Assign by Query Handle
-**Tool:** `wit-bulk-assign-by-query-handle`  
+#### Bulk Assign by Query Handle (Legacy)
+**Tool:** `execute-bulk-operations` (recommended) or legacy individual tools  
 **When:** Assign multiple items to a user  
 **Example:** Reassign all unassigned items
 
 ```json
 {
   "queryHandle": "qh_abc123...",
-  "assignTo": "user@example.com",
+  "actions": [{
+    "type": "assign",
+    "assignTo": "user@example.com"
+  }],
   "dryRun": true
 }
 ```
 
-#### Bulk Remove by Query Handle
-**Tool:** `wit-bulk-remove-by-query-handle`  
+#### Bulk Remove by Query Handle (Legacy)
+**Tool:** `execute-bulk-operations` (recommended) or legacy individual tools  
 **When:** Remove multiple items safely  
 **Example:** Clean up stale items
 
 ```json
 {
   "queryHandle": "qh_abc123...",
-  "removeReason": "Stale items >180 days old",
+  "actions": [{
+    "type": "remove",
+    "removeReason": "Stale items >180 days old"
+  }],
   "dryRun": true
 }
 ```
@@ -779,28 +767,19 @@ User: "Update the first 3 unassigned PBIs"
 
 **⚠️ Prone to ID hallucination - use query handles instead**
 
-#### Add Comments to Multiple Items
-**Tool:** `wit-bulk-comment-by-query-handle`  
-**When:** Need to notify or update multiple items  
-**Example:** Add status update to all items in sprint
-
-```json
-{
-  "queryHandle": "qh_sprint_items",
-  "comment": "Updated to use new API version"
-}
-```
+Use `execute-bulk-operations` with query handles for all bulk modifications.
 
 ## Pattern Detection & Validation
 
 ### Validate Hierarchy Rules
-**Tool:** `analyze-query-handle (with analysisType: ['hierarchy'])`  
+**Tool:** `analyze-bulk` with `analysisType: ['hierarchy']`  
 **When:** Check parent-child type and state rules  
 **Example:** Ensure hierarchy follows conventions
 
 ```json
 {
-  "workItemIds": [100, 101, 102, 103]
+  "queryHandle": "qh_abc123...",
+  "analysisType": ["hierarchy"]
 }
 ```
 
@@ -818,7 +797,7 @@ User: "Update the first 3 unassigned PBIs"
 ```
 
 ### Get Configuration
-**Tool:** `get-configuration`  
+**Tool:** `get-config`  
 **When:** Need to see current MCP server settings  
 **Example:** View organization, project, area path
 
@@ -847,10 +826,10 @@ Creating items?
 Analysis needed?
 ├─ AI suitability? → analyze-workload
 ├─ Quality check? → analyze-workload
-├─ Find issues? → query-wiql (with filterByPatterns)
-├─ Validate hierarchy? → analyze-query-handle (with analysisType: ['hierarchy'])
-├─ Personal workload? → analyze-workload-batch
-└─ Analyze by handle? → analyze-query-handle
+├─ Find issues? → query-wiql (with content quality filters)
+├─ Validate hierarchy? → analyze-bulk (with analysisType: ['hierarchy'])
+├─ Personal workload? → analyze-workload
+└─ Analyze by handle? → analyze-bulk
 
 Bulk operations?
 ├─ Multiple actions? → execute-bulk-operations (RECOMMENDED)
@@ -878,12 +857,11 @@ Configuration?
 
 ### Moderate Operations
 - `query-wiql` - Depends on result count
-- `query-wiql` with `filterByPatterns` - Depends on item count
+- `query-wiql` with content quality filters - Depends on item count
 
 ### Slower Operations (Use AI)
-- `analyze-workload` - AI analysis (~5-10s)
-- `analyze-workload-batch` - AI analysis (~30-90s)
-- `wit-find-parent-item-intelligent` - AI matching (~10-30s)
+- `analyze-workload` - AI analysis (~5-10s for single item, ~30-90s for batch)
+- `find-parent-intelligent` - AI matching (~10-30s)
 
 ## Common Combinations
 
@@ -905,11 +883,11 @@ Configuration?
 ### Feature Decomposition
 1. `analyze-workload` - Analyze feature
 2. `create-workitem` - Create child items
-3. `analyze-query-handle (with analysisType: ['hierarchy'])` - Verify structure
+3. `analyze-bulk` with analysisType: ['hierarchy'] - Verify structure
 
 ### Backlog Cleanup
 1. `query-wiql` with description - Build query for stale items
-2. `query-wiql` with `filterByPatterns` - Find issues
+2. `query-wiql` with content quality filters - Find issues
 3. `execute-bulk-operations` - Add comments, tags, and reassign
 
 ### Sprint Planning
@@ -919,17 +897,11 @@ Configuration?
 4. `analyze-workload` - Check Copilot suitability
 5. `assign-copilot` - Delegate to AI
 
-### Project Completion Planning
-1. `project_completion_planner` prompt - Comprehensive project analysis
-2. Review timeline, capacity, and risks
-3. `assign-copilot` - Assign AI-suitable items
-4. Track progress weekly against forecast
-
 ### Quality Check
 1. `query-wiql` - Get recent items
 2. `analyze-workload` - Analyze quality
-3. `analyze-query-handle (with analysisType: ['hierarchy'])` - Check relationships
-4. `wit-bulk-comment-by-query-handle` - Request updates
+3. `analyze-bulk` with analysisType: ['hierarchy'] - Check relationships
+4. `execute-bulk-operations` - Add comments requesting updates
 
 
 

@@ -28,6 +28,11 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - analysisPeriodDays);
   
+  // Staleness threshold for backlog cleanup (separate from analysis period)
+  const stalenessThresholdDays = typeof args.stalenessThresholdDays === 'number'
+    ? args.stalenessThresholdDays
+    : 180;
+  
   // Format dates as YYYY-MM-DD for OData queries
   const formatDate = (date: Date): string => {
     return date.toISOString().split('T')[0];
@@ -106,6 +111,7 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     today: formatDate(now),
     analysis_period_days: analysisPeriodDays,
     lookback_days: analysisPeriodDays,  // Alias for sprint_review prompt compatibility
+    stalenessThresholdDays: stalenessThresholdDays,  // For backlog_cleanup prompt
     
     // Computed values
     semester: semester,

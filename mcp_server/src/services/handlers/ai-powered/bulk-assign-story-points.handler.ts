@@ -149,7 +149,7 @@ export async function handleBulkAssignStoryPoints(config: ToolConfig, args: unkn
         success: false,
         data: null,
         metadata: { source: "bulk-assign-story-points" },
-        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 1 hour.`],
+        errors: [`Query handle '${queryHandle}' not found or expired. Query handles expire after 24 hours.`],
         warnings: []
       };
     }

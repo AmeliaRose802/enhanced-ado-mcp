@@ -33,6 +33,34 @@ export async function handleWiqlQuery(
     const parsed = validation.data as any;
     const requiredConfig = getRequiredConfig();
     
+    // Collect warnings for unnecessary parameters
+    const parameterWarnings: string[] = [];
+    
+    // Warn about handleOnly usage
+    if (parsed.handleOnly === false && parsed.returnQueryHandle === true) {
+      parameterWarnings.push('⚠️ handleOnly=false fetches all work item data immediately. For better efficiency with large result sets, use handleOnly=true and then call inspect-handle to retrieve data as needed.');
+    }
+    
+    // Warn about includeFields when using handleOnly
+    if (parsed.includeFields && parsed.handleOnly === true) {
+      parameterWarnings.push('⚠️ includeFields parameter is ignored when handleOnly=true. The handle stores default fields only. Use inspect-handle or get-context-bulk to retrieve specific fields.');
+    }
+    
+    // Warn about maxResults when using handleOnly
+    if (parsed.maxResults && parsed.handleOnly === true && parsed.maxResults !== 200) {
+      parameterWarnings.push('⚠️ maxResults parameter has no effect when handleOnly=true. The handle contains all matching items. Use inspect-handle with itemSelector to filter results.');
+    }
+    
+    // Warn about includeSubstantiveChange when using handleOnly  
+    if (parsed.includeSubstantiveChange && parsed.handleOnly === true) {
+      parameterWarnings.push('⚠️ includeSubstantiveChange parameter is ignored when handleOnly=true. Substantive change data must be calculated separately. Use wit-get-last-substantive-change for individual items.');
+    }
+    
+    // Warn about unnecessary areaPath parameter when already in description
+    if (parsed.areaPath && parsed.description && parsed.description.includes(parsed.areaPath)) {
+      parameterWarnings.push('⚠️ areaPath parameter is redundant when already specified in the description. The AI will extract it from the natural language query.');
+    }
+    
     // Determine if this is AI generation or direct execution
     const isAIGeneration = !!parsed.description && !parsed.wiqlQuery;
     

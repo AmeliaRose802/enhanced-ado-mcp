@@ -415,7 +415,7 @@ WHERE [System.Parent] = {knownParentId}
 
 ### Overview
 
-The `wit-query-wiql` tool now supports an optional `fetchFullPackages` flag that retrieves comprehensive context for each work item in a single query.
+The `query-wiql` tool now supports an optional `fetchFullPackages` flag that retrieves comprehensive context for each work item in a single query.
 
 ### When to Use `fetchFullPackages`
 
@@ -511,6 +511,6 @@ When `fetchFullPackages: true`, each work item includes:
 - Check Azure DevOps WIQL documentation
 - Test in Azure DevOps query editor
 - Start simple, add complexity incrementally
-- Use `wit-analyze-hierarchy` for quick checks
+- Use `analyze-bulk` with `analysisType: ['hierarchy']` for quick checks
 - Review query results count before processing
 - Use `fetchFullPackages` sparingly for deep analysis only

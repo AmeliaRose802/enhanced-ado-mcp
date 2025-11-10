@@ -313,13 +313,13 @@ wit-bulk-comment(workItemIds: manualIds, ...)
 ```
 // CORRECT - validated selection
 queryHandle = query-wiql(returnQueryHandle: true)
-wit-bulk-comment(queryHandle, itemSelector: "all")
+   execute-bulk-operations(queryHandle, itemSelector: "all")
 ```
 
 ❌ **DO NOT skip preview for destructive operations:**
 ```
 // WRONG - no preview before removal
-wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]})
+   execute-bulk-operations(queryHandle, itemSelector: {states: ["Done"]})
 ```
 
 ✅ **DO preview before destructive ops:**
@@ -327,7 +327,7 @@ wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]})
 // CORRECT - verify first
 analyze-bulk(queryHandle, itemSelector: {states: ["Done"]})
 // User confirms: "Yes, remove those 5 items"
-wit-bulk-remove(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
+   execute-bulk-operations(queryHandle, itemSelector: {states: ["Done"]}, dryRun: false)
 ```
 
 ### Selection Performance
@@ -340,7 +340,7 @@ Choose index selection when possible for best performance with large query resul
 
 ### Selection Expiration
 
-Query handles expire after 1 hour by default. After expiration:
+Query handles expire after 24 hours by default. After expiration:
 - Selection operations will fail
 - Run the WIQL query again to get a fresh handle
 - itemSelector patterns work the same with new handles
@@ -372,10 +372,7 @@ All tools support `dryRun: true` for safe preview:
 
 | Tool | Purpose | Key Parameters |
 |------|---------|----------------|
-| `wit-bulk-comment-by-query-handle` | Add same comment to multiple items | `queryHandle`, `comment`, `itemSelector` |
-| `wit-bulk-update-by-query-handle` | Update fields on multiple items | `queryHandle`, `updates`, `itemSelector` |
-| `wit-bulk-assign-by-query-handle` | Assign multiple items to user | `queryHandle`, `assignTo`, `itemSelector` |
-| `wit-bulk-remove-by-query-handle` | Remove multiple items | `queryHandle`, `removeReason`, `itemSelector` |
+| `execute-bulk-operations` | Unified bulk operations (comment, update, assign, remove, etc.) | `queryHandle`, `actions`, `itemSelector` |
 
 ### Query Handle Management
 
@@ -391,7 +388,7 @@ All tools support `dryRun: true` for safe preview:
 |------|---------|----------------|
 | `undo-forensic` | Analyze and revert changes by user/time window (works on ANY items) | `queryHandle`, `changedBy`, `afterTimestamp`, `beforeTimestamp` |
 | `undo-bulk` | Undo MCP bulk operations (last or all) | `queryHandle`, `undoAll` |
-| `wit-find-parent-item-intelligent` | AI-powered parent recommendations for orphaned items | `childQueryHandle`, `parentWorkItemTypes`, `searchScope` |
+| `find-parent-intelligent` | AI-powered parent recommendations for orphaned items | `childQueryHandle`, `parentWorkItemTypes`, `searchScope` |
 | `link-workitems` | Create relationships between two query handle result sets | `sourceQueryHandle`, `targetQueryHandle`, `linkType`, `linkStrategy` |
 
 ## 📋 Best Practices
@@ -441,7 +438,7 @@ All tools support `dryRun: true` for safe preview:
    ```
 
 4. **Check expiration before reuse**
-   - Query handles expire after 1 hour by default
+   - Query handles expire after 24 hours by default
    - If expired, regenerate with fresh WIQL query
 
 5. **Use specific WIQL queries**
@@ -469,7 +466,7 @@ All tools support `dryRun: true` for safe preview:
    ```
 
 2. **Don't assume query handles live forever**
-   - They expire after 1 hour
+   - They expire after 24 hours
    - Regenerate if needed
 
 3. **Don't skip dry-run for destructive operations**
@@ -537,7 +534,7 @@ Tools report individual failures:
 
 ```typescript
 // Step 1: Query for potentially dead items with query handle
-const response1 = await wit_get_work_items_by_query_wiql({
+const response1 = await query_wiql({
   wiqlQuery: `
     SELECT [System.Id] 
     FROM WorkItems 
@@ -552,16 +549,12 @@ const response1 = await wit_get_work_items_by_query_wiql({
 // response1.query_handle = "qh_a1b2c3d4e5f6"
 // response1.work_item_count = 120  // Broader query
 
-// Step 2: Preview selection of truly stale items (>180 days)
-const selection = await wit_select_items_from_query_handle({
-  queryHandle: response1.query_handle,
-  itemSelector: {
-    daysInactiveMin: 180  // Only items inactive >180 days
-  },
-  previewCount: 10
+// Step 2: Inspect items in handle
+const inspection = await inspect_handle({
+  queryHandle: response1.query_handle
 });
 
-console.log(`Selected ${selection.selected_items_count} of ${response1.work_item_count} items`);
+console.log(`Handle contains ${inspection.workItemCount} items`);
 
 // Step 3: Dry-run to preview removal
 const preview = await wit_bulk_remove_by_query_handle({
@@ -720,7 +713,7 @@ await wit_bulk_update_by_query_handle({
 
 ### "Query handle not found or expired"
 
-**Cause:** Handle expired (>1 hour old) or invalid
+**Cause:** Handle expired (>24 hours old) or invalid
 
 **Solution:** Regenerate with fresh WIQL query:
 ```json

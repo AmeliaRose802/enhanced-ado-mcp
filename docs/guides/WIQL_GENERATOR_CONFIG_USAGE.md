@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `wit-ai-generate-wiql` tool automatically uses the configured area path from your server configuration. You don't need to specify it in every tool call.
+The `query-wiql` tool automatically uses the configured area path from your server configuration. You don't need to specify it in every tool call.
 
 ## How It Works
 
@@ -100,7 +100,7 @@ AND [System.AreaPath] UNDER '{{AREA_PATH}}'
 1. **Less Verbose**: Users don't need to specify area path in every call
 2. **Scoped by Default**: Queries are automatically scoped to the configured area
 3. **Still Flexible**: Users can override when needed
-4. **Consistent**: Same pattern as other tools (`wit-create-work-item`, etc.)
+4. **Consistent**: Same pattern as other tools (`create-workitem`, etc.)
 
 ## Example Usage
 
