@@ -96,7 +96,6 @@ This guide documents important limitations, constraints, and restrictions across
 // ✅ Good: Use WIQL with query handle for StoryPoints
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
-  "includeFields": ["Microsoft.VSTS.Scheduling.StoryPoints"],
   "returnQueryHandle": true
 }
 // Then calculate sum in your code or use analyze-query-handle
@@ -537,7 +536,6 @@ az login
 // Step 1: Query with WIQL
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.IterationPath] = 'Project\\Sprint 10'",
-  "includeFields": ["Microsoft.VSTS.Scheduling.StoryPoints", "System.State"],
   "returnQueryHandle": true
 }
 
@@ -576,8 +574,7 @@ az login
 
 // ✅ Works
 {
-  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project'",
-  "includeFields": ["Microsoft.VSTS.Scheduling.StoryPoints"]
+  "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'Project'"
 }
 // Sort the work_items array in your code
 ```

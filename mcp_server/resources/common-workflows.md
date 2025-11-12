@@ -31,7 +31,6 @@ End-to-end workflows combining multiple tools.
 // Tool: query-wiql (with direct WIQL)
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Active' AND [System.AssignedTo] = @Me AND [System.CreatedDate] >= @Today - 30 AND [Microsoft.VSTS.Common.Priority] = 1",
-  "includeFields": ["System.Title", "System.State", "Microsoft.VSTS.Common.Priority"],
   "returnQueryHandle": true,
   "maxResults": 200
 }
@@ -157,7 +156,6 @@ End-to-end workflows combining multiple tools.
 // Tool: query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND [System.State] NOT IN ('Removed', 'Done')",
-  "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
   "returnQueryHandle": true,
   "maxResults": 500
 }
@@ -224,7 +222,6 @@ End-to-end workflows combining multiple tools.
 // Tool: query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyTeam' AND [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
-  "includeFields": ["System.Title", "System.Priority", "Microsoft.VSTS.Scheduling.StoryPoints"],
   "returnQueryHandle": true,
   "maxResults": 200
 }
@@ -275,7 +272,6 @@ End-to-end workflows combining multiple tools.
 // Tool: query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Tags] CONTAINS 'Security' OR [System.WorkItemType] = 'Security'",
-  "includeFields": ["System.Title", "System.State", "System.Description"],
   "returnQueryHandle": true,
   "maxResults": 200
 }
@@ -317,7 +313,6 @@ End-to-end workflows combining multiple tools.
 // Tool: query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
-  "includeFields": ["System.Title", "System.WorkItemType"],
   "returnQueryHandle": true,
   "maxResults": 100
 }
@@ -328,7 +323,6 @@ End-to-end workflows combining multiple tools.
 // Tool: query-wiql (repeat per root)
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = 12345",
-  "includeFields": ["System.Title", "System.WorkItemType", "System.Parent"],
   "returnQueryHandle": true,
   "maxResults": 200
 }
@@ -365,7 +359,6 @@ Repeat Step 2 for each child until complete tree is built.
 // Tool: query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.ChangedDate] >= @Today - 14 AND [System.State] = 'Active'",
-  "includeFields": ["System.Title", "System.Description"],
   "returnQueryHandle": true,
   "maxResults": 100
 }
@@ -480,7 +473,6 @@ Repeat Step 2 for each child until complete tree is built.
 // Tool: query-wiql
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active' AND [System.WorkItemType] IN ('Product Backlog Item', 'Task')",
-  "includeFields": ["System.Title", "System.Description"],
   "returnQueryHandle": true,
   "maxResults": 100
 }

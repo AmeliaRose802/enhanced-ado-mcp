@@ -170,6 +170,7 @@ export const workItemIntelligenceSchema = z.object({
 
 export const aiAssignmentAnalyzerSchema = z.object({
   workItemId: workItemIdField(),
+  repository: optionalString(),
   outputFormat: z.enum(["detailed", "json"]).optional().default("detailed"),
   ...orgProjectFields()
 });
@@ -552,6 +553,7 @@ export const analyzeByQueryHandleSchema = z.object({
   enhanceDescription: optionalBool(false).describe("Generate enhanced descriptions (only for work-item-intelligence)"),
   // Assignment suitability options (only used when analysisType includes "assignment-suitability")
   outputFormat: z.enum(["detailed", "json"]).optional().default("detailed").describe("Output format for assignment analysis (only for assignment-suitability)"),
+  repository: optionalString().describe("Repository name to discover specialized agents for recommendation (only for assignment-suitability)"),
   // Parent recommendation options (only used when analysisType includes "parent-recommendation")
   dryRun: optionalBool(false).describe("Preview parent recommendations without creating query handle (only for parent-recommendation)"),
   areaPath: optionalString().describe("Area path to search for parent candidates (only for parent-recommendation)"),
@@ -587,5 +589,13 @@ export const getPromptsSchema = z.object({
 
 export const listSubagentsSchema = z.object({
   repository: z.string().min(1, "Repository name is required"),
+  ...orgProjectFields()
+});
+
+export const getTeamMembersSchema = z.object({
+  areaPath: optionalString().describe("Area path to filter team members (uses config default if not provided)"),
+  dateRangeStart: optionalString().describe("Start date for activity filter (ISO format YYYY-MM-DD, default: 90 days ago)"),
+  dateRangeEnd: optionalString().describe("End date for activity filter (ISO format YYYY-MM-DD, default: today)"),
+  activeOnly: optionalBool(true).describe("Only include members with assigned work items in date range (default: true)"),
   ...orgProjectFields()
 });

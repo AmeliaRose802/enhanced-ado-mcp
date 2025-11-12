@@ -364,6 +364,7 @@ export async function handleAnalyzeByQueryHandle(
                     try {
                       const analysisResult = await assignmentAnalyzer.analyze({
                         workItemId: wi.id || 0,
+                        repository: parsed.data.repository,
                         outputFormat: parsed.data.outputFormat || 'detailed'
                       });
                       

@@ -7,7 +7,6 @@
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
-  "includeFields": ["System.Title", "System.State"],
   "returnQueryHandle": true,
   "includeSubstantiveChange": true
 }
@@ -56,7 +55,6 @@ Use `query-wiql` with `returnQueryHandle: true`:
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New'",
-  "includeFields": ["System.Title", "System.State"],
   "returnQueryHandle": true,
   "maxResults": 200
 }
@@ -541,7 +539,6 @@ const response1 = await query_wiql({
     WHERE [System.State] = 'New' 
       AND [System.CreatedDate] < @Today - 90  // Cast wider net
   `,
-  includeFields: ["System.Title", "System.State", "System.CreatedDate"],
   includeSubstantiveChange: true,  // Gets daysInactive data
   returnQueryHandle: true
 });
@@ -642,7 +639,6 @@ const response = await wit_get_work_items_by_query_wiql({
     WHERE [System.State] = 'Active' 
       AND [System.AssignedTo] = ''
   `,
-  includeFields: ["System.Tags"],
   returnQueryHandle: true
 });
 

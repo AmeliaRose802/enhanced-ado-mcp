@@ -40,7 +40,6 @@ This guide addresses the **beta tester feedback** that the handle mechanism wasn
   "tool": "query-wiql",
   "args": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject' AND [System.State] <> 'Removed'",
-    "includeFields": ["System.Title", "System.State", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints"],
     "returnQueryHandle": true  // Default is now TRUE
   }
 }
@@ -123,7 +122,6 @@ This guide addresses the **beta tester feedback** that the handle mechanism wasn
   "tool": "query-wiql",
   "args": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\FeatureTeam' AND [System.State] <> 'Removed'",
-    "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.AssignedTo", "Microsoft.VSTS.Scheduling.StoryPoints"],
     "returnQueryHandle": true,
     "includeSubstantiveChange": true,
     "maxResults": 500
@@ -174,7 +172,6 @@ This guide addresses the **beta tester feedback** that the handle mechanism wasn
   "tool": "query-wiql",
   "args": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\TeamAlpha' AND [System.State] IN ('Active', 'Committed')",
-    "includeFields": ["System.AssignedTo", "System.WorkItemType", "Microsoft.VSTS.Scheduling.StoryPoints"],
     "returnQueryHandle": true
   }
 }
@@ -224,7 +221,6 @@ This guide addresses the **beta tester feedback** that the handle mechanism wasn
   "tool": "query-wiql",
   "args": {
     "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [Microsoft.VSTS.Common.Priority] <= 1 AND [System.Tags] CONTAINS 'Security'",
-    "includeFields": ["System.Title", "System.State", "System.AssignedTo", "Microsoft.VSTS.Common.Priority"],
     "returnQueryHandle": true
   }
 }

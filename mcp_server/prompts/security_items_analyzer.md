@@ -18,33 +18,38 @@ Analyze security and compliance work items in area path `{{area_path}}`. **Exclu
 ## Tools
 
 **Discovery & Analysis:**
+
 - `query-wiql` - ⭐ **ENHANCED** Query security items with staleness data and query handles
 - `inspect-handle` - ⭐ **NEW** Verify query handle contents and staleness statistics
+- `analyze-query-handle` - ⭐ **NEW** AI analysis with specialized agent recommendations
 - `get-context-bulk` - Batch details (max 20-25 items)
 - `extract-security-links` - Extract documentation links
 
 **Work Item Management:**
+
 - `create-workitem` - Create work items
-- `assign-copilot` - Assign to GitHub Copilot
+- `assign-copilot` - Assign to GitHub Copilot (general or specialized agent)
 - `create-and-assign-copilot` - Create and assign to Copilot
 
 **Bulk Operations:**
+
 - `execute-bulk-operations` - Unified bulk operations tool
   - `action: "comment"` - Add templated comments to security items
-  - `action: "update"` - Update multiple security items
+  - `action: "update"` - Update multiple security items (can add agent tags)
   - `action: "assign"` - Assign multiple security items
 
 ## Workflow
 
 ### 1. Enhanced Discovery with Query Handle
 
-Find security items using WIQL with staleness data and query handle:
+Find security items using WIQL with staleness data and query handle.
 
-```
+**IMPORTANT:** Use ONLY the fields specified below. Do NOT add additional fields like System.AssignedTo, System.CreatedDate, or System.ChangedDate - these cause query failures.
+
+```text
 Tool: query-wiql
 Arguments: {
   wiqlQuery: "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER '{{area_path}}' AND ([System.Tags] CONTAINS 'security' OR [System.Title] CONTAINS 'security' OR [System.Description] CONTAINS 'vulnerability') AND [System.State] NOT IN ('Closed', 'Done', 'Completed', 'Resolved', 'Removed') ORDER BY [System.ChangedDate] DESC",
-  includeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Tags", "System.Description", "Microsoft.VSTS.Common.Priority"],
   includeSubstantiveChange: true,
   returnQueryHandle: true,
   maxResults: {{max_items}}
@@ -55,7 +60,7 @@ This returns BOTH security items with staleness data AND a query handle for bulk
 
 ### 1a. Verify Query Handle Contents
 
-```
+```text
 Tool: inspect-handle
 Arguments: {
   queryHandle: "qh_from_previous_response",
@@ -80,98 +85,78 @@ Group by security domain:
 
 Rate each: Severity (Critical/High/Medium/Low), Exposure, Impact, Effort.
 
-### 3. AI Suitability
+### 3. AI Suitability & Agent Matching
 
-**AI_SUITABLE:**
+**For AI-suitable items**, use `analyze-bulk` to get specialized agent recommendations:
 
-- Well-defined configuration changes
-- Template-based implementations
-- Repetitive security hygiene
-- Clear acceptance criteria
-- Limited scope, predictable outcomes
+```text
+Tool: analyze-bulk
+Arguments: {
+  queryHandle: "qh_from_step_1",
+  analysisType: ["assignment-suitability"],
+  repository: "[repo-name]",  // If available
+  outputFormat: "detailed"
+}
+```
 
-**HUMAN_REQUIRED:**
+Response includes recommended agent with tag (e.g., `copilot:agent=backend-api`).
 
-- Architecture decisions
-- Complex integrations
-- Stakeholder coordination
-- Custom security implementations
-- Risk/policy interpretation
+**AI_SUITABLE:** Well-defined changes, template-based, clear criteria, limited scope.
 
-Score AI-suitable items 1-10: Clarity, Scope, Testability, Documentation.
+**HUMAN_REQUIRED:** Architecture decisions, complex integrations, stakeholder coordination, policy interpretation.
+
+Score AI-suitable items 1-10 for: Clarity, Scope, Testability, Documentation.
 
 ### 4. Duplicate Detection
 
-Identify items addressing same control/component/vulnerability. Keep most comprehensive, link duplicates.
-
-### 5. Action Planning
-
-For AI-suitable items, create Copilot-ready descriptions:
-
-```
-## Objective
-[Security control being implemented]
-
-## Implementation Steps
-1. [Specific action with file paths]
-2. [Configuration changes with exact values]
-3. [Testing and verification]
-
-## Acceptance Criteria
-- [ ] [Measurable outcome]
-- [ ] [Verification method]
-- [ ] [Documentation updated]
-
-## Resources
-- [Documentation links]
-- [Examples]
-```
+Identify items addressing same control/component/vulnerability. Note consolidation opportunities.
 
 ---
 
 ## Output Format
 
+**IMPORTANT:** Be concise. Do NOT include enhanced descriptions unless explicitly requested. Focus on actionable summaries.
+
 ### Executive Summary
 
-- Total: [count] security items
-- AI-suitable: [count] ([percentage]%)
-- High-priority: [count]
-- Domains: [list]
+- **Total:** [count] security items ([X] active, [X] stale >30 days)
+- **AI-suitable:** [count] ([percentage]%)
+- **High-priority:** [count] (Critical/High severity)
+- **Domains:** [list top 3-5]
 
 ### Category Breakdown
 
-| Domain | Total | AI | Human | High Priority |
-|--------|-------|-----|-------|---------------|
-| [Name] | [N]   | [N] | [N]   | [N]           |
+| Domain | Total | AI | Human | High Priority | Stale |
+|--------|-------|-----|-------|---------------|-------|
+| [Name] | [N]   | [N] | [N]   | [N]           | [N]   |
 
 ### AI-Ready Items
 
-Per item:
+**Compact format per item:**
 
-- **ID & Title**
-- **Priority Level**
-- **AI Readiness Score** (1-10)
-- **Enhanced Description** (Copilot-ready)
-- **Effort** (hours/complexity)
+- **[#ID](work-item-url)** [Title] - Priority: [H/M/L] | AI Score: [N/10] | Agent: [name] | Effort: [S/M/L] | [Domain]
+
+Example: **[#12345](https://dev.azure.com/org/project/_workitems/edit/12345)** Implement TLS 1.3 - Priority: H | AI Score: 8/10 | Agent: Backend API Specialist | Effort: M | Network Security
+
+**Note:** Agent recommendations include specialized agent names and tags (e.g., `copilot:agent=backend-api`) for precise assignment.
 
 ### Human-Required Items
 
-Per item:
+**Compact format per item:**
 
-- **ID & Title**
-- **Why Human Required**
-- **Recommended Assignee Type**
-- **Prerequisites**
+- **[#ID](work-item-url)** [Title] - Reason: [brief] | Assignee Type: [role] | Priority: [H/M/L]
 
-### Duplicates
+Example: **[#12346](https://dev.azure.com/org/project/_workitems/edit/12346)** SSO Architecture - Reason: Complex integration | Assignee Type: Security Architect | Priority: H
 
-- Items consolidated: [IDs]
-- Primary items: [IDs]
-- Links created: [count]
+### Duplicates (if found)
+
+- **Consolidate:** [list of ID pairs/groups with brief reason]
 
 ### Next Steps
 
-1. **Immediate** - Critical items
-2. **AI Queue** - Ready for automation
-3. **Human Review** - Need expert attention
-4. **Documentation** - Missing guides
+**Prioritized actions (be specific):**
+
+1. **Immediate:** [X] critical items need attention - [brief action]
+2. **AI Queue:** [X] items ready for Copilot assignment
+3. **Human Review:** [X] items need expert evaluation
+4. **Cleanup:** [X] stale items require status update

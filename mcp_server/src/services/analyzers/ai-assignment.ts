@@ -9,6 +9,7 @@ import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
 import { getTokenProvider } from '../../utils/token-provider.js';
 import type { ADOWorkItem } from '../../types/index.js';
+import { handleListSubagents } from '../handlers/core/list-subagents.handler.js';
 
 /** Internal analysis input structure */
 interface AnalysisInput {
@@ -24,6 +25,7 @@ interface AnalysisInput {
   area_path: string;
   iteration_path: string;
   output_format: string;
+  available_agents: Array<{ name: string; description: string; tag: string }>;
 }
 
 /**
@@ -75,6 +77,36 @@ export class AIAssignmentAnalyzer {
         );
       }
 
+      // Fetch available agents if repository is provided
+      let availableAgents: Array<{ name: string; description: string; tag: string }> = [];
+      if (args.repository) {
+        try {
+          logger.debug(`Fetching available agents from repository: ${args.repository}`);
+          const agentsResult = await handleListSubagents({
+            repository: args.repository,
+            organization: org,
+            project: project
+          });
+          
+          if (agentsResult.success && agentsResult.data) {
+            const data = agentsResult.data as any;
+            if (data.subagents && Array.isArray(data.subagents)) {
+              availableAgents = data.subagents.map((agent: any) => ({
+                name: agent.name,
+                description: agent.description,
+                tag: agent.tag
+              }));
+              logger.debug(`Found ${availableAgents.length} available agents`);
+            }
+          } else {
+            logger.debug('No agents found or agent discovery failed');
+          }
+        } catch (error) {
+          logger.warn(`Failed to fetch agents: ${error}`);
+          // Continue analysis without agents
+        }
+      }
+
       // Extract relevant fields for analysis
       const analysisInput = {
         work_item_id: args.workItemId,
@@ -88,7 +120,8 @@ export class AIAssignmentAnalyzer {
         tags: workItem.fields['System.Tags'] || '',
         area_path: workItem.fields['System.AreaPath'] || '',
         iteration_path: workItem.fields['System.IterationPath'] || '',
-        output_format: args.outputFormat || 'detailed'
+        output_format: args.outputFormat || 'detailed',
+        available_agents: availableAgents
       };
 
       const result = await this.performAnalysis(analysisInput);
@@ -111,25 +144,19 @@ export class AIAssignmentAnalyzer {
       AREA_PATH: analysisInput.area_path || 'Not specified',
       ITERATION_PATH: analysisInput.iteration_path || 'Not specified',
       TAGS: analysisInput.tags || 'None',
-      ASSIGNED_TO: analysisInput.assigned_to || 'Unassigned'
+      ASSIGNED_TO: analysisInput.assigned_to || 'Unassigned',
+      AVAILABLE_AGENTS: analysisInput.available_agents.length > 0
+        ? analysisInput.available_agents.map(a => `- ${a.name}: ${a.description} (${a.tag})`).join('\n')
+        : 'No specialized agents available'
     };
 
     // Add timeout wrapper to prevent hanging
     const timeoutMs = 30000; // 30 seconds (AI assignment should be fast)
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'ai-assignment-analyzer',
-      userContent: `Analyze the work item provided in the context above and determine if it is suitable for AI assignment (GitHub Copilot).
-
-Consider:
-- Task clarity and definition
-- Scope and complexity
-- Risk factors
-- Required guardrails
-- Missing information
-
-Output format: ${analysisInput.output_format}`,
+      userContent: 'Analyze the work item provided in the context above and determine if it is suitable for AI assignment.',
       variables,
-      maxTokens: 400,
+      maxTokens: 500, // Increased to accommodate NEEDS_REFINEMENT with refinementSuggestions
       temperature: 0.2
     });
 
@@ -188,6 +215,20 @@ Output format: ${analysisInput.output_format}`,
       return current;
     };
 
+    // Parse recommended agent if present
+    let recommendedAgent: AIAssignmentResult['recommendedAgent'] = undefined;
+    if (json.recommendedAgent && typeof json.recommendedAgent === 'object') {
+      const agent = json.recommendedAgent as Record<string, unknown>;
+      if (agent.name && agent.tag) {
+        recommendedAgent = {
+          name: String(agent.name),
+          tag: String(agent.tag),
+          confidence: getNumber(agent.confidence, 0.5),
+          reasoning: String(agent.reasoning || 'No reasoning provided')
+        };
+      }
+    }
+
     return {
       decision: json.decision as 'AI_FIT' | 'HUMAN_FIT' | 'HYBRID',
       confidence: getNumber(json.confidence, 0.5),
@@ -207,7 +248,8 @@ Output format: ${analysisInput.output_format}`,
         featureFlagOrToggle: Boolean((json.guardrails as Record<string, unknown>)?.featureFlag || (json.guardrails as Record<string, unknown>)?.featureFlagOrToggle),
         touchSensitiveAreas: Boolean((json.guardrails as Record<string, unknown>)?.touchesSensitive || (json.guardrails as Record<string, unknown>)?.touchSensitiveAreas),
         needsCodeReviewFromOwner: Boolean((json.guardrails as Record<string, unknown>)?.needsReview || (json.guardrails as Record<string, unknown>)?.needsCodeReviewFromOwner)
-      }
+      },
+      recommendedAgent
     };
   }
 }

@@ -17,17 +17,6 @@
     }
   ],
   "servers": {
-    "enhanced-ado-mcp": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-        "${workspaceFolder}/mcp_server/dist/index.js",
-        "${input:ado_org}",
-        "${input:ado_project}",
-        "--area-path",
-        "${input:area_path}"
-      ]
-    },
     "code-context-provider": {
       "type": "stdio",
       "command": "npx",

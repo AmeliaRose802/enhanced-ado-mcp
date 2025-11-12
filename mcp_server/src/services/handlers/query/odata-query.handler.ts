@@ -861,7 +861,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
       break;
 
     case "velocityMetrics":
-      query = "$filter=State eq 'Closed' or State eq 'Done'";
+      query = "$filter=(State eq 'Closed' or State eq 'Done')";
       if (filterClauses.length > 0) {
         query += ` and ${filterClauses.join(' and ')}`;
       }
@@ -872,13 +872,13 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
 
     case "cycleTimeMetrics":
       if (computeCycleTime) {
-        query = "$apply=filter(State eq 'Closed' or State eq 'Done')";
+        query = "$apply=filter((State eq 'Closed' or State eq 'Done')";
         if (filterClauses.length > 0) {
           query += ` and ${filterClauses.join(' and ')}`;
         }
-        query += "/groupby((WorkItemId,CreatedDate,CompletedDate))";
+        query += ")/groupby((WorkItemId,CreatedDate,CompletedDate))";
       } else {
-        query = "$filter=State eq 'Closed' or State eq 'Done'";
+        query = "$filter=(State eq 'Closed' or State eq 'Done')";
         if (filterClauses.length > 0) {
           query += ` and ${filterClauses.join(' and ')}`;
         }

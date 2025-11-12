@@ -36,6 +36,7 @@ export const queryHandleTools: ToolConfig[] = [
         contextInfo: { type: "string", description: "Additional context for work item analysis (only for work-item-intelligence)" },
         enhanceDescription: { type: "boolean", description: "Generate enhanced descriptions (only for work-item-intelligence, default: false)" },
         outputFormat: { type: "string", enum: ["detailed", "json"], description: "Output format for assignment suitability analysis (only for assignment-suitability, default: detailed)" },
+        repository: { type: "string", description: "Repository name to discover specialized agents for recommendation (only for assignment-suitability)" },
         dryRun: { type: "boolean", description: "Preview parent recommendations without creating query handle (only for parent-recommendation, default: false)" },
         areaPath: { type: "string", description: "Area path to search for parent candidates (only for parent-recommendation)" },
         includeSubAreas: { type: "boolean", description: "Include sub-areas in parent search (only for parent-recommendation, default: false - enforces same area path)" },

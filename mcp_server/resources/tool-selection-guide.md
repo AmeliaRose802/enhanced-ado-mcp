@@ -37,7 +37,6 @@ Are you performing bulk operations (updating/removing/assigning multiple items)?
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'New' AND [System.CreatedDate] < @Today - 180",
-  "includeFields": ["System.Title", "System.State"],
   "returnQueryHandle": true,
   "includeSubstantiveChange": true
 }
@@ -432,7 +431,6 @@ User: "Update the first 3 unassigned PBIs"
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.State] = 'Active'",
-  "includeFields": ["System.Title", "System.State"],
   "returnQueryHandle": true,
   "maxResults": 200
 }

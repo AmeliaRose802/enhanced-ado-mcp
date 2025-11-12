@@ -70,6 +70,7 @@ export interface AIAssignmentAnalyzerArgs {
   workItemId: number;
   organization?: string;
   project?: string;
+  repository?: string;
   outputFormat?: "detailed" | "json";
 }
 
@@ -92,6 +93,12 @@ export interface AIAssignmentResult {
   };
   enhancedDescription?: string;
   assignmentStrategy?: string;
+  recommendedAgent?: {
+    name: string;
+    tag: string;
+    confidence: number;
+    reasoning: string;
+  };
 }
 
 /**

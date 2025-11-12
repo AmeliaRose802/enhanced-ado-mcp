@@ -253,10 +253,11 @@ Relibly generating queries requires thosands of tokens of context, which will de
 - `analyze-query-handle` - AI-powered analysis of query handle results
 - `discover-tools` - Find the right tool for your task
 
-**Configuration (3 tools):**
+**Configuration & Discovery (4 tools):**
 - `get-config` - View current server configuration
 - `get-prompts` - Access prompt templates
 - `list-agents` - List available specialized agents
+- `get-team-members` - Discover team roster (filters GitHub Copilot automatically)
 
 See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 

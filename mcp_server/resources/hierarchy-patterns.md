@@ -39,8 +39,7 @@ ORDER BY [System.WorkItemType], [System.Title]
 async function buildHierarchy(parentId) {
   // Get children
   const children = await wiqlQuery({
-    WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = ${parentId}`,
-    IncludeFields: ["System.Title", "System.State", "System.WorkItemType", "System.Parent"]
+    WiqlQuery: `SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = ${parentId}`
   });
   
   // Recursively get their children
@@ -58,7 +57,6 @@ async function buildHierarchy(parentId) {
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.AreaPath] UNDER 'MyProject\\MyArea' AND ([System.Parent] = '' OR [System.Parent] IS NULL) AND [System.State] NOT IN ('Removed', 'Done')",
-  "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
   "maxResults": 100
 }
 ```
@@ -67,7 +65,6 @@ async function buildHierarchy(parentId) {
 ```json
 {
   "wiqlQuery": "SELECT [System.Id] FROM WorkItems WHERE [System.Parent] = ${rootId}",
-  "includeFields": ["System.Title", "System.State", "System.WorkItemType", "System.Parent"],
   "maxResults": 200
 }
 ```

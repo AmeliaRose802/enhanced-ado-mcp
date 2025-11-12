@@ -19,9 +19,13 @@ description: >-
 
 **3. Gather context** - Read README, package.json, recent commits. For existing items: fetch with `get-context`
 
-**4. Discover agents** - Use `list-agents` with repository name
+**4. Analyze AI suitability** - Use `analyze-ai-assignment` to check if item is ready for AI
 
-**5. Assign to Copilot** - Use `assign-copilot` with optional `specializedAgent`
+**5. Handle refinement** - If NEEDS_REFINEMENT, explain issues and offer to enhance the item
+
+**6. Discover agents** - Use `list-agents` with repository name
+
+**7. Assign to Copilot** - Use `assign-copilot` with optional `specializedAgent`
 
 ## User Interactions
 
@@ -95,7 +99,74 @@ Tool: get-context
 }
 ```
 
-### Step 4: Enhance Description for AI Readiness
+### Step 4: Analyze AI Assignment Suitability
+
+**Tool: `analyze-ai-assignment`**
+```json
+{
+  "workItemId": <id>
+}
+```
+
+**Returns:**
+```json
+{
+  "success": true,
+  "data": {
+    "decision": "AI_FIT|NEEDS_REFINEMENT|HUMAN_FIT",
+    "confidence": 0.85,
+    "reasons": ["Clear technical scope", "Well-defined acceptance criteria"],
+    "blockers": [],
+    "recommendations": []
+  }
+}
+```
+
+**Decision Handling:**
+
+**AI_FIT** → Proceed to agent selection (Step 6)
+
+**NEEDS_REFINEMENT** → Show user what needs improvement:
+```
+⚠️ This work item needs refinement before AI assignment.
+
+Issues found:
+- [blocker 1]
+- [blocker 2]
+
+Recommendations:
+- [recommendation 1]
+- [recommendation 2]
+
+Would you like me to:
+1. Automatically enhance the work item description
+2. Manually edit the work item before assignment
+3. Skip refinement and assign anyway (not recommended)
+4. Cancel assignment
+
+Your choice?
+```
+
+If user chooses option 1 (automatic enhancement), use repository context + AI analysis to enhance the description, then re-analyze.
+
+**HUMAN_FIT** → Suggest not assigning to AI:
+```
+ℹ️ This work item is better suited for human resolution.
+
+Reasons:
+- [reason 1]
+- [reason 2]
+
+This type of work requires:
+- [requirement 1]
+- [requirement 2]
+
+Do you still want to assign to Copilot? (yes/no/cancel)
+```
+
+If user says yes, continue. If no, exit gracefully.
+
+### Step 5: Enhance Description for AI Readiness
 
 **Combine gathered context into an enhanced description:**
 
@@ -123,17 +194,7 @@ Tool: get-context
 [Any other relevant information from repository analysis]
 ```
 
-**AI Enhancement Tool (if needed):**
-```json
-Tool: analyze-bulk
-{
-  "workItemId": <id>,
-  "outputFormat": "detailed"
-}
-```
-Use this to validate the item is AI-suitable before assignment.
-
-### Step 5: Discover Specialized Copilot Agents
+### Step 6: Discover Specialized Copilot Agents
 
 **Tool: `list-agents`**
 ```json
@@ -188,7 +249,7 @@ Options:
 Your choice?
 ```
 
-### Step 6: Assign to Copilot
+### Step 7: Assign to Copilot
 
 **For EXISTING work items:**
 
@@ -201,13 +262,13 @@ Tool: assign-copilot
 }
 ```
 
-### Step 7: Confirm Success
+### Step 8: Confirm Success
 
 **Display success message:**
 ```
 ✅ Work item assigned to GitHub Copilot!
 
-**Work Item:** [#ID](url) - [Title]
+**Work Item:** [#ID](https://dev.azure.com/org/project/_workitems/edit/ID) - [Title]
 **Repository:** [repo-name]
 **Branch:** [branch-url]
 **Assigned To:** GitHub Copilot (via [Agent Name] or default)
@@ -276,15 +337,14 @@ Tool: get-context
 ```
 Returns comprehensive work item details for context enhancement.
 
-### Validate AI Suitability
+### Analyze AI Assignment Suitability
 ```json
-Tool: analyze-bulk
+Tool: analyze-ai-assignment
 {
-  "workItemId": <id>,
-  "outputFormat": "detailed"
+  "workItemId": <id>
 }
 ```
-Returns analysis of whether the work item is suitable for AI assignment.
+Returns decision (AI_FIT/NEEDS_REFINEMENT/HUMAN_FIT), confidence score, reasons, blockers, and recommendations.
 
 ### Assign Existing Work Item to Copilot
 ```json
@@ -319,18 +379,40 @@ The work item will be assigned to the default GitHub Copilot agent.
 Continue? (yes/no)
 ```
 
-### Work Item Not Suitable for AI
-If AI suitability analysis returns low confidence:
+### Work Item Needs Refinement
+If AI suitability analysis returns NEEDS_REFINEMENT:
 ```
-⚠️ This work item may not be suitable for automated AI resolution.
+⚠️ This work item needs refinement before AI assignment.
+
+Issues found:
+- [blocker 1]
+- [blocker 2]
+
+Recommendations:
+- [recommendation 1]
+- [recommendation 2]
+
+Would you like me to:
+1. Automatically enhance the work item description
+2. Manually edit the work item before assignment
+3. Skip refinement and assign anyway (not recommended)
+4. Cancel assignment
+
+Your choice?
+```
+
+### Work Item Not Suitable for AI
+If AI suitability analysis returns HUMAN_FIT:
+```
+ℹ️ This work item is better suited for human resolution.
 
 Reasons:
 - [reason 1]
 - [reason 2]
 
-Recommendations:
-- [recommendation 1]
-- [recommendation 2]
+This type of work requires:
+- [Human skill 1]
+- [Human skill 2]
 
 Do you still want to assign to Copilot? (yes/no/cancel)
 ```
@@ -370,7 +452,17 @@ AI: I'll create a new work item for the authentication bug.
 Detected repository: "auth-service"
 
 [AI gathers context - reads README.md, package.json, recent commits]
-[AI enhances description with discovered context]
+
+[AI calls analyze-ai-assignment]
+
+AI: ✅ AI Assignment Analysis: AI_FIT (confidence: 0.92)
+
+This work item is well-suited for AI assignment:
+- Clear technical scope
+- Well-defined problem statement
+- Testable requirements
+
+[AI continues to agent selection]
 
 AI: I found these specialized Copilot agents for your repository:
 
@@ -391,7 +483,7 @@ User: "1"
 
 AI: ✅ Work item created and assigned to GitHub Copilot!
 
-**Work Item:** #12345 - Fix authentication bug in login service
+**Work Item:** [#12345](https://dev.azure.com/org/project/_workitems/edit/12345) - Fix authentication bug in login service
 **Repository:** auth-service
 **Branch:** https://dev.azure.com/org/project/_git/auth-service?version=GB12345-fix-auth-bug
 **Assigned To:** GitHub Copilot (via SecurityScanAgent)
@@ -408,6 +500,41 @@ AI: Found work item #12345: "Update dependencies in package.json"
 
 [AI detects repository from current directory]
 Detected repository: "my-app"
+
+[AI calls analyze-ai-assignment]
+
+AI: ⚠️ AI Assignment Analysis: NEEDS_REFINEMENT (confidence: 0.65)
+
+Issues found:
+- Description is too vague ("Update dependencies")
+- No specific dependencies mentioned
+- No acceptance criteria defined
+
+Recommendations:
+- Specify which dependencies need updating
+- Add version constraints or target versions
+- Define testing requirements
+
+Would you like me to:
+1. Automatically enhance the work item description
+2. Manually edit the work item before assignment
+3. Skip refinement and assign anyway (not recommended)
+4. Cancel assignment
+
+User: "1"
+
+[AI enhances description with context from package.json and recent commits]
+
+AI: ✅ Work item description enhanced!
+
+Updated description now includes:
+- Specific dependencies to update (lodash, axios, react)
+- Target versions based on latest security patches
+- Acceptance criteria for testing
+
+[AI re-analyzes]
+
+AI: ✅ AI Assignment Analysis: AI_FIT (confidence: 0.88)
 
 [AI calls list-agents for "my-app"]
 
@@ -430,7 +557,7 @@ User: "1"
 
 AI: ✅ Work item assigned to GitHub Copilot!
 
-**Work Item:** #12345 - Update dependencies in package.json
+**Work Item:** [#12345](https://dev.azure.com/org/project/_workitems/edit/12345) - Update dependencies in package.json
 **Repository:** my-app
 **Branch:** https://dev.azure.com/org/project/_git/my-app?version=GB12345-update-deps
 **Assigned To:** GitHub Copilot (via ComponentGovernanceAgent)

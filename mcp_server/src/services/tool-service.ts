@@ -11,6 +11,7 @@ import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js"
 import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 import { handleListSubagents } from './handlers/core/list-subagents.handler.js';
+import { handleGetTeamMembers } from './handlers/core/get-team-members.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -136,6 +137,11 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // List available subagents in a repository
   if (name === 'list-agents') {
     return await handleListSubagents(args);
+  }
+
+  // Get team members
+  if (name === 'get-team-members') {
+    return await handleGetTeamMembers(args);
   }
 
 

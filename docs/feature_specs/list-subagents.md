@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `wit-list-subagents` tool discovers available specialized Copilot agents in Azure DevOps repositories by scanning the `/.azuredevops/policies` directory for YAML configuration files containing agent metadata.
+The `list-agents` tool discovers available specialized Copilot agents in Azure DevOps repositories by scanning the `/.azuredevops/policies` directory for YAML configuration files containing agent metadata.
 
 ## Purpose
 
@@ -11,7 +11,7 @@ Enable users to discover what specialized Copilot agents are available in a repo
 ## User-Facing Behavior
 
 ### Tool Name
-`wit-list-subagents`
+`list-agents`
 
 ### Description
 Scans a specified repository for specialized Copilot agent definitions and returns a list of available agents with their names and descriptions.
@@ -284,25 +284,25 @@ Failed to access repository 'MyRepo': Insufficient permissions
 1. **Test with valid repository:**
    ```bash
    # Call tool with repository containing specialized agents
-   wit-list-subagents --repository="MyRepo"
+   list-agents --repository="MyRepo"
    ```
 
 2. **Test with empty repository:**
    ```bash
    # Call tool with repository without policies directory
-   wit-list-subagents --repository="EmptyRepo"
+   list-agents --repository="EmptyRepo"
    ```
 
 3. **Test with invalid repository:**
    ```bash
    # Call tool with non-existent repository
-   wit-list-subagents --repository="DoesNotExist"
+   list-agents --repository="DoesNotExist"
    ```
 
 4. **Test with explicit org/project:**
    ```bash
    # Call tool with full parameters
-   wit-list-subagents --repository="MyRepo" --organization="myorg" --project="MyProject"
+   list-agents --repository="MyRepo" --organization="myorg" --project="MyProject"
    ```
 
 ## Performance Considerations

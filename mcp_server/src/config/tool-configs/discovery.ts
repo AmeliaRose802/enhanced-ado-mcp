@@ -2,7 +2,8 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   getConfigurationSchema,
   getPromptsSchema,
-  listSubagentsSchema
+  listSubagentsSchema,
+  getTeamMembersSchema
 } from "../schemas.js";
 
 /**
@@ -20,6 +21,24 @@ export const discoveryTools: ToolConfig[] = [
       properties: {
         includeSensitive: { type: "boolean", description: "Include potentially sensitive configuration values" },
         section: { type: "string", enum: ["all", "azureDevOps", "gitRepository", "gitHubCopilot"], description: "Specific configuration section to retrieve" }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get-team-members",
+    description: "Discover team members by analyzing work item assignments. Returns a clean array of email addresses, automatically filtering out GitHub Copilot and null values. Useful for batch analysis, sprint planning, and understanding team composition.",
+    script: "",
+    schema: getTeamMembersSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        areaPath: { type: "string", description: "Area path to filter team members (uses config default if not provided)" },
+        dateRangeStart: { type: "string", description: "Start date for activity filter (ISO format YYYY-MM-DD, default: 90 days ago)" },
+        dateRangeEnd: { type: "string", description: "End date for activity filter (ISO format YYYY-MM-DD, default: today)" },
+        activeOnly: { type: "boolean", description: "Only include members with assigned work items in date range (default: true)" },
+        organization: { type: "string", description: "Azure DevOps organization (optional, uses config default)" },
+        project: { type: "string", description: "Azure DevOps project (optional, uses config default)" }
       },
       required: []
     }
