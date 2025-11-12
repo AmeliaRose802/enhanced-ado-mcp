@@ -17,6 +17,11 @@ import { SamplingClient } from "@/utils/sampling-client.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { asToolData } from "@/types/index.js";
 import crypto from 'crypto';
+import { odataQuerySchema } from '@/config/schemas.js';
+import type { z } from 'zod';
+
+// Type for validated OData query arguments
+type ODataQueryArgs = z.infer<typeof odataQuerySchema>;
 
 /**
  * Azure CLI token provider specifically for Analytics API
@@ -57,13 +62,13 @@ export async function handleODataQuery(
     // Determine if this is AI generation or direct execution
     const isAIGeneration = !!parsed.data.description && !parsed.data.queryType && !parsed.data.customODataQuery;
     
-    const queryArgs = {
+    const queryArgs: ODataQueryArgs = {
       ...parsed.data,
       organization: parsed.data.organization || requiredConfig.organization,
       project: parsed.data.project || requiredConfig.project,
       areaPath: parsed.data.areaPath || requiredConfig.defaultAreaPath,
       iterationPath: parsed.data.iterationPath || requiredConfig.defaultIterationPath
-    } as any;
+    };
 
     // Apply default area path if not provided
     if (!queryArgs.areaPath && requiredConfig.defaultAreaPath) {

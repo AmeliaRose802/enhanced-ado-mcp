@@ -18,6 +18,11 @@ import { extractWiqlQuery, cleanWiqlQuery } from "@/utils/wiql-helpers.js";
 import { buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { cacheService } from "../../cache-service.js";
 import crypto from 'crypto';
+import { wiqlQuerySchema } from '@/config/schemas.js';
+import type { z } from 'zod';
+
+// Type for validated query arguments
+type WiqlQueryArgs = z.infer<typeof wiqlQuerySchema>;
 
 export async function handleWiqlQuery(
   config: ToolConfig, 
@@ -30,7 +35,7 @@ export async function handleWiqlQuery(
       return validation.error;
     }
 
-    const parsed = validation.data as any;
+    const parsed = validation.data;
     const requiredConfig = getRequiredConfig();
     
     // Collect warnings for unnecessary parameters
@@ -541,7 +546,7 @@ export async function handleWiqlQuery(
 async function generateAndValidateQuery(
   samplingClient: SamplingClient,
   description: string,
-  queryArgs: any,
+  queryArgs: WiqlQueryArgs,
   maxIterations: number,
   includeExamples: boolean,
   testQuery: boolean
@@ -721,7 +726,7 @@ async function testWiqlQuery(
 /**
  * Generate a cache key for a WIQL query based on all relevant parameters
  */
-function generateQueryCacheKey(queryArgs: any, shouldFetchFullData: boolean): string {
+function generateQueryCacheKey(queryArgs: WiqlQueryArgs, shouldFetchFullData: boolean): string {
   // Create a stable object with all cache-relevant parameters
   const cacheObject = {
     query: queryArgs.wiqlQuery,
