@@ -393,7 +393,7 @@ Each: Category, Priority, Action, Rationale, Owner, Timeframe, Success Metric.
 - `{{analysis_period_days}}` - Days to analyze (default: 90)
 
 **Date Formatting:**
-- OData: `{{start_date_iso}}Z` and `{{end_date_iso}}Z` (format: YYYY-MM-DDZ without timestamp)
+- OData: `{{start_date_iso}}` and `{{end_date_iso}}` (format: full ISO 8601 timestamp YYYY-MM-DDTHH:mm:ssZ)
 - WIQL: `{{start_date}}` and `{{end_date}}` as-is (format: YYYY-MM-DD)
 - OData area filtering: Use `startswith(Area/AreaPath, '{{area_path}}')` for hierarchical matching
 

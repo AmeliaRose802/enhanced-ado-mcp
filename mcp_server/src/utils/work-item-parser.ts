@@ -2,7 +2,7 @@
  * Work item data parsing utilities
  */
 
-import type { WorkItemHierarchyInfo } from '../types/index.js';
+import type { WorkItemHierarchyInfo, ADOWorkItem, ADORelation } from '../types/index.js';
 
 /**
  * Escape area path for use in WIQL and OData queries
@@ -14,7 +14,7 @@ export function escapeAreaPath(areaPath: string): string {
   return areaPath.replace(/'/g, "''");
 }
 
-export function parseWorkItemForHierarchy(workItemData: any): WorkItemHierarchyInfo | null {
+export function parseWorkItemForHierarchy(workItemData: ADOWorkItem): WorkItemHierarchyInfo | null {
   try {
     const fields = workItemData.fields || {};
     const relations = workItemData.relations || [];
@@ -22,7 +22,7 @@ export function parseWorkItemForHierarchy(workItemData: any): WorkItemHierarchyI
     let currentParentId: number | undefined;
     let currentParentTitle: string | undefined;
     
-    const parentRelation = relations.find((rel: any) => 
+    const parentRelation = relations.find((rel: ADORelation) => 
       rel.rel === "System.LinkTypes.Hierarchy-Reverse"
     );
     
@@ -44,7 +44,7 @@ export function parseWorkItemForHierarchy(workItemData: any): WorkItemHierarchyI
       currentParentTitle,
       areaPath: fields['System.AreaPath'] || '',
       assignedTo: fields['System.AssignedTo']?.displayName,
-      description: fields['System.Description'] || fields['Microsoft.VSTS.Common.ReproSteps'] || ''
+      description: String(fields['System.Description'] || fields['Microsoft.VSTS.Common.ReproSteps'] || '')
     };
   } catch (error) {
     return null;

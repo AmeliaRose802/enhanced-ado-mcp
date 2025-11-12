@@ -47,6 +47,7 @@ export interface ADOWorkItemFields {
   'Microsoft.VSTS.Common.AcceptanceCriteria'?: string;
   'Microsoft.VSTS.Common.Priority'?: number;
   'Microsoft.VSTS.Scheduling.StoryPoints'?: number;
+  'Microsoft.VSTS.Scheduling.Effort'?: number;  // Story points field used in Scrum/Agile templates
   'Microsoft.VSTS.Scheduling.RemainingWork'?: number;
   /** 
    * Allow additional custom fields

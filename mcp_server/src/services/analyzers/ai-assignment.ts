@@ -11,6 +11,20 @@ import { getTokenProvider } from '../../utils/token-provider.js';
 import type { ADOWorkItem } from '../../types/index.js';
 import { handleListSubagents } from '../handlers/core/list-subagents.handler.js';
 
+/** Subagent information from list-subagents tool */
+interface SubagentInfo {
+  name: string;
+  description: string;
+  tag: string;
+}
+
+/** Response structure from list-subagents tool */
+interface ListSubagentsResponse {
+  repository: string;
+  subagents: SubagentInfo[];
+  message?: string;
+}
+
 /** Internal analysis input structure */
 interface AnalysisInput {
   work_item_id: number;
@@ -25,7 +39,7 @@ interface AnalysisInput {
   area_path: string;
   iteration_path: string;
   output_format: string;
-  available_agents: Array<{ name: string; description: string; tag: string }>;
+  available_agents: SubagentInfo[];
 }
 
 /**
@@ -78,7 +92,7 @@ export class AIAssignmentAnalyzer {
       }
 
       // Fetch available agents if repository is provided
-      let availableAgents: Array<{ name: string; description: string; tag: string }> = [];
+      let availableAgents: SubagentInfo[] = [];
       if (args.repository) {
         try {
           logger.debug(`Fetching available agents from repository: ${args.repository}`);
@@ -89,9 +103,9 @@ export class AIAssignmentAnalyzer {
           });
           
           if (agentsResult.success && agentsResult.data) {
-            const data = agentsResult.data as any;
+            const data = agentsResult.data as unknown as ListSubagentsResponse;
             if (data.subagents && Array.isArray(data.subagents)) {
-              availableAgents = data.subagents.map((agent: any) => ({
+              availableAgents = data.subagents.map((agent: SubagentInfo) => ({
                 name: agent.name,
                 description: agent.description,
                 tag: agent.tag

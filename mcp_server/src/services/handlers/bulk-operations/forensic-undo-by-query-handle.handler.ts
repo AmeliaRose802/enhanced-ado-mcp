@@ -29,11 +29,11 @@ interface DetectedChange {
   changedBy: string;
   changeType: 'field' | 'type' | 'state' | 'link-add' | 'link-remove';
   field?: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   linkType?: string;
   linkedItemId?: number;
-  currentValue?: any; // Current value to check if already reverted
+  currentValue?: unknown; // Current value to check if already reverted
   needsRevert: boolean;
 }
 
@@ -325,7 +325,7 @@ async function analyzeWorkItem(
   // Build revision chain with filter matching
   interface RevisionInfo {
     rev: number;
-    fields: any;
+    fields: import('@/types/index.js').ADOWorkItemFields;
     changedBy: string;
     changeDate: Date;
     matchesFilter: boolean;
@@ -333,8 +333,8 @@ async function analyzeWorkItem(
   
   const fullRevisionChain: RevisionInfo[] = allRevisions.map(r => {
     const changedByValue = r.fields['System.ChangedBy'];
-    const changedBy = typeof changedByValue === 'object' && changedByValue !== null
-      ? (changedByValue as any).displayName || (changedByValue as any).uniqueName || 'Unknown'
+    const changedBy = typeof changedByValue === 'object' && changedByValue !== null && 'displayName' in changedByValue
+      ? (changedByValue.displayName as string) || (changedByValue.uniqueName as string) || 'Unknown'
       : typeof changedByValue === 'string' ? changedByValue : 'Unknown';
     
     return {
@@ -367,13 +367,13 @@ async function analyzeWorkItem(
 
   // Compute baseline value for a field (value before first filtered revision)
   const revertValueCache = new Map<string, any>();
-  const computeRevertValue = (fieldPath: string): any => {
+  const computeRevertValue = (fieldPath: string): unknown => {
     if (revertValueCache.has(fieldPath)) {
       return revertValueCache.get(fieldPath);
     }
 
     const scanLimit = firstMatchedRevIndex !== null ? firstMatchedRevIndex : fullRevisionChain.length;
-    let value: any = undefined;
+    let value: unknown = undefined;
     
     for (let index = 0; index < scanLimit; index++) {
       const rev = fullRevisionChain[index];
@@ -682,7 +682,7 @@ async function revertWorkItem(
   
   // Compute revert value for each field via replay
   for (const [fieldKey, fieldChanges] of changesByField) {
-    let revertValue: any = undefined;
+    let revertValue: unknown = undefined;
     
     for (const rev of allRevisions) {
       if (filteredRevNumbers.has(rev.rev)) continue;

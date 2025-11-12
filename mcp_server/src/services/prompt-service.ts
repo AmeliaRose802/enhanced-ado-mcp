@@ -33,14 +33,15 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
     ? args.stalenessThresholdDays
     : 180;
   
-  // Format dates as YYYY-MM-DD for OData queries
+  // Format dates as YYYY-MM-DD for WIQL queries and display
   const formatDate = (date: Date): string => {
     return date.toISOString().split('T')[0];
   };
   
-  // Format dates as YYYY-MM-DD for OData ISO format (used in date comparisons)
+  // Format dates as full ISO 8601 timestamp for OData queries (YYYY-MM-DDTHH:mm:ssZ)
+  // OData requires full timestamp format for date comparisons
   const formatDateISO = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    return date.toISOString();
   };
   
   // Get the primary area path (prefer singular areaPath, fallback to first in areaPaths array)

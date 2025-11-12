@@ -22,9 +22,8 @@ if (process.env.JEST_WORKER_ID !== undefined || process.env.NODE_ENV === 'test')
 export const pathsReady = (process.env.JEST_WORKER_ID === undefined && process.env.NODE_ENV !== 'test')
   ? (async () => {
     try {
-      // Dynamic import of .mjs file
-      // @ts-ignore - .mjs file doesn't have TypeScript declarations
-      const moduleDirModule = await import('./module-dir.mjs') as any;
+      // Dynamic import of .mjs file with proper typing
+      const moduleDirModule = await import('./module-dir.mjs');
       thisFileDir = moduleDirModule.moduleDir;
       
       // dist/utils -> dist -> mcp_server (repo root)
