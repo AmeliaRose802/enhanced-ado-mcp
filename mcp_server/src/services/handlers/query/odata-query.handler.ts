@@ -358,7 +358,7 @@ async function executeODataAnalytics(
  */
 async function executeODataQueryForHandle(
   odataQuery: string,
-  queryArgs: any,
+  queryArgs: ODataQueryArgs,
   aiMetadata: Record<string, unknown>
 ): Promise<ToolExecutionResult> {
   // Validate required parameters before constructing URL
@@ -379,7 +379,7 @@ async function executeODataQueryForHandle(
   const token = await getAnalyticsTokenProvider()();
   const baseUrl = `https://analytics.dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_odata/v3.0-preview/WorkItems`;
   
-  const fieldsToSelect = queryArgs.includeFields?.length > 0 
+  const fieldsToSelect = queryArgs.includeFields && queryArgs.includeFields.length > 0 
     ? queryArgs.includeFields.join(',')
     : 'WorkItemId,Title,State,WorkItemType,CreatedDate,ChangedDate,AssignedTo,AreaPath,IterationPath,Tags';
   
