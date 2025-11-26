@@ -20,6 +20,12 @@ let promptWatcher: ReturnType<typeof watch> | null = null;
 let onPromptsChangedCallback: (() => void) | null = null;
 
 /**
+ * Debounce timer for prompt changes
+ */
+let debounceTimer: NodeJS.Timeout | null = null;
+const DEBOUNCE_MS = 1000; // Wait 1 second before notifying
+
+/**
  * Load a system prompt from the prompts/system directory
  * @param promptName - Name of the prompt file (without .md extension)
  * @param variables - Optional variables to substitute in the prompt (e.g., {{VARIABLE_NAME}})
@@ -125,19 +131,35 @@ export async function startPromptWatcher(): Promise<void> {
   try {
     // Watch the entire prompts directory recursively
     promptWatcher = watch(promptsDir, { recursive: true }, (eventType, filename) => {
-      if (!filename || !filename.endsWith('.md')) {
+      // Filter out non-markdown files and editor temp files
+      if (!filename || 
+          !filename.endsWith('.md') || 
+          filename.includes('.tmp') || 
+          filename.includes('~') ||
+          filename.startsWith('.')) {
         return;
       }
       
-      logger.info(`Prompt file changed: ${filename} (${eventType})`);
+      logger.debug(`Prompt file changed: ${filename} (${eventType})`);
       
-      // Clear cache to force reload
-      clearPromptCache();
-      
-      // Notify callback if set
-      if (onPromptsChangedCallback) {
-        onPromptsChangedCallback();
+      // Debounce: Clear existing timer and set a new one
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
       }
+      
+      debounceTimer = setTimeout(() => {
+        logger.info(`Prompts list changed, refreshing prompts...`);
+        
+        // Clear cache to force reload
+        clearPromptCache();
+        
+        // Notify callback if set
+        if (onPromptsChangedCallback) {
+          onPromptsChangedCallback();
+        }
+        
+        debounceTimer = null;
+      }, DEBOUNCE_MS);
     });
     
     logger.info(`Started watching prompts directory: ${promptsDir}`);
@@ -150,6 +172,11 @@ export async function startPromptWatcher(): Promise<void> {
  * Stop watching the prompts directory
  */
 export function stopPromptWatcher(): void {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  
   if (promptWatcher) {
     promptWatcher.close();
     promptWatcher = null;

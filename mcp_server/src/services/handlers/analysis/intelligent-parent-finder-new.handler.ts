@@ -27,7 +27,7 @@ import { SamplingClient } from "@/utils/sampling-client.js";
 import { ADOHttpClient } from "@/utils/ado-http-client.js";
 import { getTokenProvider } from "@/utils/token-provider.js";
 import type { ADOWorkItem } from "@/types/index.js";
-import { formatForAI } from "@/utils/ai-helpers.js";
+import { formatForAI, extractJSON } from "@/utils/ai-helpers.js";
 
 interface IntelligentParentFinderArgs {
   childQueryHandle: string;
@@ -328,7 +328,7 @@ export async function handleIntelligentParentFinder(
 
         // 3d. Pre-filter candidates to ensure same area path (double-check WIQL results)
         const validCandidates = candidatesResult.workItems.filter(wi => {
-          const candidateAreaPath = wi.additionalFields?.['System.AreaPath'] as string || '';
+          const candidateAreaPath = wi.areaPath || '';
           return validateAreaPathMatch(childAreaPath, candidateAreaPath);
         });
 
@@ -367,8 +367,8 @@ export async function handleIntelligentParentFinder(
           type: wi.type,
           state: wi.state,
           tags: wi.additionalFields?.['System.Tags'] as string || '',
-          areaPath: wi.additionalFields?.['System.AreaPath'] as string || '',
-          iterationPath: wi.additionalFields?.['System.IterationPath'] as string || '',
+          areaPath: wi.areaPath || '',
+          iterationPath: wi.iterationPath || '',
           hasParent: !!wi.additionalFields?.['System.Parent'],
           relatedLinkCount: wi.additionalFields?.['System.RelatedLinkCount'] as number || 0
         }));
@@ -398,21 +398,21 @@ export async function handleIntelligentParentFinder(
         logger.debug(`AI response for ${childWorkItemId}: ${responseText.substring(0, 200)}...`);
 
         // 3g. Parse and validate AI response
-        let analysisResult: AIAnalysisResponse;
-        try {
-          analysisResult = JSON.parse(responseText);
-        } catch (error) {
+        const parsedResult = extractJSON(responseText);
+        if (!parsedResult) {
           allResults.push({
             childWorkItemId,
             childTitle,
             childType,
             childAreaPath,
             recommendations: [],
-            warnings: [`Failed to parse AI analysis: ${error instanceof Error ? error.message : String(error)}`],
+            warnings: [`Failed to parse AI analysis: Response was not valid JSON (may be wrapped in markdown code blocks)`],
             candidatesAnalyzed: validCandidates.length
           });
           continue;
         }
+        
+        const analysisResult = parsedResult as unknown as AIAnalysisResponse;
 
         // 3h. Post-validate AI recommendations (safety check)
         const validatedRecommendations = analysisResult.recommendations.filter(rec => {

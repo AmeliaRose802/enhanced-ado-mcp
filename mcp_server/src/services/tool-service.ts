@@ -27,6 +27,7 @@ import { handleQueryHandleInfo } from './handlers/query-handles/query-handle-inf
 // Bulk operation handlers
 import { handleBulkLinkByQueryHandles } from './handlers/bulk-operations/bulk-link-handler.js';
 import { handleUnifiedBulkOperations } from './handlers/bulk-operations/unified-bulk-operations.handler.js';
+import { handleExportWorkItems } from './handlers/bulk-operations/export-work-items.handler.js';
 
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
@@ -40,6 +41,7 @@ import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-p
 
 // Integration handlers
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
+import { handleGenerateChangelog } from './handlers/integration/generate-changelog.handler.js';
 
 // Repos handlers
 import { handleGetPullRequestDiff } from './handlers/repos/get-pr-diff.handler.js';
@@ -292,6 +294,11 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleForensicUndoByQueryHandle(config, args);
   }
 
+  // Export work items to CSV, Excel, or TSV
+  if (name === 'export-work-items') {
+    return await handleExportWorkItems(config, args);
+  }
+
   if (name === 'analyze-bulk') {
     return await handleAnalyzeByQueryHandle(config, args, serverInstance ?? undefined);
   }
@@ -336,6 +343,11 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Generate burnup chart
   if (name === 'generate-burnup-chart') {
     return await handleGenerateBurnupChart(args);
+  }
+
+  // Generate changelog
+  if (name === 'generate-changelog') {
+    return await handleGenerateChangelog(config, args);
   }
 
   // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)
