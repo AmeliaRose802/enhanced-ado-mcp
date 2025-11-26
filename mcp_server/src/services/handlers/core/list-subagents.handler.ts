@@ -5,7 +5,7 @@
 
 import type { ToolExecutionResult } from "@/types/index.js";
 import { getRequiredConfig } from "@/config/config.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { listSubagentsSchema } from "@/config/schemas.js";
 import { 
   buildValidationErrorResponse, 
@@ -307,7 +307,7 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
 
     return result;
   } catch (error) {
-    logger.error('Failed to list subagents', error);
+    logger.error('Failed to list subagents', errorToContext(error));
     return buildErrorResponse(
       error as Error,
       { source: 'list-subagents' }

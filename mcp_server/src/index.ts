@@ -7,7 +7,7 @@
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { HybridStdioServerTransport } from "./hybridTransport.js";
-import { logger } from "./utils/logger.js";
+import { logger, errorToContext } from "./utils/logger.js";
 import { getAvailableToolConfigs } from "./config/tool-configs/index.js";
 import { loadPrompts, getPromptContent } from "./services/prompt-service.js";
 import { executeTool, setServerInstance } from "./services/tool-service.js";
@@ -20,6 +20,7 @@ import { updateConfigFromCLI, ensureGitHubCopilotGuid, ensureCurrentIterationPat
 import { createAuthenticator, getDefaultAuthType } from "./utils/ado-token.js";
 import { getOrgTenant } from "./utils/org-tenants.js";
 import { setTokenProvider } from "./utils/token-provider.js";
+import { telemetryService } from "./services/telemetry-service.js";
 
 const server = new Server({
   name: "enhanced-ado-mcp-server",
@@ -35,7 +36,7 @@ const server = new Server({
 
 // Request handler with proper error handling
 server.fallbackRequestHandler = async (request: any) => {
-  logger.debug(`Handling request: ${request.method}`, JSON.stringify(request.params));
+  logger.debug(`Handling request: ${request.method}`, { params: request.params });
   
   if (request.method === "tools/list") {
     const hasSampling = checkSamplingSupport(server);
@@ -154,13 +155,23 @@ const argv = yargs(hideBin(process.argv))
     describe: "Azure tenant ID (optional, for multi-tenant scenarios)",
     type: "string"
   })
+  .option("telemetry", {
+    describe: "Enable telemetry collection (opt-in, disabled by default)",
+    type: "boolean",
+    default: false
+  })
+  .option("telemetry-export-dir", {
+    describe: "Directory for telemetry exports (default: ./telemetry)",
+    type: "string"
+  })
   .example([
     ['$0 myorg --area-path "MyProject\\Team\\Area"', 'Start with area path (project extracted automatically)'],
     ['$0 myorg --area-path "ProjectA\\Team1" --area-path "ProjectA\\Team2"', 'Multi-area support (same project)'],
     ['$0 myorg -a "MyProject\\Team"', 'Using short flag alias'],
     ['$0 myorg -a "MyProject\\Team" --team "Krypton"', 'Override team name for iteration discovery'],
     ['$0 myorg -a "MyProject\\Team" --authentication azcli', 'Use Azure CLI authentication'],
-    ['$0 myorg -a "MyProject\\Team" --tenant <tenant-id>', 'Specify tenant for multi-tenant scenarios']
+    ['$0 myorg -a "MyProject\\Team" --tenant <tenant-id>', 'Specify tenant for multi-tenant scenarios'],
+    ['$0 myorg -a "MyProject\\Team" --telemetry', 'Enable telemetry collection (opt-in)']
   ])
   .help()
   .parseSync();
@@ -186,7 +197,9 @@ async function main() {
       areaPath: undefined, // Clear single value
       areaPaths: Array.isArray(areaPathArg) 
         ? areaPathArg 
-        : (areaPathArg ? [areaPathArg] : undefined)
+        : (areaPathArg ? [areaPathArg] : undefined),
+      telemetry: argv.telemetry,
+      telemetryExportDir: argv['telemetry-export-dir']
     };
     
     updateConfigFromCLI(normalizedArgs as any as CLIArguments);
@@ -216,11 +229,21 @@ async function main() {
     // Initialize global token provider for services
     setTokenProvider(tokenProvider);
 
+    // Initialize telemetry if enabled
+    if (config.telemetry.enabled || normalizedArgs.telemetry) {
+      telemetryService.updateConfig({
+        enabled: true,
+        exportDir: normalizedArgs.telemetryExportDir || config.telemetry.exportDir
+      });
+      logger.info('[Telemetry] Telemetry collection enabled (opt-in)');
+      logger.info(`[Telemetry] Export directory: ${telemetryService.getConfig().exportDir}`);
+    }
+
     // Automatically look up GitHub Copilot GUID if not provided
     await ensureGitHubCopilotGuid();
     
-    // Note: Automatic iteration path discovery removed - use --iteration-path flag to specify
-    // Example: enhanced-ado-mcp myorg --area-path "Project\\Area" --iteration-path "Project\\Iteration"
+    // Automatically discover current iteration path for the team
+    await ensureCurrentIterationPath();
 
     const useHybrid = process.env.MCP_HYBRID === "1";
     
@@ -250,15 +273,21 @@ async function main() {
     // Clean up watcher on exit
     process.on('SIGINT', () => {
       stopPromptWatcher();
+      telemetryService.shutdown().catch(err => {
+        logger.error('[Telemetry] Shutdown error:', err);
+      });
       process.exit(0);
     });
     process.on('SIGTERM', () => {
       stopPromptWatcher();
+      telemetryService.shutdown().catch(err => {
+        logger.error('[Telemetry] Shutdown error:', err);
+      });
       process.exit(0);
     });
     
   } catch (error) {
-    logger.error("Failed to start MCP server:", error);
+    logger.error("Failed to start MCP server:", errorToContext(error));
     process.exit(1);
   }
 }

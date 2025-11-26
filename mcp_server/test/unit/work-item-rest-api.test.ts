@@ -46,7 +46,7 @@ async function testCreateWorkItemWithParent() {
   
   try {
     // First create a parent work item
-    const parentResult = await executeTool('wit-create-item', {
+    const parentResult = await executeTool('create-workitem', {
       Title: 'Parent Work Item - REST API Test',
       WorkItemType: 'Product Backlog Item',
       Description: 'Parent work item for testing REST API parent linking',
@@ -62,7 +62,7 @@ async function testCreateWorkItemWithParent() {
     console.log(`   Created parent work item: ${parentId}`);
     
     // Now create a child work item
-    const childResult = await executeTool('wit-create-item', {
+    const childResult = await executeTool('create-workitem', {
       Title: 'Child Work Item - REST API Test',
       WorkItemType: 'Task',
       Description: 'Child work item linked to parent',

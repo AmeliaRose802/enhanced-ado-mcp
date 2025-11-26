@@ -8,7 +8,7 @@
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { logger } from './logger.js';
+import { logger, errorToContext } from './logger.js';
 
 interface OrgTenantCacheEntry {
   tenantId: string;
@@ -41,7 +41,7 @@ async function trySavingCache(cache: OrgTenantCache): Promise<void> {
   try {
     await fs.writeFile(CACHE_FILE, JSON.stringify(cache, null, 2));
   } catch (error) {
-    logger.warn('Failed to save organization tenant cache:', error);
+    logger.warn('Failed to save organization tenant cache:', errorToContext(error));
   }
 }
 

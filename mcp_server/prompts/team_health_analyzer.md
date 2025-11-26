@@ -393,9 +393,12 @@ Each: Category, Priority, Action, Rationale, Owner, Timeframe, Success Metric.
 - `{{analysis_period_days}}` - Days to analyze (default: 90)
 
 **Date Formatting:**
-- OData: `{{start_date_iso}}` and `{{end_date_iso}}` (format: full ISO 8601 timestamp YYYY-MM-DDTHH:mm:ssZ)
+- OData: Use full ISO 8601 timestamp format `YYYY-MM-DDTHH:MM:SSZ` (e.g., `2025-08-09T00:00:00Z`)
+  - **CORRECT:** `CompletedDate ge 2025-08-09T00:00:00Z`
+  - **INCORRECT:** `CompletedDate ge 2025-08-09Z` (missing time component)
 - WIQL: `{{start_date}}` and `{{end_date}}` as-is (format: YYYY-MM-DD)
 - OData area filtering: Use `startswith(Area/AreaPath, '{{area_path}}')` for hierarchical matching
+- **NOTE:** The `get-team-members` tool handles OData date formatting automatically
 
 ---
 

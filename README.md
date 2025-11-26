@@ -12,15 +12,17 @@ AI-powered Azure DevOps work item management via Model Context Protocol.
 ### Prerequisites
 
 **1. Install Azure CLI** (required for authentication)
-   - **Windows:** [aka.ms/installazurecliwindows](https://aka.ms/installazurecliwindows)
-   - **macOS:** `brew install azure-cli`
-   - **Linux:** [docs.microsoft.com/cli/azure/install-azure-cli-linux](https://docs.microsoft.com/cli/azure/install-azure-cli-linux)
-   
-   After install: `az login`
+
+- **Windows:** [aka.ms/installazurecliwindows](https://aka.ms/installazurecliwindows)
+- **macOS:** `brew install azure-cli`
+- **Linux:** [docs.microsoft.com/cli/azure/install-azure-cli-linux](https://docs.microsoft.com/cli/azure/install-azure-cli-linux)
+
+After install: `az login`
 
 **2. Install npx** (comes with Node.js 18+)
-   - Download: [nodejs.org/download](https://nodejs.org/en/download/)
-   - Verify: `npx --version`
+
+- Download: [nodejs.org/download](https://nodejs.org/en/download/)
+- Verify: `npx --version`
 
 ---
 
@@ -33,6 +35,7 @@ AI-powered Azure DevOps work item management via Model Context Protocol.
 [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install-24bfa5?style=for-the-badge&logo=visualstudiocode)](https://insiders.vscode.dev/redirect/mcp/install?name=enhanced-ado-mcp&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22enhanced-ado-mcp-server%22%2C%22%24%7Binput%3Aado_org%7D%22%2C%22--area-path%22%2C%22%24%7Binput%3Aarea_path%7D%22%5D%7D&inputs=%5B%7B%22id%22%3A%22ado_org%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Azure%20DevOps%20organization%20name%22%7D%2C%7B%22id%22%3A%22area_path%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Area%20path%20(e.g.%20MyProject%5C%5CTeam%5C%5CArea)%20-%20project%20extracted%20automatically%22%7D%5D)
 
 **VS Code will prompt you for:**
+
 1. **Organization name** (e.g., `mycompany`)
 2. **Area path** (e.g., `MyProject\Team\Area`)
 
@@ -49,23 +52,15 @@ Add to VS Code `settings.json`:
 **Step 3:** Add this configuration:
 
 ```json
-{
-  "github.copilot.chat.mcp.servers": {
-    "enhanced-ado-mcp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "enhanced-ado-mcp-server",
-        "YOUR_ORG",
-        "--area-path",
-        "YOUR_PROJECT\\YOUR_TEAM"
-      ]
-    }
-  }
-}
+```
+
+**Real Example:**
+
+```json
 ```
 
 **Step 4:** Replace placeholders:
+
 - `YOUR_ORG` → Your organization name (e.g., `contoso`)
 - `YOUR_PROJECT\\YOUR_TEAM` → Your area path (e.g., `MyProject\Engineering\Backend`)
 
@@ -92,6 +87,7 @@ Add to VS Code `settings.json`:
 ```
 
 **Multi-Team Setup:**
+
 ```json
 {
   "github.copilot.chat.mcp.servers": {
@@ -117,10 +113,12 @@ Add to VS Code `settings.json`:
 ### Claude Desktop / Cursor
 
 **Configuration File:**
+
 - **macOS/Linux:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 **Add this:**
+
 ```json
 {
   "mcpServers": {
@@ -133,6 +131,7 @@ Add to VS Code `settings.json`:
 ```
 
 **Multi-area support (optional):**
+
 ```json
 {
   "mcpServers": {
@@ -156,6 +155,8 @@ Add to VS Code `settings.json`:
 
 While the [basic ADO MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/ado) provides core Azure DevOps functionality, this enhanced version offers significant advantages for production workflows:
 
+```
+
 ### 🛡️ Anti-Hallucination Architecture
 **Query Handle Pattern** - AI agents can't hallucinate work item IDs. Instead of exposing raw IDs that agents might invent, our query handle system ensures agents only operate on validated work items from actual queries.
 
@@ -171,16 +172,18 @@ bulkUpdateByQueryHandle(handle, { itemSelector: "all" });  // Only real items
 Agents seem to be less likely to hallucinate the alphanumeric query handles. Additionally, even if they do, the hallucinated handle is incredibly unlikely to be a valid active handle so the server will reject the update.
 
 ### 🎯 Better Multi-Step Operation UX
-**Reliable workflows** - Complex operations broken into validated steps with preview capabilities. See exactly what will happen before executing destructive operations. 
+
+**Reliable workflows** - Complex operations broken into validated steps with preview capabilities. See exactly what will happen before executing destructive operations.
 
 Agents struggle with flows that require multiple steps. Creating and parenting a simple work item with the basic ado mcp server requires 6 separate tool calls which is slow and unreliable (I've never seen it get all the configuration right) whereas this server combines common flows into agent friendly single step tool calls.
 
 ### 🔍 Intelligent Query Tools
-- **Natural Language → WIQL** - `wit-generate-wiql-query` converts plain English to valid WIQL
+
+- **Natural Language → WIQL** - `query-wiql` converts plain English to valid WIQL
 - **OData Analytics** - Advanced metrics and aggregations for team velocity, trends, burndown
 - **WIQL + OData** - Both query languages supported with validation and auto-correction
 
-### Better context window usage 
+### Better context window usage
 
 With the normal ado mcp server, you eventually find the item you are looking for by pulling in hundreds of items, but it will quickly max out the context window making the process slow and unreliable.
 
@@ -189,19 +192,23 @@ Want aggregate stats on velocity? The agent will need to manually count points w
 Relibly generating queries requires thosands of tokens of context, which will degrade the performance of your main agent. Using dedicated sub-agents with sampling allows for natural language to wiql/odata query conversion with mininal context window impact.
 
 ### 🤖 AI-Powered Analysis
+
 **Smart insights** (VS Code + GitHub Copilot):
+
 - Work item completeness scoring
 - AI assignment suitability analysis
 - Automatic decomposition recommendations
 - Hierarchy validation with actionable fixes
 
 ### ⚡ Safe Bulk Operations
+
 - **Preview before execute** - See which items will be affected
 - **Item selectors** - Filter by state, tags, staleness within query results
 - **Dry-run mode** - Test destructive operations safely
 - **Validation** - All operations validated before execution
 
 ### 📊 Production-Ready Features
+
 - **606 passing tests** with comprehensive coverage
 - **Pagination** - Handles large result sets efficiently
 - **Error categorization** - Clear, actionable error messages
@@ -224,36 +231,43 @@ Relibly generating queries requires thosands of tokens of context, which will de
 ### Key Tools
 
 **Work Item Creation (3 tools):**
+
 - `create-workitem` - Create work items with optional parent
 - `assign-copilot` - Assign existing items to GitHub Copilot
 - `clone-workitem` - Clone/duplicate work items
 
 **Work Item Context (2 tools):**
+
 - `get-context` - Comprehensive work item details
 - `extract-security-links` - Extract security scan instructions
 
 **Query Tools (2 tools):**
+
 - `query-wiql` - Execute WIQL or generate from natural language
 - `query-odata` - Execute OData analytics or generate from natural language
 
 **Query Handle Management (4 tools):**
+
 - `analyze-bulk` - Analyze work items via query handle
 - `list-handles` - List all active query handles
 - `inspect-handle` - Get comprehensive handle information
 - `get-context-bulk` - Batch context retrieval
 
 **Bulk Operations (4 tools):**
+
 - `execute-bulk-operations` - Unified bulk operations (update fields, tags, comments, links, state transitions, AI enhancements)
 - `link-workitems` - Create relationships between items
 - `undo-bulk` - Undo previous operations
 - `undo-forensic` - Undo changes by user/timestamp
 
 **AI Analysis (3 tools - requires VS Code + GitHub Copilot):**
+
 - `analyze-workload` - Burnout risk & workload health
 - `analyze-query-handle` - AI-powered analysis of query handle results
 - `discover-tools` - Find the right tool for your task
 
 **Configuration & Discovery (4 tools):**
+
 - `get-config` - View current server configuration
 - `get-prompts` - Access prompt templates
 - `list-agents` - List available specialized agents
@@ -266,6 +280,7 @@ See [docs/feature_specs/](docs/feature_specs/) for complete documentation.
 ## Quick Examples
 
 ### Query with natural language
+
 ```javascript
 // AI-powered query generation
 callTool("query-wiql", {
@@ -281,6 +296,7 @@ callTool("query-wiql", {
 ```
 
 ### Safe bulk operations
+
 ```javascript
 // 1. Query with handle
 const result = await callTool("query-wiql", {
@@ -300,7 +316,7 @@ await callTool("execute-bulk-operations", {
 });
 
 // 3. Execute for real
-await callTool("wit-unified-bulk-operations-by-query-handle", {
+await callTool("execute-bulk-operations", {
   queryHandle: result.query_handle,
   actions: [
     { type: "add-tag", tags: "needs-review" },
@@ -318,6 +334,7 @@ await callTool("wit-unified-bulk-operations-by-query-handle", {
 AI-powered tools require VS Code with GitHub Copilot and language model access.
 
 **Setup:**
+
 1. Open Command Palette (`F1`)
 2. Run **"MCP: List Servers"**  
 3. Select **"enhanced-ado-mcp"**
@@ -336,6 +353,7 @@ Server automatically selects fastest free model. No configuration needed.
 **Root Cause:** This error typically means you lack "View analytics" permission in Azure DevOps, OR you're not logged into Azure CLI.  
 
 **Fix:**
+
 1. **First, ensure Azure CLI is logged in:** Run `az login` in your terminal
 2. **Verify you have Analytics permissions:**
    - Go to: `https://dev.azure.com/{YOUR_ORG}/{YOUR_PROJECT}/_settings/security`
@@ -346,7 +364,24 @@ Server automatically selects fastest free model. No configuration needed.
 **Technical Details:**  
 OData Analytics queries automatically use Azure CLI authentication (as of v1.10.1) because the Analytics API requires Azure CLI tokens. OAuth tokens from interactive authentication don't work with this API. This happens transparently - you don't need any special configuration.
 
-**Alternative:** If you can't get Analytics permissions, use WIQL queries (`wit-wiql-query`) instead of OData queries.
+**Alternative:** If you can't get Analytics permissions, use WIQL queries (`query-wiql`) instead of OData queries.
+
+**📖 Detailed Guide:** See [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for comprehensive diagnosis, resolution steps, and migration patterns.
+
+---
+
+### Permission Requirements by Tool
+
+| Tool | Required Permission | Notes |
+|------|---------------------|-------|
+| `query-wiql` | View work items | Standard access, all team members |
+| `query-odata` | **View analytics** | Must be explicitly granted by admin |
+| Create/Update tools | Edit work items | Standard access |
+| AI Analysis | View work items + GitHub Copilot | VS Code only |
+
+**Key Difference:** "View analytics" is a SEPARATE permission from "View work items". Having work item access does NOT automatically grant Analytics API access.
+
+---
 
 **Missing Work Item Type ($undefined)**  
 **Fix:** Always specify `workItemType` when creating items.
@@ -355,12 +390,14 @@ OData Analytics queries automatically use Azure CLI authentication (as of v1.10.
 **Fix:** Use `wit-list-area-paths` to find valid paths.
 
 ### Debug Mode
+
 ```bash
 export MCP_DEBUG=1  # macOS/Linux
 $env:MCP_DEBUG=1    # PowerShell
 ```
 
 ### Debug Tools
+
 The `get-prompts` tool is **disabled by default** in production for security reasons. To enable debug tools (e.g., for testing prompt templates):
 
 ```bash

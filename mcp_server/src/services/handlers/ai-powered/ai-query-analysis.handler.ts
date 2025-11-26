@@ -39,6 +39,7 @@ export function initializeAIQueryAnalyzer(server: MCPServer | MCPServerLike): vo
  *   - intent: string - Natural language description of desired analysis
  *   - itemSelector?: 'all' | number[] | object - Which items to analyze (default 'all')
  *   - maxItemsToAnalyze?: number - Max items to analyze (default 50, max 100)
+ *   - skip?: number - Number of items to skip for pagination (default 0)
  *   - includeContextPackages?: boolean - Retrieve full context (default true)
  *   - contextDepth?: 'basic'|'standard'|'deep' - Context detail level (default 'standard')
  *   - outputFormat?: 'concise'|'detailed'|'json' - Output format (default 'concise')

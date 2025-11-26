@@ -3,7 +3,10 @@ import {
   getConfigurationSchema,
   getPromptsSchema,
   listSubagentsSchema,
-  getTeamMembersSchema
+  getTeamMembersSchema,
+  discoverCustomFieldsSchema,
+  validateCustomFieldsSchema,
+  exportFieldSchemaSchema
 } from "../schemas.js";
 
 /**
@@ -89,6 +92,59 @@ export const discoveryTools: ToolConfig[] = [
         }
       },
       required: ["repository"]
+    }
+  },
+  {
+    name: "discover-custom-fields",
+    description: "Discover all custom fields in an Azure DevOps project, including field metadata (name, type, description), usage across work item types, picklist values, and field categories. Useful for field audits, documentation, and understanding project configuration.",
+    script: "",
+    schema: discoverCustomFieldsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        includeSystemFields: { type: "boolean", description: "Include system fields (System.*) in results (default: false)" },
+        includeMicrosoftFields: { type: "boolean", description: "Include Microsoft VSTS fields (Microsoft.*) in results (default: true)" },
+        includePicklistValues: { type: "boolean", description: "Include allowed values for picklist fields (default: true)" },
+        organization: { type: "string", description: "Azure DevOps organization (optional, uses config default)" },
+        project: { type: "string", description: "Azure DevOps project (optional, uses config default)" }
+      },
+      required: []
+    }
+  },
+  {
+    name: "validate-custom-fields",
+    description: "Validate custom fields and identify issues: inconsistent naming (casing, typos), unused fields, deprecated fields still in use, similar/duplicate field names. Returns actionable recommendations for field standardization and cleanup.",
+    script: "",
+    schema: validateCustomFieldsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        severityFilter: { type: "string", enum: ["error", "warning", "info", "all"], description: "Filter issues by severity (default: all)" },
+        focusOnCustomFields: { type: "boolean", description: "Only validate custom fields (exclude system/Microsoft fields) (default: true)" },
+        organization: { type: "string", description: "Azure DevOps organization (optional, uses config default)" },
+        project: { type: "string", description: "Azure DevOps project (optional, uses config default)" }
+      },
+      required: []
+    }
+  },
+  {
+    name: "export-field-schema",
+    description: "Export field definitions as structured JSON or YAML schema for documentation, migration, or template generation. Includes field metadata, types, picklist values, and usage across work item types.",
+    script: "",
+    schema: exportFieldSchemaSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        format: { type: "string", enum: ["json", "yaml"], description: "Export format (default: json)" },
+        outputPath: { type: "string", description: "File path to save exported schema (optional, returns in response if not provided)" },
+        includeSystemFields: { type: "boolean", description: "Include system fields in export (default: false)" },
+        includeMicrosoftFields: { type: "boolean", description: "Include Microsoft VSTS fields in export (default: true)" },
+        includeUsageMetadata: { type: "boolean", description: "Include work item type usage metadata (default: true)" },
+        prettyPrint: { type: "boolean", description: "Format output with indentation (default: true)" },
+        organization: { type: "string", description: "Azure DevOps organization (optional, uses config default)" },
+        project: { type: "string", description: "Azure DevOps project (optional, uses config default)" }
+      },
+      required: []
     }
   }
 ];

@@ -3,44 +3,30 @@
  * Manages MCP resources for exposing documentation and query examples
  */
 
-import { logger } from "../utils/logger.js";
+import { logger, errorToContext } from "../utils/logger.js";
 import path from "path";
 import { readFile } from "fs/promises";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
-/**
- * Get current file path in both ESM and CommonJS environments
- */
-function getCurrentFile(): string {
-  // In test/Jest environment
-  if (process.env.JEST_WORKER_ID !== undefined) {
-    return path.join(process.cwd(), 'src', 'services', 'resource-service.ts');
-  }
-  
-  // Check if we're in CommonJS environment
-  if (typeof __filename !== 'undefined') {
-    return __filename;
-  }
-  
-  // In ESM environment - use eval to prevent transpiler from touching this
-  const metaUrl = eval('import.meta.url');
-  return fileURLToPath(metaUrl);
-}
+import { moduleDir } from "../utils/module-dir.mjs";
 
 /**
  * Get the resources directory path
+ * 
+ * Uses moduleDir from module-dir.mjs which safely handles import.meta.url in ESM environments.
+ * This avoids security issues with eval() and TypeScript/Jest compatibility issues.
  */
 function getResourcesDir(): string {
-  const currentFile = getCurrentFile();
-  const currentDir = dirname(currentFile);
+  // In test/Jest environment
+  if (process.env.JEST_WORKER_ID !== undefined) {
+    return path.join(process.cwd(), 'resources');
+  }
   
+  // moduleDir is the directory containing this file (dist/services or src/services)
   // In production (dist), resources are at ../resources from dist/services (copied during build)
   // In development (src), resources are at ../../resources from src/services
-  if (currentFile.includes('/dist/') || currentFile.includes('\\dist\\')) {
-    return path.join(currentDir, '..', 'resources');
+  if (moduleDir.includes('/dist/') || moduleDir.includes('\\dist\\')) {
+    return path.join(moduleDir, '..', 'resources');
   }
-  return path.join(currentDir, '..', '..', 'resources');
+  return path.join(moduleDir, '..', '..', 'resources');
 }
 
 export interface MCPResource {
@@ -201,7 +187,7 @@ export async function getResourceContent(uri: string): Promise<MCPResourceConten
       text: content
     };
   } catch (error) {
-    logger.error(`Failed to load resource ${uri} from ${filePath}:`, error);
+    logger.error(`Failed to load resource ${uri} from ${filePath}:`, errorToContext(error));
     throw new Error(`Failed to load resource content: ${uri}`);
   }
 }

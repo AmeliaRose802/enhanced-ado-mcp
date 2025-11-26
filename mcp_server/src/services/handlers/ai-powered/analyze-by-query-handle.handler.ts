@@ -102,6 +102,71 @@ interface AIAnalysisResult {
   }>;
 }
 
+interface IntelligenceCategorizationResult extends AIAnalysisResult {
+  categorization: {
+    feature?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    bug?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    tech_debt?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    security?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    documentation?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    research?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    other?: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+  };
+}
+
+interface AISuitabilityCategorizationResult extends AIAnalysisResult {
+  categorization: {
+    ai_fit: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    human_fit: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    hybrid: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+    needs_refinement: {
+      count: number;
+      query_handle: string | null;
+      work_item_ids: number[];
+    };
+  };
+}
+
 interface WorkItemAnalysisResults {
   effort?: EffortAnalysisResult;
   velocity?: VelocityAnalysisResult;
@@ -110,8 +175,8 @@ interface WorkItemAnalysisResults {
   completion?: CompletionAnalysisResult;
   priorities?: PriorityAnalysisResult;
   hierarchy?: HierarchyAnalysisResult;
-  'work-item-intelligence'?: AIAnalysisResult | { error: string };
-  'assignment-suitability'?: AIAnalysisResult | { error: string };
+  'work-item-intelligence'?: IntelligenceCategorizationResult | { error: string };
+  'assignment-suitability'?: AISuitabilityCategorizationResult | { error: string };
   'parent-recommendation'?: unknown | { error: string };
   [key: string]: unknown;
 }
@@ -119,6 +184,8 @@ interface WorkItemAnalysisResults {
 interface WorkItemAnalysis {
   query_handle: string;
   item_count: number;
+  total_items_in_handle: number;
+  items_skipped: number;
   original_query: string;
   analysis_types: string[];
   results: WorkItemAnalysisResults;
@@ -147,7 +214,7 @@ interface WorkItemAnalysis {
  *       * 'priorities': Analyzes priority balance and distribution (rule-based)
  *       * 'hierarchy': Validates parent-child relationships (rule-based)
  *       * 'work-item-intelligence': AI-powered completeness/enhancement analysis (requires serverInstance)
- *       * 'assignment-suitability': AI-powered Copilot assignment readiness (requires serverInstance)
+ *       * 'assignment-suitability': AI-powered Copilot assignment readiness with categorization and query handles (requires serverInstance)
  *       * 'parent-recommendation': AI-powered intelligent parent matching (requires serverInstance)
  *   - organization?: string - Azure DevOps organization (defaults to config value)
  *   - project?: string - Azure DevOps project (defaults to config value)
@@ -203,7 +270,7 @@ export async function handleAnalyzeByQueryHandle(
       return buildValidationErrorResponse(parsed.error);
     }
 
-    const { queryHandle, analysisType, organization, project } = parsed.data;
+    const { queryHandle, analysisType, organization, project, maxItemsToAnalyze, skip } = parsed.data;
 
     // Retrieve work item IDs from query handle
     const queryData = queryHandleService.getQueryData(queryHandle);
@@ -218,8 +285,17 @@ export async function handleAnalyzeByQueryHandle(
       };
     }
 
-    const workItemIds = queryData.workItemIds;
-    logger.info(`Analyzing ${workItemIds.length} work items via query handle (analysis types: ${analysisType.join(', ')})`);
+    const allWorkItemIds = queryData.workItemIds;
+    
+    // Apply pagination
+    const skipCount = skip || 0;
+    const paginatedIds = maxItemsToAnalyze !== undefined 
+      ? allWorkItemIds.slice(skipCount, skipCount + maxItemsToAnalyze)
+      : allWorkItemIds.slice(skipCount);
+    
+    const workItemIds = paginatedIds;
+    
+    logger.info(`Analyzing ${workItemIds.length} work items via query handle (total: ${allWorkItemIds.length}, skip: ${skipCount}, analysis types: ${analysisType.join(', ')})`);
 
     const cfg = loadConfiguration();
     const org = organization || cfg.azureDevOps.organization;
@@ -229,6 +305,8 @@ export async function handleAnalyzeByQueryHandle(
     const analysis: WorkItemAnalysis = {
       query_handle: queryHandle,
       item_count: workItemIds.length,
+      total_items_in_handle: allWorkItemIds.length,
+      items_skipped: skipCount,
       original_query: queryData.query,
       analysis_types: analysisType,
       results: {}
@@ -316,6 +394,10 @@ export async function handleAnalyzeByQueryHandle(
                 } else {
                   const intelligenceResults = [];
                   const intelligenceAnalyzer = new WorkItemIntelligenceAnalyzer(serverInstance);
+                  const analysisType = parsed.data.intelligenceAnalysisType || 'full';
+                  
+                  // Categories for work item IDs (when using categorization analysis)
+                  const categorizedIds: Record<string, number[]> = {};
                   
                   // Analyze each work item
                   for (const wi of workItems) {
@@ -325,7 +407,7 @@ export async function handleAnalyzeByQueryHandle(
                         Description: wi.fields?.['System.Description'] || '',
                         WorkItemType: wi.fields?.['System.WorkItemType'] || '',
                         AcceptanceCriteria: wi.fields?.['Microsoft.VSTS.Common.AcceptanceCriteria'] || '',
-                        AnalysisType: parsed.data.intelligenceAnalysisType || 'full',
+                        AnalysisType: analysisType,
                         ContextInfo: parsed.data.contextInfo,
                         EnhanceDescription: parsed.data.enhanceDescription || false
                       });
@@ -336,16 +418,82 @@ export async function handleAnalyzeByQueryHandle(
                           title: wi.fields?.['System.Title'],
                           analysis: analysisResult.data
                         });
+                        
+                        // Categorize by category if using categorization analysis
+                        if (analysisType === 'categorization') {
+                          const category = (analysisResult.data as any)?.category;
+                          if (category && wi.id) {
+                            const categoryKey = category.toLowerCase().replace(/\s+/g, '_');
+                            if (!categorizedIds[categoryKey]) {
+                              categorizedIds[categoryKey] = [];
+                            }
+                            categorizedIds[categoryKey].push(wi.id);
+                          }
+                        }
                       }
                     } catch (error) {
                       logger.error(`Failed to analyze work item ${wi.id}: ${error}`);
                     }
                   }
                   
-                  analysis.results['work-item-intelligence'] = {
+                  // Create base result
+                  const baseResult: IntelligenceCategorizationResult = {
                     total_analyzed: intelligenceResults.length,
-                    results: intelligenceResults
+                    results: intelligenceResults,
+                    categorization: {}
                   };
+                  
+                  // Create query handles for each category if categorization was used
+                  if (analysisType === 'categorization' && Object.keys(categorizedIds).length > 0) {
+                    const createCategoryHandle = (ids: number[], categoryForQueryType: string) => {
+                      if (ids.length === 0) return null;
+                      
+                      const derivedQuery = `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${ids.join(',')}) /* Intelligence Category: ${categoryForQueryType.replace(/-/g, ' ')} - Derived from ${queryHandle} */`;
+                      
+                      const categoryContext = new Map();
+                      ids.forEach(id => {
+                        const wi = workItems.find(w => w.id === id);
+                        if (wi) {
+                          categoryContext.set(id, {
+                            title: wi.fields?.['System.Title'] || `Work Item ${id}`,
+                            state: wi.fields?.['System.State'] || 'Unknown',
+                            type: wi.fields?.['System.WorkItemType'] || 'Unknown',
+                            changedDate: wi.fields?.['System.ChangedDate'],
+                            assignedTo: wi.fields?.['System.AssignedTo']?.displayName || wi.fields?.['System.AssignedTo'],
+                            tags: wi.fields?.['System.Tags']
+                          });
+                        }
+                      });
+                      
+                      return queryHandleService.storeQuery(
+                        ids,
+                        derivedQuery,
+                        {
+                          project: proj,
+                          queryType: `intelligence-category-${categoryForQueryType}`
+                        },
+                        undefined,
+                        categoryContext,
+                        {
+                          analysisTimestamp: new Date().toISOString(),
+                          successCount: ids.length
+                        }
+                      );
+                    };
+                    
+                    // Create handles for each discovered category
+                    for (const [categoryKey, ids] of Object.entries(categorizedIds)) {
+                      const categoryNameForDisplay = categoryKey.replace(/_/g, ' ');
+                      const categoryNameForQueryType = categoryKey.replace(/_/g, '-');
+                      baseResult.categorization[categoryKey as keyof typeof baseResult.categorization] = {
+                        count: ids.length,
+                        query_handle: createCategoryHandle(ids, categoryNameForQueryType),
+                        work_item_ids: ids
+                      } as any;
+                    }
+                  }
+                  
+                  analysis.results['work-item-intelligence'] = baseResult;
                 }
                 break;
               case 'assignment-suitability':
@@ -358,6 +506,14 @@ export async function handleAnalyzeByQueryHandle(
                 } else {
                   const assignmentResults = [];
                   const assignmentAnalyzer = new AIAssignmentAnalyzer(serverInstance);
+                  
+                  // Categories for work item IDs
+                  const categorizedIds = {
+                    AI_FIT: [] as number[],
+                    HUMAN_FIT: [] as number[],
+                    HYBRID: [] as number[],
+                    NEEDS_REFINEMENT: [] as number[]
+                  };
                   
                   // Analyze each work item
                   for (const wi of workItems) {
@@ -374,15 +530,84 @@ export async function handleAnalyzeByQueryHandle(
                           title: wi.fields?.['System.Title'],
                           analysis: analysisResult.data
                         });
+                        
+                        // Categorize based on decision
+                        const decision = (analysisResult.data as any)?.decision;
+                        if (decision && wi.id) {
+                          if (categorizedIds[decision as keyof typeof categorizedIds]) {
+                            categorizedIds[decision as keyof typeof categorizedIds].push(wi.id);
+                          }
+                        }
                       }
                     } catch (error) {
                       logger.error(`Failed to analyze assignment suitability for work item ${wi.id}: ${error}`);
                     }
                   }
                   
+                  // Create query handles for each category
+                  const createCategoryHandle = (ids: number[], category: string) => {
+                    if (ids.length === 0) return null;
+                    
+                    // Create a derived WIQL query for documentation
+                    const derivedQuery = `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${ids.join(',')}) /* AI Suitability: ${category} - Derived from ${queryHandle} */`;
+                    
+                    // Build work item context for the handle
+                    const categoryContext = new Map();
+                    ids.forEach(id => {
+                      const wi = workItems.find(w => w.id === id);
+                      if (wi) {
+                        categoryContext.set(id, {
+                          title: wi.fields?.['System.Title'] || `Work Item ${id}`,
+                          state: wi.fields?.['System.State'] || 'Unknown',
+                          type: wi.fields?.['System.WorkItemType'] || 'Unknown',
+                          changedDate: wi.fields?.['System.ChangedDate'],
+                          assignedTo: wi.fields?.['System.AssignedTo']?.displayName || wi.fields?.['System.AssignedTo'],
+                          tags: wi.fields?.['System.Tags']
+                        });
+                      }
+                    });
+                    
+                    return queryHandleService.storeQuery(
+                      ids,
+                      derivedQuery,
+                      {
+                        project: proj,
+                        queryType: `ai-suitability-${category.toLowerCase().replace('_', '-')}`
+                      },
+                      undefined,
+                      categoryContext,
+                      {
+                        analysisTimestamp: new Date().toISOString(),
+                        successCount: ids.length
+                      }
+                    );
+                  };
+                  
                   analysis.results['assignment-suitability'] = {
                     total_analyzed: assignmentResults.length,
-                    results: assignmentResults
+                    results: assignmentResults,
+                    categorization: {
+                      ai_fit: {
+                        count: categorizedIds.AI_FIT.length,
+                        query_handle: createCategoryHandle(categorizedIds.AI_FIT, 'AI_FIT'),
+                        work_item_ids: categorizedIds.AI_FIT
+                      },
+                      human_fit: {
+                        count: categorizedIds.HUMAN_FIT.length,
+                        query_handle: createCategoryHandle(categorizedIds.HUMAN_FIT, 'HUMAN_FIT'),
+                        work_item_ids: categorizedIds.HUMAN_FIT
+                      },
+                      hybrid: {
+                        count: categorizedIds.HYBRID.length,
+                        query_handle: createCategoryHandle(categorizedIds.HYBRID, 'HYBRID'),
+                        work_item_ids: categorizedIds.HYBRID
+                      },
+                      needs_refinement: {
+                        count: categorizedIds.NEEDS_REFINEMENT.length,
+                        query_handle: createCategoryHandle(categorizedIds.NEEDS_REFINEMENT, 'NEEDS_REFINEMENT'),
+                        work_item_ids: categorizedIds.NEEDS_REFINEMENT
+                      }
+                    }
                   };
                 }
                 break;

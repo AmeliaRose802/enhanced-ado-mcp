@@ -18,7 +18,7 @@ import { ToolConfig, ToolExecutionResult } from "@/types/index.js";
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { escapeAreaPath } from "@/utils/work-item-parser.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
 import { queryHandleService } from "../../query-handle-service.js";
@@ -494,7 +494,7 @@ export async function handleIntelligentParentFinder(
         });
 
       } catch (error) {
-        logger.error(`Error processing child ${childWorkItemId}:`, error);
+        logger.error(`Error processing child ${childWorkItemId}:`, errorToContext(error));
         allResults.push({
           childWorkItemId,
           childTitle: 'Unknown',
@@ -611,7 +611,7 @@ export async function handleIntelligentParentFinder(
     );
 
   } catch (error) {
-    logger.error('Intelligent parent finder error:', error);
+    logger.error('Intelligent parent finder error:', errorToContext(error));
     
     return buildErrorResponse(
       error as Error,

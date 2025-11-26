@@ -9,7 +9,7 @@ import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
 import type { ADOWorkItem } from '@/types/index.js';
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "@/utils/ado-http-client.js";
 import { loadConfiguration } from "@/config/config.js";
@@ -288,7 +288,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
           success: false,
           error: errorMsg
         });
-        logger.error(`Failed to estimate story points for work item ${workItemId}:`, error);
+        logger.error(`Failed to estimate story points for work item ${workItemId}:`, errorToContext(error));
       }
     }
 
@@ -351,7 +351,7 @@ Estimate the story points for this work item using the ${pointScale} scale.
       ]
     };
   } catch (error) {
-    logger.error('Bulk assign story points error:', error);
+    logger.error('Bulk assign story points error:', errorToContext(error));
     return {
       success: false,
       data: null,

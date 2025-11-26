@@ -1,5 +1,6 @@
 import { join, resolve } from "path";
 import { cwd } from "process";
+import { logger, errorToContext } from "./logger.js";
 
 // Calculate paths based on environment
 let thisFileDir: string;
@@ -34,12 +35,12 @@ export const pathsReady = (process.env.JEST_WORKER_ID === undefined && process.e
       internalPromptsDir = join(distDir, "prompts");
       
       if (process.env.MCP_DEBUG === '1') {
-        console.error(`[paths.ts] thisFileDir: ${thisFileDir}`);
-        console.error(`[paths.ts] repoRoot: ${internalRepoRoot}`);
-        console.error(`[paths.ts] promptsDir: ${internalPromptsDir}`);
+        logger.debug(`[paths.ts] thisFileDir: ${thisFileDir}`);
+        logger.debug(`[paths.ts] repoRoot: ${internalRepoRoot}`);
+        logger.debug(`[paths.ts] promptsDir: ${internalPromptsDir}`);
       }
     } catch (error) {
-      console.error(`[paths.ts] Failed to initialize paths:`, error);
+      logger.error(`[paths.ts] Failed to initialize paths:`, errorToContext(error));
       throw error;
     }
   })()

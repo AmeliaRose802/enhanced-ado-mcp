@@ -3,6 +3,8 @@
 ## Core Operations
 - Work Item Creation
   WORK_ITEM_CREATION.md
+- Work Item Templates (New!)
+  WORK_ITEM_TEMPLATES.md
 - Work Item Context Retrieval
   WORK_ITEM_CONTEXT.md
 - Configuration & Discovery
@@ -21,6 +23,20 @@
   list-subagents.md
 - Get Team Members (New!)
   get-team-members.md
+- Custom Field Manager (New!)
+  custom-field-manager.md
+- Rate Limiter Configuration (New!)
+  rate-limiter-configuration.md
+- Telemetry and Metrics Collection (New!)
+  telemetry-and-metrics.md
+- Work Item Time Tracking (New!)
+  time-tracking.md
+
+## Repository Operations
+- Get Pull Request Diff (New!)
+  get-pr-diff.md
+- Get Pull Request Comments (New!)
+  get-pr-comments.md
 
 ## Utility & Testing
 - Get Prompts Tool (New!)
@@ -53,18 +69,26 @@
   BULK_UNDO.md
 - Forensic Undo Operations (New!)
   FORENSIC_UNDO.md
+- Batch API Operations (New!)
+  batch-api-operations.md
 
 ## Analysis & Validation
 - Analysis & Validation Tools
   ANALYSIS_TOOLS.md
 - Hierarchy Analysis with Query Handles (New!)
   HIERARCHY_ANALYSIS_WITH_HANDLES.md
+- Dependency Visualization (New!)
+  dependency-visualization.md
 
 ## Error Handling
 - Error Categorization System
   ERROR_CATEGORIZATION.md
 - Missing Description Filter Fix
   missing-description-filter-fix.md
+- Azure CLI Token Error Boundaries (New!)
+  azure-cli-token-error-boundaries.md
+- OData Area Path Escaping Fix
+  odata-area-path-escaping-fix.md
 
 ## AI-Powered Features
 - AI-Powered Features Overview

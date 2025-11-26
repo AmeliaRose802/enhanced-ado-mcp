@@ -47,7 +47,7 @@ describe('Date ISO Formatting', () => {
 
     // The content should contain ISO timestamp format documentation
     expect(content).toContain('full ISO 8601 timestamp');
-    expect(content).toContain('YYYY-MM-DDTHH:mm:ssZ');
+    expect(content).toContain('YYYY-MM-DDTHH:MM:SSZ');
     
     // Verify that the documentation no longer mentions the incorrect format
     expect(content).not.toContain('YYYY-MM-DDZ without timestamp');
@@ -82,7 +82,7 @@ describe('Date ISO Formatting', () => {
 
     // Should document both formats
     expect(content).toContain('WIQL: `{{start_date}}` and `{{end_date}}` as-is (format: YYYY-MM-DD)');
-    expect(content).toContain('OData: `{{start_date_iso}}` and `{{end_date_iso}}`');
+    expect(content).toContain('OData: Use full ISO 8601 timestamp format');
   });
 
   it('should format dates correctly for different uses', () => {

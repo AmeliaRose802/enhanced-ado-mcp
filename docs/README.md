@@ -32,6 +32,7 @@ docs/
 |----------|-------------|----------|
 | [**ARCHITECTURE.md**](./ARCHITECTURE.md) | System architecture, components, data flow, design patterns | Developers, Contributors |
 | [**CONTRIBUTING.md**](./CONTRIBUTING.md) | How to contribute, code standards, documentation rules | Contributors |
+| [**TROUBLESHOOTING.md**](./TROUBLESHOOTING.md) | Common issues, error diagnosis, resolution steps | Users, Developers |
 
 ### Feature Specifications
 
@@ -92,6 +93,7 @@ Practical guides for using the MCP server. See [guides/toc.yml](./guides/toc.yml
 2. **Query patterns:** [feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md](./feature_specs/ENHANCED_QUERY_HANDLE_PATTERN.md) - Safe bulk operations
 3. **AI features:** [feature_specs/AI_POWERED_FEATURES.md](./feature_specs/AI_POWERED_FEATURES.md) - AI-powered analysis tools
 4. **Resources:** [feature_specs/RESOURCES_FEATURE.md](./feature_specs/RESOURCES_FEATURE.md) - MCP resources for guidance
+5. **Troubleshooting:** [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
 
 ### Quick Reference by Task
 

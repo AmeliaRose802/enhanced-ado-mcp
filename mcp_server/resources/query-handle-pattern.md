@@ -745,11 +745,155 @@ await wit_bulk_update_by_query_handle({
 - Atomic bulk operations
 - Automatic error reporting per item
 
-## 🔗 Related Documentation
+## � Handle Lifecycle & Cleanup
+
+### Quick Facts
+
+**Expiration:**
+- Default: 24 hours after creation
+- Maximum: 48 hours (rarely used)
+- Warning: 30 minutes before expiry
+
+**Automatic Cleanup:**
+- Runs every 5 minutes
+- Removes expired handles
+- Zero performance impact
+- Cannot be disabled
+
+**Storage:**
+- Memory only (not persistent)
+- Lost on server restart
+- ~1-50 KB per handle
+- Scales to 1000+ handles easily
+
+### Check Handle Status
+
+```json
+// Is my handle still valid?
+{
+  "tool": "inspect-handle",
+  "arguments": {
+    "queryHandle": "qh_abc123..."
+  }
+}
+
+// Shows:
+// - minutes_remaining: 1380 (23 hours left)
+// - created_at, expires_at
+// - item_count, has_context
+```
+
+### Handle Expired?
+
+**Solution: Re-query**
+
+```json
+// Don't try to "fix" it, just re-query
+{
+  "tool": "query-wiql",
+  "arguments": {
+    "wiqlQuery": "<same query as before>",
+    "returnQueryHandle": true
+  }
+}
+```
+
+### List All Handles
+
+```json
+{
+  "tool": "list-handles",
+  "arguments": {
+    "includeExpired": false
+  }
+}
+
+// Shows all active handles with expiration times
+```
+
+### Common Issues
+
+**"Query handle not found"**
+- Cause: Expired, never existed, or server restarted
+- Fix: Re-run the query to get fresh handle
+
+**"Handle has no staleness data"**
+- Cause: Query created without `includeSubstantiveChange: true`
+- Fix: Re-query with both flags:
+  ```json
+  {
+    "includeSubstantiveChange": true,
+    "returnQueryHandle": true
+  }
+  ```
+
+**"Too many handles active"**
+- Cause: Creating handles in loops, not reusing
+- Fix: Reuse handles for multiple operations
+- Wait: Automatic cleanup runs every 5 minutes
+
+### Best Practices
+
+✅ **DO:**
+- Use handle for multiple operations in same workflow
+- Check expiration before reuse (if >1 hour old)
+- Re-query to get fresh data (better than extending TTL)
+- Include staleness data when needed: `includeSubstantiveChange: true`
+
+❌ **DON'T:**
+- Store handles for later (they expire)
+- Assume handles survive server restarts (they don't)
+- Create new handle for each operation (reuse existing)
+- Skip dry-run with old handles (data may be stale)
+
+### Memory Management
+
+**Handle Size:**
+```
+Without context: ~1 KB per 100 items
+With staleness:  ~50 KB per 100 items
+
+Server capacity: 1000+ handles easily
+```
+
+**Cleanup Impact:**
+```
+Before: 150 handles (50 expired) = 75 KB
+After:  100 handles (0 expired)  = 50 KB
+Savings: 33% memory reduction
+```
+
+**When Cleanup Runs:**
+- Every 5 minutes (automatic)
+- On server startup (initialization)
+- Never during operations (safe)
+
+### Why Handles Expire
+
+1. **Memory Management** - Prevent unlimited growth
+2. **Data Freshness** - Force refresh of stale data
+3. **Security** - Limit exposure window
+4. **Best Practices** - Encourage atomic workflows
+
+### Typical Workflow Timeline
+
+```
+10:00 AM - Create handle (query-wiql)
+10:05 AM - Inspect handle (verify data)
+10:10 AM - Preview selection (dry-run)
+10:15 AM - Execute bulk operation
+10:20 AM - Done ✓
+
+Handle expires: 10:00 AM next day (unused)
+Automatic cleanup: 10:05 AM next day
+```
+
+## �🔗 Related Documentation
 
 - [WIQL Best Practices](./wiql-quick-reference.md)
 - [Tool Selection Guide](./tool-selection-guide.md)
 - [Common Workflows](./common-workflows.md)
+- [Handle Operations](../../docs/feature_specs/QUERY_HANDLE_OPERATIONS.md) - Detailed lifecycle docs
 
 
 

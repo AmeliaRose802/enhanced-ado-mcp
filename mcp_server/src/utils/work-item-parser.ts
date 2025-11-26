@@ -5,13 +5,35 @@
 import type { WorkItemHierarchyInfo, ADOWorkItem, ADORelation } from '../types/index.js';
 
 /**
- * Escape area path for use in WIQL and OData queries
- * Handles single quotes by doubling them (SQL/WIQL escaping)
+ * Escape area path for use in WIQL queries
+ * WIQL only requires single quotes to be doubled (SQL-style escaping)
+ * Backslashes do NOT need escaping in WIQL when using UNDER operator
  */
 export function escapeAreaPath(areaPath: string): string {
   if (!areaPath) return '';
   // Replace single quotes with two single quotes (SQL/WIQL escaping)
   return areaPath.replace(/'/g, "''");
+}
+
+/**
+ * Escape area path for use in OData queries
+ * OData string literals require:
+ * - Backslashes must be doubled: \ → \\
+ * - Single quotes must be doubled: ' → ''
+ * 
+ * This is different from WIQL, which doesn't require backslash escaping
+ * when using the UNDER operator.
+ */
+export function escapeAreaPathForOData(areaPath: string): string {
+  if (!areaPath) return '';
+  
+  // First escape backslashes (must be done before quotes to avoid double-escaping)
+  let escaped = areaPath.replace(/\\/g, '\\\\');
+  
+  // Then escape single quotes
+  escaped = escaped.replace(/'/g, "''");
+  
+  return escaped;
 }
 
 export function parseWorkItemForHierarchy(workItemData: ADOWorkItem): WorkItemHierarchyInfo | null {

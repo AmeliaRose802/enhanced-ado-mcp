@@ -2,6 +2,11 @@
  * Rate Limiter Service
  * 
  * Implements token bucket algorithm for rate limiting API calls.
+ * Configurable per-organization to support different Azure DevOps tiers:
+ * - Free tier: ~200 requests/min (capacity: 200, refillRate: 3.33)
+ * - Basic tier: ~1000 requests/min (capacity: 1000, refillRate: 16.67)
+ * 
+ * Configuration is loaded from config system on first use.
  */
 
 interface TokenBucket {
@@ -15,13 +20,51 @@ export class RateLimiter {
   private buckets = new Map<string, TokenBucket>();
   private defaultCapacity: number;
   private defaultRefillRate: number;
+  private isConfigured = false;
+  private configLoadAttempted = false;
 
   constructor(capacity = 200, refillRate = 3.33) {
     this.defaultCapacity = capacity;
     this.defaultRefillRate = refillRate;
+    // If non-default values provided, assume this is explicit configuration (e.g., tests)
+    // and skip config loading
+    if (capacity !== 200 || refillRate !== 3.33) {
+      this.isConfigured = true;
+      this.configLoadAttempted = true;
+    }
+  }
+
+  /**
+   * Load configuration from config system
+   * Called lazily on first throttle() call to ensure config is available
+   * Only attempts to load config once to avoid repeated errors
+   */
+  private ensureConfigured(): void {
+    if (this.isConfigured || this.configLoadAttempted) return;
+    
+    this.configLoadAttempted = true;
+    
+    try {
+      // Dynamic import to avoid circular dependency
+      const { loadConfiguration } = require('../config/config.js');
+      const config = loadConfiguration();
+      
+      if (config.rateLimiter) {
+        this.defaultCapacity = config.rateLimiter.capacity;
+        this.defaultRefillRate = config.rateLimiter.refillRate;
+      }
+      
+      this.isConfigured = true;
+    } catch (error) {
+      // Config not available yet (e.g., during tests or initial startup)
+      // Use constructor defaults
+      this.isConfigured = true;
+    }
   }
 
   async throttle(key: string = 'default'): Promise<void> {
+    this.ensureConfigured();
+    
     const bucket = this.getOrCreateBucket(key);
     this.refillBucket(bucket);
     

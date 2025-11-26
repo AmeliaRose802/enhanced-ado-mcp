@@ -10,7 +10,7 @@ import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
 import type { ADOWorkItem, ADOFieldOperation } from '@/types/index.js';
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse } from "@/utils/response-builder.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from '@/utils/ado-http-client.js';
 import { getTokenProvider } from '@/utils/token-provider.js';
@@ -104,6 +104,7 @@ function validateLinkTypeForWorkItems(
 
 /**
  * Check if a link already exists between two work items
+ * NOTE: This is a legacy function kept for fallback. Use batchCheckExistingLinks for better performance.
  */
 async function checkExistingLink(
   httpClient: ADOHttpClient,
@@ -133,8 +134,79 @@ async function checkExistingLink(
       return linkedId === targetId;
     });
   } catch (error) {
-    logger.warn(`Failed to check existing link for work item ${sourceId}:`, error);
+    logger.warn(`Failed to check existing link for work item ${sourceId}:`, errorToContext(error));
     return false;
+  }
+}
+
+/**
+ * Batch check for existing links between work items
+ * OPTIMIZATION: Fetch all work items with relations in batches instead of individual calls
+ * Reduces API calls from N to ceil(N/200) for link validation
+ */
+async function batchCheckExistingLinks(
+  httpClient: ADOHttpClient,
+  operations: LinkOperation[],
+  linkTypeRef: string
+): Promise<Map<string, boolean>> {
+  const existingLinks = new Map<string, boolean>();
+  
+  // Get unique source IDs
+  const uniqueSourceIds = Array.from(new Set(operations.map(op => op.sourceId)));
+  
+  logger.info(`Batch checking existing links for ${uniqueSourceIds.length} source work items`);
+  
+  try {
+    // ADO supports up to 200 IDs per request
+    const BATCH_SIZE = 200;
+    const workItemsById = new Map<number, ADOWorkItem>();
+    
+    for (let i = 0; i < uniqueSourceIds.length; i += BATCH_SIZE) {
+      const batchIds = uniqueSourceIds.slice(i, i + BATCH_SIZE);
+      const idsParam = batchIds.join(',');
+      
+      const response = await httpClient.get<{ value: ADOWorkItem[] }>(
+        `wit/workitems?ids=${idsParam}&$expand=relations&api-version=7.1`
+      );
+      
+      for (const item of response.data.value) {
+        workItemsById.set(item.id, item);
+      }
+    }
+    
+    logger.info(`Successfully fetched relations for ${workItemsById.size} work items`);
+    
+    // Check each operation against cached work items
+    for (const op of operations) {
+      const key = `${op.sourceId}-${op.targetId}`;
+      const workItem = workItemsById.get(op.sourceId);
+      
+      if (!workItem || !workItem.relations) {
+        existingLinks.set(key, false);
+        continue;
+      }
+      
+      // Check if link exists in relations
+      const linkExists = workItem.relations.some((rel) => {
+        if (rel.rel !== linkTypeRef) {
+          return false;
+        }
+        const urlMatch = rel.url?.match(/workItems\/(\d+)$/);
+        if (!urlMatch) {
+          return false;
+        }
+        const linkedId = parseInt(urlMatch[1], 10);
+        return linkedId === op.targetId;
+      });
+      
+      existingLinks.set(key, linkExists);
+    }
+    
+    return existingLinks;
+  } catch (error) {
+    logger.error('Batch check existing links failed:', errorToContext(error));
+    // Return empty map to fall back to individual checks
+    return new Map();
   }
 }
 
@@ -497,13 +569,39 @@ export async function handleBulkLinkByQueryHandles(
     const httpClient = new ADOHttpClient(org, getTokenProvider(), proj);
 
     const results: LinkResult[] = [];
+    
+    // OPTIMIZATION: Batch check existing links if skipExistingLinks is enabled
+    // This reduces API calls from N to ceil(N/200) for link validation
+    let existingLinksCache: Map<string, boolean> | undefined;
+    
+    if (skipExistingLinks && finalOperations.length > 0) {
+      logger.info(`Batch checking for existing links before creation`);
+      const linkTypeRef = LINK_TYPE_MAP[linkType];
+      existingLinksCache = await batchCheckExistingLinks(httpClient, finalOperations, linkTypeRef);
+      
+      if (existingLinksCache.size > 0) {
+        logger.info(`Batch check found ${Array.from(existingLinksCache.values()).filter(v => v).length} existing links`);
+      } else {
+        logger.warn(`Batch check failed or returned no results, will fall back to individual checks`);
+        existingLinksCache = undefined;
+      }
+    }
 
     for (const op of finalOperations) {
       try {
         // Check for existing link if skipExistingLinks is true
         if (skipExistingLinks) {
           const linkTypeRef = LINK_TYPE_MAP[op.linkType];
-          const exists = await checkExistingLink(httpClient, op.sourceId, op.targetId, linkTypeRef);
+          const cacheKey = `${op.sourceId}-${op.targetId}`;
+          
+          // Use batch result if available, otherwise fall back to individual check
+          let exists = false;
+          if (existingLinksCache && existingLinksCache.has(cacheKey)) {
+            exists = existingLinksCache.get(cacheKey)!;
+          } else {
+            // Fallback to individual check if batch failed
+            exists = await checkExistingLink(httpClient, op.sourceId, op.targetId, linkTypeRef);
+          }
 
           if (exists) {
             results.push({
@@ -539,7 +637,7 @@ export async function handleBulkLinkByQueryHandles(
           success: false,
           error: errorMsg
         });
-        logger.error(`Failed to create link ${op.sourceId} -> ${op.targetId}:`, error);
+        logger.error(`Failed to create link ${op.sourceId} -> ${op.targetId}:`, errorToContext(error));
       }
     }
 
@@ -601,7 +699,7 @@ export async function handleBulkLinkByQueryHandles(
       warnings
     };
   } catch (error) {
-    logger.error("Bulk link by query handles error:", error);
+    logger.error("Bulk link by query handles error:", errorToContext(error));
     return {
       success: false,
       data: null,

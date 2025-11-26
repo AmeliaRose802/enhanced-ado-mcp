@@ -35,6 +35,30 @@ describe('get-configuration handler', () => {
       authentication: {
         type: 'azcli'
       },
+      aiTimeouts: {
+        assignmentAnalysis: 30000,
+        workloadAnalysis: 120000,
+        queryAnalysis: 120000
+      },
+      rateLimiter: {
+        capacity: 200,
+        refillRate: 3.33
+      },
+      telemetry: {
+        enabled: false,
+        maxEventsInMemory: 1000,
+        autoExport: false,
+        autoExportInterval: 60000,
+        exportDir: './telemetry',
+        consoleLogging: false
+      },
+      batchAPI: {
+        enabled: true,
+        maxBatchSize: 200,
+        timeout: 30000,
+        fallbackOnError: true,
+        autoDetectSupport: true
+      },
       verboseLogging: false,
       enableDebugTools: false
     };

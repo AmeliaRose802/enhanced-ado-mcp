@@ -324,7 +324,7 @@ Failed to access repository 'MyRepo': Insufficient permissions
 
 ### Version 1.0.1 (2025-11-07)
 - **Fixed**: YAML parsing now handles metadata in comments correctly
-- **Fixed**: File content fetching now uses `includeContent=true` parameter
+- **Fixed**: File content fetching now uses `download=true` parameter for actual content
 - **Improved**: Added support for metadata in YAML comments (e.g., `# metadata`, `# name:`, `# description:`)
 - **Improved**: Enhanced logging for debugging content structure
 

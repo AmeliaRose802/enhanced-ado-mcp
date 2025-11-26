@@ -6,9 +6,9 @@
  * concise, actionable insights.
  */
 
-import type { ToolExecutionResult } from '../../types/index.js';
+import type { ToolExecutionResult, JSONValue } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import { logger } from '../../utils/logger.js';
+import { logger, errorToContext } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
@@ -16,12 +16,20 @@ import { queryHandleService } from '../query-handle-service.js';
 import { ADOHttpClient } from '@/utils/ado-http-client.js';
 import { getTokenProvider } from '@/utils/token-provider.js';
 import type { ADOWorkItem, ADOApiResponse } from '@/types/index.js';
+import { loadConfiguration } from '../../config/config.js';
 
 export interface AIQueryAnalysisArgs {
   queryHandle: string;
   intent: string;
-  itemSelector?: 'all' | number[] | Record<string, any>;
+  itemSelector?: 'all' | number[] | {
+    states?: string[];
+    tags?: string[];
+    titleContains?: string[];
+    daysInactiveMin?: number;
+    daysInactiveMax?: number;
+  };
   maxItemsToAnalyze?: number;
+  skip?: number;
   includeContextPackages?: boolean;
   contextDepth?: 'basic' | 'standard' | 'deep';
   outputFormat?: 'concise' | 'detailed' | 'json';
@@ -56,7 +64,8 @@ export class AIQueryAnalyzer {
       }
 
       const maxItems = Math.min(args.maxItemsToAnalyze || 50, 100);
-      const itemsToAnalyze = queryData.workItemIds.slice(0, maxItems);
+      const skipCount = args.skip || 0;
+      const itemsToAnalyze = queryData.workItemIds.slice(skipCount, skipCount + maxItems);
 
       if (itemsToAnalyze.length === 0) {
         return buildErrorResponse(
@@ -162,7 +171,7 @@ export class AIQueryAnalyzer {
     intent: string,
     outputFormat: 'concise' | 'detailed' | 'json',
     temperature: number
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     // Format work items for AI
     const formattedItems = workItems.map(wi => ({
       id: wi.id,
@@ -186,7 +195,8 @@ export class AIQueryAnalyzer {
     });
 
     // Timeout protection
-    const timeoutMs = 120000; // 2 minutes
+    const config = loadConfiguration();
+    const timeoutMs = config.aiTimeouts.queryAnalysis;
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'ai-query-analyzer',
       userContent,
@@ -218,11 +228,11 @@ export class AIQueryAnalyzer {
     return { analysis: responseText, format: outputFormat };
   }
 
-  private filterByConfidence(analysisResult: any, threshold: number): any {
+  private filterByConfidence(analysisResult: Record<string, unknown>, threshold: number): Record<string, unknown> {
     // If result has recommendations with confidence scores, filter them
     if (analysisResult.recommendations && Array.isArray(analysisResult.recommendations)) {
       analysisResult.recommendations = analysisResult.recommendations.filter(
-        (rec: any) => !rec.confidence || rec.confidence >= threshold
+        (rec) => !rec.confidence || rec.confidence >= threshold
       );
     }
 

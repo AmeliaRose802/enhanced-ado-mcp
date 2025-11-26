@@ -225,6 +225,22 @@ export class WorkItemRepository {
       return repo;
     }
   }
+
+  /**
+   * Add a comment to a work item
+   */
+  async addComment(workItemId: number, comment: string): Promise<void> {
+    const commentFields: ADOFieldOperation[] = [
+      {
+        op: 'add',
+        path: '/fields/System.History',
+        value: comment
+      }
+    ];
+    
+    await this.httpClient.patch(`wit/workitems/${workItemId}`, commentFields);
+    logger.debug(`[addComment] Added comment to work item ${workItemId}`);
+  }
 }
 
 /**

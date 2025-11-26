@@ -7,10 +7,30 @@ import { createWorkItem } from "../../ado-work-item-service.js";
 import { validateAndParse } from "@/utils/handler-helpers.js";
 import { logger } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
+import { templateService } from "../../template-service.js";
 
 export async function handleCreateNewItem(config: ToolConfig, args: unknown): Promise<ToolExecutionResult> {
   try {
-    const validation = validateAndParse(config.schema, args);
+    // Handle template application first if template parameter is provided
+    let processedArgs = args as Record<string, unknown>;
+    
+    if (processedArgs.template && typeof processedArgs.template === 'string') {
+      logger.debug(`Applying template: ${processedArgs.template}`);
+      try {
+        processedArgs = await templateService.mergeTemplateWithArgs(processedArgs.template, processedArgs);
+        logger.debug(`Template applied successfully`);
+      } catch (error) {
+        return {
+          success: false,
+          data: null,
+          metadata: { source: "rest-api" },
+          errors: [`Template error: ${error instanceof Error ? error.message : String(error)}`],
+          warnings: []
+        };
+      }
+    }
+    
+    const validation = validateAndParse(config.schema, processedArgs);
     if (!validation.success) {
       return validation.error;
     }
@@ -78,7 +98,7 @@ export async function handleCreateNewItem(config: ToolConfig, args: unknown): Pr
         metadata: { source: "rest-api" },
         errors: [
           `Work item type '${workItemType}' requires a parent. Only Epic and Key Result can be created without a parent. ` +
-          `To find a suitable parent, use the 'wit-analyze-by-query-handle' tool with analysisType=['parent-recommendation'] on a query handle containing this work item, ` +
+          `To find a suitable parent, use the 'analyze-bulk' tool with analysisType=['parent-recommendation'] on a query handle containing this work item, ` +
           `or provide a parentWorkItemId parameter.`
         ],
         warnings: []

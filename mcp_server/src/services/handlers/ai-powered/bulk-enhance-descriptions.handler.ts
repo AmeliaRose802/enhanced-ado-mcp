@@ -11,7 +11,7 @@ import type { ADOWorkItem } from '../../../types/index.js';
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
+import { logger, errorToContext } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
@@ -265,7 +265,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
           success: false,
           error: errorMsg
         });
-        logger.error(`Failed to enhance description for work item ${workItemId}:`, error);
+        logger.error(`Failed to enhance description for work item ${workItemId}:`, errorToContext(error));
       }
     }
 
@@ -369,7 +369,7 @@ ${preserveExisting && description ? 'Build upon and improve the existing descrip
         : []
     };
   } catch (error) {
-    logger.error('Bulk enhance descriptions error:', error);
+    logger.error('Bulk enhance descriptions error:', errorToContext(error));
     return {
       success: false,
       data: null,

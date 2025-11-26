@@ -1,4 +1,4 @@
-import { logger } from '../utils/logger.js';
+import { logger, errorToContext } from '../utils/logger.js';
 import type { ADOWorkItem, ADOWorkItemRevision, ADOApiResponse, ADOFieldOperation } from '../types/index.js';
 import { createADOHttpClient, ADOHttpError, ADOHttpClient } from '../utils/ado-http-client.js';
 import { getTokenProvider } from '../utils/token-provider.js';
@@ -55,7 +55,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
       if (!effectiveAreaPath) effectiveAreaPath = parentFields['System.AreaPath'] as string;
       if (!effectiveIterationPath) effectiveIterationPath = parentFields['System.IterationPath'] as string;
     } catch (error) {
-      logger.warn(`Failed to get parent work item ${parentWorkItemId}`, error);
+      logger.warn(`Failed to get parent work item ${parentWorkItemId}`, errorToContext(error));
     }
   }
 
@@ -90,7 +90,7 @@ export async function createWorkItem(args: CreateWorkItemArgs): Promise<WorkItem
       parentLinked = true;
       logger.debug(`Linked work item ${workItem.id} to parent ${parentWorkItemId}`);
     } catch (error) {
-      logger.warn(`Failed to link work item ${workItem.id} to parent ${parentWorkItemId}`, error);
+      logger.warn(`Failed to link work item ${workItem.id} to parent ${parentWorkItemId}`, errorToContext(error));
     }
   }
   
@@ -179,7 +179,7 @@ export async function assignWorkItemToCopilot(args: AssignToCopilotArgs): Promis
           logger.debug(`Added specialized agent tag: ${agentTag}`);
         }
       } catch (error) {
-        logger.warn(`Could not read current tags for work item ${workItemId}, appending agent tag`, error);
+        logger.warn(`Could not read current tags for work item ${workItemId}, appending agent tag`, errorToContext(error));
         updates.push({ op: 'add' as const, path: '/fields/System.Tags', value: agentTag });
       }
     }
@@ -644,7 +644,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
             return { id: workItem.id, ...result };
           } catch (error) {
             errorCount++;
-            logger.error(`Failed to calculate substantive change for work item ${workItem.id}:`, error);
+            logger.error(`Failed to calculate substantive change for work item ${workItem.id}:`, errorToContext(error));
             return null;
           }
         }));
@@ -779,7 +779,7 @@ export async function queryWorkItemsByWiql(args: WiqlQueryArgs): Promise<{
     };
 
   } catch (error) {
-    logger.error('WIQL query execution failed', error);
+    logger.error('WIQL query execution failed', errorToContext(error));
     const errorContext = `Organization: ${organization}, Project: ${project}`;
     const errorMessage = error instanceof Error ? error.message : String(error);
     

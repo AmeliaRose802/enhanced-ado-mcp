@@ -26,6 +26,34 @@ Enable flexible work item querying with:
 - Staleness filtering and analysis
 - Pagination for large result sets
 
+## Permissions Required
+
+### WIQL Queries (wit-query-wiql)
+- **Required:** "View work items" permission
+- **Granted to:** All project members by default
+- **API Used:** Azure DevOps Work Items API
+
+### OData Analytics (wit-query-odata)
+- **Required:** "View analytics" permission at project level
+- **Granted to:** Project admins and analysts (must be explicitly granted)
+- **API Used:** Azure DevOps Analytics API
+- **Common Issue:** 401 (TF400813) error if missing permission
+
+⚠️ **IMPORTANT:** "View analytics" is a SEPARATE permission from "View work items". Having work item access does NOT automatically grant analytics access.
+
+**To check your permissions:**
+1. Go to: `https://dev.azure.com/{org}/{project}/_settings/security`
+2. Find your user in the Members list
+3. Look for "View analytics" permission
+
+**If you get 401 errors on OData queries:**
+- Verify you're logged into Azure CLI: `az login`
+- Check if you have "View analytics" permission (see above)
+- Contact your project admin to request the permission
+- **Fallback:** Use WIQL queries instead (see migration patterns in [Troubleshooting Guide](../TROUBLESHOOTING.md))
+
+**See Also:** [Troubleshooting Guide - Analytics API Permissions](../TROUBLESHOOTING.md#analytics-api-permissions-401-errors)
+
 ## Tools
 
 ### 1. wit-query-wiql

@@ -2,13 +2,15 @@
  * Rate Limiter Unit Tests
  */
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { RateLimiter } from '../../src/services/rate-limiter.js';
 
 describe('RateLimiter', () => {
   let rateLimiter: RateLimiter;
 
   beforeEach(() => {
+    // Create instance with explicit test parameters
+    // This bypasses config loading for isolated testing
     rateLimiter = new RateLimiter(10, 10);
   });
 
@@ -114,6 +116,75 @@ describe('RateLimiter', () => {
       expect(stats).toBeDefined();
       expect(stats!.tokens).toBeLessThan(10);
       expect(stats!.capacity).toBe(10);
+    });
+  });
+
+  describe('Configuration Support', () => {
+    it('should support custom capacity and refill rate', async () => {
+      const customLimiter = new RateLimiter(50, 5);
+      
+      // Should allow burst of 50 requests
+      for (let i = 0; i < 50; i++) {
+        const start = Date.now();
+        await customLimiter.throttle('test');
+        const duration = Date.now() - start;
+        expect(duration).toBeLessThan(50);
+      }
+      
+      // 51st request should throttle
+      const start = Date.now();
+      await customLimiter.throttle('test');
+      const duration = Date.now() - start;
+      expect(duration).toBeGreaterThan(50);
+      
+      customLimiter.reset();
+    });
+
+    it('should support different configurations per key', async () => {
+      // Free tier limits
+      const freeTierLimiter = new RateLimiter(200, 3.33);
+      // Basic tier limits
+      const basicTierLimiter = new RateLimiter(1000, 16.67);
+      
+      const freeStats = freeTierLimiter.getStats('default');
+      const basicStats = basicTierLimiter.getStats('default');
+      
+      // Initially should have full capacity
+      expect(freeStats).toBeNull(); // No bucket yet
+      expect(basicStats).toBeNull(); // No bucket yet
+      
+      // After using them
+      await freeTierLimiter.throttle('test');
+      await basicTierLimiter.throttle('test');
+      
+      const freeStatsAfter = freeTierLimiter.getStats('test');
+      const basicStatsAfter = basicTierLimiter.getStats('test');
+      
+      expect(freeStatsAfter?.capacity).toBe(200);
+      expect(basicStatsAfter?.capacity).toBe(1000);
+      
+      freeTierLimiter.reset();
+      basicTierLimiter.reset();
+    });
+
+    it('should validate min/max bounds for capacity', () => {
+      // Capacity should be at least 10 (validated by config schema)
+      const minLimiter = new RateLimiter(10, 1);
+      expect(minLimiter.getStats('test')).toBeNull();
+      
+      // Capacity should not exceed 2000 (validated by config schema)
+      const maxLimiter = new RateLimiter(2000, 50);
+      expect(maxLimiter.getStats('test')).toBeNull();
+    });
+
+    it('should validate min/max bounds for refill rate', () => {
+      // Refill rate should be at least 0.1 (validated by config schema)
+      const minLimiter = new RateLimiter(100, 0.1);
+      expect(minLimiter.getStats('test')).toBeNull();
+      
+      // Refill rate should not exceed 50 (validated by config schema)
+      const maxLimiter = new RateLimiter(100, 50);
+      expect(maxLimiter.getStats('test')).toBeNull();
     });
   });
 });

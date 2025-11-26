@@ -5,11 +5,11 @@
 
 import type { ToolExecutionResult, ODataAnalyticsArgs } from "@/types/index.js";
 import { getRequiredConfig } from "@/config/config.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { asToolData } from "@/types/index.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
 import { createAuthenticator } from '@/utils/ado-token.js';
-import { escapeAreaPath } from "@/utils/work-item-parser.js";
+import { escapeAreaPath, escapeAreaPathForOData } from "@/utils/work-item-parser.js";
 
 /**
  * Azure CLI token provider specifically for Analytics API
@@ -48,6 +48,22 @@ export async function handleGetTeamMembers(args: unknown): Promise<ToolExecution
     const areaPath = typedArgs.areaPath || requiredConfig.defaultAreaPath;
     const activeOnly = typedArgs.activeOnly !== false; // Default true
     
+    // Validate required parameters before making API calls
+    if (!organization) {
+      throw new Error(
+        'Organization is required. Either provide it as a parameter or configure it via CLI: ' +
+        'enhanced-ado-mcp <organization> --area-path "ProjectName\\AreaName"'
+      );
+    }
+    
+    if (!project) {
+      throw new Error(
+        'Project is required. Either provide it as a parameter or configure it via area path. ' +
+        'The project is extracted from the area path (e.g., "MyProject\\Team" → project is "MyProject"). ' +
+        'Configure via CLI: enhanced-ado-mcp <organization> --area-path "ProjectName\\AreaName"'
+      );
+    }
+    
     // Calculate date range (default: 90 days ago to today)
     const endDate = typedArgs.dateRangeEnd || new Date().toISOString().split('T')[0];
     const startDate = typedArgs.dateRangeStart || (() => {
@@ -73,7 +89,7 @@ export async function handleGetTeamMembers(args: unknown): Promise<ToolExecution
     
     // Add area path filter if provided
     if (areaPath) {
-      const escaped = escapeAreaPath(areaPath);
+      const escaped = escapeAreaPathForOData(areaPath);
       filterClauses.push(`startswith(Area/AreaPath, '${escaped}')`);
     }
     
@@ -161,7 +177,7 @@ export async function handleGetTeamMembers(args: unknown): Promise<ToolExecution
     };
     
   } catch (error) {
-    logger.error('Failed to get team members:', error);
+    logger.error('Failed to get team members:', errorToContext(error));
     return {
       success: false,
       data: null,

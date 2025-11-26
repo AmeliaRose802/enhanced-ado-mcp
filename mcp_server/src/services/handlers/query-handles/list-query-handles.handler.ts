@@ -52,7 +52,7 @@ export async function handleListQueryHandles(config: ToolConfig, args: unknown):
     const warnings: string[] = [];
     
     if (stats.totalHandles === 0) {
-      warnings.push("No query handles found. Use wit-query-wiql with returnQueryHandle=true to create handles.");
+      warnings.push("No query handles found. Use query-wiql with returnQueryHandle=true to create handles.");
     }
     
     if (stats.expiredHandles > 0) {

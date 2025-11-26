@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
+import { telemetryService } from './telemetry-service.js';
 
 /**
  * Query Handle Service
@@ -195,6 +196,9 @@ class QueryHandleService {
       analysisMetadata
     });
 
+    // Record telemetry
+    telemetryService.recordQueryHandleOperation('create', handle, workItemIds.length);
+
     return handle;
   }
 
@@ -221,6 +225,7 @@ class QueryHandleService {
       logger.warn(`Query handle '${handle}' expired. Created at ${data.createdAt.toISOString()}, ` +
                   `expired at ${data.expiresAt.toISOString()}, age: ${ageMinutes} minutes`);
       this.handles.delete(handle);
+      telemetryService.recordQueryHandleOperation('expire', handle);
       return null;
     }
 
@@ -230,6 +235,9 @@ class QueryHandleService {
       const minutesRemaining = Math.floor(timeUntilExpiry / (1000 * 60));
       logger.warn(`Query handle '${handle}' will expire in ${minutesRemaining} minute(s). Consider refreshing if needed for longer workflows.`);
     }
+
+    // Record read telemetry
+    telemetryService.recordQueryHandleOperation('read', handle, data.workItemIds.length);
 
     return data.workItemIds;
   }
@@ -493,7 +501,7 @@ class QueryHandleService {
    * // Check if item is stale before taking action
    * const context = queryHandleService.getItemContext('qh_abc123', 2);
    * if (context && context.daysInactive && context.daysInactive > 30) {
-   *   console.log(`Item ${context.id} has been inactive for ${context.daysInactive} days`);
+   *   logger.info(`Item ${context.id} has been inactive for ${context.daysInactive} days`);
    * }
    * ```
    * @since 1.4.0

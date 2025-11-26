@@ -5,9 +5,9 @@
 
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import { createWorkItemRepository } from "../../../repositories/work-item.repository.js";
-import { buildSuccessResponse, buildErrorResponse } from "../../../utils/response-builder.js";
+import { buildSuccessResponse, buildErrorResponse, buildNotFoundError } from "../../../utils/response-builder.js";
 import { validateAndParse } from "../../../utils/handler-helpers.js";
-import { logger } from "../../../utils/logger.js";
+import { logger, errorToContext } from "../../../utils/logger.js";
 import { getRequiredConfig } from "../../../config/config.js";
 import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import type { ADOFieldOperation, ADOWorkItem } from "../../../types/index.js";
@@ -66,9 +66,10 @@ export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Pr
     const sourceItem = await sourceRepo.getById(sourceWorkItemId);
 
     if (!sourceItem || !sourceItem.fields) {
-      return buildErrorResponse(
-        `Source work item ${sourceWorkItemId} not found`,
-        { source: "clone-work-item" }
+      return buildNotFoundError(
+        'work-item',
+        sourceWorkItemId,
+        { source: "clone-work-item", operation: 'clone-source-lookup' }
       );
     }
 
@@ -225,7 +226,7 @@ export async function handleCloneWorkItem(config: ToolConfig, args: unknown): Pr
     result.warnings = warnings;
     return result;
   } catch (error) {
-    logger.error('Clone work item error:', error);
+    logger.error('Clone work item error:', errorToContext(error));
     return buildErrorResponse(
       error as Error,
       { source: "clone-work-item" }

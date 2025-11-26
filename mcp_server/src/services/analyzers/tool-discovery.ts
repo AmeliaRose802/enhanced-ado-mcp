@@ -7,7 +7,7 @@
 
 import { ToolExecutionResult, asToolData } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import { logger } from '../../utils/logger.js';
+import { logger, errorToContext } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { toolConfigs } from '../../config/tool-configs/index.js';
 
@@ -133,7 +133,7 @@ export class ToolDiscoveryAnalyzer {
       };
 
     } catch (error: any) {
-      logger.error('Tool discovery failed', error);
+      logger.error('Tool discovery failed', errorToContext(error));
       return {
         success: false,
         errors: [error.message || 'Unknown error during tool discovery'],
@@ -321,7 +321,7 @@ ${JSON.stringify(toolList, null, 2)}
     // Simple keyword-based fallback
     if (lowerIntent.includes('create') || lowerIntent.includes('new')) {
       recommendations.push({
-        toolName: 'wit-create-item',
+        toolName: 'create-workitem',
         confidence: 60,
         reasoning: 'Keyword match: intent contains "create" or "new"',
         requiredParameters: ['title'],
@@ -331,7 +331,7 @@ ${JSON.stringify(toolList, null, 2)}
 
     if (lowerIntent.includes('query') || lowerIntent.includes('search') || lowerIntent.includes('find')) {
       recommendations.push({
-        toolName: 'wit-query-wiql',
+        toolName: 'query-wiql',
         confidence: 60,
         reasoning: 'Keyword match: intent contains query/search/find terms',
         requiredParameters: ['wiqlQuery'],
@@ -341,7 +341,7 @@ ${JSON.stringify(toolList, null, 2)}
 
     if (lowerIntent.includes('bulk') || lowerIntent.includes('multiple')) {
       recommendations.push({
-        toolName: 'wit-bulk-update',
+        toolName: 'execute-bulk-operations',
         confidence: 50,
         reasoning: 'Keyword match: intent suggests bulk operations',
         requiredParameters: ['queryHandle', 'updates'],
@@ -351,7 +351,7 @@ ${JSON.stringify(toolList, null, 2)}
 
     if (recommendations.length === 0) {
       recommendations.push({
-        toolName: 'wit-get-config',
+        toolName: 'get-config',
         confidence: 30,
         reasoning: 'No clear match found - suggesting configuration tool to explore available options',
         requiredParameters: [],

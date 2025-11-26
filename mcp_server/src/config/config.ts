@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { logger } from "../utils/logger.js";
+import { logger, errorToContext } from "../utils/logger.js";
 import { findGitHubCopilotGuid } from "../services/ado-identity-service.js";
 import { type AuthenticationType } from "../utils/ado-token.js";
 
@@ -111,11 +111,59 @@ export interface AuthenticationConfig {
   tenantId?: string;
 }
 
+export interface AIOperationTimeoutsConfig {
+  /** Timeout for AI assignment analysis in milliseconds (default: 30000) */
+  assignmentAnalysis: number;
+  /** Timeout for comprehensive AI workload analysis in milliseconds (default: 120000) */
+  workloadAnalysis: number;
+  /** Timeout for AI query generation and analysis in milliseconds (default: 120000) */
+  queryAnalysis: number;
+}
+
+export interface RateLimiterConfig {
+  /** Bucket capacity (max burst size, default: 200 for free tier) */
+  capacity: number;
+  /** Refill rate in tokens per second (default: 3.33 ≈ 200/min for free tier) */
+  refillRate: number;
+}
+
+export interface TelemetryConfig {
+  /** Enable telemetry collection (opt-in, default: false) */
+  enabled: boolean;
+  /** Maximum events to keep in memory */
+  maxEventsInMemory: number;
+  /** Auto-export to file periodically */
+  autoExport: boolean;
+  /** Auto-export interval in milliseconds */
+  autoExportInterval: number;
+  /** Export directory path */
+  exportDir: string;
+  /** Enable console logging of telemetry events */
+  consoleLogging: boolean;
+}
+
+export interface BatchAPIConfig {
+  /** Enable batch API for bulk operations (default: true) */
+  enabled: boolean;
+  /** Maximum operations per batch (max: 200, default: 200) */
+  maxBatchSize: number;
+  /** Batch request timeout in milliseconds (default: 30000) */
+  timeout: number;
+  /** Fall back to sequential requests on batch error (default: true) */
+  fallbackOnError: boolean;
+  /** Auto-detect batch API support on startup (default: true) */
+  autoDetectSupport: boolean;
+}
+
 export interface MCPServerConfig {
   azureDevOps: AzureDevOpsConfig;
   gitRepository: GitRepositoryConfig;
   gitHubCopilot: GitHubCopilotConfig;
   authentication: AuthenticationConfig;
+  aiTimeouts: AIOperationTimeoutsConfig;
+  rateLimiter: RateLimiterConfig;
+  telemetry: TelemetryConfig;
+  batchAPI: BatchAPIConfig;
   verboseLogging: boolean;
   enableDebugTools: boolean;
 }
@@ -151,11 +199,43 @@ export const authenticationConfigSchema = z.object({
   tenantId: z.string().optional(),
 });
 
+export const aiOperationTimeoutsConfigSchema = z.object({
+  assignmentAnalysis: z.number().int().min(1000).default(30000), // 30 seconds
+  workloadAnalysis: z.number().int().min(1000).default(120000),  // 2 minutes
+  queryAnalysis: z.number().int().min(1000).default(120000),      // 2 minutes
+});
+
+export const rateLimiterConfigSchema = z.object({
+  capacity: z.number().int().min(10).max(2000).default(200),
+  refillRate: z.number().min(0.1).max(50).default(3.33),
+});
+
+export const telemetryConfigSchema = z.object({
+  enabled: z.boolean().default(false), // OPT-IN: Disabled by default
+  maxEventsInMemory: z.number().int().min(100).max(100000).default(10000),
+  autoExport: z.boolean().default(false),
+  autoExportInterval: z.number().int().min(60000).default(300000), // 5 minutes default
+  exportDir: z.string().default('./telemetry'),
+  consoleLogging: z.boolean().default(false),
+});
+
+export const batchAPIConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  maxBatchSize: z.number().int().min(1).max(200).default(200),
+  timeout: z.number().int().min(5000).max(60000).default(30000),
+  fallbackOnError: z.boolean().default(true),
+  autoDetectSupport: z.boolean().default(true),
+});
+
 export const mcpServerConfigSchema = z.object({
   azureDevOps: azureDevOpsConfigSchema,
   gitRepository: gitRepositoryConfigSchema,
   gitHubCopilot: gitHubCopilotConfigSchema,
   authentication: authenticationConfigSchema,
+  aiTimeouts: aiOperationTimeoutsConfigSchema,
+  rateLimiter: rateLimiterConfigSchema,
+  telemetry: telemetryConfigSchema,
+  batchAPI: batchAPIConfigSchema,
   verboseLogging: z.boolean().default(false),
   enableDebugTools: z.boolean().default(false),
 });
@@ -307,6 +387,25 @@ export function loadConfiguration(forceReload = false): MCPServerConfig {
       type: cliArgs.authentication || "interactive",
       ...(cliArgs.tenant && { tenantId: cliArgs.tenant }),
     },
+    aiTimeouts: {
+      // Schema defaults will be applied
+    },
+    rateLimiter: {
+      // Schema defaults will be applied (capacity: 200, refillRate: 3.33)
+    },
+    telemetry: {
+      // Schema defaults will be applied (enabled: false, opt-in)
+      // Can be overridden with environment variables
+      ...(process.env.MCP_TELEMETRY_ENABLED === '1' && { enabled: true }),
+      ...(process.env.MCP_TELEMETRY_EXPORT_DIR && { exportDir: process.env.MCP_TELEMETRY_EXPORT_DIR }),
+    },
+    batchAPI: {
+      // Schema defaults will be applied (enabled: true, maxBatchSize: 200, timeout: 30000)
+      // Can be overridden with environment variables
+      ...(process.env.ADO_BATCH_API_ENABLED === 'false' && { enabled: false }),
+      ...(process.env.ADO_BATCH_SIZE && { maxBatchSize: parseInt(process.env.ADO_BATCH_SIZE, 10) }),
+      ...(process.env.ADO_BATCH_TIMEOUT && { timeout: parseInt(process.env.ADO_BATCH_TIMEOUT, 10) }),
+    },
     verboseLogging: cliArgs.verbose || false,
     enableDebugTools: process.env.MCP_ENABLE_DEBUG_TOOLS === "1",
   };
@@ -366,7 +465,7 @@ export async function ensureGitHubCopilotGuid(): Promise<string | null> {
     logger.info('Please specify the GUID with --copilot-guid flag if you want to enable Copilot assignment');
     return null;
   } catch (error) {
-    logger.warn('Auto-discovery failed:', error);
+    logger.warn('Auto-discovery failed:', errorToContext(error));
     logger.info('Please ensure you are logged in with: az login');
     logger.info('Or specify the GUID manually with --copilot-guid flag');
     return null;
@@ -374,21 +473,60 @@ export async function ensureGitHubCopilotGuid(): Promise<string | null> {
 }
 
 /**
- * Check if iteration path is configured (from CLI)
- * Automatic discovery has been removed - users must specify --iteration-path
+ * Auto-discover and cache the current iteration path for the team
+ * Queries Azure DevOps team settings API to find the active iteration
+ * 
+ * @returns The discovered iteration path or null if not found
  */
 export async function ensureCurrentIterationPath(): Promise<string | null> {
   const config = loadConfiguration();
   
-  // Only use explicitly configured iteration path (no auto-discovery)
+  // If explicitly configured via CLI, use that and skip discovery
   if (config.azureDevOps.iterationPath) {
     logger.info(`Using configured iteration path: ${config.azureDevOps.iterationPath}`);
     return config.azureDevOps.iterationPath;
   }
   
-  logger.debug('No iteration path configured. Use --iteration-path to specify one.');
-  logger.debug('New work items will not have a default iteration path unless explicitly specified.');
-  return null;
+  // Attempt auto-discovery
+  logger.info('Attempting to auto-discover current iteration path...');
+  
+  try {
+    const { getCurrentIterationPath } = await import('../services/ado-discovery-service.js');
+    
+    // Get the first area path for team extraction
+    const areaPaths = config.azureDevOps.areaPaths || 
+      (config.azureDevOps.areaPath ? [config.azureDevOps.areaPath] : []);
+    
+    if (areaPaths.length === 0) {
+      logger.debug('No area paths configured. Cannot discover iteration path.');
+      return null;
+    }
+    
+    const primaryAreaPath = areaPaths[0];
+    const iterationPath = await getCurrentIterationPath(
+      config.azureDevOps.organization,
+      config.azureDevOps.project,
+      primaryAreaPath,
+      config.azureDevOps.team  // Pass team override if provided
+    );
+    
+    if (iterationPath) {
+      logger.info(`Current iteration path discovered: ${iterationPath}`);
+      // Cache in configuration
+      if (cachedConfig) {
+        cachedConfig.azureDevOps.iterationPath = iterationPath;
+      }
+      return iterationPath;
+    } else {
+      logger.debug('Current iteration path not found via auto-discovery.');
+      logger.debug('New work items will not have a default iteration path unless explicitly specified.');
+      return null;
+    }
+  } catch (error) {
+    logger.warn(`Error during iteration path discovery: ${error instanceof Error ? error.message : String(error)}`);
+    logger.debug('New work items will not have a default iteration path unless explicitly specified.');
+    return null;
+  }
 }
 
 export function updateConfigFromCLI(args: CLIArguments): void {

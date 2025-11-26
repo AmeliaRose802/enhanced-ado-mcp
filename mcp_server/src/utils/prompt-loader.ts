@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { watch } from 'fs';
 import { join } from 'path';
 import { getPromptsDir, pathsReady } from './paths.js';
-import { logger } from './logger.js';
+import { logger, errorToContext } from './logger.js';
 
 /**
  * Cache for loaded prompts to avoid repeated file reads
@@ -47,7 +47,7 @@ export async function loadSystemPrompt(promptName: string, variables?: Record<st
       logger.debug(`System prompt '${promptName}' loaded and cached`);
     } catch (error) {
       const promptPath = join(getPromptsDir(), 'system', `${promptName}.md`);
-      logger.error(`Failed to load system prompt '${promptName}' from ${promptPath}:`, error);
+      logger.error(`Failed to load system prompt '${promptName}' from ${promptPath}:`, errorToContext(error));
       logger.error(`PromptsDir resolved to: ${getPromptsDir()}`);
       logger.error(`Please ensure the prompts directory is correctly copied during build.`);
       throw new Error(`Failed to load system prompt '${promptName}': ${error instanceof Error ? error.message : String(error)}`);
@@ -60,7 +60,7 @@ export async function loadSystemPrompt(promptName: string, variables?: Record<st
       promptCache.set(cacheKey, promptText);
       logger.debug(`System prompt '${promptName}' force-reloaded (cache disabled)`);
     } catch (error) {
-      logger.error(`Failed to reload system prompt '${promptName}':`, error);
+      logger.error(`Failed to reload system prompt '${promptName}':`, errorToContext(error));
       throw new Error(`Failed to reload system prompt '${promptName}': ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -142,7 +142,7 @@ export async function startPromptWatcher(): Promise<void> {
     
     logger.info(`Started watching prompts directory: ${promptsDir}`);
   } catch (error) {
-    logger.error('Failed to start prompt watcher:', error);
+    logger.error('Failed to start prompt watcher:', errorToContext(error));
   }
 }
 

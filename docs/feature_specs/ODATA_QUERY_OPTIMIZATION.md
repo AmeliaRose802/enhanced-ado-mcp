@@ -3,10 +3,30 @@
 > **See Also:**
 > - **OData tool usage:** [Query Tools](./QUERY_TOOLS.md) - Comprehensive OData and WIQL documentation
 > - **Query examples:** Check the Query Tools spec for current patterns
+> - **Permission issues:** [Troubleshooting Guide](../TROUBLESHOOTING.md#analytics-api-permissions-401-errors)
 
 ## Summary
 
 Reviewed all prompt files for OData Analytics queries and optimized them to use built-in query types where possible instead of custom queries. This improves maintainability, reduces errors, and provides better performance.
+
+## Prerequisites
+
+### Required Permission: "View analytics"
+
+⚠️ **IMPORTANT:** OData Analytics queries require the **"View analytics"** permission at the project level in Azure DevOps. This is DIFFERENT from the standard "View work items" permission.
+
+**Permission Check:**
+1. Navigate to: `https://dev.azure.com/{YOUR_ORG}/{YOUR_PROJECT}/_settings/security`
+2. Search for your email address in the Members list
+3. Verify "View analytics" permission is set to "Allow"
+
+**Common Issue:** Users with "View work items" permission will get 401 (TF400813) errors when using OData queries.
+
+**Solution:** Contact your Azure DevOps project administrator to request "View analytics" permission.
+
+**Alternative:** Use WIQL queries (`wit-query-wiql`) instead - they work with standard "View work items" permission.
+
+See [Troubleshooting Guide](../TROUBLESHOOTING.md#analytics-api-permissions-401-errors) for detailed diagnosis and resolution steps.
 
 ## Query Types Available
 

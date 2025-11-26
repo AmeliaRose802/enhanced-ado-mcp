@@ -5,12 +5,43 @@
  * query handles for each group, enabling direct bulk operations on problematic items.
  */
 
-import type { ToolExecutionResult } from '@/types/index.js';
+import type { ToolExecutionResult, ToolConfig } from '@/types/index.js';
 import type { HierarchyValidatorArgs, WorkItemHierarchyInfo } from '@/types/index.js';
+import type { MCPServer, MCPServerLike } from '@/types/mcp.js';
 import { asToolData } from '@/types/index.js';
-import { logger } from '@/utils/logger.js';
+import { logger, errorToContext } from '@/utils/logger.js';
 import { queryHandleService } from '../../query-handle-service.js';
 import { HierarchyValidatorAnalyzer } from '../../analyzers/hierarchy-validator.js';
+
+interface IssueItem {
+  workItemId: number;
+  workItemTitle: string;
+  issues: Array<{
+    type: string;
+    description: string;
+    severity?: string;
+    recommendations?: string[];
+  }>;
+  parentingSuggestions?: Array<{
+    action?: string;
+    [key: string]: unknown;
+  }>;
+}
+
+interface ValidationResultData {
+  healthySummary?: {
+    totalAnalyzed?: number;
+    itemsWithIssues?: number;
+    itemsWellParented?: number;
+  };
+  workItemsAnalyzed?: unknown[];
+  issuesFound?: IssueItem[];
+  recommendations?: {
+    highPriorityActions: string[];
+    improvementSuggestions: string[];
+    bestPractices: string[];
+  };
+}
 
 interface ViolationGroup {
   type: string;
@@ -27,6 +58,21 @@ interface ViolationGroup {
   }>;
 }
 
+interface IssueItem {
+  workItemId: number;
+  workItemTitle: string;
+  issues: Array<{
+    type: string;
+    description: string;
+    severity?: string;
+    recommendations?: string[];
+  }>;
+  parentingSuggestions?: Array<{
+    action?: string;
+    [key: string]: unknown;
+  }>;
+}
+
 interface HierarchyAnalysisWithHandlesResult {
   summary: {
     totalAnalyzed: number;
@@ -36,7 +82,7 @@ interface HierarchyAnalysisWithHandlesResult {
     analysisTimestamp: string;
   };
   violationGroups: ViolationGroup[];
-  detailedIssues: any[];
+  detailedIssues: IssueItem[];
   recommendations: {
     highPriorityActions: string[];
     improvementSuggestions: string[];
@@ -51,9 +97,9 @@ interface HierarchyAnalysisWithHandlesResult {
  * Handle hierarchy analysis with query handle generation
  */
 export async function handleHierarchyAnalysisWithHandles(
-  config: any,
+  config: ToolConfig,
   args: HierarchyValidatorArgs,
-  server: any
+  server: MCPServer | MCPServerLike
 ): Promise<ToolExecutionResult> {
   logger.info('Starting hierarchy analysis with query handle generation');
 
@@ -67,8 +113,8 @@ export async function handleHierarchyAnalysisWithHandles(
     if (!analysisResult.success || !analysisResult.data) {
       return analysisResult;
     }
-
-    const validationResult = analysisResult.data as any;
+    
+    const validationResult = analysisResult.data as ValidationResultData;
 
     // Group violations by type and create query handles
     const violationGroups = await groupViolationsAndCreateHandles(
@@ -113,7 +159,7 @@ export async function handleHierarchyAnalysisWithHandles(
     };
 
   } catch (error) {
-    logger.error('Hierarchy analysis with handles failed:', error);
+    logger.error('Hierarchy analysis with handles failed:', errorToContext(error));
     return {
       success: false,
       data: null,
@@ -128,7 +174,7 @@ export async function handleHierarchyAnalysisWithHandles(
  * Group violations by type and create query handles for each group
  */
 async function groupViolationsAndCreateHandles(
-  validationResult: any,
+  validationResult: ValidationResultData,
   args: HierarchyValidatorArgs
 ): Promise<ViolationGroup[]> {
   const groups: Map<string, {
@@ -251,7 +297,7 @@ async function groupViolationsAndCreateHandles(
     // Create work item context for query handle
     const workItemContext = new Map(
       workItemIds.map(id => {
-        const item = issuesFound.find((i: any) => i.workItemId === id);
+        const item = issuesFound.find((i: IssueItem) => i.workItemId === id);
         return [id, {
           id,
           title: item?.workItemTitle || 'Unknown',

@@ -1,4 +1,5 @@
 import { marked } from 'marked';
+import { logger, errorToContext } from './logger.js';
 
 /**
  * Convert markdown content to HTML for Azure DevOps HTML fields
@@ -33,7 +34,7 @@ export function convertMarkdownToHtml(markdown: string | undefined | null): stri
     return html.trim();
   } catch (error) {
     // If parsing fails, return the original text wrapped in a paragraph
-    console.error('Failed to parse markdown:', error);
+    logger.error('Failed to parse markdown:', errorToContext(error));
     return `<p>${escapeHtml(markdown)}</p>`;
   }
 }

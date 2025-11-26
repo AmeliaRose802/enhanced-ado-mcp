@@ -196,3 +196,200 @@ export interface ADOApiResponse<T> {
   value?: T;
   count?: number;
 }
+
+/**
+ * ADO Pull Request Iteration
+ * Represents a single iteration of a pull request
+ */
+export interface ADOPullRequestIteration {
+  id: number;
+  description?: string;
+  author: ADOIdentity;
+  createdDate: string;
+  updatedDate: string;
+  sourceRefCommit: {
+    commitId: string;
+    url: string;
+  };
+  targetRefCommit: {
+    commitId: string;
+    url: string;
+  };
+  commonRefCommit?: {
+    commitId: string;
+    url: string;
+  };
+}
+
+/**
+ * ADO Pull Request Iterations Response
+ */
+export interface ADOPullRequestIterationsResponse {
+  count: number;
+  value: ADOPullRequestIteration[];
+}
+
+/**
+ * ADO Git Item Change
+ * Represents a single file change in a pull request
+ */
+export interface ADOGitItemChange {
+  changeType: 'add' | 'edit' | 'delete' | 'rename' | 'sourceRename';
+  item: {
+    objectId: string;
+    originalObjectId?: string;
+    gitObjectType: 'blob' | 'tree' | 'commit' | 'tag';
+    commitId: string;
+    path: string;
+    isFolder: boolean;
+    url: string;
+  };
+  sourceServerItem?: string;
+}
+
+/**
+ * ADO Pull Request Changes Response
+ * Contains the list of changed files in a PR iteration
+ */
+export interface ADOPullRequestChangesResponse {
+  changeEntries: ADOGitItemChange[];
+  changeCounts?: {
+    [changeType: string]: number;
+  };
+}
+
+/**
+ * ADO Pull Request
+ * Represents a pull request in Azure DevOps
+ */
+export interface ADOPullRequest {
+  pullRequestId: number;
+  codeReviewId?: number;
+  status: 'active' | 'abandoned' | 'completed' | 'notSet';
+  createdBy: ADOIdentity;
+  creationDate: string;
+  closedDate?: string;
+  title: string;
+  description?: string;
+  sourceRefName: string;
+  targetRefName: string;
+  mergeStatus: 'succeeded' | 'failed' | 'conflicts' | 'queued' | 'rejectedByPolicy' | 'notSet';
+  isDraft?: boolean;
+  mergeId?: string;
+  lastMergeSourceCommit?: {
+    commitId: string;
+    url: string;
+  };
+  lastMergeTargetCommit?: {
+    commitId: string;
+    url: string;
+  };
+  reviewers?: Array<{
+    reviewerUrl: string;
+    vote: number;
+    displayName: string;
+    uniqueName: string;
+    id: string;
+    imageUrl: string;
+  }>;
+  url: string;
+  repository?: {
+    id: string;
+    name: string;
+    url: string;
+    project: {
+      id: string;
+      name: string;
+    };
+  };
+  completionOptions?: {
+    mergeCommitMessage?: string;
+    deleteSourceBranch?: boolean;
+    squashMerge?: boolean;
+    mergeStrategy?: string;
+  };
+  supportsIterations?: boolean;
+  artifactId?: string;
+}
+
+/**
+ * ADO Pull Requests Search Response
+ */
+export interface ADOPullRequestsResponse {
+  value: ADOPullRequest[];
+  count: number;
+}
+
+/**
+ * ADO Pull Request Thread Comment
+ * Represents a single comment in a thread
+ */
+export interface ADOPullRequestComment {
+  id: number;
+  parentCommentId?: number;
+  author: ADOIdentity;
+  content: string;
+  publishedDate: string;
+  lastUpdatedDate?: string;
+  lastContentUpdatedDate?: string;
+  commentType: 'unknown' | 'text' | 'codeChange' | 'system';
+  usersLiked?: ADOIdentity[];
+  _links?: {
+    self: { href: string };
+    repository: { href: string };
+    threads: { href: string };
+    pullRequests: { href: string };
+  };
+}
+
+/**
+ * ADO Pull Request Thread Context
+ * Optional context for where a thread is located in the code
+ */
+export interface ADOPullRequestThreadContext {
+  filePath?: string;
+  leftFileStart?: { line: number; offset: number };
+  leftFileEnd?: { line: number; offset: number };
+  rightFileStart?: { line: number; offset: number };
+  rightFileEnd?: { line: number; offset: number };
+}
+
+/**
+ * ADO Pull Request Thread
+ * Represents a discussion thread in a pull request
+ */
+export interface ADOPullRequestThread {
+  id: number;
+  publishedDate: string;
+  lastUpdatedDate?: string;
+  comments: ADOPullRequestComment[];
+  status: 'unknown' | 'active' | 'fixed' | 'wontFix' | 'closed' | 'byDesign' | 'pending';
+  threadContext?: ADOPullRequestThreadContext;
+  properties?: {
+    [key: string]: any;
+  };
+  identities?: {
+    [id: string]: ADOIdentity;
+  };
+  isDeleted?: boolean;
+  _links?: {
+    self: { href: string };
+    repository: { href: string };
+  };
+  pullRequestThreadContext?: {
+    iterationContext?: {
+      firstComparingIteration: number;
+      secondComparingIteration: number;
+    };
+    changeTrackingId?: number;
+    trackingCriteria?: any;
+  };
+}
+
+/**
+ * ADO Pull Request Threads Response
+ */
+export interface ADOPullRequestThreadsResponse {
+  value: ADOPullRequestThread[];
+  count: number;
+}

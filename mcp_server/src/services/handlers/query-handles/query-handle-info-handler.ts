@@ -10,7 +10,7 @@ import type { ToolConfig, ToolExecutionResult, JSONValue, ToolExecutionData } fr
 import type { ADOWorkItem } from '@/types/index.js';
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildNotFoundError } from "@/utils/response-builder.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from '@/utils/ado-http-client.js';
 import { getTokenProvider } from '@/utils/token-provider.js';
@@ -371,7 +371,7 @@ export async function handleQueryHandleInfo(config: ToolConfig, args: unknown): 
     };
 
   } catch (error) {
-    logger.error('Query handle info error:', error);
+    logger.error('Query handle info error:', errorToContext(error));
     return {
       success: false,
       data: null,

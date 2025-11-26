@@ -3,7 +3,7 @@ import type { AIAssignmentAnalyzerArgs, AIAssignmentResult } from '../../types/i
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import { logger } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
-import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
+import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse, buildNotFoundError, buildBusinessLogicError } from '../../utils/response-builder.js';
 import { extractJSON } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
 import { createADOHttpClient } from '../../utils/ado-http-client.js';
@@ -78,16 +78,16 @@ export class AIAssignmentAnalyzer {
       const workItem = await getWorkItem(org, project, args.workItemId);
       
       if (!workItem || !workItem.fields) {
-        return buildErrorResponse(`Work item ${args.workItemId} not found`, { source: 'work-item-not-found' });
+        return buildNotFoundError('work-item', args.workItemId, { source: 'ai-assignment-analysis' });
       }
 
       // Check if work item is in a completed state
       const completedStates = ['Done', 'Completed', 'Closed', 'Resolved', 'Removed'];
       if (completedStates.includes(workItem.fields['System.State'])) {
-        return buildErrorResponse(
+        return buildBusinessLogicError(
           `Work item ${args.workItemId} is in state '${workItem.fields['System.State']}'. ` +
           `Cannot analyze completed work items. Only active work items should be analyzed for AI assignment.`,
-          { source: 'work-item-completed' }
+          { source: 'ai-assignment-analysis', workItemId: args.workItemId, state: workItem.fields['System.State'] }
         );
       }
 
@@ -165,7 +165,8 @@ export class AIAssignmentAnalyzer {
     };
 
     // Add timeout wrapper to prevent hanging
-    const timeoutMs = 30000; // 30 seconds (AI assignment should be fast)
+    const config = loadConfiguration();
+    const timeoutMs = config.aiTimeouts.assignmentAnalysis;
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'ai-assignment-analyzer',
       userContent: 'Analyze the work item provided in the context above and determine if it is suitable for AI assignment.',

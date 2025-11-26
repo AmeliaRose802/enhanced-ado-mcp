@@ -1,4 +1,4 @@
-import { logger } from '@/utils/logger.js';
+import { logger, errorToContext } from '@/utils/logger.js';
 import { buildSuccessResponse, buildNotFoundError, buildErrorResponse } from '@/utils/response-builder.js';
 import { loadConfiguration } from '@/config/config.js';
 import { createADOHttpClient } from '@/utils/ado-http-client.js';
@@ -295,7 +295,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       try {
         const pResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${parent.id}?fields=System.Id,System.Title,System.WorkItemType,System.State`);
         parent = pResponse.data;
-      } catch (e) { logger.warn(`Failed to expand parent ${parent.id}`, e); }
+      } catch (e) { logger.warn(`Failed to expand parent ${parent.id}`, errorToContext(e)); }
     }
 
     // Expand children (one depth only unless maxChildDepth >1; we only support depth=1 for now to avoid complexity)
@@ -336,7 +336,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
               }));
           }
         }
-      } catch (e) { logger.warn('Failed to expand related items', e); }
+      } catch (e) { logger.warn('Failed to expand related items', errorToContext(e)); }
     }
 
     // Get comments
@@ -351,7 +351,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
           createdBy: c.createdBy?.displayName,
           createdDate: c.createdDate
         })) || [];
-      } catch (e) { logger.warn(`Failed to load comments for ${workItemId}`, e); }
+      } catch (e) { logger.warn(`Failed to load comments for ${workItemId}`, errorToContext(e)); }
     }
 
     // History (recent revisions) - optimized to show only changed fields
@@ -384,7 +384,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
             });
           }
         }
-      } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, e); }
+      } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, errorToContext(e)); }
     }
 
     // Build normalized core representation
@@ -435,7 +435,7 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
 
     return buildSuccessResponse({ contextPackage: result }, { source: 'get-work-item-context-package' });
   } catch (error) {
-    logger.error('Failed to build context package', error);
+    logger.error('Failed to build context package', errorToContext(error));
     // Auto-categorizes based on error message (network, auth, etc.)
     return buildErrorResponse(error as Error, { source: 'get-work-item-context-package' });
   }

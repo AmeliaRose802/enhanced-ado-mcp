@@ -10,7 +10,7 @@ import { asToolData } from "@/types/index.js";
 import { validateAndParse } from "@/utils/handler-helpers.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { queryWorkItemsByWiql } from "../../ado-work-item-service.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "../context/get-work-item-context-package.handler.js";
 import { SamplingClient } from "@/utils/sampling-client.js";
@@ -216,7 +216,7 @@ export async function handleWiqlQuery(
       // If we're in AI generation mode with returnQueryHandle and execution fails,
       // fall back to returning just the generated query with a warning
       if (isAIGeneration && queryArgs.returnQueryHandle) {
-        logger.warn('Query execution failed after validation, returning query-only response', error);
+        logger.warn('Query execution failed after validation, returning query-only response', errorToContext(error));
         return {
           success: true,
           data: {
@@ -273,7 +273,7 @@ export async function handleWiqlQuery(
             return null;
           }
         } catch (error) {
-          logger.error(`Error fetching context package for work item ${wi.id}:`, error);
+          logger.error(`Error fetching context package for work item ${wi.id}:`, errorToContext(error));
           return null;
         }
       });
@@ -529,7 +529,7 @@ export async function handleWiqlQuery(
       ]
     };
   } catch (error) {
-    logger.error('Unified WIQL query handler error:', error);
+    logger.error('Unified WIQL query handler error:', errorToContext(error));
     return {
       success: false,
       data: null,

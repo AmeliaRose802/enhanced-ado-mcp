@@ -109,7 +109,7 @@ describe('Create Work Item - Parent Validation', () => {
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toContain('parent work item is required');
-      expect(result.errors[0]).toContain('wit-analyze-by-query-handle');
+      expect(result.errors[0]).toContain('analyze-bulk');
       expect(result.errors[0]).toContain('parent-recommendation');
     });
 

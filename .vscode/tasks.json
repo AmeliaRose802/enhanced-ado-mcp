@@ -1,21 +1,45 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "MCP Server: Build",
-      "type": "shell",
-      "command": "npm run build",
-      "options": { "cwd": "${workspaceFolder}/mcp_server" },
-      "group": "build",
-      "problemMatcher": ["$tsc"]
-    },
-    {
-      "label": "MCP Server: Dev",
-      "type": "shell",
-      "command": "npm run dev",
-      "options": { "cwd": "${workspaceFolder}/mcp_server" },
-      "isBackground": true,
-      "problemMatcher": []
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "MCP Server: Build",
+			"type": "shell",
+			"command": "npm run build",
+			"options": {
+				"cwd": "${workspaceFolder}/mcp_server"
+			},
+			"group": "build",
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"label": "MCP Server: Dev",
+			"type": "shell",
+			"command": "npm run dev",
+			"options": {
+				"cwd": "${workspaceFolder}/mcp_server"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Build MCP Server",
+			"type": "shell",
+			"command": "npm run build",
+			"group": "build"
+		},
+		{
+			"label": "Test Current Iteration Discovery",
+			"type": "shell",
+			"command": "npm test -- current-iteration-discovery.test.ts",
+			"group": "test"
+		},
+		{
+			"label": "Test Current Iteration Discovery v2",
+			"type": "shell",
+			"command": "npm test -- current-iteration-discovery.test.ts",
+			"group": "test"
+		}
+	]
 }

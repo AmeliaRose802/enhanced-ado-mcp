@@ -18,6 +18,11 @@ describe('Bulk Undo Integration Tests', () => {
     queryHandleService.clearAll();
   });
 
+  afterAll(() => {
+    // Stop cleanup interval to prevent worker process hanging
+    queryHandleService.stopCleanup();
+  });
+
   describe('Query handle validation', () => {
     it('should return error if query handle not found', async () => {
       const result = await handleBulkUndoByQueryHandle(mockConfig, {

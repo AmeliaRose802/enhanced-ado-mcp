@@ -13,7 +13,7 @@ import type {
 } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
 import type { ADOWiqlResult, ADOApiResponse, ADOWorkItem } from '../../types/index.js';
-import { logger } from '../../utils/logger.js';
+import { logger, errorToContext } from '../../utils/logger.js';
 import { getRequiredConfig } from '../../config/config.js';
 import { escapeAreaPath } from '../../utils/work-item-parser.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
@@ -115,7 +115,7 @@ export class HierarchyValidatorAnalyzer {
       return await this.fetchWorkItemDetails(Organization!, Project!, workItemIds);
 
     } catch (error) {
-      logger.error('Failed to fetch work items from Azure DevOps', error);
+            logger.error('Failed to fetch and build hierarchy for parent relationships:', errorToContext(error));
       throw new Error(`Failed to fetch work items: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -167,7 +167,7 @@ export class HierarchyValidatorAnalyzer {
       return childIds.slice(0, maxItems);
 
     } catch (error) {
-      logger.warn('Failed to fetch child work items, continuing with parent items only', error);
+      logger.warn('Failed to fetch child work items, continuing with parent items only', errorToContext(error));
       return [];
     }
   }
@@ -264,7 +264,7 @@ export class HierarchyValidatorAnalyzer {
       return ids.slice(0, maxItems || 50);
 
     } catch (error) {
-      logger.error('WIQL query failed', error);
+      logger.error('WIQL query failed', errorToContext(error));
       throw new Error(`Failed to query work items: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -325,7 +325,7 @@ export class HierarchyValidatorAnalyzer {
       });
 
     } catch (error) {
-      logger.error('Failed to fetch work item details', error);
+      logger.error('Failed to fetch work item details', errorToContext(error));
       throw new Error(`Failed to fetch work item details: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -370,7 +370,7 @@ export class HierarchyValidatorAnalyzer {
    * Uses 3-level fallback: direct JSON, code block extraction, object regex match
    */
   private parseHierarchyResponse(
-    aiResult: any,
+    aiResult: { content: { text: string } },
     workItems: WorkItemHierarchyInfo[],
     args: HierarchyValidatorArgs
   ): HierarchyValidationResult {
@@ -389,7 +389,30 @@ export class HierarchyValidatorAnalyzer {
    * Normalize parsed JSON into typed HierarchyValidationResult
    */
   private normalizeHierarchyResult(
-    parsed: any,
+    parsed: {
+      analysisContext?: Partial<HierarchyValidationResult['analysisContext']>;
+      issuesFound?: Array<{
+        workItemId: number;
+        workItemTitle: string;
+        issues?: Array<{
+          issueType: string;
+          severity: string;
+          description?: string;
+          recommendations?: string[];
+        }>;
+        parentingSuggestions?: Array<{
+          suggestedParentId: number;
+          suggestedParentTitle?: string;
+          suggestedParentType?: string;
+          confidence?: number;
+          reasoning?: string;
+          benefits?: string[];
+          potentialIssues?: string[];
+        }>;
+      }>;
+      healthySummary?: Partial<HierarchyValidationResult['healthySummary']>;
+      recommendations?: Partial<HierarchyValidationResult['recommendations']>;
+    },
     workItems: WorkItemHierarchyInfo[],
     args: HierarchyValidatorArgs
   ): HierarchyValidationResult {
@@ -403,16 +426,16 @@ export class HierarchyValidatorAnalyzer {
         timestamp: parsed.analysisContext?.timestamp || now
       },
       workItemsAnalyzed: workItems,
-      issuesFound: (parsed.issuesFound || []).map((issue: any) => ({
+      issuesFound: (parsed.issuesFound || []).map((issue) => ({
         workItemId: issue.workItemId,
         workItemTitle: issue.workItemTitle,
-        issues: (issue.issues || []).map((i: any) => ({
+        issues: (issue.issues || []).map((i) => ({
           issueType: this.normalizeIssueType(i.issueType),
           severity: this.normalizeSeverity(i.severity),
           description: i.description || 'No description provided',
           recommendations: i.recommendations || []
         })),
-        parentingSuggestions: (issue.parentingSuggestions || []).map((s: any) => ({
+        parentingSuggestions: (issue.parentingSuggestions || []).map((s) => ({
           suggestedParentId: s.suggestedParentId,
           suggestedParentTitle: s.suggestedParentTitle || `Work Item ${s.suggestedParentId}`,
           suggestedParentType: s.suggestedParentType || 'Unknown',
@@ -442,8 +465,9 @@ export class HierarchyValidatorAnalyzer {
    */
   private normalizeIssueType(type: string): "misparented" | "orphaned" | "incorrect_level" | "circular_dependency" | "type_mismatch" {
     const normalized = type?.toLowerCase().replace(/[_\s-]/g, '_');
-    if (['misparented', 'orphaned', 'incorrect_level', 'circular_dependency', 'type_mismatch'].includes(normalized)) {
-      return normalized as any;
+    const validTypes = ['misparented', 'orphaned', 'incorrect_level', 'circular_dependency', 'type_mismatch'] as const;
+    if (validTypes.includes(normalized as typeof validTypes[number])) {
+      return normalized as typeof validTypes[number];
     }
     return 'misparented';
   }
@@ -453,8 +477,9 @@ export class HierarchyValidatorAnalyzer {
    */
   private normalizeSeverity(severity: string): "low" | "medium" | "high" | "critical" {
     const normalized = severity?.toLowerCase();
-    if (['low', 'medium', 'high', 'critical'].includes(normalized)) {
-      return normalized as any;
+    const validSeverities = ['low', 'medium', 'high', 'critical'] as const;
+    if (validSeverities.includes(normalized as typeof validSeverities[number])) {
+      return normalized as typeof validSeverities[number];
     }
     return 'medium';
   }

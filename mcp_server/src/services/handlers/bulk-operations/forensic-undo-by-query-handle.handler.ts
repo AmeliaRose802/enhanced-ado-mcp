@@ -17,7 +17,7 @@
 import { ToolConfig, ToolExecutionResult, asToolData } from "@/types/index.js";
 import type { ADOWorkItemRevision, ADOWorkItem, ADORelation } from "@/types/ado.js";
 import { validateAndParse } from "@/utils/handler-helpers.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from '@/utils/logger.js';
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from '@/utils/ado-http-client.js';
 import { getTokenProvider } from '@/utils/token-provider.js';
@@ -283,7 +283,7 @@ export async function handleForensicUndoByQueryHandle(config: ToolConfig, args: 
       warnings
     };
   } catch (error) {
-    logger.error('Forensic undo by query handle error:', error);
+    logger.error('Forensic undo by query handle error:', errorToContext(error));
     return {
       success: false,
       data: null,

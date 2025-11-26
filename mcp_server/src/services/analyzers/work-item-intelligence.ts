@@ -5,7 +5,7 @@
 import type { ToolExecutionResult } from '../../types/index.js';
 import type { WorkItemIntelligenceArgs, AnalysisResult } from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import { logger } from '../../utils/logger.js';
+import { logger, errorToContext } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, getStringOrDefault, getNumberOrDefault, getArrayOfStrings, getNestedValue, formatForAI } from '../../utils/ai-helpers.js';
@@ -43,7 +43,12 @@ export class WorkItemIntelligenceAnalyzer {
       });
 
     } catch (error) {
-      return buildErrorResponse(`AI sampling analysis failed: ${error}`, { source: 'ai-sampling-failed' });
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return buildErrorResponse(
+        `AI sampling analysis failed: ${errorMsg}`,
+        { source: 'work-item-intelligence-analysis' }
+        // Auto-categorized by buildErrorResponse
+      );
     }
   }
 
@@ -99,7 +104,7 @@ export class WorkItemIntelligenceAnalyzer {
 
   private parseAnalysisResponse(aiResult: unknown, analysisType: string): AnalysisResult {
     const responseText = this.samplingClient.extractResponseText(aiResult as { content: { text: string } });
-    logger.debug(`Parsing AI response for ${analysisType}:`, responseText.substring(0, 200) + '...');
+    logger.debug(`Parsing AI response for ${analysisType}:`, { preview: responseText.substring(0, 200) + '...' });
     const jsonData = extractJSON(responseText);
     
     // If we successfully parsed JSON, use it directly with minimal processing

@@ -44,6 +44,7 @@ This tool addresses the need for flexible, intelligent analysis of work items ba
 | `intent` | string | ✅ | - | Natural language description of desired analysis |
 | `itemSelector` | 'all' \| number[] \| object | ❌ | 'all' | Which items to analyze from the query handle |
 | `maxItemsToAnalyze` | number | ❌ | 50 | Maximum items to analyze (1-100) |
+| `skip` | number | ❌ | 0 | Number of items to skip for pagination |
 | `includeContextPackages` | boolean | ❌ | true | Retrieve full context for deeper analysis |
 | `contextDepth` | enum | ❌ | 'standard' | Context detail level: basic, standard, deep |
 | `outputFormat` | enum | ❌ | 'concise' | Output format: concise, detailed, json |
@@ -171,6 +172,25 @@ Detailed observations with work item IDs
   queryHandle: "qh_proposed_sprint",
   intent: "analyze sprint capacity and identify overcommitment risks",
   contextDepth: "deep"
+}
+```
+
+### Paginated Analysis
+```typescript
+// Analyze first 50 items
+{
+  queryHandle: "qh_large_backlog",
+  intent: "identify technical debt items",
+  maxItemsToAnalyze: 50,
+  skip: 0
+}
+
+// Analyze next 50 items
+{
+  queryHandle: "qh_large_backlog",
+  intent: "identify technical debt items",
+  maxItemsToAnalyze: 50,
+  skip: 50
 }
 ```
 

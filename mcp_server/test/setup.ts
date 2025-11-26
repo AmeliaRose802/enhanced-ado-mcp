@@ -39,10 +39,18 @@ beforeAll(() => {
   });
 });
 
-afterAll(() => {
+afterAll(async () => {
   // Restore console methods
   console.error = originalConsoleError;
   console.warn = originalConsoleWarn;
+  
+  // Clean up any global services to prevent worker process hanging
+  try {
+    const { queryHandleService } = await import('../src/services/query-handle-service.js');
+    queryHandleService.stopCleanup();
+  } catch (error) {
+    // Ignore if queryHandleService is not available
+  }
 });
 
 // Global test utilities

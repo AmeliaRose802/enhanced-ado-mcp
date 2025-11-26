@@ -2,14 +2,19 @@
  * Cache Service Unit Tests
  */
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
-import { CacheService } from '../../src/services/cache-service.js';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { CacheService, CacheDataType } from '../../src/services/cache-service.js';
 
 describe('CacheService', () => {
   let cacheService: CacheService;
 
   beforeEach(() => {
-    cacheService = new CacheService(100, 1000);
+    cacheService = new CacheService({
+      enabled: true,
+      maxSize: 10,
+      maxMemoryBytes: 10 * 1024, // 10KB
+      defaultTTL: 1000
+    });
   });
 
   afterEach(() => {
@@ -76,7 +81,7 @@ describe('CacheService', () => {
 
   describe('Size Limits', () => {
     it('should evict oldest entry when max size reached', () => {
-      const smallCache = new CacheService(3, 10000);
+      const smallCache = new CacheService({ maxSize: 3, defaultTTL: 10000 });
       
       smallCache.set('key1', 'value1');
       smallCache.set('key2', 'value2');
@@ -96,9 +101,9 @@ describe('CacheService', () => {
       const stats = cacheService.getStats();
       
       expect(stats.size).toBe(2);
-      expect(stats.maxSize).toBe(100);
-      expect(stats.entries).toContain('key1');
-      expect(stats.entries).toContain('key2');
+      expect(stats.maxSize).toBe(10);
+      expect(stats.entries.map((e: any) => e.key)).toContain('key1');
+      expect(stats.entries.map((e: any) => e.key)).toContain('key2');
     });
   });
 
@@ -118,6 +123,111 @@ describe('CacheService', () => {
     it('should handle null values', () => {
       cacheService.set('null', null);
       expect(cacheService.has('null')).toBe(true);
+    });
+  });
+
+  describe('Statistics', () => {
+    it('should track hits and misses', () => {
+      cacheService.set('key1', 'value1');
+      
+      cacheService.get('key1'); // Hit
+      cacheService.get('key2'); // Miss
+      cacheService.get('key1'); // Hit
+      
+      const stats = cacheService.getStats();
+      expect(stats.hits).toBe(2);
+      expect(stats.misses).toBe(1);
+      expect(stats.hitRate).toBeGreaterThan(0.5);
+    });
+
+    it('should track evictions', () => {
+      // Fill cache beyond capacity
+      for (let i = 0; i < 12; i++) {
+        cacheService.set(`key${i}`, `value${i}`);
+      }
+      
+      const stats = cacheService.getStats();
+      expect(stats.evictions).toBeGreaterThan(0);
+    });
+
+    it('should reset statistics', () => {
+      cacheService.set('key1', 'value1');
+      cacheService.get('key1');
+      cacheService.get('key2');
+      
+      cacheService.resetStats();
+      
+      const stats = cacheService.getStats();
+      expect(stats.hits).toBe(0);
+      expect(stats.misses).toBe(0);
+    });
+  });
+
+  describe('Pattern-Based Invalidation', () => {
+    it('should delete entries matching string pattern', () => {
+      cacheService.set('workitem:123', 'data1');
+      cacheService.set('workitem:124', 'data2');
+      cacheService.set('iteration:current', 'data3');
+      
+      const deleted = cacheService.deletePattern('workitem:');
+      
+      expect(deleted).toBe(2);
+      expect(cacheService.get('workitem:123')).toBeNull();
+      expect(cacheService.get('iteration:current')).toBe('data3');
+    });
+
+    it('should delete entries matching regex pattern', () => {
+      cacheService.set('workitem:123', 'data1');
+      cacheService.set('workitem:124', 'data2');
+      cacheService.set('iteration:123', 'data3');
+      
+      const deleted = cacheService.deletePattern(/.*:123$/);
+      
+      expect(deleted).toBe(2);
+      expect(cacheService.get('workitem:124')).toBe('data2');
+    });
+  });
+
+  describe('Enable/Disable', () => {
+    it('should not cache when disabled', () => {
+      cacheService.disable();
+      
+      cacheService.set('key1', 'value1');
+      expect(cacheService.get('key1')).toBeNull();
+    });
+
+    it('should cache when re-enabled', () => {
+      cacheService.disable();
+      cacheService.enable();
+      
+      cacheService.set('key1', 'value1');
+      expect(cacheService.get('key1')).toBe('value1');
+    });
+  });
+
+  describe('Data Type TTLs', () => {
+    it('should use correct TTL for iterations', () => {
+      const ttl = cacheService.getTTLForType(CacheDataType.ITERATIONS);
+      expect(ttl).toBe(30 * 60 * 1000); // 30 minutes
+    });
+
+    it('should use correct TTL for work item content', () => {
+      const ttl = cacheService.getTTLForType(CacheDataType.WORK_ITEM_CONTENT);
+      expect(ttl).toBe(5 * 60 * 1000); // 5 minutes
+    });
+  });
+
+  describe('Key Generation', () => {
+    it('should generate consistent keys', () => {
+      const key1 = CacheService.generateKey('prefix', 'part1', 'part2');
+      const key2 = CacheService.generateKey('prefix', 'part1', 'part2');
+      expect(key1).toBe(key2);
+    });
+
+    it('should handle undefined values', () => {
+      const key = CacheService.generateKey('prefix', 'part1', undefined, 'part2');
+      expect(key).toContain('prefix');
+      expect(key).not.toContain('undefined');
     });
   });
 });

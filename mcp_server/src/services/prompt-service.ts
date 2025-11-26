@@ -2,9 +2,9 @@ import { readdir, readFile } from "fs/promises";
 import { join, basename } from "path";
 import type { Prompt, ParsedPrompt, PromptArgument } from "../types/index.js";
 import { getPromptsDir } from "../utils/paths.js";
-import { logger } from "../utils/logger.js";
+import { logger, errorToContext } from "../utils/logger.js";
 import { applyTemplateVariables } from "../utils/prompt-loader.js";
-import { escapeAreaPath } from "../utils/work-item-parser.js";
+import { escapeAreaPath, escapeAreaPathForOData } from "../utils/work-item-parser.js";
 
 import type { MCPServerConfig } from "../config/config.js";
 
@@ -81,7 +81,10 @@ function createTemplateVariables(config: MCPServerConfig, args: Record<string, u
   
   return {
     // Core config variables (escape area paths for use in WIQL/OData queries)
+    // area_path is WIQL-escaped (for UNDER operator) - only single quotes doubled
     area_path: escapeAreaPath(primaryAreaPath),
+    // area_path_odata is OData-escaped (for startswith function) - backslashes AND quotes doubled
+    area_path_odata: escapeAreaPathForOData(primaryAreaPath),
     area_substring: extractAreaSubstring(primaryAreaPath),
     area_path_simple_substring: extractAreaSimpleSubstring(primaryAreaPath),
     project: config.azureDevOps.project || '',
@@ -312,7 +315,7 @@ export async function parsePromptFile(filePath: string): Promise<ParsedPrompt | 
       content: promptContent
     };
   } catch (error) {
-    logger.warn(`Error parsing prompt file ${filePath}:`, error);
+    logger.warn(`Error parsing prompt file ${filePath}:`, errorToContext(error));
     return null;
   }
 }
@@ -352,7 +355,7 @@ export async function loadPrompts(): Promise<Prompt[]> {
     
     return prompts;
   } catch (error) {
-    logger.warn('Error loading prompts:', error);
+    logger.warn('Error loading prompts:', errorToContext(error));
     return [];
   }
 }

@@ -7,6 +7,7 @@
 import { logger } from './logger.js';
 import { rateLimiter } from '../services/rate-limiter.js';
 import { metricsService } from '../services/metrics-service.js';
+import { telemetryService } from '../services/telemetry-service.js';
 import type { ADOErrorResponse } from '../types/index.js';
 
 /**
@@ -198,6 +199,15 @@ export class ADOHttpClient {
       // Record response time
       const duration = Date.now() - startTime;
       metricsService.recordDuration('ado_api_duration', duration, { method, status: String(response.status) });
+
+      // Record telemetry for API call
+      telemetryService.recordAPICall(
+        method,
+        endpoint.split('?')[0],
+        duration,
+        response.status,
+        !response.ok
+      );
 
       // Extract response headers
       const responseHeaders: Record<string, string> = {};

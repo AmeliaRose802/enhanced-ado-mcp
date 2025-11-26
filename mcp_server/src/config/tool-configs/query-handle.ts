@@ -19,7 +19,7 @@ export const queryHandleTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query (ensures analysis is based on real query results, not hallucinated IDs)" },
+        queryHandle: { type: "string", description: "Query handle from query-wiql (ensures analysis is based on real query results, not hallucinated IDs)" },
         analysisType: { 
           type: "array", 
           items: { 
@@ -28,6 +28,8 @@ export const queryHandleTools: ToolConfig[] = [
           },
           description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child type validation and state progression checks), work-item-intelligence (AI-powered work item completeness and enhancement analysis), assignment-suitability (AI-powered Copilot assignment readiness), parent-recommendation (AI-powered intelligent parent finder)"
         },
+        maxItemsToAnalyze: { type: "number", description: "Maximum number of items to analyze from query handle (default: all items, max: 1000)" },
+        skip: { type: "number", description: "Number of items to skip for pagination (default: 0)" },
         validateTypes: { type: "boolean", description: "Validate parent-child type relationships (only for hierarchy analysis, default true)" },
         validateStates: { type: "boolean", description: "Validate state progression consistency (only for hierarchy analysis, default true)" },
         returnQueryHandles: { type: "boolean", description: "Create query handles for violation categories (only for hierarchy analysis, default true)" },
@@ -76,7 +78,7 @@ export const queryHandleTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle to get information about (from wit-wiql-query with returnQueryHandle=true)" },
+        queryHandle: { type: "string", description: "Query handle to get information about (from query-wiql with returnQueryHandle=true)" },
         detailed: { type: "boolean", description: "Include detailed validation data and selection analysis (default false for concise output)" },
         includePreview: { type: "boolean", description: "Include preview of first 10 work items with their context data (default true)" },
         includeStats: { type: "boolean", description: "Include staleness statistics and analysis metadata (default true)" },
@@ -115,7 +117,7 @@ export const queryHandleTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        queryHandle: { type: "string", description: "Query handle from wit-wiql-query with returnQueryHandle=true" },
+        queryHandle: { type: "string", description: "Query handle from query-wiql with returnQueryHandle=true" },
         itemSelector: {
           oneOf: [
             { type: "string", enum: ["all"], description: "Select all items" },

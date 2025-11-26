@@ -1,8 +1,9 @@
 # Current Iteration Path Discovery
 
-**Feature Version:** 1.0  
-**Status:** Implemented  
-**Category:** Configuration & Auto-Discovery
+**Feature Version:** 1.1  
+**Status:** Active  
+**Category:** Configuration & Auto-Discovery  
+**Last Updated:** 2025-11-18
 
 ## Overview
 
@@ -328,6 +329,12 @@ Tools that create work items automatically use discovered iteration:
 ```
 
 ## Version History
+
+### Version 1.1 (2025-11-18)
+- Re-enabled automatic iteration path discovery (was temporarily disabled)
+- Improved error handling and logging
+- Added comprehensive unit tests
+- Integration with work item creation tools confirmed
 
 ### Version 1.0 (2025-11-07)
 - Initial implementation

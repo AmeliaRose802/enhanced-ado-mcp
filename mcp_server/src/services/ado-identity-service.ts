@@ -8,30 +8,17 @@
  * the standard Azure DevOps REST APIs.
  */
 
-import { AzureCliCredential } from '@azure/identity';
-import { logger } from '../utils/logger.js';
+import { logger, errorToContext } from '../utils/logger.js';
 import { createADOHttpClient } from '../utils/ado-http-client.js';
+import { createAzureCliTokenProvider } from '../utils/azure-cli-token.js';
 
 /**
  * Create a token provider specifically for identity operations
  * Uses Azure CLI credentials which have broader permissions for IdentityPicker API
  */
 function createIdentityTokenProvider(): () => Promise<string> {
-  const credential = new AzureCliCredential();
   const scopes = ['499b84ac-1321-427f-aa17-267ca6975798/.default'];
-  
-  return async () => {
-    try {
-      const result = await credential.getToken(scopes);
-      if (!result) {
-        throw new Error('Failed to obtain token from Azure CLI');
-      }
-      return result.token;
-    } catch (error) {
-      logger.error('Azure CLI authentication failed. Please ensure you are logged in with: az login');
-      throw error;
-    }
-  };
+  return createAzureCliTokenProvider(undefined, scopes);
 }
 
 interface IdentityDescriptor {
@@ -107,7 +94,7 @@ export async function searchIdentities(
     
     return identities;
   } catch (error) {
-    logger.warn('Failed to search identities:', error);
+    logger.warn('Failed to search identities:', errorToContext(error));
     return []; // Return empty array instead of throwing
   }
 }
@@ -210,7 +197,7 @@ export async function findGitHubCopilotGuid(organization: string): Promise<strin
     logger.info(`✓ Found GitHub Copilot identity: "${copilotIdentity.displayName}" (${identityValue})`);
     return identityValue;
   } catch (error) {
-    logger.warn('Failed to find GitHub Copilot GUID:', error);
+    logger.warn('Failed to find GitHub Copilot GUID:', errorToContext(error));
     logger.warn('Please manually specify the GUID with --copilot-guid flag');
     return null;
   }
@@ -240,7 +227,7 @@ export async function getIdentityById(
     
     return response.data;
   } catch (error) {
-    logger.error(`Failed to get identity ${identityId}`, error);
+    logger.error(`Failed to get identity ${identityId}`, errorToContext(error));
     return null;
   }
 }

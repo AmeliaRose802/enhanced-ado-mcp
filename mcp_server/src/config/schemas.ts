@@ -67,7 +67,9 @@ const itemSelectorSchema = z.union([
 // ============================================================================
 
 export const createNewItemSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, "Title is required").optional(),
+  template: optionalString(),
+  variables: z.record(z.string(), z.string()).optional(),
   parentWorkItemId: optionalNumber(),
   description: optionalString(),
   tags: optionalString(),
@@ -78,6 +80,17 @@ export const createNewItemSchema = z.object({
   priority: optionalNumber(),
   ...orgProjectFields()
 }).refine(
+  (data) => {
+    // Title is required unless template is provided
+    if (!data.title && !data.template) {
+      return false;
+    }
+    return true;
+  },
+  {
+    message: "Either 'title' or 'template' parameter is required"
+  }
+).refine(
   (data) => {
     // Root-level work item types that don't require parents
     const rootTypes = ['Epic', 'Key Result'];
@@ -91,7 +104,7 @@ export const createNewItemSchema = z.object({
     return true;
   },
   {
-    message: "A parent work item is required for all work item types except Epic and Key Result. Use the 'wit-analyze-by-query-handle' tool with analysisType=['parent-recommendation'] to find suitable parents, or provide a parentWorkItemId."
+    message: "A parent work item is required for all work item types except Epic and Key Result. Use the 'analyze-bulk' tool with analysisType=['parent-recommendation'] to find suitable parents, or provide a parentWorkItemId."
   }
 );
 
@@ -542,6 +555,9 @@ export const analyzeByQueryHandleSchema = z.object({
     "assignment-suitability",
     "parent-recommendation"
   ])).min(1, "At least one analysis type required"),
+  // Pagination options
+  maxItemsToAnalyze: z.number().int().min(1).max(1000).optional().describe("Maximum number of items to analyze from query handle (default: all items, max: 1000)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of items to skip for pagination (default: 0)"),
   // Hierarchy validation options (only used when analysisType includes "hierarchy")
   validateTypes: optionalBool(true).describe("Validate parent-child type relationships (only for hierarchy analysis)"),
   validateStates: optionalBool(true).describe("Validate state progression consistency (only for hierarchy analysis)"),
@@ -573,6 +589,7 @@ export const aiQueryAnalysisSchema = z.object({
   intent: z.string().min(1, "Natural language analysis intent is required"),
   itemSelector: itemSelectorSchema.optional().default("all"),
   maxItemsToAnalyze: z.number().int().min(1).max(100).optional().default(50).describe("Maximum number of items to analyze from query handle (default: 50, max: 100)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of items to skip for pagination (default: 0)"),
   includeContextPackages: optionalBool(true).describe("Retrieve full context packages for deeper analysis (default: true)"),
   contextDepth: z.enum(["basic", "standard", "deep"]).optional().default("standard").describe("Level of context detail: basic (no history/relations), standard (default), deep (full history/relations)"),
   outputFormat: z.enum(["concise", "detailed", "json"]).optional().default("concise").describe("Output format: concise (brief summary), detailed (comprehensive), json (structured data)"),
@@ -597,5 +614,181 @@ export const getTeamMembersSchema = z.object({
   dateRangeStart: optionalString().describe("Start date for activity filter (ISO format YYYY-MM-DD, default: 90 days ago)"),
   dateRangeEnd: optionalString().describe("End date for activity filter (ISO format YYYY-MM-DD, default: today)"),
   activeOnly: optionalBool(true).describe("Only include members with assigned work items in date range (default: true)"),
+  ...orgProjectFields()
+});
+
+export const similarityDetectionSchema = z.object({
+  workItemId: optionalNumber().describe("Single work item ID to find similar items for"),
+  queryHandle: optionalString().describe("Query handle containing work items to analyze for similarity"),
+  similarityThreshold: z.number().min(0).max(1).optional().default(0.6).describe("Minimum similarity score (0-1, default 0.6). 0.9+ = duplicates, 0.6-0.9 = related"),
+  maxResults: z.number().int().min(1).max(100).optional().default(20).describe("Maximum similar items to return per source item (default 20, max 100)"),
+  includeEmbeddings: optionalBool(false).describe("Include embedding vectors in response (default false - large payload)"),
+  skipCache: optionalBool(false).describe("Skip embedding cache and regenerate (default false - uses cache for efficiency)"),
+  analysisType: z.enum(['duplicates', 'related', 'cluster', 'all']).optional().default('all').describe("Type of analysis: duplicates (>90% similar), related (60-90%), cluster (group by topic), all (default)"),
+  ...orgProjectFields()
+}).refine(
+  (data) => data.workItemId || data.queryHandle,
+  {
+    message: "Either workItemId or queryHandle must be provided"
+  }
+);
+
+export const getPullRequestDiffSchema = z.object({
+  repository: z.string().min(1, "Repository name or ID is required"),
+  pullRequestId: z.number().int().positive("Pull request ID must be a positive integer"),
+  iterationId: z.number().int().positive("Iteration ID must be a positive integer").optional().describe("Specific iteration to fetch. If not provided, fetches latest iteration"),
+  includeContentMetadata: optionalBool(false).describe("Include additional file metadata"),
+  includeDiffs: optionalBool(true).describe("Include actual file diffs for each changed file (default: true). Set to false for just file list."),
+  diffFormat: z.enum(['unified', 'sideBySide']).optional().default('unified').describe("Diff format: 'unified' for standard unified diff, 'sideBySide' for side-by-side comparison (default: unified)"),
+  contextLines: z.number().int().min(0).max(20).optional().default(3).describe("Number of context lines around changes in unified diff (default: 3, max: 20)"),
+  maxDiffLines: z.number().int().min(100).max(10000).optional().default(1000).describe("Maximum total diff lines to include per file (default: 1000, max: 10000). Files exceeding this show truncation warning."),
+  pathFilter: z.array(z.string()).optional().describe("Only include diffs for files matching these path patterns (glob-style, e.g., ['src/**/*.ts', 'tests/**'])"),
+  top: z.number().int().min(1).max(1000).optional().default(100).describe("Maximum number of changed files to return (default: 100, max: 1000)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of changed files to skip for pagination"),
+  ...orgProjectFields()
+});
+
+export const getPullRequestCommentsSchema = z.object({
+  description: optionalString().describe("Natural language description of what PRs and comments to find (AI-powered). Example: 'Show active threads from PRs targeting main in the last week'"),
+  repository: optionalString().describe("Repository name or ID (required for specific PR, optional for search mode)"),
+  pullRequestId: z.number().int().positive("Pull request ID must be a positive integer").optional().describe("Specific PR ID to fetch comments from (optional - omit to search for PRs)"),
+  status: z.enum(['active', 'abandoned', 'completed', 'notSet', 'all']).optional().describe("PR status filter for search mode (default: active)"),
+  creatorId: optionalString().describe("Filter PRs by creator GUID (search mode only)"),
+  reviewerId: optionalString().describe("Filter PRs by reviewer GUID (search mode only)"),
+  sourceRefName: optionalString().describe("Filter PRs by source branch (e.g., 'refs/heads/feature/my-branch')"),
+  targetRefName: optionalString().describe("Filter PRs by target branch (e.g., 'refs/heads/main')"),
+  minTime: optionalString().describe("Filter PRs created after this date (ISO format YYYY-MM-DDTHH:mm:ssZ)"),
+  maxTime: optionalString().describe("Filter PRs created before this date (ISO format YYYY-MM-DDTHH:mm:ssZ)"),
+  threadStatusFilter: z.array(z.enum(['unknown', 'active', 'fixed', 'wontFix', 'closed', 'byDesign', 'pending'])).optional().describe("Filter threads by status (e.g., ['active', 'pending'] for unresolved threads)"),
+  includeSystemComments: optionalBool(false).describe("Include system-generated comments (default: false)"),
+  includeDeleted: optionalBool(false).describe("Include deleted threads (default: false)"),
+  maxPRsToFetch: z.number().int().min(1).max(100).optional().default(10).describe("Maximum PRs to fetch in search mode (default: 10, max: 100)"),
+  top: z.number().int().min(1).max(100).optional().default(50).describe("Maximum PRs per page for search (default: 50)"),
+  skip: z.number().int().min(0).optional().default(0).describe("Number of PRs to skip for pagination"),
+  ...orgProjectFields()
+});
+
+// ============================================================================
+// Template Management Schemas
+// ============================================================================
+
+export const listTemplatesSchema = z.object({});
+
+export const getTemplateSchema = z.object({
+  templateName: z.string().min(1, "Template name is required")
+});
+
+export const validateTemplateSchema = z.object({
+  templateName: z.string().min(1, "Template name is required")
+});
+
+// ============================================================================
+// Custom Field Manager Schemas
+// ============================================================================
+
+export const discoverCustomFieldsSchema = z.object({
+  includeSystemFields: optionalBool(false),
+  includeMicrosoftFields: optionalBool(true),
+  includePicklistValues: optionalBool(true),
+  ...orgProjectFields()
+});
+
+export const validateCustomFieldsSchema = z.object({
+  severityFilter: z.enum(["error", "warning", "info", "all"]).optional().default("all"),
+  focusOnCustomFields: optionalBool(true),
+  ...orgProjectFields()
+});
+
+export const exportFieldSchemaSchema = z.object({
+  format: z.enum(["json", "yaml"]).optional().default("json"),
+  outputPath: optionalString(),
+  includeSystemFields: optionalBool(false),
+  includeMicrosoftFields: optionalBool(true),
+  includeUsageMetadata: optionalBool(true),
+  prettyPrint: optionalBool(true),
+  ...orgProjectFields()
+});
+
+// ============================================================================
+// Export Schemas
+// ============================================================================
+
+export const exportWorkItemsSchema = z.object({
+  queryHandle: z.string().min(1, "Query handle is required"),
+  itemSelector: itemSelectorSchema.optional().default("all"),
+  format: z.enum(['csv', 'xlsx', 'tsv']).describe("Export format: csv (comma-separated), xlsx (Excel), or tsv (tab-separated)"),
+  outputPath: z.string().optional().describe("Output file path. If not provided, generates in workspace directory with timestamp."),
+  
+  // Field Selection
+  fields: z.array(z.string()).optional().describe("Specific fields to export (e.g., ['System.Id', 'System.Title']). If not provided, exports standard fields."),
+  includeAllFields: optionalBool(false).describe("Include all available fields (default: false)"),
+  
+  // Relationships
+  includeRelationships: optionalBool(false).describe("Include relationships in export (parent, children, related)"),
+  relationshipDepth: z.number().int().min(1).max(3).optional().default(1).describe("Depth of child relationships to include (1 = immediate children)"),
+  
+  // Additional Data
+  includeComments: optionalBool(false).describe("Include work item comments/discussion"),
+  includeHistory: optionalBool(false).describe("Include work item revision history"),
+  includeAttachmentLinks: optionalBool(false).describe("Include attachment URLs"),
+  maxHistoryRevisions: z.number().int().min(1).max(50).optional().default(10).describe("Maximum history revisions per work item"),
+  
+  // Excel-specific options
+  excelOptions: z.object({
+    multipleSheets: optionalBool(true).describe("Create multiple sheets (work items, relationships, comments)"),
+    formatHeaders: optionalBool(true).describe("Apply header formatting (bold, colored background)"),
+    freezePanes: optionalBool(true).describe("Freeze header row"),
+    autoColumnWidth: optionalBool(true).describe("Auto-size columns to content"),
+    includeHyperlinks: optionalBool(true).describe("Add hyperlinks to Azure DevOps work items"),
+    sheetNames: z.object({
+      workItems: z.string().optional().default("Work Items"),
+      relationships: z.string().optional().default("Relationships"),
+      comments: z.string().optional().default("Comments"),
+      history: z.string().optional().default("History")
+    }).optional()
+  }).optional(),
+  
+  // Performance & Limits
+  maxItems: z.number().int().min(1).max(10000).optional().describe("Maximum items to export (default: all selected items, max: 10000)"),
+  streamLargeExports: optionalBool(true).describe("Stream large exports to reduce memory usage (default: true)"),
+  
+  ...orgProjectFields()
+});
+
+// ============================================================================
+// Changelog Generation Schemas
+// ============================================================================
+
+export const generateChangelogSchema = z.object({
+  // Time Range (provide ONE)
+  dateRangeStart: z.string().optional().describe("Start date for changelog (ISO 8601: YYYY-MM-DD)"),
+  dateRangeEnd: z.string().optional().describe("End date for changelog (ISO 8601: YYYY-MM-DD)"),
+  iterationPath: z.string().optional().describe("Iteration path to generate changelog for"),
+  
+  // Version Information
+  version: z.string().optional().describe("Version tag for the changelog (e.g., '1.2.0', 'v2.0.0')"),
+  
+  // Filtering
+  states: z.array(z.string()).optional().default(['Closed', 'Resolved']).describe("Work item states to include (default: ['Closed', 'Resolved'])"),
+  includeTypes: z.array(z.string()).optional().describe("Specific work item types to include (e.g., ['Bug', 'Task', 'Product Backlog Item'])"),
+  excludeTypes: z.array(z.string()).optional().describe("Work item types to exclude"),
+  tags: z.array(z.string()).optional().describe("Filter by specific tags (e.g., ['release', 'hotfix'])"),
+  areaPathFilter: z.array(z.string()).optional().describe("Filter by specific area paths"),
+  
+  // Grouping & Formatting
+  groupBy: z.enum(['type', 'assignee', 'priority', 'tag', 'none']).optional().default('type').describe("How to group changelog entries (default: 'type')"),
+  format: z.enum(['markdown', 'keepachangelog', 'conventional', 'semantic', 'json']).optional().default('keepachangelog').describe("Changelog format (default: 'keepachangelog')"),
+  includeWorkItemLinks: optionalBool(true).describe("Include links to work items in Azure DevOps"),
+  includeDescriptions: optionalBool(false).describe("Include work item descriptions in changelog"),
+  includeAssignees: optionalBool(false).describe("Include assignee names in changelog entries"),
+  
+  // Type Mapping (for categorization)
+  typeMapping: z.record(z.string(), z.string()).optional().describe("Custom mapping of work item types to changelog categories (e.g., {'Bug': 'Bug Fixes', 'Task': 'Improvements'})"),
+  
+  // Output
+  outputPath: z.string().optional().describe("File path to write changelog (e.g., 'CHANGELOG.md'). If not provided, returns as text."),
+  append: optionalBool(false).describe("Append to existing changelog file (default: false, overwrites)"),
+  
+  // Configuration
   ...orgProjectFields()
 });

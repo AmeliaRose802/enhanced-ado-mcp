@@ -80,14 +80,17 @@ AND [System.AreaPath] UNDER 'One\\Azure Compute\\OneFleet Node\\Azure Host Agent
 
 ### Issues Identified
 
-1. **OData Date Format Issue** (CRITICAL)
-   - **Location:** Team Roster query (Section 1)
-   - **Problem:** The date format `{{start_date_iso}}Z` may not be compatible with OData CompletedDate filtering
+1. **OData Date Format Issue** (CRITICAL) - ✅ RESOLVED
+   - **Location:** Team Roster query (Section 1) and odata-query-generator.md system prompt
+   - **Problem:** The date format `{{start_date_iso}}Z` produced `YYYY-MM-DDZ` format (e.g., `2025-08-09Z`) which is incompatible with OData CompletedDate filtering
+   - **Root Cause:** Documentation incorrectly showed format as `YYYY-MM-DDTHH:mm:ssZ` but didn't explicitly warn against the short form
    - **Impact:** Query returns 0 results, preventing team roster analysis
-   - **Recommendation:** Test alternative date formats:
-     - Option 1: Full ISO 8601 with time: `2025-08-09T00:00:00Z`
-     - Option 2: Date only without Z: `2025-08-09`
-     - Option 3: Use AI query generator which successfully retrieves data
+   - **Resolution:** 
+     - Updated `team_health_analyzer.md` documentation to explicitly show correct vs incorrect formats
+     - Updated `odata-query-generator.md` system prompt with correct ISO 8601 timestamp format examples
+     - Added warnings that `YYYY-MM-DDZ` format (without time) will cause query failures
+     - Verified that `formatDateISO()` function in `prompt-service.ts` already uses correct `toISOString()` format
+   - **Status:** FIXED (November 18, 2025)
 
 2. **OData Area Path Filtering** (HIGH)
    - **Location:** Team Roster query (Section 1)

@@ -2,7 +2,8 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   personalWorkloadAnalyzerSchema,
   toolDiscoverySchema,
-  aiQueryAnalysisSchema
+  aiQueryAnalysisSchema,
+  similarityDetectionSchema
 } from "../schemas.js";
 
 /**
@@ -72,6 +73,7 @@ export const aiAnalysisTools: ToolConfig[] = [
           description: "Item selection: 'all', array of IDs, or selection criteria object" 
         },
         maxItemsToAnalyze: { type: "number", description: "Maximum items to analyze (1-100, default 50)" },
+        skip: { type: "number", description: "Number of items to skip for pagination (default: 0)" },
         includeContextPackages: { type: "boolean", description: "Retrieve full context packages for deeper analysis (default true)" },
         contextDepth: { type: "string", enum: ["basic", "standard", "deep"], description: "Context detail level: basic (fields only), standard (default, with relations/comments), deep (full history)" },
         outputFormat: { type: "string", enum: ["concise", "detailed", "json"], description: "Output format: concise (brief), detailed (comprehensive), json (structured)" },
@@ -81,6 +83,27 @@ export const aiAnalysisTools: ToolConfig[] = [
         project: { type: "string", description: "Azure DevOps project (uses config default if not provided)" }
       },
       required: ["queryHandle", "intent"]
+    }
+  },
+  {
+    name: "find-similar-work-items",
+    description: "🤖 AI-POWERED SIMILARITY DETECTION: Find similar work items using semantic embeddings to detect duplicates (>90% similarity), related items (60-90% similarity), and topic clusters. Analyzes titles, descriptions, and acceptance criteria to calculate similarity scores. Helps identify duplicate work, suggest links, and discover patterns. Embeddings are cached for efficiency. Supports single work item or query handle batch analysis. Requires VS Code sampling support.",
+    script: "",
+    schema: similarityDetectionSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        workItemId: { type: "number", description: "Single work item ID to find similar items for" },
+        queryHandle: { type: "string", description: "Query handle containing work items to analyze for similarity" },
+        similarityThreshold: { type: "number", description: "Minimum similarity score (0-1, default 0.6). 0.9+ = duplicates, 0.6-0.9 = related" },
+        maxResults: { type: "number", description: "Maximum similar items to return per source item (default 20, max 100)" },
+        includeEmbeddings: { type: "boolean", description: "Include embedding vectors in response (default false - large payload)" },
+        skipCache: { type: "boolean", description: "Skip embedding cache and regenerate (default false - uses cache for efficiency)" },
+        analysisType: { type: "string", enum: ["duplicates", "related", "cluster", "all"], description: "Type of analysis: duplicates (>90% similar), related (60-90%), cluster (group by topic), all (default)" },
+        organization: { type: "string", description: "Azure DevOps organization (uses config default if not provided)" },
+        project: { type: "string", description: "Azure DevOps project (uses config default if not provided)" }
+      },
+      required: []
     }
   }
 ];

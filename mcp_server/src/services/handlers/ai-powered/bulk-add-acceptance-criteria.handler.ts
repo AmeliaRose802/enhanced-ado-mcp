@@ -10,7 +10,7 @@ import type { ADOWorkItem } from '../../../types/index.js';
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "../../../utils/response-builder.js";
-import { logger } from "../../../utils/logger.js";
+import { logger, errorToContext } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
@@ -270,7 +270,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
           success: false,
           error: errorMsg
         });
-        logger.error(`Failed to add acceptance criteria for work item ${workItemId}:`, error);
+        logger.error(`Failed to add acceptance criteria for work item ${workItemId}:`, errorToContext(error));
       }
     }
 
@@ -335,7 +335,7 @@ ${preserveExisting && currentCriteria ? 'Add to existing criteria without duplic
       ]
     };
   } catch (error) {
-    logger.error('Bulk add acceptance criteria error:', error);
+    logger.error('Bulk add acceptance criteria error:', errorToContext(error));
     return {
       success: false,
       data: null,

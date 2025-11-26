@@ -9,9 +9,10 @@
 import { z } from "zod";
 import { ToolConfig, ToolExecutionResult, asToolData } from "../../../types/index.js";
 import type { MCPServer, MCPServerLike } from "../../../types/mcp.js";
+import type { ADOWorkItem, ADOApiResponse, ADOFieldOperation } from "../../../types/ado.js";
 import { smartConvertToHtml } from "../../../utils/markdown-converter.js";
 import { validateAndParse } from "../../../utils/handler-helpers.js";
-import { logger } from "../../../utils/logger.js";
+import { logger, errorToContext } from "../../../utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { ADOHttpClient } from "../../../utils/ado-http-client.js";
 import { loadConfiguration } from "../../../config/config.js";
@@ -21,6 +22,11 @@ import { SamplingClient } from "../../../utils/sampling-client.js";
 import { processBatch } from "../../../utils/batch-processor.js";
 
 type BulkAction = z.infer<typeof unifiedBulkOperationsSchema>['actions'][number];
+
+interface WorkItemChange {
+  workItemId: number;
+  changes: Record<string, unknown>;
+}
 
 interface ActionResult {
   action: BulkAction;
@@ -204,7 +210,7 @@ export async function handleUnifiedBulkOperations(
     };
 
   } catch (error) {
-    logger.error("Unified bulk operations error:", error);
+    logger.error("Unified bulk operations error:", errorToContext(error));
     return {
       success: false,
       data: null,
@@ -233,43 +239,43 @@ async function executeAction(
   
   switch (action.type) {
     case "comment":
-      return await executeCommentAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeCommentAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "update":
-      return await executeUpdateAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeUpdateAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "assign":
-      return await executeAssignAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeAssignAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "remove":
-      return await executeRemoveAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeRemoveAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "transition-state":
-      return await executeTransitionStateAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeTransitionStateAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "move-iteration":
-      return await executeMoveIterationAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeMoveIterationAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "change-type":
-      return await executeChangeTypeAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeChangeTypeAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "add-tag":
-      return await executeAddTagAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeAddTagAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "remove-tag":
-      return await executeRemoveTagAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems);
+      return await executeRemoveTagAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
     
     case "enhance-descriptions":
-      return await executeEnhanceDescriptionsAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems, server);
+      return await executeEnhanceDescriptionsAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems, server);
     
     case "assign-story-points":
-      return await executeAssignStoryPointsAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems, server);
+      return await executeAssignStoryPointsAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems, server);
     
     case "add-acceptance-criteria":
-      return await executeAddAcceptanceCriteriaAction(action, workItemIds, httpClient, dryRun, concurrency, maxPreviewItems, server);
+      return await executeAddAcceptanceCriteriaAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems, server);
     
     default:
-      throw new Error(`Unknown action type: ${(action as any).type}`);
+      throw new Error(`Unknown action type: ${(action as { type: string }).type}`);
   }
 }
 
@@ -280,6 +286,7 @@ async function executeCommentAction(
   action: Extract<BulkAction, { type: "comment" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -302,6 +309,10 @@ async function executeCommentAction(
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
+  const itemsAffected: WorkItemChange[] = [];
+
+  // Convert markdown to HTML for proper rendering (consistent with description/acceptance criteria handling)
+  const htmlComment = smartConvertToHtml(action.comment);
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
@@ -309,8 +320,13 @@ async function executeCommentAction(
     async (workItemId) => {
       const url = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
       await httpClient.post(url, {
-        text: action.comment,
-        format: 1  // 1 = Markdown, 0 = PlainText
+        text: htmlComment,
+        format: 1  // 1 = Markdown/HTML, 0 = PlainText
+      });
+      // Track for undo
+      itemsAffected.push({
+        workItemId,
+        changes: { comment: action.comment }
       });
       return workItemId;
     },
@@ -328,6 +344,11 @@ async function executeCommentAction(
   // Collect error messages
   for (const failedItem of results.failed) {
     errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
+  }
+
+  // Record operation for undo (only if successful items exist)
+  if (itemsAffected.length > 0) {
+    queryHandleService.recordOperation(queryHandle, 'bulk-comment', itemsAffected);
   }
 
   return {
@@ -349,6 +370,7 @@ async function executeUpdateAction(
   action: Extract<BulkAction, { type: "update" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -368,9 +390,27 @@ async function executeUpdateAction(
     };
   }
 
+  // Fetch work items BEFORE updates to capture previous values
+  const workItemsById = new Map<number, ADOWorkItem>();
+  try {
+    const idsParam = workItemIds.join(',');
+    const fieldsToFetch = action.updates
+      .map(u => u.path.replace('/fields/', ''))
+      .join(',');
+    const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+      `wit/workitems?ids=${idsParam}&fields=${fieldsToFetch}&api-version=7.1`
+    );
+    for (const item of response.data.value || []) {
+      workItemsById.set(item.id, item);
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch work items before update for undo tracking:', errorToContext(error));
+  }
+
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
+  const itemsAffected: WorkItemChange[] = [];
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
@@ -378,6 +418,20 @@ async function executeUpdateAction(
     async (workItemId) => {
       const url = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
       await httpClient.patch(url, action.updates);
+      
+      // Track for undo - capture before/after values
+      const previousItem = workItemsById.get(workItemId);
+      const changes: Record<string, unknown> = {};
+      for (const update of action.updates) {
+        const field = update.path.replace('/fields/', '');
+        const previousValue = previousItem?.fields?.[field];
+        changes[update.path] = {
+          from: previousValue,
+          to: update.value
+        };
+      }
+      itemsAffected.push({ workItemId, changes });
+      
       return workItemId;
     },
     {
@@ -394,6 +448,11 @@ async function executeUpdateAction(
   // Collect error messages
   for (const failedItem of results.failed) {
     errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
+  }
+
+  // Record operation for undo (only if successful items exist)
+  if (itemsAffected.length > 0) {
+    queryHandleService.recordOperation(queryHandle, 'bulk-update', itemsAffected);
   }
 
   return {
@@ -415,6 +474,7 @@ async function executeAssignAction(
   action: Extract<BulkAction, { type: "assign" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -433,9 +493,24 @@ async function executeAssignAction(
     };
   }
 
+  // Fetch work items BEFORE assignment to capture previous assignees
+  const workItemsById = new Map<number, any>();
+  try {
+    const idsParam = workItemIds.join(',');
+    const response = await httpClient.get<{ value: any[] }>(
+      `wit/workitems?ids=${idsParam}&fields=System.AssignedTo&api-version=7.1`
+    );
+    for (const item of response.data.value || []) {
+      workItemsById.set(item.id, item);
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch work items before assign for undo tracking:', errorToContext(error));
+  }
+
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
+  const itemsAffected: WorkItemChange[] = [];
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
@@ -448,11 +523,24 @@ async function executeAssignAction(
       
       if (action.comment) {
         const commentUrl = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
+        const htmlComment = smartConvertToHtml(action.comment);
         await httpClient.post(commentUrl, {
-          text: action.comment,
+          text: htmlComment,
           format: 1
         });
       }
+      
+      // Track for undo
+      const previousItem = workItemsById.get(workItemId);
+      const previousAssignee = previousItem?.fields?.['System.AssignedTo']?.uniqueName || 
+                               previousItem?.fields?.['System.AssignedTo']?.displayName;
+      itemsAffected.push({
+        workItemId,
+        changes: {
+          from: previousAssignee,
+          to: action.assignTo
+        }
+      });
       
       return workItemId;
     },
@@ -470,6 +558,11 @@ async function executeAssignAction(
   // Collect error messages
   for (const failedItem of results.failed) {
     errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
+  }
+
+  // Record operation for undo (only if successful items exist)
+  if (itemsAffected.length > 0) {
+    queryHandleService.recordOperation(queryHandle, 'bulk-assign', itemsAffected);
   }
 
   return {
@@ -491,6 +584,7 @@ async function executeRemoveAction(
   action: Extract<BulkAction, { type: "remove" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -569,6 +663,7 @@ async function executeTransitionStateAction(
   action: Extract<BulkAction, { type: "transition-state" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -587,16 +682,31 @@ async function executeTransitionStateAction(
     };
   }
 
+  // Fetch work items BEFORE transition to capture previous states
+  const workItemsById = new Map<number, ADOWorkItem>();
+  try {
+    const idsParam = workItemIds.join(',');
+    const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+      `wit/workitems?ids=${idsParam}&fields=System.State&api-version=7.1`
+    );
+    for (const item of response.data.value || []) {
+      workItemsById.set(item.id, item);
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch work items before transition for undo tracking:', errorToContext(error));
+  }
+
   let succeeded = 0;
   let failed = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const itemsAffected: Array<{ workItemId: number; changes: Record<string, any> }> = [];
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
     workItemIds,
     async (workItemId) => {
-      const updates: any[] = [
+      const updates: ADOFieldOperation[] = [
         { op: "replace", path: "/fields/System.State", value: action.targetState }
       ];
       
@@ -609,11 +719,23 @@ async function executeTransitionStateAction(
       
       if (action.comment) {
         const commentUrl = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
+        const htmlComment = smartConvertToHtml(action.comment);
         await httpClient.post(commentUrl, {
-          text: action.comment,
+          text: htmlComment,
           format: 1
         });
       }
+      
+      // Track for undo
+      const previousItem = workItemsById.get(workItemId);
+      const previousState = previousItem?.fields?.['System.State'];
+      itemsAffected.push({
+        workItemId,
+        changes: {
+          from: previousState,
+          to: action.targetState
+        }
+      });
       
       return workItemId;
     },
@@ -639,6 +761,11 @@ async function executeTransitionStateAction(
     }
   }
 
+  // Record operation for undo (only if successful items exist)
+  if (itemsAffected.length > 0) {
+    queryHandleService.recordOperation(queryHandle, 'bulk-transition', itemsAffected);
+  }
+
   return {
     action,
     success: failed === 0,
@@ -659,6 +786,7 @@ async function executeMoveIterationAction(
   action: Extract<BulkAction, { type: "move-iteration" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -677,9 +805,24 @@ async function executeMoveIterationAction(
     };
   }
 
+  // Fetch work items BEFORE move to capture previous iterations
+  const workItemsById = new Map<number, ADOWorkItem>();
+  try {
+    const idsParam = workItemIds.join(',');
+    const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+      `wit/workitems?ids=${idsParam}&fields=System.IterationPath&api-version=7.1`
+    );
+    for (const item of response.data.value || []) {
+      workItemsById.set(item.id, item);
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch work items before iteration move for undo tracking:', errorToContext(error));
+  }
+
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
+  const itemsAffected: WorkItemChange[] = [];
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
@@ -692,11 +835,23 @@ async function executeMoveIterationAction(
       
       if (action.comment) {
         const commentUrl = `wit/workItems/${workItemId}/comments?api-version=7.1-preview.3`;
+        const htmlComment = smartConvertToHtml(action.comment);
         await httpClient.post(commentUrl, {
-          text: action.comment,
+          text: htmlComment,
           format: 1
         });
       }
+      
+      // Track for undo
+      const previousItem = workItemsById.get(workItemId);
+      const previousIteration = previousItem?.fields?.['System.IterationPath'];
+      itemsAffected.push({
+        workItemId,
+        changes: {
+          from: previousIteration,
+          to: action.targetIterationPath
+        }
+      });
       
       return workItemId;
     },
@@ -714,6 +869,11 @@ async function executeMoveIterationAction(
   // Collect error messages
   for (const failedItem of results.failed) {
     errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
+  }
+
+  // Record operation for undo (only if successful items exist)
+  if (itemsAffected.length > 0) {
+    queryHandleService.recordOperation(queryHandle, 'bulk-move-iteration', itemsAffected);
   }
 
   return {
@@ -735,6 +895,7 @@ async function executeChangeTypeAction(
   action: Extract<BulkAction, { type: "change-type" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -753,10 +914,25 @@ async function executeChangeTypeAction(
     };
   }
 
+  // Fetch work items BEFORE type change to capture previous types
+  const workItemsById = new Map<number, ADOWorkItem>();
+  try {
+    const idsParam = workItemIds.join(',');
+    const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+      `wit/workitems?ids=${idsParam}&fields=System.WorkItemType&api-version=7.1`
+    );
+    for (const item of response.data.value || []) {
+      workItemsById.set(item.id, item);
+    }
+  } catch (error) {
+    logger.warn('Failed to fetch work items before type change for undo tracking:', errorToContext(error));
+  }
+
   let succeeded = 0;
   let failed = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const itemsAffected: WorkItemChange[] = [];
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
@@ -773,10 +949,12 @@ async function executeChangeTypeAction(
 
       // Add comment if provided
       if (action.comment) {
+        const previousItem = workItemsById.get(workItemId);
+        const previousType = previousItem?.fields?.['System.WorkItemType'] || 'previous type';
         const commentText = action.comment
           .replace(/{id}/g, workItemId.toString())
           .replace(/{targetType}/g, action.targetType)
-          .replace(/{previousType}/g, 'previous type'); // We don't fetch previous type for performance
+          .replace(/{previousType}/g, previousType);
         
         typeChangePatch.push({
           op: 'add',
@@ -787,6 +965,17 @@ async function executeChangeTypeAction(
 
       const patchUrl = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
       await httpClient.patch(patchUrl, typeChangePatch);
+      
+      // Track for undo
+      const previousItem = workItemsById.get(workItemId);
+      const previousType = previousItem?.fields?.['System.WorkItemType'];
+      itemsAffected.push({
+        workItemId,
+        changes: {
+          from: previousType,
+          to: action.targetType
+        }
+      });
       
       return workItemId;
     },
@@ -814,6 +1003,11 @@ async function executeChangeTypeAction(
     }
   }
 
+  // Record operation for undo (only if successful items exist)
+  if (itemsAffected.length > 0) {
+    queryHandleService.recordOperation(queryHandle, 'bulk-change-type', itemsAffected);
+  }
+
   return {
     action,
     success: failed === 0,
@@ -834,6 +1028,7 @@ async function executeAddTagAction(
   action: Extract<BulkAction, { type: "add-tag" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -852,6 +1047,32 @@ async function executeAddTagAction(
     };
   }
 
+  // OPTIMIZATION: Batch fetch all work items' current tags in one API call
+  // This reduces API calls from 2N (N fetches + N updates) to 1 + N (1 batch fetch + N updates)
+  logger.info(`Batch fetching tags for ${workItemIds.length} work items`);
+  const workItemsById = new Map<number, string>();
+  
+  try {
+    // ADO supports up to 200 IDs per request, batch if needed
+    const BATCH_SIZE = 200;
+    for (let i = 0; i < workItemIds.length; i += BATCH_SIZE) {
+      const batchIds = workItemIds.slice(i, i + BATCH_SIZE);
+      const idsParam = batchIds.join(',');
+      const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+        `wit/workitems?ids=${idsParam}&fields=System.Tags&api-version=7.1`
+      );
+      
+      for (const item of response.data.value || []) {
+        workItemsById.set(item.id, item.fields?.["System.Tags"] || "");
+      }
+    }
+    logger.info(`Successfully fetched tags for ${workItemsById.size} work items`);
+  } catch (error) {
+    logger.error('Failed to batch fetch work item tags:', errorToContext(error));
+    // Fall back to individual fetches if batch fails
+    return executeLegacyAddTagAction(action, workItemIds, httpClient, queryHandle, concurrency);
+  }
+
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
@@ -860,10 +1081,8 @@ async function executeAddTagAction(
   const results = await processBatch(
     workItemIds,
     async (workItemId) => {
-      // Get current tags
-      const getUrl = `wit/workItems/${workItemId}?fields=System.Tags&api-version=7.1-preview.3`;
-      const response = await httpClient.get<any>(getUrl);
-      const currentTags = response.data.fields?.["System.Tags"] || "";
+      // Use cached tags from batch fetch
+      const currentTags = workItemsById.get(workItemId) || "";
       const tagsSet = new Set(currentTags.split(";").map((t: string) => t.trim()).filter(Boolean));
       
       // Add new tags
@@ -910,12 +1129,80 @@ async function executeAddTagAction(
 }
 
 /**
+ * Legacy add-tag action (fallback if batch fetch fails)
+ */
+async function executeLegacyAddTagAction(
+  action: Extract<BulkAction, { type: "add-tag" }>,
+  workItemIds: number[],
+  httpClient: ADOHttpClient,
+  queryHandle: string,
+  concurrency: number
+): Promise<ActionResult> {
+  logger.warn('Falling back to legacy add-tag implementation (individual fetches)');
+  
+  let succeeded = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
+      // Get current tags individually
+      const getUrl = `wit/workItems/${workItemId}?fields=System.Tags&api-version=7.1-preview.3`;
+      const response = await httpClient.get<ADOApiResponse<ADOWorkItem>>(getUrl);
+      const currentTags = (response.data as any).fields?.["System.Tags"] || "";
+      const tagsSet = new Set(currentTags.split(";").map((t: string) => t.trim()).filter(Boolean));
+      
+      // Add new tags
+      action.tags.split(";").forEach(tag => {
+        const trimmedTag = tag.trim();
+        if (trimmedTag) tagsSet.add(trimmedTag);
+      });
+      
+      const newTags = Array.from(tagsSet).join("; ");
+      
+      const patchUrl = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
+      await httpClient.patch(patchUrl, [
+        { op: "replace", path: "/fields/System.Tags", value: newTags }
+      ]);
+      
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk add-tag progress (legacy): ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
+    }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
+  }
+
+  return {
+    action: { type: "add-tag", tags: action.tags },
+    success: failed === 0,
+    itemsAffected: workItemIds.length,
+    itemsSucceeded: succeeded,
+    itemsFailed: failed,
+    errors,
+    warnings: ['Performance: Batch fetch failed, used individual fetches'],
+    summary: `Added tag(s) to ${succeeded} work item(s)${failed > 0 ? `, ${failed} failed` : ""} (legacy mode)`
+  };
+}
+
+/**
  * Execute remove-tag action
  */
 async function executeRemoveTagAction(
   action: Extract<BulkAction, { type: "remove-tag" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number
@@ -934,6 +1221,32 @@ async function executeRemoveTagAction(
     };
   }
 
+  // OPTIMIZATION: Batch fetch all work items' current tags in one API call
+  // This reduces API calls from 2N (N fetches + N updates) to 1 + N (1 batch fetch + N updates)
+  logger.info(`Batch fetching tags for ${workItemIds.length} work items`);
+  const workItemsById = new Map<number, string>();
+  
+  try {
+    // ADO supports up to 200 IDs per request, batch if needed
+    const BATCH_SIZE = 200;
+    for (let i = 0; i < workItemIds.length; i += BATCH_SIZE) {
+      const batchIds = workItemIds.slice(i, i + BATCH_SIZE);
+      const idsParam = batchIds.join(',');
+      const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+        `wit/workitems?ids=${idsParam}&fields=System.Tags&api-version=7.1`
+      );
+      
+      for (const item of response.data.value || []) {
+        workItemsById.set(item.id, item.fields?.["System.Tags"] || "");
+      }
+    }
+    logger.info(`Successfully fetched tags for ${workItemsById.size} work items`);
+  } catch (error) {
+    logger.error('Failed to batch fetch work item tags:', errorToContext(error));
+    // Fall back to individual fetches if batch fails
+    return executeLegacyRemoveTagAction(action, workItemIds, httpClient, queryHandle, concurrency);
+  }
+
   let succeeded = 0;
   let failed = 0;
   const errors: string[] = [];
@@ -943,10 +1256,8 @@ async function executeRemoveTagAction(
   const results = await processBatch(
     workItemIds,
     async (workItemId) => {
-      // Get current tags
-      const getUrl = `wit/workItems/${workItemId}?fields=System.Tags&api-version=7.1-preview.3`;
-      const response = await httpClient.get<any>(getUrl);
-      const currentTags = response.data.fields?.["System.Tags"] || "";
+      // Use cached tags from batch fetch
+      const currentTags = workItemsById.get(workItemId) || "";
       const tagsSet = new Set(currentTags.split(";").map((t: string) => t.trim()).filter(Boolean));
       
       // Remove specified tags
@@ -990,12 +1301,78 @@ async function executeRemoveTagAction(
 }
 
 /**
+ * Legacy remove-tag action (fallback if batch fetch fails)
+ */
+async function executeLegacyRemoveTagAction(
+  action: Extract<BulkAction, { type: "remove-tag" }>,
+  workItemIds: number[],
+  httpClient: ADOHttpClient,
+  queryHandle: string,
+  concurrency: number
+): Promise<ActionResult> {
+  logger.warn('Falling back to legacy remove-tag implementation (individual fetches)');
+  
+  let succeeded = 0;
+  let failed = 0;
+  const errors: string[] = [];
+  const tagsToRemove = new Set(action.tags.split(";").map(t => t.trim()).filter(Boolean));
+
+  const results = await processBatch(
+    workItemIds,
+    async (workItemId) => {
+      // Get current tags individually
+      const getUrl = `wit/workItems/${workItemId}?fields=System.Tags&api-version=7.1-preview.3`;
+      const response = await httpClient.get<ADOApiResponse<ADOWorkItem>>(getUrl);
+      const currentTags = (response.data as any).fields?.["System.Tags"] || "";
+      const tagsSet = new Set(currentTags.split(";").map((t: string) => t.trim()).filter(Boolean));
+      
+      // Remove specified tags
+      tagsToRemove.forEach(tag => tagsSet.delete(tag));
+      
+      const newTags = Array.from(tagsSet).join("; ");
+      
+      const patchUrl = `wit/workItems/${workItemId}?api-version=7.1-preview.3`;
+      await httpClient.patch(patchUrl, [
+        { op: "replace", path: "/fields/System.Tags", value: newTags }
+      ]);
+      
+      return workItemId;
+    },
+    {
+      concurrency: concurrency,
+      onProgress: (completed, total, succeededCount, failedCount) => {
+        logger.info(`Bulk remove-tag progress (legacy): ${completed}/${total} (${succeededCount} succeeded, ${failedCount} failed)`);
+      }
+    }
+  );
+
+  succeeded = results.successCount;
+  failed = results.failureCount;
+  
+  for (const failedItem of results.failed) {
+    errors.push(`Work item ${failedItem.item}: ${failedItem.error}`);
+  }
+
+  return {
+    action: { type: "remove-tag", tags: action.tags },
+    success: failed === 0,
+    itemsAffected: workItemIds.length,
+    itemsSucceeded: succeeded,
+    itemsFailed: failed,
+    errors,
+    warnings: ['Performance: Batch fetch failed, used individual fetches'],
+    summary: `Removed tag(s) from ${succeeded} work item(s)${failed > 0 ? `, ${failed} failed` : ""} (legacy mode)`
+  };
+}
+
+/**
  * Execute AI-powered description enhancement action
  */
 async function executeEnhanceDescriptionsAction(
   action: Extract<BulkAction, { type: "enhance-descriptions" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number,
@@ -1145,6 +1522,7 @@ async function executeAssignStoryPointsAction(
   action: Extract<BulkAction, { type: "assign-story-points" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number,
@@ -1305,6 +1683,7 @@ async function executeAddAcceptanceCriteriaAction(
   action: Extract<BulkAction, { type: "add-acceptance-criteria" }>,
   workItemIds: number[],
   httpClient: ADOHttpClient,
+  queryHandle: string,
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number,
@@ -1466,4 +1845,7 @@ ${existingCriteria ? 'Add to existing acceptance criteria without duplicating.' 
     summary: `Added acceptance criteria to ${succeeded} items (${skipped} skipped, ${failed} failed)`
   };
 }
+
+
+
 

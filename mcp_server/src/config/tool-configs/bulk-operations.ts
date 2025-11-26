@@ -3,7 +3,8 @@ import {
   linkWorkItemsByQueryHandlesSchema,
   bulkUndoByQueryHandleSchema,
   forensicUndoByQueryHandleSchema,
-  unifiedBulkOperationsSchema
+  unifiedBulkOperationsSchema,
+  exportWorkItemsSchema
 } from "../schemas.js";
 
 /**
@@ -190,8 +191,8 @@ export const bulkOperationsTools: ToolConfig[] = [
     inputSchema: {
       type: "object",
       properties: {
-        sourceQueryHandle: { type: "string", description: "Source query handle from wit-wiql-query" },
-        targetQueryHandle: { type: "string", description: "Target query handle from wit-wiql-query" },
+        sourceQueryHandle: { type: "string", description: "Source query handle from query-wiql" },
+        targetQueryHandle: { type: "string", description: "Target query handle from query-wiql" },
         linkType: { 
           type: "string", 
           enum: ["Related", "Parent", "Child", "Predecessor", "Successor", "Affects", "Affected By"],
@@ -286,6 +287,78 @@ export const bulkOperationsTools: ToolConfig[] = [
         project: { type: "string", description: "Azure DevOps project name" }
       },
       required: ["queryHandle"]
+    }
+  },
+  {
+    name: "export-work-items",
+    description: "📊 EXPORT WORK ITEMS: Export work items to CSV, Excel (XLSX), or TSV format with field selection, relationships, comments, and history. Perfect for reporting, backup, and analysis in external tools like Excel or Google Sheets. Supports custom field selection, multiple Excel sheets, formatted headers, hyperlinks to Azure DevOps, and streaming for large exports.",
+    script: "",
+    schema: exportWorkItemsSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        queryHandle: { type: "string", description: "Query handle from query-wiql with returnQueryHandle=true" },
+        itemSelector: {
+          oneOf: [
+            { type: "string", enum: ["all"], description: "Select all items" },
+            { type: "array", items: { type: "number" }, description: "Array of indices [0,1,2]" },
+            {
+              type: "object",
+              properties: {
+                states: { type: "array", items: { type: "string" } },
+                titleContains: { type: "array", items: { type: "string" } },
+                tags: { type: "array", items: { type: "string" } },
+                daysInactiveMin: { type: "number" },
+                daysInactiveMax: { type: "number" }
+              }
+            }
+          ],
+          description: "Item selection: 'all', indices, or criteria (default: all)"
+        },
+        format: { 
+          type: "string", 
+          enum: ["csv", "xlsx", "tsv"],
+          description: "Export format: csv (comma-separated), xlsx (Excel), or tsv (tab-separated)" 
+        },
+        outputPath: { type: "string", description: "Output file path. If not provided, generates in workspace directory with timestamp." },
+        fields: { 
+          type: "array", 
+          items: { type: "string" },
+          description: "Specific fields to export (e.g., ['System.Id', 'System.Title']). If not provided, exports standard fields." 
+        },
+        includeAllFields: { type: "boolean", description: "Include all available fields (default: false)" },
+        includeRelationships: { type: "boolean", description: "Include relationships in export (parent, children, related)" },
+        relationshipDepth: { type: "number", description: "Depth of child relationships to include (1 = immediate children, default: 1, max: 3)" },
+        includeComments: { type: "boolean", description: "Include work item comments/discussion" },
+        includeHistory: { type: "boolean", description: "Include work item revision history" },
+        includeAttachmentLinks: { type: "boolean", description: "Include attachment URLs" },
+        maxHistoryRevisions: { type: "number", description: "Maximum history revisions per work item (default: 10, max: 50)" },
+        excelOptions: {
+          type: "object",
+          description: "Excel-specific formatting options (only applies when format=xlsx)",
+          properties: {
+            multipleSheets: { type: "boolean", description: "Create multiple sheets (work items, relationships, comments, default: true)" },
+            formatHeaders: { type: "boolean", description: "Apply header formatting (bold, colored background, default: true)" },
+            freezePanes: { type: "boolean", description: "Freeze header row (default: true)" },
+            autoColumnWidth: { type: "boolean", description: "Auto-size columns to content (default: true)" },
+            includeHyperlinks: { type: "boolean", description: "Add hyperlinks to Azure DevOps work items (default: true)" },
+            sheetNames: {
+              type: "object",
+              properties: {
+                workItems: { type: "string", description: "Name for work items sheet (default: 'Work Items')" },
+                relationships: { type: "string", description: "Name for relationships sheet (default: 'Relationships')" },
+                comments: { type: "string", description: "Name for comments sheet (default: 'Comments')" },
+                history: { type: "string", description: "Name for history sheet (default: 'History')" }
+              }
+            }
+          }
+        },
+        maxItems: { type: "number", description: "Maximum items to export (default: all selected items, max: 10000)" },
+        streamLargeExports: { type: "boolean", description: "Stream large exports to reduce memory usage (default: true)" },
+        organization: { type: "string", description: "Azure DevOps organization name" },
+        project: { type: "string", description: "Azure DevOps project name" }
+      },
+      required: ["queryHandle", "format"]
     }
   }
 ];

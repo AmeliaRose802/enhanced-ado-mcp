@@ -7,7 +7,6 @@
  */
 
 import {
-  AzureCliCredential,
   ChainedTokenCredential,
   DefaultAzureCredential,
   TokenCredential
@@ -19,6 +18,7 @@ import {
 } from '@azure/msal-node';
 import open from 'open';
 import { logger } from './logger.js';
+import { createAzureCliTokenProvider } from './azure-cli-token.js';
 
 // Azure DevOps OAuth scope - must match Microsoft's implementation exactly
 const scopes = ['499b84ac-1321-427f-aa17-267ca6975798/.default'];
@@ -108,19 +108,36 @@ export function createAuthenticator(
   logger.info(`Creating authenticator: type=${type}, tenantId=${tenantId || 'none'}`);
 
   switch (type) {
-    case 'azcli':
+    case 'azcli': {
+      // Use enhanced Azure CLI token provider with error boundaries and retry logic
+      logger.info('Using enhanced Azure CLI authentication with retry logic');
+      return createAzureCliTokenProvider(tenantId, scopes);
+    }
+    
     case 'env': {
-      // Set environment variable to prefer Azure CLI for 'azcli' mode
-      if (type !== 'env') {
-        process.env.AZURE_TOKEN_CREDENTIALS = 'dev';
-      }
+      // Set environment variable to prefer environment credentials
+      process.env.AZURE_TOKEN_CREDENTIALS = 'dev';
 
       let credential: TokenCredential = new DefaultAzureCredential(); // CodeQL [SM05138] resolved by explicitly setting AZURE_TOKEN_CREDENTIALS
 
-      // For multi-tenant scenarios, chain Azure CLI credential with specific tenant
+      // For multi-tenant scenarios, chain credentials
       if (tenantId) {
-        const azureCliCredential = new AzureCliCredential({ tenantId });
-        credential = new ChainedTokenCredential(azureCliCredential, credential);
+        // Use enhanced Azure CLI provider in chain
+        const azCliProvider = createAzureCliTokenProvider(tenantId, scopes);
+        
+        // Wrap in a compatible credential object
+        const azCliCredential = {
+          getToken: async () => {
+            const token = await azCliProvider();
+            // Return token in AccessToken format
+            return {
+              token,
+              expiresOnTimestamp: Date.now() + 3600 * 1000, // 1 hour default
+            };
+          }
+        } as TokenCredential;
+        
+        credential = new ChainedTokenCredential(azCliCredential, credential);
       }
 
       return async () => {

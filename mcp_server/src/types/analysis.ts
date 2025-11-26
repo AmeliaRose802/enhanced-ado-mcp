@@ -388,4 +388,41 @@ export interface PersonalWorkloadAnalysisResult {
   }>;
 }
 
+/**
+ * =============================================================================
+ * Internal Types for Personal Workload Analysis (AI Input)
+ * =============================================================================
+ */
+
+/** Simplified work item for AI analysis input */
+export interface WorkloadAnalysisWorkItem {
+  id: number;
+  title: string;
+  type: string;
+  state: string;
+  story_points: number;
+  priority: number;
+  tags: string;
+  area_path: string;
+  iteration_path: string;
+  created_date: string;
+  changed_date: string;
+  closed_date?: string;  // Optional for active work items
+}
+
+/** Complete input structure for personal workload analysis AI prompts */
+export interface PersonalWorkloadAnalysisInput {
+  assigned_to_email: string;
+  analysis_period_days: number;
+  start_date: string;
+  end_date: string;
+  organization: string;
+  project: string;
+  area_path: string;
+  additional_intent: string | null;
+  completed_work_items: WorkloadAnalysisWorkItem[];
+  active_work_items: WorkloadAnalysisWorkItem[];
+  [key: string]: unknown;  // Index signature for formatForAI compatibility
+}
+
 

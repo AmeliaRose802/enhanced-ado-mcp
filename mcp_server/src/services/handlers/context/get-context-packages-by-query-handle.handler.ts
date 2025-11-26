@@ -6,7 +6,7 @@
 import type { ToolConfig, ToolExecutionResult, JSONValue } from "@/types/index.js";
 import { asToolData } from "@/types/index.js";
 import { buildValidationErrorResponse, buildErrorResponse } from "@/utils/response-builder.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { queryHandleService } from "../../query-handle-service.js";
 import { handleGetWorkItemContextPackage } from "./get-work-item-context-package.handler.js";
 
@@ -145,7 +145,7 @@ export async function handleGetContextPackagesByQueryHandle(
             package: (packageResult.data as any).contextPackage
           };
         } else {
-          logger.warn(`Failed to fetch context package for work item ${workItemId}:`, packageResult.errors);
+          logger.warn(`Failed to fetch context package for work item ${workItemId}:`, { errors: packageResult.errors });
           return {
             success: false,
             workItemId,
@@ -153,7 +153,7 @@ export async function handleGetContextPackagesByQueryHandle(
           };
         }
       } catch (error) {
-        logger.error(`Error fetching context package for work item ${workItemId}:`, error);
+        logger.error(`Error fetching context package for work item ${workItemId}:`, errorToContext(error));
         return {
           success: false,
           workItemId,
@@ -225,9 +225,9 @@ export async function handleGetContextPackagesByQueryHandle(
       warnings
     };
   } catch (error) {
-    logger.error('Get context packages by query handle error:', error);
+    logger.error('Get context packages by query handle error:', errorToContext(error));
     return buildErrorResponse(error as Error, { 
-      tool: 'wit-get-context-packages-by-query-handle' 
+      tool: 'get-context-bulk' 
     });
   }
 }

@@ -1,8 +1,13 @@
 import type { ToolExecutionResult } from '../../types/index.js';
-import type { PersonalWorkloadAnalyzerArgs, PersonalWorkloadAnalysisResult } from '../../types/index.js';
+import type { 
+  PersonalWorkloadAnalyzerArgs, 
+  PersonalWorkloadAnalysisResult,
+  PersonalWorkloadAnalysisInput
+} from '../../types/index.js';
 import type { MCPServer, MCPServerLike } from '../../types/mcp.js';
-import { logger } from '../../utils/logger.js';
+import { logger, errorToContext } from '../../utils/logger.js';
 import { SamplingClient } from '../../utils/sampling-client.js';
+import type { SamplingResponse } from '../../utils/sampling-client.js';
 import { buildSuccessResponse, buildErrorResponse, buildSamplingUnavailableResponse } from '../../utils/response-builder.js';
 import { extractJSON, formatForAI } from '../../utils/ai-helpers.js';
 import { loadConfiguration } from '../../config/config.js';
@@ -103,7 +108,7 @@ async function fetchUserWorkItems(
     
     return { completed, active };
   } catch (error) {
-    logger.error('Failed to fetch user work items:', error);
+    logger.error('Failed to fetch user work items:', errorToContext(error));
     throw new Error(`Failed to fetch work items: ${error}`);
   }
 }
@@ -179,7 +184,7 @@ export class PersonalWorkloadAnalyzer {
           area_path: wi.fields?.['System.AreaPath'] || '',
           iteration_path: wi.fields?.['System.IterationPath'] || '',
           created_date: wi.fields?.['System.CreatedDate'] || '',
-          closed_date: wi.fields?.['Microsoft.VSTS.Common.ClosedDate'] || '',
+          closed_date: String(wi.fields?.['Microsoft.VSTS.Common.ClosedDate'] || ''),
           changed_date: wi.fields?.['System.ChangedDate'] || ''
         })),
         active_work_items: active.map(wi => ({
@@ -205,16 +210,17 @@ export class PersonalWorkloadAnalyzer {
         analysisType: args.additionalIntent ? 'custom-intent' : 'standard'
       });
     } catch (error) {
-      logger.error('Personal workload analysis failed:', error);
+      logger.error('Personal workload analysis failed:', errorToContext(error));
       return buildErrorResponse(`Personal workload analysis failed: ${error}`, { 
         source: 'personal-workload-analysis-failed' 
       });
     }
   }
 
-  private async performAnalysis(analysisInput: any): Promise<PersonalWorkloadAnalysisResult> {
+  private async performAnalysis(analysisInput: PersonalWorkloadAnalysisInput): Promise<PersonalWorkloadAnalysisResult> {
     // Timeout wrapper to prevent hanging
-    const timeoutMs = 120000; // 2 minutes for comprehensive analysis
+    const config = loadConfiguration();
+    const timeoutMs = config.aiTimeouts.workloadAnalysis;
     
     const aiResultPromise = this.samplingClient.createMessage({
       systemPromptName: 'personal-workload-analyzer',
@@ -236,8 +242,8 @@ export class PersonalWorkloadAnalyzer {
     return this.parseResponse(aiResult, analysisInput);
   }
 
-  private parseResponse(aiResult: any, analysisInput: any): PersonalWorkloadAnalysisResult {
-    const text = this.samplingClient.extractResponseText(aiResult);
+  private parseResponse(aiResult: unknown, analysisInput: PersonalWorkloadAnalysisInput): PersonalWorkloadAnalysisResult {
+    const text = this.samplingClient.extractResponseText(aiResult as SamplingResponse);
     
     // Try to extract JSON if present
     const json = extractJSON(text);
@@ -251,7 +257,10 @@ export class PersonalWorkloadAnalyzer {
     return this.buildResultFromText(text, analysisInput);
   }
 
-  private buildResultFromJSON(json: any, analysisInput: any): PersonalWorkloadAnalysisResult {
+  private buildResultFromJSON(json: unknown, analysisInput: PersonalWorkloadAnalysisInput): PersonalWorkloadAnalysisResult {
+    // Type guard and cast
+    const data = json as Record<string, any>;
+    
     // Build a structured result from JSON response
     return {
       executiveSummary: {
@@ -261,12 +270,12 @@ export class PersonalWorkloadAnalyzer {
           endDate: analysisInput.end_date,
           days: analysisInput.analysis_period_days
         },
-        overallHealthScore: json.overallHealthScore ?? json.healthScore ?? 50,
-        healthStatus: this.mapHealthStatus(json.overallHealthScore ?? json.healthScore ?? 50),
-        primaryConcerns: json.primaryConcerns ?? json.concerns ?? [],
-        additionalIntent: analysisInput.additional_intent
+        overallHealthScore: data.overallHealthScore ?? data.healthScore ?? 50,
+        healthStatus: this.mapHealthStatus(data.overallHealthScore ?? data.healthScore ?? 50),
+        primaryConcerns: data.primaryConcerns ?? data.concerns ?? [],
+        additionalIntent: analysisInput.additional_intent ?? undefined
       },
-      workSummary: json.workSummary ?? {
+      workSummary: data.workSummary ?? {
         completed: {
           totalItems: 0,
           storyPoints: 0,
@@ -289,13 +298,13 @@ export class PersonalWorkloadAnalyzer {
           status: "Good"
         }
       },
-      riskFlags: json.riskFlags ?? {
+      riskFlags: data.riskFlags ?? {
         critical: [],
         concerning: [],
         minor: [],
         positive: []
       },
-      detailedAnalysis: json.detailedAnalysis ?? {
+      detailedAnalysis: data.detailedAnalysis ?? {
         workloadBalance: { score: 0, assessment: '', recommendation: '' },
         workVariety: { score: 0, workTypeDistribution: {}, specializationRisk: "Low", recommendation: '' },
         codingBalance: { score: 0, codingPercentage: 0, nonCodingPercentage: 0, assessment: '', recommendation: '' },
@@ -303,19 +312,19 @@ export class PersonalWorkloadAnalyzer {
         temporalHealth: { score: 0, afterHoursFrequency: '', continuousWorkPattern: '', assessment: '', recommendation: '' },
         growthTrajectory: { score: 0, assessment: '' }
       },
-      customIntentAnalysis: json.customIntentAnalysis,
-      actionItems: json.actionItems ?? {
+      customIntentAnalysis: data.customIntentAnalysis,
+      actionItems: data.actionItems ?? {
         immediate: [],
         shortTerm: [],
         longTerm: [],
         managerDiscussion: [],
         selfCare: []
       },
-      topWorkItems: json.topWorkItems ?? []
+      topWorkItems: data.topWorkItems ?? []
     };
   }
 
-  private buildResultFromText(text: string, analysisInput: any): PersonalWorkloadAnalysisResult {
+  private buildResultFromText(text: string, analysisInput: PersonalWorkloadAnalysisInput): PersonalWorkloadAnalysisResult {
     // Fallback: return text-based result when AI doesn't return JSON
     // This preserves the full markdown output from the AI
     return {
@@ -329,7 +338,7 @@ export class PersonalWorkloadAnalyzer {
         overallHealthScore: 50,
         healthStatus: "Concerning",
         primaryConcerns: ["Analysis returned in markdown format - see full text output"],
-        additionalIntent: analysisInput.additional_intent
+        additionalIntent: analysisInput.additional_intent ?? undefined
       },
       workSummary: {
         completed: {
@@ -458,7 +467,7 @@ export class PersonalWorkloadAnalyzer {
             }
           } catch (error) {
             const errorMsg = error instanceof Error ? error.message : String(error);
-            logger.error(`Error analyzing ${email}:`, error);
+            logger.error(`Error analyzing ${email}:`, errorToContext(error));
             
             if (!continueOnError) {
               throw error;
@@ -506,7 +515,7 @@ export class PersonalWorkloadAnalyzer {
       });
 
     } catch (error) {
-      logger.error('Batch personal workload analysis failed:', error);
+      logger.error('Batch personal workload analysis failed:', errorToContext(error));
       return buildErrorResponse(`Batch workload analysis failed: ${error}`, {
         source: 'batch-workload-analysis-failed'
       });

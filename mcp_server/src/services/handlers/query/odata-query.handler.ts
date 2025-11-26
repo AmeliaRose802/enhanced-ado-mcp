@@ -8,10 +8,10 @@ import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
 import { createAuthenticator } from '@/utils/ado-token.js';
-import { escapeAreaPath } from "@/utils/work-item-parser.js";
+import { escapeAreaPath, escapeAreaPathForOData } from "@/utils/work-item-parser.js";
 import { cacheService } from "../../cache-service.js";
 import { SamplingClient } from "@/utils/sampling-client.js";
 import { queryHandleService } from "../../query-handle-service.js";
@@ -192,7 +192,7 @@ export async function handleODataQuery(
     );
 
   } catch (error) {
-    logger.error('OData query handler error:', error);
+    logger.error('OData query handler error:', errorToContext(error));
     return {
       success: false,
       data: null,
@@ -269,7 +269,7 @@ async function executeODataAnalytics(
           `3. Look for "View analytics" permission in your permissions list\n\n` +
           `HOW TO FIX:\n` +
           `1. If you don't have "View analytics" permission, contact your Azure DevOps administrator\n` +
-          `2. Alternative: Use WIQL queries (wit-wiql-query tool) which don't require Analytics permissions\n\n` +
+          `2. Alternative: Use WIQL queries (query-wiql tool) which don't require Analytics permissions\n\n` +
           `MORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\n` +
           `Technical details: ${errorText}`
         );
@@ -632,7 +632,7 @@ async function generateODataQueryWithAI(
   const variables: Record<string, string> = {
     PROJECT: project,
     ORGANIZATION: organization,
-    AREA_PATH: areaPath || '',
+    AREA_PATH: areaPath ? escapeAreaPathForOData(areaPath) : '',
     ITERATION_PATH: iterationPath || ''
   };
   
@@ -807,7 +807,7 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
 
   // Add area path filter
   if (areaPath) {
-    const escapedAreaPath = escapeAreaPath(areaPath);
+    const escapedAreaPath = escapeAreaPathForOData(areaPath);
     filterClauses.push(`startswith(Area/AreaPath, '${escapedAreaPath}')`);
   }
 

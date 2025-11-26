@@ -1,10 +1,11 @@
 import { ToolExecutionResult, asToolData } from "../types/index.js";
 import type { MCPServer, MCPServerLike } from "../types/mcp.js";
 import { toolConfigs, isAIPoweredTool } from "../config/tool-configs/index.js";
-import { logger } from "../utils/logger.js";
+import { logger, errorToContext } from "../utils/logger.js";
 import { checkSamplingSupport } from "../utils/sampling-client.js";
 import { SamplingService } from "./sampling-service.js";
 import { metricsService } from "./metrics-service.js";
+import { telemetryService } from "./telemetry-service.js";
 // Core handlers
 import { handleGetConfiguration } from "./handlers/core/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
@@ -12,6 +13,11 @@ import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js'
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 import { handleListSubagents } from './handlers/core/list-subagents.handler.js';
 import { handleGetTeamMembers } from './handlers/core/get-team-members.handler.js';
+
+// Discovery handlers
+import { handleDiscoverCustomFields } from './handlers/discovery/discover-custom-fields.handler.js';
+import { handleValidateCustomFields } from './handlers/discovery/validate-custom-fields.handler.js';
+import { handleExportFieldSchema } from './handlers/discovery/export-field-schema.handler.js';
 
 // Query handlers
 import { handleWiqlQuery } from "./handlers/query/wiql-query.handler.js";
@@ -27,6 +33,7 @@ import { handleUnifiedBulkOperations } from './handlers/bulk-operations/unified-
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
 import { handleAIQueryAnalysis, initializeAIQueryAnalyzer } from './handlers/ai-powered/ai-query-analysis.handler.js';
+import { handleSimilarityDetection, initializeSimilarityService } from './handlers/ai-powered/similarity-detection.handler.js';
 // NOTE: AI enhancement handlers (enhance-descriptions, assign-story-points, add-acceptance-criteria)
 // are now consolidated into unified-bulk-operations.handler.ts
 
@@ -37,6 +44,16 @@ import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-p
 // Integration handlers
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
 
+// Repos handlers
+import { handleGetPullRequestDiff } from './handlers/repos/get-pr-diff.handler.js';
+import { handleGetPullRequestComments } from './handlers/repos/get-pr-comments.handler.js';
+
+// Visualization handlers
+import { handleVisualizeDependencies } from './handlers/visualization/visualize-dependencies.handler.js';
+
+// Chart handlers
+import { handleGenerateBurndownChart } from './handlers/charts/generate-burndown-chart.handler.js';
+import { handleGenerateBurnupChart } from './handlers/charts/generate-burnup-chart.handler.js';
 
   // Context handlers
 import { handleGetWorkItemContextPackage } from './handlers/context/get-work-item-context-package.handler.js';
@@ -50,9 +67,10 @@ let serverInstance: MCPServer | MCPServerLike | null = null;
 export function setServerInstance(server: MCPServer | MCPServerLike | null): void {
   serverInstance = server;
   
-  // Initialize AI query analyzer if server is available
+  // Initialize AI-powered services if server is available
   if (server) {
     initializeAIQueryAnalyzer(server);
+    initializeSimilarityService(server);
   }
 }
 
@@ -63,20 +81,68 @@ export async function executeTool(name: string, args: unknown): Promise<ToolExec
   const startTime = Date.now();
   metricsService.increment('tool.execution.started', 1, { tool: name });
   
+  // Track API calls for this tool execution
+  const apiCallsBefore = metricsService.getCounter('ado_api_request');
+  const cacheHitsBefore = metricsService.getCounter('cache_hit');
+  const cacheMissesBefore = metricsService.getCounter('cache_miss');
+  
   try {
     const result = await executeToolInternal(name, args);
     
-    // Record successful execution metrics
+    // Calculate API calls made during this operation
+    const apiCallsAfter = metricsService.getCounter('ado_api_request');
+    const cacheHitsAfter = metricsService.getCounter('cache_hit');
+    const cacheMissesAfter = metricsService.getCounter('cache_miss');
+    
+    const apiCallsDelta = apiCallsAfter - apiCallsBefore;
+    const cacheHitsDelta = cacheHitsAfter - cacheHitsBefore;
+    const cacheMissesDelta = cacheMissesAfter - cacheMissesBefore;
+    
+    // Record metrics
     const duration = Date.now() - startTime;
     metricsService.recordDuration('tool.execution.duration', duration, { tool: name, success: String(result.success) });
     metricsService.increment(result.success ? 'tool.execution.success' : 'tool.execution.error', 1, { tool: name });
     
+    // Record telemetry event
+    telemetryService.recordToolExecution(
+      name,
+      duration,
+      result.success,
+      apiCallsDelta > 0 ? apiCallsDelta : undefined,
+      result.success ? undefined : { type: result.errors?.[0] || 'unknown' }
+    );
+    
+    // Add cache info to telemetry metadata if cache was used
+    if (cacheHitsDelta > 0 || cacheMissesDelta > 0) {
+      telemetryService.recordEvent({
+        category: 'tool',
+        operation: `${name}_cache_usage`,
+        cache_hits: cacheHitsDelta,
+        cache_misses: cacheMissesDelta,
+        metadata: {
+          tool: name,
+          cache_hit_rate: (cacheHitsDelta + cacheMissesDelta) > 0 
+            ? (cacheHitsDelta / (cacheHitsDelta + cacheMissesDelta)) * 100 
+            : 0
+        }
+      });
+    }
+    
     return result;
   } catch (error) {
-    // Record error metrics
+    // Record error metrics and telemetry
     const duration = Date.now() - startTime;
     metricsService.recordDuration('tool.execution.duration', duration, { tool: name, success: 'false' });
     metricsService.increment('tool.execution.error', 1, { tool: name, error: 'exception' });
+    
+    telemetryService.recordToolExecution(
+      name,
+      duration,
+      false,
+      undefined,
+      { type: error instanceof Error ? error.name : 'UnknownError' }
+    );
+    
     throw error;
   }
 }
@@ -142,6 +208,21 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Get team members
   if (name === 'get-team-members') {
     return await handleGetTeamMembers(args);
+  }
+
+  // Discover custom fields
+  if (name === 'discover-custom-fields') {
+    return await handleDiscoverCustomFields(args as any);
+  }
+
+  // Validate custom fields
+  if (name === 'validate-custom-fields') {
+    return await handleValidateCustomFields(args as any);
+  }
+
+  // Export field schema
+  if (name === 'export-field-schema') {
+    return await handleExportFieldSchema(args as any);
   }
 
 
@@ -233,6 +314,10 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleAIQueryAnalysis(config, args);
   }
 
+  if (name === 'find-similar-work-items') {
+    return await handleSimilarityDetection(config, args);
+  }
+
   if (name === 'list-handles') {
     return await handleListQueryHandles(config, args);
   }
@@ -244,6 +329,47 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Context packages by query handle
   if (name === 'get-context-bulk') {
     return await handleGetContextPackagesByQueryHandle(config, args);
+  }
+
+  // Pull request diff
+  if (name === 'get-pr-diff') {
+    return await handleGetPullRequestDiff(config, args);
+  }
+
+  // Pull request comments
+  if (name === 'get-pr-comments') {
+    return await handleGetPullRequestComments(config, args, serverInstance || undefined);
+  }
+
+  // Dependency visualization
+  if (name === 'visualize-dependencies') {
+    return await handleVisualizeDependencies(args);
+  }
+
+  // Generate burndown chart
+  if (name === 'generate-burndown-chart') {
+    return await handleGenerateBurndownChart(args);
+  }
+
+  // Generate burnup chart
+  if (name === 'generate-burnup-chart') {
+    return await handleGenerateBurnupChart(args);
+  }
+
+  // Template management tools
+  if (name === 'list-templates') {
+    const { handleListTemplates } = await import('./handlers/core/list-templates.handler.js');
+    return await handleListTemplates();
+  }
+
+  if (name === 'get-template') {
+    const { handleGetTemplate } = await import('./handlers/core/get-template.handler.js');
+    return await handleGetTemplate(config, args);
+  }
+
+  if (name === 'validate-template') {
+    const { handleValidateTemplate } = await import('./handlers/core/validate-template.handler.js');
+    return await handleValidateTemplate(config, args);
   }
 
   // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)

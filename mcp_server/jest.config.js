@@ -27,6 +27,8 @@ export default {
     '^.*\\/utils\\/module-dir\\.mjs$': '<rootDir>/test/mocks/paths.mock.ts',
     // Mock marked library to avoid ES module issues
     '^marked$': '<rootDir>/test/mocks/marked.mock.ts',
+    // Mock open library to avoid ES module issues
+    '^open$': '<rootDir>/test/mocks/open.mock.ts',
     // Map TypeScript path aliases (must handle .js extension)
     '^@/types/(.*)\.js$': '<rootDir>/src/types/$1.ts',
     '^@/utils/(.*)\.js$': '<rootDir>/src/utils/$1.ts',
@@ -37,9 +39,9 @@ export default {
     '^(\\.\\.?\\/.+)\\.js$': '$1'
   },
   
-  // Transform ES modules from node_modules (e.g., marked)
+  // Transform ES modules from node_modules (e.g., marked, open)
   transformIgnorePatterns: [
-    'node_modules/(?!(marked)/)'
+    'node_modules/(?!(marked|open)/)'
   ],
   
   // Test match patterns

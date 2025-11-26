@@ -136,7 +136,7 @@ describe('Unified Bulk Operations Handler', () => {
       expect(mockPostFn).toHaveBeenCalledWith(
         expect.stringContaining('wit/workItems/101/comments'),
         expect.objectContaining({
-          text: 'Test comment',
+          text: '<p>Test comment</p>',  // Markdown converted to HTML
           format: 1
         })
       );
@@ -425,9 +425,14 @@ describe('Unified Bulk Operations Handler', () => {
 
       mockGetFn.mockResolvedValue({
         data: {
-          fields: {
-            'System.Tags': 'existing-tag'
-          }
+          value: [
+            {
+              id: 101,
+              fields: {
+                'System.Tags': 'existing-tag'
+              }
+            }
+          ]
         }
       });
       mockPatchFn.mockResolvedValue({});
@@ -447,7 +452,7 @@ describe('Unified Bulk Operations Handler', () => {
       // Assert
       expect(result.success).toBe(true);
       expect(mockGetFn).toHaveBeenCalledWith(
-        expect.stringContaining('wit/workItems/101?fields=System.Tags')
+        expect.stringContaining('wit/workitems?ids=101&fields=System.Tags')
       );
       expect(mockPatchFn).toHaveBeenCalledWith(
         expect.stringContaining('wit/workItems/101'),
@@ -455,7 +460,7 @@ describe('Unified Bulk Operations Handler', () => {
           expect.objectContaining({
             op: 'replace',
             path: '/fields/System.Tags',
-            value: expect.stringContaining('existing-tag')
+            value: expect.stringMatching(/existing-tag.*new-tag.*another-tag|new-tag.*another-tag.*existing-tag/)
           })
         ])
       );

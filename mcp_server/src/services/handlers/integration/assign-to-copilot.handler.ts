@@ -6,7 +6,7 @@
 import type { ToolConfig, ToolExecutionResult } from "@/types/index.js";
 import { assignWorkItemToCopilot } from "../../ado-work-item-service.js";
 import { getRequiredConfig } from "@/config/config.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 import { assignToCopilotSchema } from "@/config/schemas.js";
 import { buildValidationErrorResponse, buildErrorResponse, buildSuccessResponse, buildBusinessLogicError } from "@/utils/response-builder.js";
 import { z } from "zod";
@@ -49,12 +49,12 @@ export async function handleAssignToCopilot(config: ToolConfig, args: unknown): 
     
     const response = buildSuccessResponse(
       result,
-      { tool: 'wit-assign-copilot' }
+      { tool: 'assign-copilot' }
     );
     response.warnings = result.warnings || [];
     return response;
   } catch (error) {
-    logger.error('Failed to assign work item to Copilot', error);
+    logger.error('Failed to assign work item to Copilot', errorToContext(error));
     return buildErrorResponse(
       error as Error,
       { source: 'assign-to-copilot' }

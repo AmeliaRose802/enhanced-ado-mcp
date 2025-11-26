@@ -3,7 +3,7 @@ import { asToolData } from "@/types/index.js";
 import type { z } from "zod";
 import type { getPromptsSchema } from "@/config/schemas.js";
 import { loadPrompts, getPromptContent } from "../../prompt-service.js";
-import { logger } from "@/utils/logger.js";
+import { logger, errorToContext } from "@/utils/logger.js";
 
 /**
  * Prompt metadata structure for JSON serialization
@@ -59,10 +59,10 @@ export async function handleGetPrompts(
           return {
             success: false,
             data: null,
-            errors: [`Prompt '${promptName}' not found. Use wit-get-prompts without promptName to see available prompts.`],
+            errors: [`Prompt '${promptName}' not found. Use get-prompts without promptName to see available prompts.`],
             warnings: [],
             metadata: {
-              tool: "wit-get-prompts",
+              tool: "get-prompts",
               promptName,
               found: false
             }
@@ -113,7 +113,7 @@ export async function handleGetPrompts(
           errors: [`Error retrieving prompt '${promptName}': ${error instanceof Error ? error.message : String(error)}`],
           warnings,
           metadata: {
-            tool: "wit-get-prompts",
+            tool: "get-prompts",
             promptName,
             error: true
           }
@@ -160,7 +160,7 @@ export async function handleGetPrompts(
         errors: [],
         warnings,
         metadata: {
-          tool: "wit-get-prompts",
+          tool: "get-prompts",
           totalPrompts: allPrompts.length,
           contentIncluded: includeContent,
           templateArgsProvided: Object.keys(templateArgs).length
@@ -173,20 +173,20 @@ export async function handleGetPrompts(
         errors: [`Error loading prompts: ${error instanceof Error ? error.message : String(error)}`],
         warnings,
         metadata: {
-          tool: "wit-get-prompts",
+          tool: "get-prompts",
           error: true
         }
       };
     }
   } catch (error) {
-    logger.error("Error in handleGetPrompts:", error);
+    logger.error("Error in handleGetPrompts:", errorToContext(error));
     return {
       success: false,
       data: null,
       errors: [`Unexpected error: ${error instanceof Error ? error.message : String(error)}`],
       warnings,
       metadata: {
-        tool: "wit-get-prompts",
+        tool: "get-prompts",
         error: true
       }
     };
