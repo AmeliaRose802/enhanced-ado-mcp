@@ -36,13 +36,43 @@ export const toolConfigs: ToolConfig[] = [
 
 /**
  * AI-powered tools that require VS Code sampling support
+ * 
+ * Tools that use LLM sampling via VS Code Language Model API
+ * These tools gracefully degrade when sampling is not available
+ * 
+ * Core AI Analysis:
+ * - analyze-workload: Personal/batch workload burnout analysis
+ * - analyze-query-handle: Custom AI-powered intent-based analysis
+ * - discover-tools: Natural language tool discovery
+ * 
+ * Query Generation (Conditional):
+ * - query-wiql: AI generation when 'description' parameter provided
+ * - query-odata: AI generation when 'description' parameter provided
+ * 
+ * Bulk Operations (Conditional):
+ * - execute-bulk-operations: AI enhancements when action is:
+ *   - 'enhance-descriptions'
+ *   - 'assign-story-points'  
+ *   - 'add-acceptance-criteria'
+ * 
+ * Analysis Tools (Optional Sampling):
+ * - analyze-bulk: AI-semantic clustering when clusteringMethod='ai-semantic'
+ * 
+ * Other AI Tools:
+ * - get-pr-comments: AI-powered analysis when enrichWithAI=true
+ * - find-intelligent-parent: AI-powered parent suggestion
  */
 export const AI_POWERED_TOOLS = [
   'analyze-workload',
-  'query-wiql', // Unified: supports AI generation when 'description' parameter is used
-  'query-odata', // Unified: supports AI generation when 'description' parameter is used
+  'analyze-query-handle',
   'discover-tools',
-  'analyze-query-handle'
+  // Conditional AI tools (check parameters at runtime):
+  'query-wiql',       // When description parameter is provided
+  'query-odata',      // When description parameter is provided  
+  'execute-bulk-operations', // When action is enhance-descriptions/assign-story-points/add-acceptance-criteria
+  'analyze-bulk',     // When clusteringMethod is 'ai-semantic'
+  'get-pr-comments',  // When enrichWithAI is true
+  'find-intelligent-parent' // Always requires sampling
 ];
 
 /**
