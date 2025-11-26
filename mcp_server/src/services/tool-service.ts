@@ -32,7 +32,6 @@ import { handleUnifiedBulkOperations } from './handlers/bulk-operations/unified-
 // AI-powered handlers
 import { handleAnalyzeByQueryHandle } from './handlers/ai-powered/analyze-by-query-handle.handler.js';
 import { handleAIQueryAnalysis, initializeAIQueryAnalyzer } from './handlers/ai-powered/ai-query-analysis.handler.js';
-import { handleSimilarityDetection, initializeSimilarityService } from './handlers/ai-powered/similarity-detection.handler.js';
 // NOTE: AI enhancement handlers (enhance-descriptions, assign-story-points, add-acceptance-criteria)
 // are now consolidated into unified-bulk-operations.handler.ts
 
@@ -69,7 +68,6 @@ export function setServerInstance(server: MCPServer | MCPServerLike | null): voi
   // Initialize AI-powered services if server is available
   if (server) {
     initializeAIQueryAnalyzer(server);
-    initializeSimilarityService(server);
   }
 }
 
@@ -306,10 +304,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
 
   if (name === 'analyze-query-handle') {
     return await handleAIQueryAnalysis(config, args);
-  }
-
-  if (name === 'find-similar-work-items') {
-    return await handleSimilarityDetection(config, args);
   }
 
   if (name === 'list-handles') {

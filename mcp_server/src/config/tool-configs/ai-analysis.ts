@@ -2,8 +2,8 @@ import type { ToolConfig } from "../../types/index.js";
 import {
   personalWorkloadAnalyzerSchema,
   toolDiscoverySchema,
-  aiQueryAnalysisSchema,
-  similarityDetectionSchema
+  aiQueryAnalysisSchema
+  // Removed: similarityDetectionSchema - tool deleted due to performance issues
 } from "../schemas.js";
 
 /**
@@ -85,25 +85,7 @@ export const aiAnalysisTools: ToolConfig[] = [
       required: ["queryHandle", "intent"]
     }
   },
-  {
-    name: "find-similar-work-items",
-    description: "🤖 AI-POWERED SIMILARITY DETECTION: Find similar work items using semantic embeddings to detect duplicates (>90% similarity), related items (60-90% similarity), and topic clusters. Analyzes titles, descriptions, and acceptance criteria to calculate similarity scores. Helps identify duplicate work, suggest links, and discover patterns. Embeddings are cached for efficiency. Supports single work item or query handle batch analysis. Requires VS Code sampling support.",
-    script: "",
-    schema: similarityDetectionSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        workItemId: { type: "number", description: "Single work item ID to find similar items for" },
-        queryHandle: { type: "string", description: "Query handle containing work items to analyze for similarity" },
-        similarityThreshold: { type: "number", description: "Minimum similarity score (0-1, default 0.6). 0.9+ = duplicates, 0.6-0.9 = related" },
-        maxResults: { type: "number", description: "Maximum similar items to return per source item (default 20, max 100)" },
-        includeEmbeddings: { type: "boolean", description: "Include embedding vectors in response (default false - large payload)" },
-        skipCache: { type: "boolean", description: "Skip embedding cache and regenerate (default false - uses cache for efficiency)" },
-        analysisType: { type: "string", enum: ["duplicates", "related", "cluster", "all"], description: "Type of analysis: duplicates (>90% similar), related (60-90%), cluster (group by topic), all (default)" },
-        organization: { type: "string", description: "Azure DevOps organization (uses config default if not provided)" },
-        project: { type: "string", description: "Azure DevOps project (uses config default if not provided)" }
-      },
-      required: []
-    }
-  }
+  // REMOVED: find-similar-work-items - performance issues (hundreds of LLM calls, 10+ min runtime)
+  // Used fake pseudo-embeddings instead of real embeddings, fetched 200 candidates per item
+  // If real similarity detection is needed, implement using proper embedding APIs
 ];

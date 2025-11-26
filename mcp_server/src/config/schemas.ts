@@ -600,21 +600,8 @@ export const getTeamMembersSchema = z.object({
   ...orgProjectFields()
 });
 
-export const similarityDetectionSchema = z.object({
-  workItemId: optionalNumber().describe("Single work item ID to find similar items for"),
-  queryHandle: optionalString().describe("Query handle containing work items to analyze for similarity"),
-  similarityThreshold: z.number().min(0).max(1).optional().default(0.6).describe("Minimum similarity score (0-1, default 0.6). 0.9+ = duplicates, 0.6-0.9 = related"),
-  maxResults: z.number().int().min(1).max(100).optional().default(20).describe("Maximum similar items to return per source item (default 20, max 100)"),
-  includeEmbeddings: optionalBool(false).describe("Include embedding vectors in response (default false - large payload)"),
-  skipCache: optionalBool(false).describe("Skip embedding cache and regenerate (default false - uses cache for efficiency)"),
-  analysisType: z.enum(['duplicates', 'related', 'cluster', 'all']).optional().default('all').describe("Type of analysis: duplicates (>90% similar), related (60-90%), cluster (group by topic), all (default)"),
-  ...orgProjectFields()
-}).refine(
-  (data) => data.workItemId || data.queryHandle,
-  {
-    message: "Either workItemId or queryHandle must be provided"
-  }
-);
+// REMOVED: similarityDetectionSchema - tool deleted due to performance issues
+// Made hundreds of LLM calls, used fake pseudo-embeddings, took 10+ minutes for 2 items
 
 export const getPullRequestDiffSchema = z.object({
   repository: z.string().min(1, "Repository name or ID is required"),
