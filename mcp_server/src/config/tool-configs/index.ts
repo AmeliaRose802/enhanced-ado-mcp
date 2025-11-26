@@ -43,7 +43,6 @@ export const AI_POWERED_TOOLS = [
   'query-odata', // Unified: supports AI generation when 'description' parameter is used
   'discover-tools',
   'analyze-query-handle'
-  // Removed: 'find-similar-work-items' - performance issues, not real embeddings
 ];
 
 /**

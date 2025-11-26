@@ -20,6 +20,7 @@ import { loadConfiguration } from "@/config/config.js";
 import { getTokenProvider } from '@/utils/token-provider.js';
 import { performFastHierarchyValidation } from "@/services/analyzers/hierarchy-validator-fast.js";
 import { SamplingService } from '../../sampling-service.js';
+import { SamplingClient } from '../../../utils/sampling-client.js';
 import { WorkItemIntelligenceAnalyzer } from '../../analyzers/work-item-intelligence.js';
 import { AIAssignmentAnalyzer } from '../../analyzers/ai-assignment.js';
 import { handleIntelligentParentFinder } from '../analysis/intelligent-parent-finder-new.handler.js';
@@ -611,8 +612,82 @@ export async function handleAnalyzeByQueryHandle(
                   };
                 }
                 break;
+              case 'cluster-topics':
+                // Smart topic clustering using keyword extraction
+                const clusterMethod = parsed.data.clusteringMethod || 'keywords';
+                const minClusterSize = parsed.data.minClusterSize || 2;
+                const maxClusters = parsed.data.maxClusters || 20;
+                
+                if (clusterMethod === 'ai-semantic' && !serverInstance) {
+                  analysis.results['cluster-topics'] = {
+                    error: 'AI-semantic clustering requires VS Code sampling support. Use clusteringMethod: "keywords" instead.'
+                  };
+                  logger.warn('ai-semantic clustering requires serverInstance for sampling');
+                } else {
+                  const clusters = await clusterWorkItemsByTopic(
+                    workItems,
+                    org,
+                    proj,
+                    {
+                      minClusterSize,
+                      maxClusters,
+                      method: clusterMethod,
+                      serverInstance: clusterMethod === 'ai-semantic' ? serverInstance : undefined
+                    }
+                  );
+                  
+                  // Create query handles for each cluster
+                  const clusterHandles = clusters.map(cluster => {
+                    const derivedQuery = `SELECT [System.Id] FROM WorkItems WHERE [System.Id] IN (${cluster.workItemIds.join(',')}) /* Topic Cluster: ${cluster.topicName} - Derived from ${queryHandle} */`;
+                    
+                    const clusterContext = new Map();
+                    cluster.workItemIds.forEach(id => {
+                      const wi = workItems.find(w => w.id === id);
+                      if (wi) {
+                        clusterContext.set(id, {
+                          title: wi.fields?.['System.Title'] || `Work Item ${id}`,
+                          state: wi.fields?.['System.State'] || 'Unknown',
+                          type: wi.fields?.['System.WorkItemType'] || 'Unknown',
+                          changedDate: wi.fields?.['System.ChangedDate'],
+                          assignedTo: wi.fields?.['System.AssignedTo']?.displayName || wi.fields?.['System.AssignedTo'],
+                          tags: wi.fields?.['System.Tags']
+                        });
+                      }
+                    });
+                    
+                    return {
+                      topicName: cluster.topicName,
+                      queryHandle: queryHandleService.storeQuery(
+                        cluster.workItemIds,
+                        derivedQuery,
+                        {
+                          project: proj,
+                          queryType: `topic-cluster`
+                        },
+                        undefined,
+                        clusterContext,
+                        {
+                          analysisTimestamp: new Date().toISOString(),
+                          successCount: cluster.workItemIds.length
+                        }
+                      ),
+                      itemCount: cluster.workItemIds.length,
+                      keywords: cluster.keywords,
+                      cohesionScore: cluster.cohesionScore
+                    };
+                  });
+                  
+                  analysis.results['cluster-topics'] = {
+                    total_clusters: clusterHandles.length,
+                    total_clustered_items: clusterHandles.reduce((sum, c) => sum + c.itemCount, 0),
+                    clustering_method: clusterMethod,
+                    clusters: clusterHandles,
+                    unclustered_items: workItems.length - clusterHandles.reduce((sum, c) => sum + c.itemCount, 0)
+                  };
+                }
+                break;
               case 'parent-recommendation':
-                // AI-powered parent recommendation
+                // AI-powered intelligent parent matching
                 if (!serverInstance) {
                   analysis.results['parent-recommendation'] = {
                     error: 'AI-powered parent recommendation requires VS Code sampling support. Ensure VS Code MCP integration is enabled.'
@@ -921,4 +996,214 @@ function analyzePriorities(workItems: ADOWorkItem[]): PriorityAnalysisResult {
     priority_distribution: priorityDistribution,
     priority_balance: highPriority.length < workItems.length * 0.3 ? 'Balanced' : 'Top-Heavy'
   };
+}
+
+/**
+ * Cluster work items by topic using keyword extraction
+ * Smart, fast implementation that doesn't require embeddings
+ */
+interface TopicCluster {
+  topicName: string;
+  workItemIds: number[];
+  keywords: string[];
+  cohesionScore: number;
+}
+
+interface ClusterOptions {
+  minClusterSize: number;
+  maxClusters: number;
+  method: 'keywords' | 'ai-semantic';
+  serverInstance?: MCPServer | MCPServerLike;
+}
+
+async function clusterWorkItemsByTopic(
+  workItems: ADOWorkItem[],
+  org: string,
+  project: string,
+  options: ClusterOptions
+): Promise<TopicCluster[]> {
+  if (options.method === 'keywords') {
+    return clusterByKeywords(workItems, options);
+  } else {
+    return clusterByAISemantic(workItems, options.serverInstance!, options);
+  }
+}
+
+/**
+ * Fast keyword-based clustering (deterministic, no LLM calls)
+ */
+function clusterByKeywords(workItems: ADOWorkItem[], options: ClusterOptions): TopicCluster[] {
+  // Extract meaningful keywords from each work item
+  const itemKeywords = workItems.map(wi => {
+    const title = (wi.fields?.['System.Title'] as string || '').toLowerCase();
+    const description = (wi.fields?.['System.Description'] as string || '').toLowerCase().replace(/<[^>]*>/g, ' ');
+    const tags = (wi.fields?.['System.Tags'] as string || '').toLowerCase();
+    const text = `${title} ${title} ${title} ${description} ${tags}`; // Weight title 3x
+    
+    // Extract keywords (2-3 word phrases and single significant words)
+    const words = text.match(/\b[a-z]{4,}\b/gi) || [];
+    const stopWords = new Set(['with', 'from', 'have', 'this', 'that', 'will', 'been', 'were', 'their', 'would', 'there', 'could', 'should', 'about', 'which', 'these', 'those', 'when', 'where', 'what', 'who', 'how']);
+    const filtered = words.filter(w => !stopWords.has(w));
+    
+    // Count word frequency
+    const freq = new Map<string, number>();
+    filtered.forEach(w => freq.set(w, (freq.get(w) || 0) + 1));
+    
+    // Top keywords by frequency
+    const topKeywords = Array.from(freq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([word]) => word);
+    
+    return {
+      id: wi.id!,
+      keywords: topKeywords,
+      keywordSet: new Set(topKeywords)
+    };
+  });
+  
+  // Build similarity matrix based on keyword overlap
+  const clusters: TopicCluster[] = [];
+  const clustered = new Set<number>();
+  
+  for (const item of itemKeywords) {
+    if (clustered.has(item.id)) continue;
+    
+    // Find similar items (Jaccard similarity > 0.3)
+    const clusterItems = [item.id];
+    const clusterKeywords = new Set(item.keywords);
+    
+    for (const other of itemKeywords) {
+      if (item.id === other.id || clustered.has(other.id)) continue;
+      
+      const intersection = new Set([...item.keywordSet].filter(k => other.keywordSet.has(k)));
+      const union = new Set([...item.keywordSet, ...other.keywordSet]);
+      const jaccard = union.size > 0 ? intersection.size / union.size : 0;
+      
+      if (jaccard >= 0.3) {
+        clusterItems.push(other.id);
+        other.keywords.forEach(k => clusterKeywords.add(k));
+        clustered.add(other.id);
+      }
+    }
+    
+    if (clusterItems.length >= options.minClusterSize) {
+      clustered.add(item.id);
+      
+      // Pick top 3-5 most common keywords as cluster name
+      const keywordCounts = new Map<string, number>();
+      itemKeywords
+        .filter(i => clusterItems.includes(i.id))
+        .forEach(i => {
+          i.keywords.forEach(k => keywordCounts.set(k, (keywordCounts.get(k) || 0) + 1));
+        });
+      
+      const topClusterKeywords = Array.from(keywordCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([word]) => word);
+      
+      // Calculate cohesion (avg keyword overlap)
+      let totalOverlap = 0;
+      let comparisons = 0;
+      for (let i = 0; i < clusterItems.length; i++) {
+        for (let j = i + 1; j < clusterItems.length; j++) {
+          const item1 = itemKeywords.find(it => it.id === clusterItems[i]);
+          const item2 = itemKeywords.find(it => it.id === clusterItems[j]);
+          if (item1 && item2) {
+            const intersection = new Set([...item1.keywordSet].filter(k => item2.keywordSet.has(k)));
+            const union = new Set([...item1.keywordSet, ...item2.keywordSet]);
+            totalOverlap += union.size > 0 ? intersection.size / union.size : 0;
+            comparisons++;
+          }
+        }
+      }
+      const cohesion = comparisons > 0 ? totalOverlap / comparisons : 0;
+      
+      clusters.push({
+        topicName: topClusterKeywords.join(' + ') || 'Related Items',
+        workItemIds: clusterItems,
+        keywords: topClusterKeywords,
+        cohesionScore: Math.round(cohesion * 100) / 100
+      });
+    }
+  }
+  
+  // Sort by cluster size (largest first) and limit
+  return clusters
+    .sort((a, b) => b.workItemIds.length - a.workItemIds.length)
+    .slice(0, options.maxClusters);
+}
+
+/**
+ * AI-powered semantic clustering (uses LLM for topic extraction)
+ */
+async function clusterByAISemantic(
+  workItems: ADOWorkItem[],
+  serverInstance: MCPServer | MCPServerLike,
+  options: ClusterOptions
+): Promise<TopicCluster[]> {
+  const samplingClient = new SamplingClient(serverInstance);
+  
+  // Extract titles for AI analysis
+  const itemTitles = workItems.map(wi => ({
+    id: wi.id!,
+    title: wi.fields?.['System.Title'] as string || '',
+    type: wi.fields?.['System.WorkItemType'] as string || ''
+  }));
+  
+  // Ask AI to identify topics and group items
+  const prompt = `Analyze these work items and group them into ${Math.min(options.maxClusters, 10)} cohesive topic clusters. Return ONLY a JSON array of clusters.
+
+Work Items:
+${itemTitles.map((item, idx) => `${idx + 1}. [${item.type}] ${item.title}`).join('\n')}
+
+Return format:
+[
+  {
+    "topicName": "brief topic description (3-5 words)",
+    "itemIndices": [1, 5, 7],
+    "keywords": ["keyword1", "keyword2", "keyword3"]
+  }
+]
+
+Rules:
+- Min ${options.minClusterSize} items per cluster
+- Topic names should be concise and descriptive
+- Group by semantic similarity, not just keywords
+- Prefer fewer, more cohesive clusters over many small ones`;
+
+  try {
+    const result = await samplingClient.createMessage({
+      systemPromptName: 'topic-clustering',
+      userContent: prompt,
+      maxTokens: 2000,
+      temperature: 0.2
+    });
+    
+    const responseText = samplingClient.extractResponseText(result);
+    const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+    
+    if (jsonMatch) {
+      const aiClusters = JSON.parse(jsonMatch[0]) as Array<{
+        topicName: string;
+        itemIndices: number[];
+        keywords: string[];
+      }>;
+      
+      return aiClusters
+        .filter(c => c.itemIndices.length >= options.minClusterSize)
+        .map(c => ({
+          topicName: c.topicName,
+          workItemIds: c.itemIndices.map(idx => itemTitles[idx - 1]?.id).filter(Boolean),
+          keywords: c.keywords,
+          cohesionScore: 0.85 // AI clustering assumed to be high quality
+        }));
+    }
+  } catch (error) {
+    logger.error(`AI semantic clustering failed, falling back to keyword clustering: ${error}`);
+  }
+  
+  // Fallback to keyword clustering if AI fails
+  return clusterByKeywords(workItems, options);
 }

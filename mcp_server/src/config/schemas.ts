@@ -536,7 +536,8 @@ export const analyzeByQueryHandleSchema = z.object({
     "hierarchy",
     "work-item-intelligence",
     "assignment-suitability",
-    "parent-recommendation"
+    "parent-recommendation",
+    "cluster-topics"
   ])).min(1, "At least one analysis type required"),
   // Pagination options
   maxItemsToAnalyze: z.number().int().min(1).max(1000).optional().describe("Maximum number of items to analyze from query handle (default: all items, max: 1000)"),
@@ -564,6 +565,10 @@ export const analyzeByQueryHandleSchema = z.object({
   iterationPath: optionalString().describe("Iteration path filter when searchScope='iteration' (only for parent-recommendation)"),
   requireActiveParents: optionalBool(true).describe("Only consider active/new/committed parents (only for parent-recommendation)"),
   confidenceThreshold: z.number().min(0).max(1).optional().default(0.5).describe("Minimum confidence for parent recommendations (only for parent-recommendation)"),
+  // Topic clustering options (only used when analysisType includes "cluster-topics")
+  minClusterSize: z.number().int().min(2).max(20).optional().default(2).describe("Minimum items per topic cluster (only for cluster-topics)"),
+  maxClusters: z.number().int().min(2).max(50).optional().default(20).describe("Maximum number of topic clusters to create (only for cluster-topics)"),
+  clusteringMethod: z.enum(["keywords", "ai-semantic"]).optional().default("keywords").describe("Clustering method: keywords (fast, deterministic) or ai-semantic (slower, requires sampling, only for cluster-topics)"),
   ...orgProjectFields()
 });
 

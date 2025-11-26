@@ -13,7 +13,7 @@ import {
 export const queryHandleTools: ToolConfig[] = [
   {
     name: "analyze-bulk",
-    description: "🔐 HANDLE-BASED ANALYSIS: Unified analysis tool for work items using query handles. Prevents ID hallucination in analysis workflows. Supports: effort (Story Points), velocity (completion trends), assignments (team workload), risks (blockers/stale), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child validation), work-item-intelligence (AI-powered completeness/enhancement analysis), assignment-suitability (Copilot assignment readiness), and parent-recommendation (intelligent parent matching). Forces safe analysis patterns.",
+    description: "🔐 HANDLE-BASED ANALYSIS: Unified analysis tool for work items using query handles. Prevents ID hallucination in analysis workflows. Supports: effort (Story Points), velocity (completion trends), assignments (team workload), risks (blockers/stale), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child validation), cluster-topics (smart topic grouping with query handles), work-item-intelligence (AI-powered completeness/enhancement analysis), assignment-suitability (Copilot assignment readiness), and parent-recommendation (intelligent parent matching). Forces safe analysis patterns.",
     script: "",
     schema: analyzeByQueryHandleSchema,
     inputSchema: {
@@ -24,9 +24,9 @@ export const queryHandleTools: ToolConfig[] = [
           type: "array", 
           items: { 
             type: "string", 
-            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities", "hierarchy", "work-item-intelligence", "assignment-suitability", "parent-recommendation"] 
+            enum: ["effort", "velocity", "assignments", "risks", "completion", "priorities", "hierarchy", "cluster-topics", "work-item-intelligence", "assignment-suitability", "parent-recommendation"] 
           },
-          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child type validation and state progression checks), work-item-intelligence (AI-powered work item completeness and enhancement analysis), assignment-suitability (AI-powered Copilot assignment readiness), parent-recommendation (AI-powered intelligent parent finder)"
+          description: "Analysis types: effort (Story Points breakdown), velocity (completion trends), assignments (team workload), risks (blockers/stale items), completion (state distribution), priorities (priority breakdown), hierarchy (parent-child type validation and state progression checks), cluster-topics (smart topic clustering with query handles per topic), work-item-intelligence (AI-powered work item completeness and enhancement analysis), assignment-suitability (AI-powered Copilot assignment readiness), parent-recommendation (AI-powered intelligent parent finder)"
         },
         maxItemsToAnalyze: { type: "number", description: "Maximum number of items to analyze from query handle (default: all items, max: 1000)" },
         skip: { type: "number", description: "Number of items to skip for pagination (default: 0)" },
@@ -49,6 +49,9 @@ export const queryHandleTools: ToolConfig[] = [
         iterationPath: { type: "string", description: "Iteration path filter when searchScope='iteration' (only for parent-recommendation)" },
         requireActiveParents: { type: "boolean", description: "Only consider parents in Active/New/Committed states (only for parent-recommendation, default: true)" },
         confidenceThreshold: { type: "number", description: "Minimum confidence score for parent recommendations (only for parent-recommendation, 0-1, default: 0.5)" },
+        minClusterSize: { type: "number", description: "Minimum items per topic cluster (only for cluster-topics, default: 2, min: 2, max: 20)" },
+        maxClusters: { type: "number", description: "Maximum number of topic clusters (only for cluster-topics, default: 20, min: 2, max: 50)" },
+        clusteringMethod: { type: "string", enum: ["keywords", "ai-semantic"], description: "Clustering method (only for cluster-topics): keywords (fast, deterministic) or ai-semantic (slower, requires sampling, default: keywords)" },
         organization: { type: "string", description: "Azure DevOps organization name" },
         project: { type: "string", description: "Azure DevOps project name" }
       },
