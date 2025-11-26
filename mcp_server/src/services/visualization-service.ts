@@ -8,6 +8,8 @@
 import { logger } from '../utils/logger.js';
 import type { ADOWorkItem, WorkItemRelation } from '../types/index.js';
 import { createWorkItemRepository } from '../repositories/work-item.repository.js';
+import { createADOHttpClient } from '../utils/ado-http-client.js';
+import { getTokenProvider } from '../utils/token-provider.js';
 
 export type RelationType = 'all' | 'parent-child' | 'blocks' | 'related' | 'depends-on';
 export type ExportFormat = 'dot' | 'mermaid';
@@ -108,6 +110,7 @@ export async function buildDependencyGraph(
   options: VisualizationOptions
 ): Promise<DependencyGraph> {
   const repository = createWorkItemRepository(organization, project);
+  const httpClient = createADOHttpClient(organization, getTokenProvider(), project);
   
   const graph: DependencyGraph = {
     nodes: new Map(),
@@ -131,13 +134,12 @@ export async function buildDependencyGraph(
     visited.add(id);
     
     try {
-      // Fetch work item with relations
-      const workItem = await repository.getById(id, [
-        'System.Id',
-        'System.Title',
-        'System.WorkItemType',
-        'System.State'
-      ]);
+      // Fetch work item with relations using $expand=relations
+      // Note: Azure DevOps API requires $expand parameter to include relations field
+      const response = await httpClient.get<ADOWorkItem>(
+        `wit/workitems/${id}?$expand=relations`
+      );
+      const workItem = response.data;
       
       // Add node
       graph.nodes.set(id, {
@@ -147,6 +149,8 @@ export async function buildDependencyGraph(
         state: workItem.fields['System.State'] as string,
         url: workItem.url || `https://dev.azure.com/${organization}/${project}/_workitems/edit/${id}`
       });
+      
+      logger.debug(`[buildDependencyGraph] Work item ${id} has ${workItem.relations?.length ?? 0} relations`);
       
       // Process relations
       if (workItem.relations) {

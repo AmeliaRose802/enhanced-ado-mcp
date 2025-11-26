@@ -447,6 +447,19 @@ if (graph.data.summary.total_edges < graph.data.summary.total_nodes - 1) {
 }
 ```
 
+### Troubleshooting: No Edges in Graph
+
+**Symptom:** Graph shows all nodes but no edges/relationships (`total_edges: 0`)
+
+**Cause:** This was a bug in v1.0.0 where work items were fetched without requesting relationship data.
+
+**Solution:** Upgrade to v1.0.1 or later. The fix ensures relationships are properly fetched from Azure DevOps API.
+
+**Technical Details:** 
+- Azure DevOps API requires `$expand=relations` query parameter to include relationship data
+- Without this parameter, the `relations` field is undefined
+- Fixed in v1.0.1 by using `httpClient.get('wit/workitems/${id}?$expand=relations')` instead of `repository.getById()`
+
 ## Testing
 
 ### Manual Testing
@@ -483,6 +496,13 @@ handleVisualizeDependencies({ workItemIds: [123], format: 'mermaid' }).then(cons
 - **Iteration timeline** - Show iteration boundaries on timeline view
 
 ## Version History
+
+### v1.0.1 (2025-11-26)
+- **Bug Fix:** Fixed dependency visualization not finding relationships
+  - Root cause: Work items were fetched without `$expand=relations` parameter
+  - The Azure DevOps API only returns relationship data when explicitly requested via `$expand=relations`
+  - Changed `buildDependencyGraph()` to use `httpClient.get()` with `$expand=relations` instead of `repository.getById()`
+  - Now properly discovers and visualizes all work item relationships
 
 ### v1.0.0 (2025-11-18)
 - Initial release

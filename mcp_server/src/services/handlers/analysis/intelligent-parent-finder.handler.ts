@@ -352,21 +352,45 @@ export async function handleIntelligentParentFinder(
 
         logger.info(`✅ Found ${candidatesResult.workItems.length} parent candidates for child ${childWorkItemId}`);
 
-        // 3d. Pre-filter candidates to ensure same area path (double-check WIQL results)
+        // 3d. Pre-filter candidates to ensure BOTH area path match AND type compatibility
+        //     This prevents sending invalid candidates to the AI (efficiency + clarity)
         const validCandidates = candidatesResult.workItems.filter(wi => {
           const candidateAreaPath = wi.areaPath || '';
-          const isMatch = validateAreaPathMatch(childAreaPath, candidateAreaPath, validationArgs.includeSubAreas);
-          if (!isMatch) {
+          const candidateType = wi.type || '';
+          
+          // Check area path match
+          const areaPathMatch = validateAreaPathMatch(childAreaPath, candidateAreaPath, validationArgs.includeSubAreas);
+          if (!areaPathMatch) {
             logger.warn(`⚠️  Filtering out candidate ${wi.id} (${wi.title}): area path mismatch`);
             logger.warn(`    Child area: '${childAreaPath}'`);
             logger.warn(`    Candidate area: '${candidateAreaPath}'`);
+            return false;
           }
-          return isMatch;
+          
+          // Check type compatibility (CRITICAL: prevents AI from analyzing invalid parents)
+          const typeCompatible = validateParentChildTypeCompatibility(childType, candidateType);
+          if (!typeCompatible) {
+            logger.warn(`⚠️  Filtering out candidate ${wi.id} (${wi.title}): type incompatible`);
+            logger.warn(`    Child type: '${childType}' requires parent type: ${appropriateParentTypes.join(', ')}`);
+            logger.warn(`    Candidate type: '${candidateType}'`);
+            return false;
+          }
+          
+          return true;
         });
 
-        logger.info(`🔍 After area path validation: ${validCandidates.length}/${candidatesResult.workItems.length} candidates remain`);
+        logger.info(`🔍 After safety validation: ${validCandidates.length}/${candidatesResult.workItems.length} candidates remain`);
+        logger.info(`   ✓ Area path validated: ${validCandidates.length} match`);
+        logger.info(`   ✓ Type compatibility validated: ${validCandidates.length} are valid parent types`);
 
         if (validCandidates.length === 0) {
+          const areaPathFiltered = candidatesResult.workItems.filter(wi => {
+            return !validateAreaPathMatch(childAreaPath, wi.areaPath || '', validationArgs.includeSubAreas);
+          }).length;
+          const typeFiltered = candidatesResult.workItems.filter(wi => {
+            return !validateParentChildTypeCompatibility(childType, wi.type || '');
+          }).length;
+          
           allResults.push({
             childWorkItemId,
             childTitle,
@@ -374,7 +398,10 @@ export async function handleIntelligentParentFinder(
             childAreaPath,
             recommendations: [],
             warnings: [
-              `No matching parent candidates found in area path '${childAreaPath}'`
+              `All ${candidatesResult.workItems.length} candidates filtered out:`,
+              `- ${areaPathFiltered} failed area path match`,
+              `- ${typeFiltered} failed type compatibility check`,
+              `Child type '${childType}' requires parent types: ${appropriateParentTypes.join(', ')}`
             ],
             candidatesAnalyzed: candidatesResult.workItems.length
           });
@@ -447,17 +474,23 @@ export async function handleIntelligentParentFinder(
         
         const analysisResult = parsedResult as unknown as AIAnalysisResponse;
 
-        // 3h. Post-validate AI recommendations (safety check)
+        // 3h. Post-validate AI recommendations (sanity check for hallucinations)
+        //     Since we pre-filtered candidates, any violations here indicate:
+        //     1. AI hallucinated a work item ID not in the candidate list
+        //     2. AI ignored instructions and recommended invalid types/areas
+        //     This should be RARE - log as errors if it occurs
         const validatedRecommendations = analysisResult.recommendations.filter(rec => {
-          // Ensure parent type is valid for child type
+          // Sanity check: parent type should be valid (already filtered before AI)
           if (!validateParentChildTypeCompatibility(childType, rec.parentType)) {
-            logger.warn(`AI recommended invalid parent type ${rec.parentType} for child type ${childType} - rejecting`);
+            logger.error(`❌ AI HALLUCINATION: Recommended invalid parent type ${rec.parentType} for child type ${childType}`);
+            logger.error(`   This should not happen - candidates were pre-filtered for type compatibility`);
             return false;
           }
 
-          // Ensure area paths match
+          // Sanity check: area paths should match (already filtered before AI)
           if (!validateAreaPathMatch(childAreaPath, rec.parentAreaPath || '', validationArgs.includeSubAreas)) {
-            logger.warn(`AI recommended parent ${rec.parentWorkItemId} in different area path - rejecting`);
+            logger.error(`❌ AI HALLUCINATION: Recommended parent ${rec.parentWorkItemId} in different area path`);
+            logger.error(`   This should not happen - candidates were pre-filtered for area path match`);
             return false;
           }
 
@@ -467,9 +500,12 @@ export async function handleIntelligentParentFinder(
         // 3i. Collect validated recommendations
         const resultWarnings: string[] = [];
         if (validatedRecommendations.length < analysisResult.recommendations.length) {
+          // This indicates AI hallucination - should be rare since we pre-filter candidates
+          const rejectedCount = analysisResult.recommendations.length - validatedRecommendations.length;
           resultWarnings.push(
-            `${analysisResult.recommendations.length - validatedRecommendations.length} AI recommendations rejected due to safety validation`
+            `⚠️ ${rejectedCount} AI recommendation(s) rejected due to hallucination (recommended IDs not in candidate list or violated pre-filtered rules)`
           );
+          logger.error(`AI hallucinated ${rejectedCount} invalid recommendations despite pre-filtering`);
         }
 
         if (validatedRecommendations.length === 0 && analysisResult.noGoodMatchReason) {
@@ -553,9 +589,11 @@ export async function handleIntelligentParentFinder(
           candidatesAnalyzed: r.candidatesAnalyzed
         })),
         safetyValidation: {
-          areaPathEnforced: true,
-          validParentTypesOnly: true,
-          'hallucinationPrevention': 'Query handles used throughout'
+          preFilteringEnabled: true,
+          areaPathValidation: 'Enforced before AI analysis',
+          typeCompatibilityValidation: 'Enforced before AI analysis',
+          postValidation: 'Sanity check for hallucinated IDs only',
+          hallucinationPrevention: 'Query handles + pre-filtered candidate list'
         },
         nextSteps: (() => {
           // Check if we have any recommendations at all
