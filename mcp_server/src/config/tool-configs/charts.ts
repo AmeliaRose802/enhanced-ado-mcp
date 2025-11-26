@@ -120,7 +120,7 @@ export const chartTools: ToolConfig[] = [
           description: "Azure DevOps project name (uses config default if not provided)"
         }
       },
-      oneOf: [
+      anyOf: [
         { required: ["iterationPath"] },
         { required: ["queryHandle"] },
         { required: ["startDate", "endDate"] }
@@ -210,7 +210,7 @@ export const chartTools: ToolConfig[] = [
           description: "Azure DevOps project"
         }
       },
-      oneOf: [
+      anyOf: [
         { required: ["iterationPath"] },
         { required: ["queryHandle"] },
         { required: ["startDate", "endDate"] }
