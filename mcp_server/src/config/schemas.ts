@@ -652,19 +652,6 @@ export const getPullRequestCommentsSchema = z.object({
 });
 
 // ============================================================================
-// Template Management Schemas
-// ============================================================================
-
-export const listTemplatesSchema = z.object({});
-
-export const getTemplateSchema = z.object({
-  templateName: z.string().min(1, "Template name is required")
-});
-
-export const validateTemplateSchema = z.object({
-  templateName: z.string().min(1, "Template name is required")
-});
-
 // ============================================================================
 // Custom Field Manager Schemas
 // ============================================================================

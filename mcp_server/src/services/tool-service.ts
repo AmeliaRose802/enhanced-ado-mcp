@@ -350,22 +350,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleGenerateBurnupChart(args);
   }
 
-  // Template management tools
-  if (name === 'list-templates') {
-    const { handleListTemplates } = await import('./handlers/core/list-templates.handler.js');
-    return await handleListTemplates();
-  }
-
-  if (name === 'get-template') {
-    const { handleGetTemplate } = await import('./handlers/core/get-template.handler.js');
-    return await handleGetTemplate(config, args);
-  }
-
-  if (name === 'validate-template') {
-    const { handleValidateTemplate } = await import('./handlers/core/validate-template.handler.js');
-    return await handleValidateTemplate(config, args);
-  }
-
   // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)
   // are now consolidated into execute-bulk-operations as actions
 
