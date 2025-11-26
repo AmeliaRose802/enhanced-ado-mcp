@@ -1,8 +1,7 @@
 import type { ToolConfig } from "../../types/index.js";
 import {
   createNewItemSchema,
-  assignToCopilotSchema,
-  cloneWorkItemSchema
+  assignToCopilotSchema
 } from "../schemas.js";
 
 /**
@@ -52,31 +51,6 @@ export const workItemCreationTools: ToolConfig[] = [
         specializedAgent: { type: "string", description: "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'" }
       },
       required: ["workItemId", "repository"]
-    }
-  },
-  {
-    name: "clone-workitem",
-    description: "Clone/duplicate an existing work item with optional modifications. Creates a copy with customizable title, area, iteration, assignments, and can optionally include children. Returns a query handle for the cloned item to enable immediate bulk operations. Useful for template-based creation and environment cloning. Supports linking back to source.",
-    script: "",
-    schema: cloneWorkItemSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        sourceWorkItemId: { type: "number", description: "Work item ID to clone/duplicate" },
-        title: { type: "string", description: "Override title for cloned work item (default: '[Clone] {original title}')" },
-        targetAreaPath: { type: "string", description: "Area path for cloned work item (defaults to source area)" },
-        targetIterationPath: { type: "string", description: "Iteration path for cloned work item (defaults to source iteration)" },
-        targetProject: { type: "string", description: "Target project for cross-project cloning (defaults to source project)" },
-        assignTo: { type: "string", description: "Assign cloned work item to specific user (defaults to unassigned)" },
-        includeDescription: { type: "boolean", description: "Include description from source (default true)" },
-        includeAcceptanceCriteria: { type: "boolean", description: "Include acceptance criteria (default true)" },
-        includeTags: { type: "boolean", description: "Include tags from source (default true)" },
-        includeAttachments: { type: "boolean", description: "Clone attachments (default false, can be slow)" },
-        includeChildren: { type: "boolean", description: "Also clone child work items (default false)" },
-        linkToSource: { type: "boolean", description: "Create 'Related' link back to source (default true)" },
-        comment: { type: "string", description: "Add comment explaining the cloning" }
-      },
-      required: ["sourceWorkItemId"]
     }
   }
 ];

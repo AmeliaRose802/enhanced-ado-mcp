@@ -1,0 +1,575 @@
+/**
+ * Export Service
+ * 
+ * Handles exporting work items to various formats (CSV, Excel XLSX, TSV).
+ * Supports field selection, relationships, comments, and history.
+ */
+
+// TODO: Install exceljs types: npm install --save-dev @types/exceljs
+import * as ExcelJS from 'exceljs';
+import { logger, errorToContext } from '../utils/logger.js';
+import { loadConfiguration } from '../config/config.js';
+import type { ADOWorkItem } from '../types/ado.js';
+import * as path from 'path';
+import * as fs from 'fs';
+
+export interface ExportOptions {
+  format: 'csv' | 'xlsx' | 'tsv';
+  outputPath?: string;
+  fields?: string[];
+  includeAllFields?: boolean;
+  includeRelationships?: boolean;
+  relationshipDepth?: number;
+  includeComments?: boolean;
+  includeHistory?: boolean;
+  includeAttachmentLinks?: boolean;
+  maxHistoryRevisions?: number;
+  excelOptions?: {
+    multipleSheets?: boolean;
+    formatHeaders?: boolean;
+    freezePanes?: boolean;
+    autoColumnWidth?: boolean;
+    includeHyperlinks?: boolean;
+    sheetNames?: {
+      workItems?: string;
+      relationships?: string;
+      comments?: string;
+      history?: string;
+    };
+  };
+  maxItems?: number;
+  streamLargeExports?: boolean;
+}
+
+export interface ExportResult {
+  success: boolean;
+  filePath: string;
+  itemCount: number;
+  format: string;
+  fileSize: number;
+  metadata: {
+    exportDate: string;
+    fields: string[];
+    includeRelationships: boolean;
+    includeComments: boolean;
+    includeHistory: boolean;
+  };
+}
+
+export interface WorkItemExportData {
+  workItem: ADOWorkItem;
+  relationships?: Array<{
+    type: string;
+    targetId: number;
+    targetTitle?: string;
+    targetType?: string;
+    url?: string;
+  }>;
+  comments?: Array<{
+    id: number;
+    text: string;
+    createdBy: string;
+    createdDate: string;
+  }>;
+  history?: Array<{
+    rev: number;
+    changedDate: string;
+    changedBy: string;
+    changes: string;
+  }>;
+  attachments?: Array<{
+    id: number;
+    name: string;
+    url: string;
+    size: number;
+  }>;
+}
+
+/**
+ * Default standard fields to export
+ */
+const DEFAULT_FIELDS = [
+  'System.Id',
+  'System.WorkItemType',
+  'System.Title',
+  'System.State',
+  'System.AssignedTo',
+  'System.CreatedDate',
+  'System.ChangedDate',
+  'System.AreaPath',
+  'System.IterationPath',
+  'System.Tags',
+  'Microsoft.VSTS.Common.Priority',
+  'Microsoft.VSTS.Scheduling.StoryPoints'
+];
+
+/**
+ * Export work items to the specified format
+ */
+export async function exportWorkItems(
+  workItemsData: WorkItemExportData[],
+  options: ExportOptions
+): Promise<ExportResult> {
+  const { format, outputPath: customOutputPath } = options;
+
+  // Apply max items limit
+  const maxItems = options.maxItems || workItemsData.length;
+  const itemsToExport = workItemsData.slice(0, maxItems);
+
+  // Generate output path if not provided
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+  const defaultFileName = `work-items-export_${timestamp}.${format}`;
+  const outputPath = customOutputPath || path.join(process.cwd(), defaultFileName);
+
+  logger.info(`Exporting ${itemsToExport.length} work items to ${format.toUpperCase()} format: ${outputPath}`);
+
+  let result: ExportResult;
+
+  switch (format) {
+    case 'xlsx':
+      result = await exportToExcel(itemsToExport, outputPath, options);
+      break;
+    case 'csv':
+      result = await exportToCSV(itemsToExport, outputPath, options, ',');
+      break;
+    case 'tsv':
+      result = await exportToCSV(itemsToExport, outputPath, options, '\t');
+      break;
+    default:
+      throw new Error(`Unsupported export format: ${format}`);
+  }
+
+  return result;
+}
+
+/**
+ * Export to Excel (XLSX) format
+ */
+async function exportToExcel(
+  workItemsData: WorkItemExportData[],
+  outputPath: string,
+  options: ExportOptions
+): Promise<ExportResult> {
+  const workbook = new ExcelJS.Workbook();
+  
+  workbook.creator = 'Enhanced ADO MCP Server';
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  const excelOpts = options.excelOptions || {};
+  const multipleSheets = excelOpts.multipleSheets !== false;
+
+  // Determine fields to export
+  const fieldsToExport = getFieldsToExport(workItemsData, options);
+
+  // Create Work Items sheet
+  const workItemsSheet = workbook.addWorksheet(excelOpts.sheetNames?.workItems || 'Work Items');
+  await populateWorkItemsSheet(workItemsSheet, workItemsData, fieldsToExport, excelOpts);
+
+  // Create Relationships sheet if requested
+  if (options.includeRelationships && multipleSheets) {
+    const relationshipsSheet = workbook.addWorksheet(excelOpts.sheetNames?.relationships || 'Relationships');
+    await populateRelationshipsSheet(relationshipsSheet, workItemsData, excelOpts);
+  }
+
+  // Create Comments sheet if requested
+  if (options.includeComments && multipleSheets) {
+    const commentsSheet = workbook.addWorksheet(excelOpts.sheetNames?.comments || 'Comments');
+    await populateCommentsSheet(commentsSheet, workItemsData, excelOpts);
+  }
+
+  // Create History sheet if requested
+  if (options.includeHistory && multipleSheets) {
+    const historySheet = workbook.addWorksheet(excelOpts.sheetNames?.history || 'History');
+    await populateHistorySheet(historySheet, workItemsData, excelOpts);
+  }
+
+  // Write to file
+  await workbook.xlsx.writeFile(outputPath);
+
+  const stats = fs.statSync(outputPath);
+
+  return {
+    success: true,
+    filePath: outputPath,
+    itemCount: workItemsData.length,
+    format: 'xlsx',
+    fileSize: stats.size,
+    metadata: {
+      exportDate: new Date().toISOString(),
+      fields: fieldsToExport,
+      includeRelationships: options.includeRelationships || false,
+      includeComments: options.includeComments || false,
+      includeHistory: options.includeHistory || false
+    }
+  };
+}
+
+/**
+ * Populate work items sheet with data
+ */
+async function populateWorkItemsSheet(
+  sheet: ExcelJS.Worksheet,
+  workItemsData: WorkItemExportData[],
+  fields: string[],
+  excelOpts: ExportOptions['excelOptions']
+): Promise<void> {
+  const config = loadConfiguration();
+  const orgUrl = `https://dev.azure.com/${config.azureDevOps.organization}`;
+
+  // Add headers
+  const headers = fields.map(field => {
+    // Convert System.Id to "ID", System.Title to "Title", etc.
+    const parts = field.split('.');
+    return parts[parts.length - 1];
+  });
+
+  sheet.addRow(headers);
+
+  // Format headers
+  if (excelOpts?.formatHeaders !== false) {
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0078D4' }
+    };
+    headerRow.border = {
+      bottom: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+  }
+
+  // Freeze panes
+  if (excelOpts?.freezePanes !== false) {
+    sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+  }
+
+  // Add work item data
+  for (const { workItem } of workItemsData) {
+    const rowData = fields.map(field => {
+      const value = workItem.fields[field];
+      
+      // Format dates
+      if (field.includes('Date') && value && (typeof value === 'string' || typeof value === 'number')) {
+        return new Date(value);
+      }
+      
+      // Format assigned to (extract name from object)
+      if (field === 'System.AssignedTo' && value && typeof value === 'object') {
+        return (value as { displayName?: string }).displayName || value;
+      }
+      
+      return value ?? '';
+    });
+
+    const row = sheet.addRow(rowData);
+
+    // Add hyperlink to ID column if enabled
+    if (excelOpts?.includeHyperlinks !== false) {
+      const idCell = row.getCell(1);
+      const workItemId = workItem.id;
+      const url = `${orgUrl}/${config.azureDevOps.project}/_workitems/edit/${workItemId}`;
+      
+      idCell.value = {
+        text: String(workItemId),
+        hyperlink: url
+      };
+      idCell.font = { color: { argb: 'FF0563C1' }, underline: true };
+    }
+  }
+
+  // Auto-size columns
+  if (excelOpts?.autoColumnWidth !== false) {
+    // @ts-ignore - ExcelJS type mismatch
+    sheet.columns.forEach((column: ExcelJS.Column, index: number) => {
+      let maxLength = headers[index]?.length || 10;
+      
+      sheet.eachRow((row: ExcelJS.Row, rowNumber: number) => {
+        if (rowNumber === 1) return; // Skip header
+        const cell = row.getCell(index + 1);
+        const cellValue = cell.value?.toString() || '';
+        maxLength = Math.max(maxLength, cellValue.length);
+      });
+      
+      column.width = Math.min(maxLength + 2, 50); // Max 50 characters
+    });
+  }
+}
+
+/**
+ * Populate relationships sheet
+ */
+async function populateRelationshipsSheet(
+  sheet: ExcelJS.Worksheet,
+  workItemsData: WorkItemExportData[],
+  excelOpts: ExportOptions['excelOptions']
+): Promise<void> {
+  const headers = ['Work Item ID', 'Work Item Title', 'Relationship Type', 'Target ID', 'Target Title', 'Target Type', 'URL'];
+  sheet.addRow(headers);
+
+  // Format headers
+  if (excelOpts?.formatHeaders !== false) {
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0078D4' }
+    };
+  }
+
+  // Freeze panes
+  if (excelOpts?.freezePanes !== false) {
+    sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+  }
+
+  // Add relationship data
+  for (const { workItem, relationships } of workItemsData) {
+    if (!relationships || relationships.length === 0) continue;
+
+    for (const rel of relationships) {
+      const row = sheet.addRow([
+        workItem.id,
+        workItem.fields['System.Title'],
+        rel.type,
+        rel.targetId,
+        rel.targetTitle || '',
+        rel.targetType || '',
+        rel.url || ''
+      ]);
+
+      // Add hyperlink to URL
+      if (rel.url && excelOpts?.includeHyperlinks !== false) {
+        const urlCell = row.getCell(7);
+        urlCell.value = {
+          text: 'View',
+          hyperlink: rel.url
+        };
+        urlCell.font = { color: { argb: 'FF0563C1' }, underline: true };
+      }
+    }
+  }
+
+  // Auto-size columns
+  if (excelOpts?.autoColumnWidth !== false) {
+    // @ts-ignore - ExcelJS type mismatch
+    sheet.columns.forEach((column: ExcelJS.Column) => {
+      column.width = 20;
+    });
+  }
+}
+
+/**
+ * Populate comments sheet
+ */
+async function populateCommentsSheet(
+  sheet: ExcelJS.Worksheet,
+  workItemsData: WorkItemExportData[],
+  excelOpts: ExportOptions['excelOptions']
+): Promise<void> {
+  const headers = ['Work Item ID', 'Work Item Title', 'Comment ID', 'Created By', 'Created Date', 'Comment Text'];
+  sheet.addRow(headers);
+
+  // Format headers
+  if (excelOpts?.formatHeaders !== false) {
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0078D4' }
+    };
+  }
+
+  // Freeze panes
+  if (excelOpts?.freezePanes !== false) {
+    sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+  }
+
+  // Add comment data
+  for (const { workItem, comments } of workItemsData) {
+    if (!comments || comments.length === 0) continue;
+
+    for (const comment of comments) {
+      sheet.addRow([
+        workItem.id,
+        workItem.fields['System.Title'],
+        comment.id,
+        comment.createdBy,
+        new Date(comment.createdDate),
+        comment.text
+      ]);
+    }
+  }
+
+  // Auto-size columns
+  if (excelOpts?.autoColumnWidth !== false) {
+    // @ts-ignore - ExcelJS type mismatch
+    sheet.columns.forEach((column: ExcelJS.Column, index: number) => {
+      if (index === 5) { // Comment text column
+        column.width = 60;
+      } else {
+        column.width = 20;
+      }
+    });
+  }
+}
+
+/**
+ * Populate history sheet
+ */
+async function populateHistorySheet(
+  sheet: ExcelJS.Worksheet,
+  workItemsData: WorkItemExportData[],
+  excelOpts: ExportOptions['excelOptions']
+): Promise<void> {
+  const headers = ['Work Item ID', 'Work Item Title', 'Revision', 'Changed Date', 'Changed By', 'Changes'];
+  sheet.addRow(headers);
+
+  // Format headers
+  if (excelOpts?.formatHeaders !== false) {
+    const headerRow = sheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0078D4' }
+    };
+  }
+
+  // Freeze panes
+  if (excelOpts?.freezePanes !== false) {
+    sheet.views = [{ state: 'frozen', xSplit: 0, ySplit: 1 }];
+  }
+
+  // Add history data
+  for (const { workItem, history } of workItemsData) {
+    if (!history || history.length === 0) continue;
+
+    for (const revision of history) {
+      sheet.addRow([
+        workItem.id,
+        workItem.fields['System.Title'],
+        revision.rev,
+        new Date(revision.changedDate),
+        revision.changedBy,
+        revision.changes
+      ]);
+    }
+  }
+
+  // Auto-size columns
+  if (excelOpts?.autoColumnWidth !== false) {
+    // @ts-ignore - ExcelJS type mismatch
+    sheet.columns.forEach((column: ExcelJS.Column, index: number) => {
+      if (index === 5) { // Changes column
+        column.width = 60;
+      } else {
+        column.width = 20;
+      }
+    });
+  }
+}
+
+/**
+ * Export to CSV/TSV format
+ */
+async function exportToCSV(
+  workItemsData: WorkItemExportData[],
+  outputPath: string,
+  options: ExportOptions,
+  delimiter: ',' | '\t'
+): Promise<ExportResult> {
+  const fieldsToExport = getFieldsToExport(workItemsData, options);
+  const lines: string[] = [];
+
+  // Add headers
+  const headers = fieldsToExport.map(field => {
+    const parts = field.split('.');
+    return parts[parts.length - 1];
+  });
+  lines.push(headers.map(h => escapeCsvValue(h, delimiter)).join(delimiter));
+
+  // Add data rows
+  for (const { workItem } of workItemsData) {
+    const rowData = fieldsToExport.map(field => {
+      const value = workItem.fields[field];
+      
+      // Format dates
+      if (field.includes('Date') && value && (typeof value === 'string' || typeof value === 'number')) {
+        return new Date(value).toISOString();
+      }
+      
+      // Format assigned to
+      if (field === 'System.AssignedTo' && value && typeof value === 'object') {
+        return (value as { displayName?: string }).displayName || String(value);
+      }
+      
+      return value ?? '';
+    });
+
+    lines.push(rowData.map(v => escapeCsvValue(String(v), delimiter)).join(delimiter));
+  }
+
+  // Write to file
+  const content = lines.join('\n');
+  fs.writeFileSync(outputPath, content, 'utf-8');
+
+  const stats = fs.statSync(outputPath);
+
+  return {
+    success: true,
+    filePath: outputPath,
+    itemCount: workItemsData.length,
+    format: delimiter === ',' ? 'csv' : 'tsv',
+    fileSize: stats.size,
+    metadata: {
+      exportDate: new Date().toISOString(),
+      fields: fieldsToExport,
+      includeRelationships: options.includeRelationships || false,
+      includeComments: options.includeComments || false,
+      includeHistory: options.includeHistory || false
+    }
+  };
+}
+
+/**
+ * Escape CSV value (handle commas, quotes, newlines)
+ */
+function escapeCsvValue(value: string, delimiter: ',' | '\t'): string {
+  if (!value) return '';
+  
+  const needsQuoting = value.includes(delimiter) || value.includes('"') || value.includes('\n') || value.includes('\r');
+  
+  if (!needsQuoting) return value;
+  
+  // Escape quotes by doubling them
+  const escaped = value.replace(/"/g, '""');
+  
+  return `"${escaped}"`;
+}
+
+/**
+ * Determine which fields to export
+ */
+function getFieldsToExport(
+  workItemsData: WorkItemExportData[],
+  options: ExportOptions
+): string[] {
+  if (options.fields && options.fields.length > 0) {
+    return options.fields;
+  }
+
+  if (options.includeAllFields) {
+    // Collect all unique fields from all work items
+    const allFields = new Set<string>();
+    for (const { workItem } of workItemsData) {
+      Object.keys(workItem.fields).forEach(field => allFields.add(field));
+    }
+    return Array.from(allFields).sort();
+  }
+
+  return DEFAULT_FIELDS;
+}
+

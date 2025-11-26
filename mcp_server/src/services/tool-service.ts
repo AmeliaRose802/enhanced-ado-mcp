@@ -9,7 +9,6 @@ import { telemetryService } from "./telemetry-service.js";
 // Core handlers
 import { handleGetConfiguration } from "./handlers/core/get-configuration.handler.js";
 import { handleCreateNewItem } from "./handlers/core/create-new-item.handler.js";
-import { handleCloneWorkItem } from './handlers/core/clone-work-item.handler.js';
 import { handleGetPrompts } from './handlers/core/get-prompts.handler.js';
 import { handleListSubagents } from './handlers/core/list-subagents.handler.js';
 import { handleGetTeamMembers } from './handlers/core/get-team-members.handler.js';
@@ -250,11 +249,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Create work item using REST API (TypeScript implementation)
   if (name === 'create-workitem') {
     return await handleCreateNewItem(config, args);
-  }
-
-  // Clone work item
-  if (name === 'clone-workitem') {
-    return await handleCloneWorkItem(config, args);
   }
 
   // Unified WIQL query tool (supports both direct query and AI generation)

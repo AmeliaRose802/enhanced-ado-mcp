@@ -1,0 +1,53 @@
+name: feature-request-template
+title: "[Feature] {title}"
+type: Product Backlog Item
+priority: 2
+tags:
+  - feature
+  - needs-refinement
+description: |
+  ## Feature Description
+  {description}
+  
+  ## User Story
+  As a {user_role}, I want to {action} so that {benefit}.
+  
+  ## Business Value
+  {business_value}
+  
+  ## Technical Considerations
+  - Architecture impact: {architecture_impact}
+  - Dependencies: {dependencies}
+  - Estimated complexity: {complexity}
+
+fields:
+  Microsoft.VSTS.Common.AcceptanceCriteria: |
+    **Given** {precondition}
+    **When** {trigger}
+    **Then** {expected_outcome}
+    
+    - [ ] Feature requirements documented
+    - [ ] Design reviewed and approved
+    - [ ] Implementation complete
+    - [ ] Unit tests written
+    - [ ] Integration tests written
+    - [ ] Documentation updated
+    - [ ] User acceptance criteria met
+
+variables:
+  user_role: "user"
+  action: "perform action"
+  benefit: "achieve goal"
+  business_value: "To be defined"
+  architecture_impact: "Minimal"
+  dependencies: "None"
+  complexity: "Medium"
+  precondition: "initial state"
+  trigger: "user action"
+  expected_outcome: "desired result"
+
+metadata:
+  category: "Feature Development"
+  description: "Template for feature requests with user stories and acceptance criteria"
+  author: "Enhanced ADO MCP"
+  version: "1.0.0"

@@ -305,7 +305,6 @@ File: `mcp_server/test/unit/current-iteration-discovery.test.ts`
 Tools that create work items automatically use discovered iteration:
 - `create-workitem`
 - `assign-copilot`
-- `clone-workitem`
 
 **Precedence:**
 1. User-provided `iterationPath` parameter (highest priority)

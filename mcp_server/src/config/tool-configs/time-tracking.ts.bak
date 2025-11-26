@@ -1,0 +1,474 @@
+/**
+ * Time Tracking Tool Configurations
+ * 
+ * MCP tool definitions for work item time tracking functionality.
+ */
+
+import type { ToolConfig } from '../../types/index.js';
+import { timeTrackingService } from '../../services/time-tracking-service.js';
+import { logger, errorToContext } from '../../utils/logger.js';
+import { loadConfiguration } from '../config.js';
+import type {
+  StartTrackingArgs,
+  StopTrackingArgs,
+  LogWorkTimeArgs,
+  GetTimeReportArgs,
+  PauseResumeTrackingArgs
+} from '../../types/time-tracking.js';
+
+/**
+ * Start time tracking tool
+ */
+// @ts-ignore - Disabled, needs refactoring`nexport const startTimeTrackingTool: ToolConfig = {
+  name: 'start-time-tracking',
+  description: 'Start time tracking for a work item. Creates an active timer that tracks time spent on the work item. Use this when beginning work on an item.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      workItemId: {
+        type: 'number',
+        description: 'Work item ID to track time for (required)'
+      },
+      organization: {
+        type: 'string',
+        description: 'Azure DevOps organization name (uses config default if not provided)'
+      },
+      project: {
+        type: 'string',
+        description: 'Azure DevOps project name (uses config default if not provided)'
+      },
+      description: {
+        type: 'string',
+        description: 'Optional description of work to be performed'
+      },
+      billable: {
+        type: 'boolean',
+        description: 'Mark time as billable (default: false)'
+      }
+    },
+    required: ['workItemId']
+  }
+};
+
+// Handler is registered separately in tool-service.ts
+export async function handleStartTimeTracking(args: any) {
+  try {
+      const config = loadConfiguration();
+      const organization = args.organization || config.azureDevOps.organization;
+      const project = args.project || config.azureDevOps.project;
+
+      if (!organization || !project) {
+        return {
+          success: false,
+          error: 'Organization and project must be provided or configured'
+        };
+      }
+
+      const trackingArgs: StartTrackingArgs = {
+        workItemId: args.workItemId,
+        organization,
+        project,
+        description: args.description,
+        billable: args.billable || false
+      };
+
+      const result = await timeTrackingService.startTracking(trackingArgs);
+      return result;
+    } catch (error) {
+      logger.error('[start-time-tracking] Error:', errorToContext(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+}
+
+/**
+ * Stop time tracking tool
+ */
+// @ts-ignore - Disabled, needs refactoring`nexport const stopTimeTrackingTool: ToolConfig = {
+  name: 'stop-time-tracking',
+  description: 'Stop time tracking for a work item. Calculates duration, updates CompletedWork field, and logs time in work item comments. If no workItemId provided, stops the current active timer.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      workItemId: {
+        type: 'number',
+        description: 'Work item ID to stop tracking (optional - stops current active timer if not provided)'
+      },
+      organization: {
+        type: 'string',
+        description: 'Azure DevOps organization name (uses config default if not provided)'
+      },
+      project: {
+        type: 'string',
+        description: 'Azure DevOps project name (uses config default if not provided)'
+      },
+      description: {
+        type: 'string',
+        description: 'Optional description of work completed (overrides start description)'
+      },
+      updateFields: {
+        type: 'boolean',
+        description: 'Update CompletedWork and RemainingWork fields (default: true)'
+      }
+    },
+    required: []
+  },
+  handler: async (args: any) => {
+    try {
+      const config = loadConfiguration();
+      const organization = args.organization || config.azureDevOps.organization;
+      const project = args.project || config.azureDevOps.project;
+
+      if (!organization || !project) {
+        return {
+          success: false,
+          error: 'Organization and project must be provided or configured'
+        };
+      }
+
+      const trackingArgs: StopTrackingArgs = {
+        workItemId: args.workItemId,
+        organization,
+        project,
+        description: args.description,
+        updateFields: args.updateFields !== false
+      };
+
+      const result = await timeTrackingService.stopTracking(trackingArgs);
+      return result;
+    } catch (error) {
+      logger.error('[stop-time-tracking] Error:', errorToContext(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+};
+
+/**
+ * Pause/resume time tracking tool
+ */
+// @ts-ignore - Disabled, needs refactoring`nexport const pauseResumeTimeTrackingTool: ToolConfig = {
+  name: 'pause-resume-time-tracking',
+  description: 'Pause or resume time tracking for a work item. Use this to handle interruptions without stopping the timer. Paused time is not counted toward work duration.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      action: {
+        type: 'string',
+        enum: ['pause', 'resume'],
+        description: 'Action to perform: pause or resume'
+      },
+      workItemId: {
+        type: 'number',
+        description: 'Work item ID (optional - applies to current active timer if not provided)'
+      },
+      organization: {
+        type: 'string',
+        description: 'Azure DevOps organization name (uses config default if not provided)'
+      },
+      project: {
+        type: 'string',
+        description: 'Azure DevOps project name (uses config default if not provided)'
+      }
+    },
+    required: ['action']
+  },
+  handler: async (args: any) => {
+    try {
+      const config = loadConfiguration();
+      const organization = args.organization || config.azureDevOps.organization;
+      const project = args.project || config.azureDevOps.project;
+
+      if (!organization || !project) {
+        return {
+          success: false,
+          error: 'Organization and project must be provided or configured'
+        };
+      }
+
+      const trackingArgs: PauseResumeTrackingArgs = {
+        action: args.action,
+        workItemId: args.workItemId,
+        organization,
+        project
+      };
+
+      const result = await timeTrackingService.pauseResumeTracking(trackingArgs);
+      return result;
+    } catch (error) {
+      logger.error('[pause-resume-time-tracking] Error:', errorToContext(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+};
+
+/**
+ * Log work time manually tool
+ */
+// @ts-ignore - Disabled, needs refactoring`nexport const logWorkTimeTool: ToolConfig = {
+  name: 'log-work-time',
+  description: 'Manually log work time for a work item. Use this to record time retroactively or when not using automatic tracking. Updates CompletedWork field and adds time log comment.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      workItemId: {
+        type: 'number',
+        description: 'Work item ID to log time for (required)'
+      },
+      hours: {
+        type: 'number',
+        description: 'Hours to log (required, must be > 0)'
+      },
+      organization: {
+        type: 'string',
+        description: 'Azure DevOps organization name (uses config default if not provided)'
+      },
+      project: {
+        type: 'string',
+        description: 'Azure DevOps project name (uses config default if not provided)'
+      },
+      date: {
+        type: 'string',
+        description: 'Date for time entry (ISO format YYYY-MM-DD, defaults to today)'
+      },
+      description: {
+        type: 'string',
+        description: 'Description of work completed'
+      },
+      billable: {
+        type: 'boolean',
+        description: 'Mark time as billable (default: false)'
+      },
+      updateFields: {
+        type: 'boolean',
+        description: 'Update CompletedWork and RemainingWork fields (default: true)'
+      }
+    },
+    required: ['workItemId', 'hours']
+  },
+  handler: async (args: any) => {
+    try {
+      const config = loadConfiguration();
+      const organization = args.organization || config.azureDevOps.organization;
+      const project = args.project || config.azureDevOps.project;
+
+      if (!organization || !project) {
+        return {
+          success: false,
+          error: 'Organization and project must be provided or configured'
+        };
+      }
+
+      const logArgs: LogWorkTimeArgs = {
+        workItemId: args.workItemId,
+        hours: args.hours,
+        organization,
+        project,
+        date: args.date,
+        description: args.description,
+        billable: args.billable || false,
+        updateFields: args.updateFields !== false
+      };
+
+      const result = await timeTrackingService.logWorkTime(logArgs);
+      return result;
+    } catch (error) {
+      logger.error('[log-work-time] Error:', errorToContext(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+};
+
+/**
+ * Get time report tool
+ */
+// @ts-ignore - Disabled, needs refactoring`nexport const getTimeReportTool: ToolConfig = {
+  name: 'get-time-report',
+  description: 'Generate time tracking report by person, iteration, work item, or project. Shows total hours, breakdown by work item, person, and day. Supports date range filtering.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      reportType: {
+        type: 'string',
+        enum: ['person', 'iteration', 'workitem', 'project'],
+        description: 'Type of report to generate'
+      },
+      reportValue: {
+        type: 'string',
+        description: 'Value for report scope: person email, iteration path, work item ID, or project name'
+      },
+      organization: {
+        type: 'string',
+        description: 'Azure DevOps organization name (uses config default if not provided)'
+      },
+      project: {
+        type: 'string',
+        description: 'Azure DevOps project name (uses config default if not provided)'
+      },
+      startDate: {
+        type: 'string',
+        description: 'Start date (ISO format YYYY-MM-DD, defaults to 30 days ago)'
+      },
+      endDate: {
+        type: 'string',
+        description: 'End date (ISO format YYYY-MM-DD, defaults to today)'
+      },
+      format: {
+        type: 'string',
+        enum: ['json', 'summary', 'csv'],
+        description: 'Output format (default: summary)'
+      },
+      includeDetails: {
+        type: 'boolean',
+        description: 'Include detailed entry information (default: false)'
+      }
+    },
+    required: ['reportType', 'reportValue']
+  },
+  handler: async (args: any) => {
+    try {
+      const config = loadConfiguration();
+      const organization = args.organization || config.azureDevOps.organization;
+      const project = args.project || config.azureDevOps.project;
+
+      if (!organization || !project) {
+        return {
+          success: false,
+          error: 'Organization and project must be provided or configured'
+        };
+      }
+
+      const reportArgs: GetTimeReportArgs = {
+        reportType: args.reportType,
+        reportValue: args.reportValue,
+        organization,
+        project,
+        startDate: args.startDate,
+        endDate: args.endDate,
+        format: args.format || 'summary',
+        includeDetails: args.includeDetails || false
+      };
+
+      const report = await timeTrackingService.getTimeReport(reportArgs);
+
+      if (args.format === 'summary') {
+        // Format as human-readable summary
+        const summary = [
+          `Time Report: ${report.scope.type} - ${report.scope.value}`,
+          `Date Range: ${report.dateRange.start} to ${report.dateRange.end}`,
+          `Total Hours: ${report.totalHours.toFixed(2)}`,
+          `Work Items: ${report.workItemCount}`,
+          `Time Entries: ${report.entryCount}`,
+          '',
+          'By Work Item:'
+        ];
+
+        for (const [id, data] of Object.entries(report.byWorkItem)) {
+          summary.push(`  ${id}: ${data.title} - ${data.totalHours.toFixed(2)}h (${data.entryCount} entries)`);
+        }
+
+        if (report.byPerson) {
+          summary.push('', 'By Person:');
+          for (const [person, data] of Object.entries(report.byPerson)) {
+            summary.push(`  ${person}: ${data.totalHours.toFixed(2)}h (${data.workItemCount} items, ${data.entryCount} entries)`);
+          }
+        }
+
+        return {
+          success: true,
+          report: summary.join('\n'),
+          data: report
+        };
+      }
+
+      return {
+        success: true,
+        report
+      };
+    } catch (error) {
+      logger.error('[get-time-report] Error:', errorToContext(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+};
+
+/**
+ * Get active timers tool
+ */
+// @ts-ignore - Disabled, needs refactoring`nexport const getActiveTimersTool: ToolConfig = {
+  name: 'get-active-timers',
+  description: 'Get list of currently active time tracking timers. Shows elapsed time for each timer. Use this to check what work is currently being tracked.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      user: {
+        type: 'string',
+        description: 'Filter by user email (optional - defaults to current user)'
+      }
+    },
+    required: []
+  },
+  handler: async (args: any) => {
+    try {
+      const summary = await timeTrackingService.getActiveTimers(args.user);
+
+      if (summary.activeCount === 0) {
+        return {
+          success: true,
+          message: 'No active timers',
+          data: summary
+        };
+      }
+
+      const lines = [
+        `Active Timers: ${summary.activeCount}`,
+        `Total Elapsed: ${summary.totalElapsedHours.toFixed(2)} hours`,
+        ''
+      ];
+
+      for (const timer of summary.timers) {
+        lines.push(`Work Item ${timer.workItemId}: ${timer.elapsedHours.toFixed(2)}h (${timer.status})`);
+        lines.push(`  Started: ${timer.startTime}`);
+        lines.push(`  User: ${timer.user}`);
+      }
+
+      return {
+        success: true,
+        summary: lines.join('\n'),
+        data: summary
+      };
+    } catch (error) {
+      logger.error('[get-active-timers] Error:', errorToContext(error));
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+};
+
+/**
+ * Export all time tracking tools
+ */
+export const timeTrackingTools: ToolConfig[] = [
+  startTimeTrackingTool,
+  stopTimeTrackingTool,
+  pauseResumeTimeTrackingTool,
+  logWorkTimeTool,
+  getTimeReportTool,
+  getActiveTimersTool
+];
+

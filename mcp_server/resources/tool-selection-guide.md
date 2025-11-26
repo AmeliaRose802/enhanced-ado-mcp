@@ -818,7 +818,6 @@ Need data?
 Creating items?
 ├─ Standard creation? → create-workitem
 ├─ Creating? → create-workitem
-├─ Clone existing? → clone-workitem
 └─ Assign existing? → assign-copilot
 
 Analysis needed?

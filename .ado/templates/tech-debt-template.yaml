@@ -1,0 +1,55 @@
+name: tech-debt-template
+title: "[Tech Debt] {title}"
+type: Task
+priority: 3
+tags:
+  - tech-debt
+  - refactoring
+  - code-quality
+description: |
+  ## Technical Debt Description
+  {description}
+  
+  ## Current State
+  {current_state}
+  
+  ## Desired State
+  {desired_state}
+  
+  ## Impact
+  - **Code Quality:** {code_quality_impact}
+  - **Maintainability:** {maintainability_impact}
+  - **Performance:** {performance_impact}
+  - **Risk:** {risk_level}
+  
+  ## Refactoring Approach
+  {refactoring_approach}
+  
+  ## Estimated Effort
+  {estimated_effort}
+
+fields:
+  Microsoft.VSTS.Common.AcceptanceCriteria: |
+    - [ ] Code refactored and improved
+    - [ ] Tests still pass
+    - [ ] Code coverage maintained or improved
+    - [ ] Performance impact assessed
+    - [ ] Documentation updated
+    - [ ] No breaking changes introduced
+    - [ ] Code review completed
+
+variables:
+  current_state: "Current implementation has issues"
+  desired_state: "Clean, maintainable code"
+  code_quality_impact: "Medium - reduces code smells"
+  maintainability_impact: "High - easier to understand and modify"
+  performance_impact: "Neutral - no performance changes"
+  risk_level: "Low - incremental refactoring"
+  refactoring_approach: "Step-by-step refactoring with tests"
+  estimated_effort: "2-3 days"
+
+metadata:
+  category: "Technical Debt"
+  description: "Template for tracking and resolving technical debt items"
+  author: "Enhanced ADO MCP"
+  version: "1.0.0"

@@ -108,23 +108,6 @@ export const createNewItemSchema = z.object({
   }
 );
 
-export const cloneWorkItemSchema = z.object({
-  sourceWorkItemId: workItemIdField(),
-  title: optionalString(),
-  targetAreaPath: optionalString(),
-  targetIterationPath: optionalString(),
-  targetProject: optionalString(),
-  assignTo: optionalString(),
-  includeDescription: optionalBool(true),
-  includeAcceptanceCriteria: optionalBool(true),
-  includeTags: optionalBool(true),
-  includeAttachments: optionalBool(false),
-  includeChildren: optionalBool(false),
-  linkToSource: optionalBool(true),
-  comment: optionalString(),
-  ...orgProjectFields()
-});
-
 // ============================================================================
 // GitHub Copilot Integration Schemas
 // ============================================================================

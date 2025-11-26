@@ -1,0 +1,72 @@
+name: user-story-template
+title: "{title}"
+type: User Story
+priority: 2
+tags:
+  - user-story
+description: |
+  ## User Story
+  **As a** {user_role}
+  **I want** {capability}
+  **So that** {benefit}
+  
+  ## Background
+  {background}
+  
+  ## Functional Requirements
+  {functional_requirements}
+  
+  ## Non-Functional Requirements
+  - Performance: {performance_req}
+  - Security: {security_req}
+  - Usability: {usability_req}
+  - Accessibility: {accessibility_req}
+  
+  ## Dependencies
+  {dependencies}
+  
+  ## Notes
+  {notes}
+
+fields:
+  Microsoft.VSTS.Common.AcceptanceCriteria: |
+    ### Acceptance Criteria (Given/When/Then)
+    
+    **Scenario 1: {scenario_name}**
+    - **Given** {precondition}
+    - **When** {action}
+    - **Then** {outcome}
+    
+    ### Definition of Done
+    - [ ] All acceptance criteria met
+    - [ ] Code reviewed and approved
+    - [ ] Unit tests written and passing
+    - [ ] Integration tests written and passing
+    - [ ] UI/UX reviewed (if applicable)
+    - [ ] Documentation updated
+    - [ ] No critical or high-priority bugs
+    - [ ] Deployed to test environment
+    - [ ] Product owner approval
+
+variables:
+  user_role: "end user"
+  capability: "perform a specific action"
+  benefit: "achieve a desired goal"
+  background: "Context and motivation for this story"
+  functional_requirements: "Detailed functional requirements"
+  performance_req: "Response time < 2 seconds"
+  security_req: "Role-based access control"
+  usability_req: "Intuitive UI, minimal clicks"
+  accessibility_req: "WCAG 2.1 AA compliant"
+  dependencies: "None"
+  notes: "Additional notes and considerations"
+  scenario_name: "Main Happy Path"
+  precondition: "User is logged in"
+  action: "User performs action"
+  outcome: "System responds as expected"
+
+metadata:
+  category: "Agile Development"
+  description: "Standard user story template with Given/When/Then acceptance criteria"
+  author: "Enhanced ADO MCP"
+  version: "1.0.0"

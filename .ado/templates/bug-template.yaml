@@ -1,0 +1,40 @@
+name: bug-template
+title: "[Bug] {title}"
+type: Bug
+priority: 1
+tags:
+  - bug
+  - needs-triage
+description: |
+  **Steps to Reproduce:**
+  1. 
+  2. 
+  3. 
+  
+  **Expected Behavior:**
+  
+  **Actual Behavior:**
+  
+  **Environment:**
+  - OS: {os}
+  - Version: {version}
+  - Browser: {browser}
+
+fields:
+  Microsoft.VSTS.Common.AcceptanceCriteria: |
+    - [ ] Bug is reproducible
+    - [ ] Root cause identified
+    - [ ] Fix implemented and tested
+    - [ ] Regression tests added
+    - [ ] Documentation updated if needed
+
+variables:
+  os: "Windows 11"
+  version: "1.0.0"
+  browser: "Chrome"
+
+metadata:
+  category: "Bug Reporting"
+  description: "Standard template for bug reports with repro steps and acceptance criteria"
+  author: "Enhanced ADO MCP"
+  version: "1.0.0"

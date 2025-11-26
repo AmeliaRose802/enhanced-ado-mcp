@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/uuid": "^10.0.0",
+    "markdownlint-cli": "^0.45.0"
+  },
+  "dependencies": {
+    "@types/flexsearch": "^0.7.6",
+    "exceljs": "^4.4.0",
+    "flexsearch": "^0.8.212",
+    "uuid": "^13.0.0"
+  }
+}
