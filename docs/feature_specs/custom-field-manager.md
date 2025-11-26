@@ -19,10 +19,9 @@ Azure DevOps projects often accumulate custom fields over time, leading to:
 
 ## Solution
 
-The Custom Field Manager provides three MCP tools:
+The Custom Field Manager provides two MCP tools:
 1. **discover-custom-fields** - Scan and inventory all fields in a project
-2. **validate-custom-fields** - Identify field issues and inconsistencies
-3. **export-field-schema** - Generate structured field documentation
+2. **export-field-schema** - Generate structured field documentation
 
 ## Tools
 
@@ -134,120 +133,7 @@ Each field includes:
 
 ---
 
-### 2. validate-custom-fields
-
-Validate custom fields and identify issues with naming, usage, and standardization.
-
-#### Input Parameters
-
-**Optional:**
-- `severityFilter` (enum) - Filter issues by severity: `error`, `warning`, `info`, `all` (default: all)
-- `focusOnCustomFields` (boolean) - Only validate custom fields (default: true)
-- `organization` (string) - Azure DevOps organization (uses config default if not provided)
-- `project` (string) - Azure DevOps project (uses config default if not provided)
-
-#### Output Format
-
-```json
-{
-  "success": true,
-  "data": {
-    "issues": [
-      {
-        "severity": "warning",
-        "field": "security classification",
-        "issue": "Inconsistent field name casing: Security Classification, security classification",
-        "suggestion": "Standardize field naming to use consistent casing",
-        "affectedWorkItemTypes": ["Product Backlog Item", "Bug"]
-      },
-      {
-        "severity": "info",
-        "field": "Custom.OldPriority",
-        "issue": "Custom field appears to be unused",
-        "suggestion": "Consider removing this field if it is no longer needed"
-      },
-      {
-        "severity": "warning",
-        "field": "Custom.DeprecatedField",
-        "issue": "Deprecated field is still in use",
-        "suggestion": "Migrate data to a new field and remove this field",
-        "affectedWorkItemTypes": ["Task"]
-      },
-      {
-        "severity": "info",
-        "field": "Custom.SecurityLevel, Custom.SecurityClassification",
-        "issue": "Similar field names detected: \"Security Level\" and \"Security Classification\"",
-        "suggestion": "Consider merging these fields if they serve the same purpose"
-      }
-    ],
-    "issue_summary": {
-      "errors": 0,
-      "warnings": 2,
-      "info": 2
-    },
-    "field_statistics": {
-      "totalFields": 120,
-      "customFields": 15,
-      "microsoftFields": 45,
-      "systemFields": 60,
-      "picklistFields": 8,
-      "deprecatedFields": 2,
-      "unusedFields": 3
-    },
-    "validation_scope": {
-      "total_fields_analyzed": 15,
-      "custom_fields_only": true
-    },
-    "summary": "Found 4 field issues (0 errors, 2 warnings, 2 info). Analyzed 15 fields."
-  },
-  "metadata": {
-    "organization": "myorg",
-    "project": "MyProject",
-    "execution_time_ms": 1823,
-    "filters": {
-      "severity_filter": "all",
-      "focus_on_custom_fields": true
-    }
-  },
-  "errors": [],
-  "warnings": []
-}
-```
-
-#### Validation Rules
-
-1. **Inconsistent Casing** - Detects fields with similar names but different casing
-2. **Unused Fields** - Identifies custom fields not used in any work item type
-3. **Deprecated Fields** - Finds deprecated fields still in active use
-4. **Similar Names** - Detects potential duplicate fields with similar names
-
-#### Examples
-
-**Validate only custom fields (default):**
-```json
-{
-  "focusOnCustomFields": true
-}
-```
-
-**Show only errors and warnings:**
-```json
-{
-  "severityFilter": "warning"
-}
-```
-
-**Validate all fields including system/Microsoft:**
-```json
-{
-  "focusOnCustomFields": false,
-  "severityFilter": "all"
-}
-```
-
----
-
-### 3. export-field-schema
+### 2. export-field-schema
 
 Export field definitions as structured JSON or YAML schema for documentation or migration.
 
@@ -446,7 +332,6 @@ Field metadata is cached with 60-minute TTL since fields change infrequently:
 
 The field manager minimizes API calls:
 - **discover-custom-fields**: 2-10 API calls (depends on work item type count)
-- **validate-custom-fields**: 2-10 API calls (same as discovery)
 - **export-field-schema**: 2-10 API calls (same as discovery)
 
 Subsequent calls within cache TTL use cached data.

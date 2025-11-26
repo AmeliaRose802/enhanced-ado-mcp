@@ -15,7 +15,6 @@ import { handleGetTeamMembers } from './handlers/core/get-team-members.handler.j
 
 // Discovery handlers
 import { handleDiscoverCustomFields } from './handlers/discovery/discover-custom-fields.handler.js';
-import { handleValidateCustomFields } from './handlers/discovery/validate-custom-fields.handler.js';
 import { handleExportFieldSchema } from './handlers/discovery/export-field-schema.handler.js';
 
 // Query handlers
@@ -210,11 +209,6 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
   // Discover custom fields
   if (name === 'discover-custom-fields') {
     return await handleDiscoverCustomFields(args as any);
-  }
-
-  // Validate custom fields
-  if (name === 'validate-custom-fields') {
-    return await handleValidateCustomFields(args as any);
   }
 
   // Export field schema

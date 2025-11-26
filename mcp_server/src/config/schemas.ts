@@ -655,11 +655,7 @@ export const discoverCustomFieldsSchema = z.object({
   ...orgProjectFields()
 });
 
-export const validateCustomFieldsSchema = z.object({
-  severityFilter: z.enum(["error", "warning", "info", "all"]).optional().default("all"),
-  focusOnCustomFields: optionalBool(true),
-  ...orgProjectFields()
-});
+// REMOVED: validateCustomFieldsSchema - out of scope, not useful
 
 export const exportFieldSchemaSchema = z.object({
   format: z.enum(["json", "yaml"]).optional().default("json"),

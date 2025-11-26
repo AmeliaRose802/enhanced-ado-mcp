@@ -5,7 +5,6 @@ import {
   listSubagentsSchema,
   getTeamMembersSchema,
   discoverCustomFieldsSchema,
-  validateCustomFieldsSchema,
   exportFieldSchemaSchema
 } from "../schemas.js";
 
@@ -105,22 +104,6 @@ export const discoveryTools: ToolConfig[] = [
         includeSystemFields: { type: "boolean", description: "Include system fields (System.*) in results (default: false)" },
         includeMicrosoftFields: { type: "boolean", description: "Include Microsoft VSTS fields (Microsoft.*) in results (default: true)" },
         includePicklistValues: { type: "boolean", description: "Include allowed values for picklist fields (default: true)" },
-        organization: { type: "string", description: "Azure DevOps organization (optional, uses config default)" },
-        project: { type: "string", description: "Azure DevOps project (optional, uses config default)" }
-      },
-      required: []
-    }
-  },
-  {
-    name: "validate-custom-fields",
-    description: "Validate custom fields and identify issues: inconsistent naming (casing, typos), unused fields, deprecated fields still in use, similar/duplicate field names. Returns actionable recommendations for field standardization and cleanup.",
-    script: "",
-    schema: validateCustomFieldsSchema,
-    inputSchema: {
-      type: "object",
-      properties: {
-        severityFilter: { type: "string", enum: ["error", "warning", "info", "all"], description: "Filter issues by severity (default: all)" },
-        focusOnCustomFields: { type: "boolean", description: "Only validate custom fields (exclude system/Microsoft fields) (default: true)" },
         organization: { type: "string", description: "Azure DevOps organization (optional, uses config default)" },
         project: { type: "string", description: "Azure DevOps project (optional, uses config default)" }
       },
