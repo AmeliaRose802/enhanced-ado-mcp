@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { logger } from '../../../utils/logger.js';
 import { loadConfiguration } from '../../../config/config.js';
+import { buildSuccessResponse, buildValidationErrorResponse, buildErrorResponse } from '../../../utils/response-builder.js';
 import { createWorkItemRepository } from '../../../repositories/work-item.repository.js';
 import { queryHandleService } from '../../../services/query-handle-service.js';
 import { generateBurndownChart } from '../../../services/chart-service.js';
@@ -263,61 +264,41 @@ export async function handleGenerateBurndownChart(args: unknown): Promise<ToolEx
     
     logger.debug(`[handleGenerateBurndownChart] Successfully generated ${input.format} burndown chart`);
     
-    return {
-      success: true,
-      data: {
-        chart: result.chart,
-        calculation: result.data,
-        metadata: result.metadata,
-        sprint: {
-          name: sprint.name,
-          startDate: sprint.startDate,
-          endDate: sprint.endDate,
-          iterationPath: sprint.iterationPath,
-          workItemCount: workItems.length
-        },
-        instructions: input.format === 'ascii' 
-          ? 'ASCII chart rendered. Best viewed in monospace font.'
-          : input.format === 'svg'
-          ? 'SVG chart generated. Save to .svg file to view in browser or image viewer.'
-          : 'Chart data returned in JSON format. Use for custom rendering or analysis.'
+    return buildSuccessResponse({
+      chart: result.chart,
+      calculation: result.data,
+      metadata: result.metadata,
+      sprint: {
+        name: sprint.name,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+        iterationPath: sprint.iterationPath,
+        workItemCount: workItems.length
       },
-      metadata: {
-        tool: 'generate-burndown-chart',
-        timestamp: new Date().toISOString(),
-        format: input.format,
-        workUnit: input.workUnit
-      },
-      errors: [],
-      warnings: result.warnings || []
-    };
+      instructions: input.format === 'ascii' 
+        ? 'ASCII chart rendered. Best viewed in monospace font.'
+        : input.format === 'svg'
+        ? 'SVG chart generated. Save to .svg file to view in browser or image viewer.'
+        : 'Chart data returned in JSON format. Use for custom rendering or analysis.'
+    }, {
+      tool: 'generate-burndown-chart',
+      timestamp: new Date().toISOString(),
+      format: input.format,
+      workUnit: input.workUnit,
+      warnings: result.warnings
+    });
   } catch (error) {
     logger.error('[handleGenerateBurndownChart] Error:', 
       error instanceof Error ? { message: error.message } : { error: String(error) });
     
     if (error instanceof z.ZodError) {
-      return {
-        success: false,
-        data: null,
-        metadata: {
-          tool: 'generate-burndown-chart',
-          timestamp: new Date().toISOString()
-        },
-        errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
-        warnings: []
-      };
+      return buildValidationErrorResponse(error, 'generate-burndown-chart');
     }
     
-    return {
-      success: false,
-      data: null,
-      metadata: {
-        tool: 'generate-burndown-chart',
-        timestamp: new Date().toISOString()
-      },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(error as Error, {
+      tool: 'generate-burndown-chart',
+      timestamp: new Date().toISOString()
+    });
   }
 }
 

@@ -205,6 +205,7 @@ function formatErrorMessage(error: unknown): string {
 - Return structured results
 - Include metadata for debugging
 - Add warnings for edge cases
+- **Use response-builder helper functions** (buildSuccessResponse, buildErrorResponse)
 
 ❌ **Don't:**
 - Put business logic in handlers
@@ -212,6 +213,125 @@ function formatErrorMessage(error: unknown): string {
 - Return unstructured data
 - Throw unhandled errors
 - Ignore configuration
+- **Manually construct error responses** (use helpers instead)
+
+## Standard Error Handling Pattern
+
+### Required Approach: Use Response Builder Helpers
+
+**ALWAYS use the helper functions from `utils/response-builder.ts`:**
+
+```typescript
+import { 
+  buildSuccessResponse, 
+  buildErrorResponse,
+  buildValidationErrorResponse,
+  buildNotFoundError,
+  buildAuthenticationError,
+  buildNetworkError,
+  buildBusinessLogicError
+} from '../../../utils/response-builder.js';
+
+export async function handleMyTool(
+  config: ToolConfig,
+  args: unknown
+): Promise<ToolExecutionResult> {
+  try {
+    // 1. Validate input with Zod
+    const validated = myToolSchema.parse(args);
+    
+    // 2. Business logic
+    const result = await performOperation(validated);
+    
+    // 3. Return success with helpers
+    return buildSuccessResponse(result, {
+      source: "my-tool",
+      itemCount: result.items.length
+    });
+    
+  } catch (error) {
+    // 4. Handle specific error types
+    if (error instanceof z.ZodError) {
+      return buildValidationErrorResponse(error, "my-tool");
+    }
+    
+    // 5. Use categorized error helpers for known error types
+    if (error instanceof Error && error.message.includes('not found')) {
+      return buildNotFoundError('work-item', args.workItemId, { source: "my-tool" });
+    }
+    
+    // 6. Generic error fallback (auto-categorizes)
+    return buildErrorResponse(error as Error, { source: "my-tool" });
+  }
+}
+```
+
+### Available Response Builder Functions
+
+**Success:**
+- `buildSuccessResponse(data, metadata?)` - Standard success response
+
+**Error Helpers (Auto-categorized):**
+- `buildErrorResponse(error, metadata?, category?, code?)` - Generic error (auto-categorizes if category omitted)
+- `buildValidationErrorResponse(zodError, source)` - Zod validation errors with field details
+- `buildNotFoundError(resourceType, resourceId, metadata?)` - Resource not found (work-item, project, etc.)
+- `buildAuthenticationError(message, metadata?)` - Auth failures
+- `buildNetworkError(message, metadata?)` - Network issues
+- `buildBusinessLogicError(message, metadata?)` - Business rule violations
+- `buildSamplingUnavailableResponse()` - AI sampling not available
+
+### Error Handling Anti-Patterns
+
+❌ **WRONG - Manual error construction:**
+```typescript
+catch (error) {
+  return {
+    success: false,
+    data: null,
+    metadata: { source: "my-tool" },
+    errors: [error instanceof Error ? error.message : String(error)],
+    warnings: []
+  };
+}
+```
+
+✅ **CORRECT - Use helper:**
+```typescript
+catch (error) {
+  return buildErrorResponse(error as Error, { source: "my-tool" });
+}
+```
+
+❌ **WRONG - Manual Zod error formatting:**
+```typescript
+catch (error) {
+  if (error instanceof z.ZodError) {
+    return {
+      success: false,
+      errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+      // ...
+    };
+  }
+}
+```
+
+✅ **CORRECT - Use validation helper:**
+```typescript
+catch (error) {
+  if (error instanceof z.ZodError) {
+    return buildValidationErrorResponse(error, "my-tool");
+  }
+}
+```
+
+### Benefits of Using Response Builders
+
+1. **Consistent error categorization** - Auto-classifies errors (AUTH, NETWORK, NOT_FOUND, etc.)
+2. **Error codes** - Standardized error codes for programmatic handling
+3. **Metadata** - Proper error context for debugging and telemetry
+4. **Future-proof** - Changes to error structure happen in one place
+5. **Type safety** - Ensures ToolExecutionResult contract is met
+6. **Actionable messages** - Helpers provide better error messages for AI agents
 
 ## Configuration System
 

@@ -4,6 +4,7 @@
 
 import { ToolExecutionResult, asToolData } from "@/types/index.js";
 import { loadConfiguration } from "@/config/config.js";
+import { buildSuccessResponse, buildErrorResponse } from "@/utils/response-builder.js";
 
 export async function handleGetConfiguration(args: unknown): Promise<ToolExecutionResult> {
   try {
@@ -36,9 +37,8 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
         : `${areaPaths.length} area paths configured: ${areaPaths.join(', ')}.`
       : "No default area path configured.";
     
-    return {
-      success: true,
-      data: asToolData({
+    return buildSuccessResponse(
+      asToolData({
         configuration: configData,
         helpText: {
           areaPath: areaPathHelp,
@@ -50,17 +50,9 @@ export async function handleGetConfiguration(args: unknown): Promise<ToolExecuti
             : "No GitHub Copilot GUID configured. Provide --copilot-guid parameter."
         }
       }),
-      metadata: { source: "internal", section },
-      errors: [],
-      warnings: []
-    };
+      { source: "internal", section }
+    );
   } catch (error) {
-    return {
-      success: false,
-      data: null,
-      metadata: { source: "internal" },
-      errors: [error instanceof Error ? error.message : String(error)],
-      warnings: []
-    };
+    return buildErrorResponse(error as Error, { source: "internal" });
   }
 }
