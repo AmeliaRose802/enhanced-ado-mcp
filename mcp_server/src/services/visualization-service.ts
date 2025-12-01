@@ -587,12 +587,12 @@ export function exportAsMermaid(graph: DependencyGraph, options: VisualizationOp
       }
     }
   } else {
-    // Define type-based style classes with more vibrant colors
-    lines.push('  classDef typeEpic fill:#C084FC,stroke:#6B21A8,stroke-width:3px,color:#000');
-    lines.push('  classDef typeFeature fill:#34D399,stroke:#065F46,stroke-width:3px,color:#000');
-    lines.push('  classDef typeStory fill:#60A5FA,stroke:#1E40AF,stroke-width:3px,color:#000');
-    lines.push('  classDef typeTask fill:#FB923C,stroke:#9A3412,stroke-width:3px,color:#000');
-    lines.push('  classDef typeBug fill:#F87171,stroke:#991B1B,stroke-width:3px,color:#000');
+    // Define type-based style classes with vibrant colors
+    lines.push('  classDef typeEpic fill:#8B4789,stroke:#4A1D48,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeFeature fill:#FF6B35,stroke:#CC4400,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeStory fill:#4A90E2,stroke:#1E5BA8,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeTask fill:#50C878,stroke:#2A8F55,stroke-width:3px,color:#000');
+    lines.push('  classDef typeBug fill:#E63946,stroke:#B8161F,stroke-width:3px,color:#FFF');
     lines.push('  classDef typeDefault fill:#E5E7EB,stroke:#374151,stroke-width:3px,color:#000');
     lines.push('');
     
