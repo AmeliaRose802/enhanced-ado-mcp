@@ -315,17 +315,16 @@ function getStateColor(state: string): string {
 
 /**
  * Get color for work item type
- * Colors chosen for maximum readability with dark text on colored backgrounds
- * All colors tested for WCAG AA contrast ratio (4.5:1) with black text
+ * Using vibrant colors with good contrast for readability
  */
 function getTypeColor(type: string): string {
   const typeLower = type.toLowerCase();
   
-  if (typeLower.includes('epic')) return '#E9D5FF'; // Light lavender (high contrast with black text)
-  if (typeLower.includes('feature')) return '#A7F3D0'; // Light mint green (excellent contrast)
-  if (typeLower.includes('story') || typeLower.includes('backlog')) return '#BFDBFE'; // Light blue (maximum readability)
-  if (typeLower.includes('task')) return '#FED7AA'; // Light peach/orange (high contrast)
-  if (typeLower.includes('bug')) return '#FECACA'; // Light coral/red (high visibility)
+  if (typeLower.includes('epic')) return '#8B4789'; // Purple
+  if (typeLower.includes('feature')) return '#FF6B35'; // Orange
+  if (typeLower.includes('story') || typeLower.includes('backlog')) return '#4A90E2'; // Blue
+  if (typeLower.includes('task')) return '#50C878'; // Emerald
+  if (typeLower.includes('bug')) return '#E63946'; // Red
   
   return '#E5E5E5'; // Light gray default
 }
@@ -340,7 +339,7 @@ function getTypeShape(type: string): string {
   if (typeLower.includes('feature')) return 'octagon';
   if (typeLower.includes('story') || typeLower.includes('backlog')) return 'box';
   if (typeLower.includes('task')) return 'ellipse';
-  if (typeLower.includes('bug')) return 'box'; // Use box instead of diamond to prevent oversizing
+  if (typeLower.includes('bug')) return 'diamond';
   
   return 'box';
 }
@@ -542,7 +541,7 @@ export function exportAsMermaid(graph: DependencyGraph, options: VisualizationOp
     } else if (typeLower.includes('feature')) {
       nodeDefinition = `  ${id}["${escapeMermaidLabel(label)}"]`;
     } else if (typeLower.includes('bug')) {
-      nodeDefinition = `  ${id}["${escapeMermaidLabel(label)}"]`; // Use box instead of diamond
+      nodeDefinition = `  ${id}{"${escapeMermaidLabel(label)}"}`;
     } else if (typeLower.includes('task')) {
       nodeDefinition = `  ${id}(("${escapeMermaidLabel(label)}"))`;
     } else {
