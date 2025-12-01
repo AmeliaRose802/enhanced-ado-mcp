@@ -26,21 +26,27 @@ Enable AI agents and developers to:
 
 ## Azure DevOps Mention Format
 
-Azure DevOps requires a specific HTML format for @mentions to work correctly:
+Azure DevOps uses a simple plain text format for @mentions:
 
-```html
-<a href="#" data-vss-mention="version:2.0,{GUID}">@Display Name</a>
+```
+@<GUID>
 ```
 
 **Critical Elements:**
-- `data-vss-mention` attribute with `version:2.0,{GUID}` format
-- GUID in format `localId@originId` (e.g., `5d6898bb-45ec-419a-ad8a-1234567890ab@2c895908-abcd-efgh-ijkl-mnopqrstuvwx`)
-- Display name after `@` in the link text
+- Plain text format with angle brackets
+- GUID should be just the `localId` portion (first part before the `@` in full identity)
+- GUID must be UPPERCASE
+- Format: `@<XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX>`
 
 **Example:**
-```html
-<a href="#" data-vss-mention="version:2.0,5d6898bb-45ec-419a-ad8a-1234567890ab@2c895908-abcd-efgh-ijkl-mnopqrstuvwx">@GitHub Copilot</a> Please review this code for security issues.
 ```
+@<66DDA6C5-07D0-4484-9979-116241219397> Please review this code for security issues.
+```
+
+**Note:** The tool automatically:
+- Extracts the localId from the full GUID format (`localId@originId`)
+- Converts to uppercase
+- Wraps in the correct `@<GUID>` format
 
 ## Input Parameters
 

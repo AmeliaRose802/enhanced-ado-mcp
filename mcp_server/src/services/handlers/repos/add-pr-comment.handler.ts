@@ -14,15 +14,21 @@ import { buildValidationErrorResponse, buildErrorResponse } from '../../../utils
 
 /**
  * Format comment with GitHub Copilot mention
- * Uses Azure DevOps HTML mention format: <a href="#" data-vss-mention="version:2.0,{GUID}">@Display Name</a>
+ * Uses Azure DevOps plain text mention format: @<GUID>
+ * The GUID should be just the localId portion (uppercase)
  */
 function formatCommentWithMention(
   comment: string,
   copilotGuid: string,
   displayName: string = 'GitHub Copilot'
 ): string {
-  // Azure DevOps mention format requires HTML anchor tag with data-vss-mention attribute
-  const mentionTag = `<a href="#" data-vss-mention="version:2.0,${copilotGuid}">@${displayName}</a>`;
+  // Extract localId from the full GUID (format is "localId@originId")
+  const localId = copilotGuid.includes('@') 
+    ? copilotGuid.split('@')[0] 
+    : copilotGuid;
+  
+  // Azure DevOps mention format: @<GUID> (uppercase)
+  const mentionTag = `@<${localId.toUpperCase()}>`;
   
   // Prepend mention to comment
   return `${mentionTag} ${comment}`;

@@ -217,22 +217,27 @@ describe('add-pr-comment', () => {
       const comment = 'Please review this code';
       
       // Expected format
-      const expectedMention = `<a href="#" data-vss-mention="version:2.0,${guid}">@${displayName}</a>`;
+      // Test the mention format structure
+      // Azure DevOps uses plain text format: @<GUID>
+      // GUID should be uppercase localId only
+      const localId = guid.split('@')[0];
+      const expectedMention = `@<${localId.toUpperCase()}>`;
       const expectedResult = `${expectedMention} ${comment}`;
       
       // This would be the actual formatting function
       // formatCommentWithMention(comment, guid, displayName)
       
-      expect(expectedResult).toContain('data-vss-mention="version:2.0,');
-      expect(expectedResult).toContain(guid);
-      expect(expectedResult).toContain(`@${displayName}`);
+      expect(expectedResult).toContain('@<');
+      expect(expectedResult).toContain('>');
+      expect(expectedResult).toContain(localId.toUpperCase());
       expect(expectedResult).toContain(comment);
     });
 
     it('should prepend mention to comment text', () => {
       const guid = 'abc123@def456';
       const comment = 'What do you think?';
-      const expectedMention = `<a href="#" data-vss-mention="version:2.0,${guid}">@GitHub Copilot</a>`;
+      const localId = guid.split('@')[0];
+      const expectedMention = `@<${localId.toUpperCase()}>`;
       
       // The formatted comment should start with the mention
       const formatted = `${expectedMention} ${comment}`;
