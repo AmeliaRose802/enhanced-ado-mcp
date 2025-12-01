@@ -23,7 +23,7 @@ import { setTokenProvider } from "./utils/token-provider.js";
 import { telemetryService } from "./services/telemetry-service.js";
 
 const server = new Server({
-  name: "enhanced-ado-mcp-server",
+  name: "enhanced-ado",
   version: "1.8.0"
 }, {
   capabilities: {
