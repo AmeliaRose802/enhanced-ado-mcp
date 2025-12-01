@@ -643,6 +643,27 @@ export const getPullRequestCommentsSchema = z.object({
   ...orgProjectFields()
 });
 
+export const addPullRequestCommentSchema = z.object({
+  repository: z.string().min(1, "Repository name or ID is required"),
+  pullRequestId: z.number().int().positive("Pull request ID must be a positive integer"),
+  comment: z.string().min(1, "Comment text is required"),
+  mentionCopilot: optionalBool(false).describe("Automatically tag GitHub Copilot in the comment using @mention (default: false)"),
+  copilotGuid: optionalString().describe("GitHub Copilot GUID in format 'localId@originId' (auto-discovered if not provided and mentionCopilot=true)"),
+  copilotDisplayName: optionalString().describe("Display name for Copilot mention (default: 'GitHub Copilot')"),
+  threadContext: z.object({
+    filePath: optionalString().describe("File path to comment on (for line-specific comments)"),
+    rightFileStart: z.object({
+      line: z.number().int().positive("Line number must be positive"),
+      offset: z.number().int().min(0, "Offset must be non-negative").optional()
+    }).optional().describe("Starting line position in new version of file"),
+    rightFileEnd: z.object({
+      line: z.number().int().positive("Line number must be positive"),
+      offset: z.number().int().min(0, "Offset must be non-negative").optional()
+    }).optional().describe("Ending line position in new version of file")
+  }).optional().describe("Optional context for line-specific comments. Omit for general PR-level comments."),
+  ...orgProjectFields()
+});
+
 // ============================================================================
 // ============================================================================
 // Custom Field Manager Schemas
@@ -713,40 +734,3 @@ export const exportWorkItemsSchema = z.object({
   ...orgProjectFields()
 });
 
-// ============================================================================
-// Changelog Generation Schemas
-// ============================================================================
-
-export const generateChangelogSchema = z.object({
-  // Time Range (provide ONE)
-  dateRangeStart: z.string().optional().describe("Start date for changelog (ISO 8601: YYYY-MM-DD)"),
-  dateRangeEnd: z.string().optional().describe("End date for changelog (ISO 8601: YYYY-MM-DD)"),
-  iterationPath: z.string().optional().describe("Iteration path to generate changelog for"),
-  
-  // Version Information
-  version: z.string().optional().describe("Version tag for the changelog (e.g., '1.2.0', 'v2.0.0')"),
-  
-  // Filtering
-  states: z.array(z.string()).optional().default(['Closed', 'Resolved']).describe("Work item states to include (default: ['Closed', 'Resolved'])"),
-  includeTypes: z.array(z.string()).optional().describe("Specific work item types to include (e.g., ['Bug', 'Task', 'Product Backlog Item'])"),
-  excludeTypes: z.array(z.string()).optional().describe("Work item types to exclude"),
-  tags: z.array(z.string()).optional().describe("Filter by specific tags (e.g., ['release', 'hotfix'])"),
-  areaPathFilter: z.array(z.string()).optional().describe("Filter by specific area paths"),
-  
-  // Grouping & Formatting
-  groupBy: z.enum(['type', 'assignee', 'priority', 'tag', 'none']).optional().default('type').describe("How to group changelog entries (default: 'type')"),
-  format: z.enum(['markdown', 'keepachangelog', 'conventional', 'semantic', 'json']).optional().default('keepachangelog').describe("Changelog format (default: 'keepachangelog')"),
-  includeWorkItemLinks: optionalBool(true).describe("Include links to work items in Azure DevOps"),
-  includeDescriptions: optionalBool(false).describe("Include work item descriptions in changelog"),
-  includeAssignees: optionalBool(false).describe("Include assignee names in changelog entries"),
-  
-  // Type Mapping (for categorization)
-  typeMapping: z.record(z.string(), z.string()).optional().describe("Custom mapping of work item types to changelog categories (e.g., {'Bug': 'Bug Fixes', 'Task': 'Improvements'})"),
-  
-  // Output
-  outputPath: z.string().optional().describe("File path to write changelog (e.g., 'CHANGELOG.md'). If not provided, returns as text."),
-  append: optionalBool(false).describe("Append to existing changelog file (default: false, overwrites)"),
-  
-  // Configuration
-  ...orgProjectFields()
-});

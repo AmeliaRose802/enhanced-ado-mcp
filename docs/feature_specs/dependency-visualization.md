@@ -24,9 +24,12 @@ The dependency visualization feature generates visual graphs showing work item r
 | `format` | 'dot' \| 'mermaid' | No | 'mermaid' | Export format |
 | `relationTypes` | array | No | ['all'] | Relationship types to include |
 | `maxDepth` | number | No | 3 | Maximum traversal depth (1-10) |
-| `maxNodes` | number | No | 100 | Maximum nodes in graph (10-500) |
-| `layoutDirection` | 'LR' \| 'TB' \| 'RL' \| 'BT' | No | 'LR' | Layout direction |
+| `maxNodes` | number | No | 200 | Maximum nodes in graph (10-1000) |
+| `layoutDirection` | 'LR' \| 'TB' \| 'RL' \| 'BT' | No | 'TB' | Layout direction |
+| `traversalDirection` | 'both' \| 'children-only' \| 'parents-only' | No | 'children-only' | Controls which relationships to follow (see below) |
 | `groupByType` | boolean | No | false | Group nodes by type (DOT only) |
+| `groupByEpic` | boolean | No | false | Group nodes by parent Epic (DOT only) |
+| `excludeStates` | string[] | No | ['Done', 'Closed', 'Removed', 'Cut'] | States to exclude |
 | `includeMetadata` | boolean | No | true | Include type/state in labels |
 | `colorByState` | boolean | No | false | Color by state instead of type |
 | `organization` | string | No | config | Azure DevOps organization |
@@ -42,10 +45,15 @@ The dependency visualization feature generates visual graphs showing work item r
 - `depends-on` - Explicit dependencies
 
 #### Layout Directions
-- `LR` - Left to right (good for hierarchies)
-- `TB` - Top to bottom (good for workflows)
+- `TB` - Top to bottom (default, good for workflows and hierarchies)
+- `LR` - Left to right
 - `RL` - Right to left
 - `BT` - Bottom to top
+
+#### Traversal Directions
+- `children-only` - **Default and recommended**. Shows only the requested work item and its descendants (children, grandchildren, etc.). Prevents including parents, grandparents, and their siblings. Perfect for focused epic/feature breakdowns.
+- `both` - Includes the entire hierarchy tree, traversing both upward (to parents/ancestors) and downward (to children/descendants). May include siblings of parents/grandparents. Use when you want full context.
+- `parents-only` - Shows only the requested work item and its ancestors (parent, grandparent, etc.). Useful for understanding where a work item fits in the hierarchy.
 
 ### Output Format
 
@@ -179,14 +187,22 @@ ${visualization.data.diagram}
 ### Example 2: Epic Breakdown Visualization
 
 ```javascript
-// Visualize a specific Epic's hierarchy
+// Visualize a specific Epic's hierarchy (children only - NEW DEFAULT)
 const epicViz = await visualizeDependencies({
   workItemIds: [12345],  // Epic ID
   format: "dot",
   relationTypes: ["parent-child"],
-  maxDepth: 5,  // Show full hierarchy
+  maxDepth: 5,  // Show full hierarchy depth
+  traversalDirection: "children-only",  // Only show Epic and its descendants (default)
   groupByType: true,
   includeMetadata: true
+});
+
+// To include the Epic's parent and siblings, use 'both'
+const fullContextViz = await visualizeDependencies({
+  workItemIds: [12345],
+  traversalDirection: "both",  // Include entire hierarchy tree
+  maxDepth: 3
 });
 
 // Render to PNG using Graphviz
@@ -300,11 +316,11 @@ visualization-service.ts
 ### Node Styling
 
 #### Color by Type (Default)
-- **Epic** - Purple (#8B4789)
-- **Feature** - Orange (#FF6B35)
-- **Story/PBI** - Blue (#4A90E2)
-- **Task** - Emerald (#50C878)
-- **Bug** - Red (#E63946)
+- **Epic** - Bright Purple (#C084FC)
+- **Feature** - Bright Cyan-Blue (#60A5FA)
+- **Story/PBI** - Bright Blue (#3B82F6) - High contrast for maximum readability
+- **Task** - Bright Orange (#FB923C) - High contrast, more readable than yellow
+- **Bug** - Bright Red (#F87171)
 
 #### Color by State
 - **New** - Sky blue (#87CEEB)
@@ -315,7 +331,7 @@ visualization-service.ts
 #### Shapes (Mermaid)
 - **Epic** - Double box `[[ ]]`
 - **Feature** - Regular box `[ ]`
-- **Bug** - Diamond `{ }`
+- **Bug** - Regular box `[ ]` (uses box instead of diamond to prevent oversizing)
 - **Task** - Circle `(( ))`
 
 #### Shapes (DOT/Graphviz)
@@ -323,7 +339,7 @@ visualization-service.ts
 - **Feature** - octagon
 - **Story** - box
 - **Task** - ellipse
-- **Bug** - diamond
+- **Bug** - box (uses box instead of diamond to prevent oversizing)
 
 ## Performance Considerations
 
@@ -490,12 +506,50 @@ handleVisualizeDependencies({ workItemIds: [123], format: 'mermaid' }).then(cons
 - **Automatic layout optimization** - Smart layout based on graph structure
 - **Interactive HTML export** - Clickable nodes linking to Azure DevOps
 - **PNG/SVG direct rendering** - Generate images without external tools
-- **Diff visualization** - Compare two time points to see changes
-- **Critical path highlighting** - Emphasize longest dependency chains
-- **Team coloring** - Color nodes by assigned team
+## Version History
+
+### v1.2.0 (2025-12-01)
+- **New Feature:**
+  - Added `traversalDirection` parameter with options: 'children-only' (default), 'both', 'parents-only'
+  - Default is 'children-only' which prevents including parents, grandparents, and their siblings
+  - Fixes issue where visualizing a specific work item would show unrelated parent/grandparent siblings
+  - Perfect for focused epic/feature breakdown views
+- **Breaking Change:**
+  - Default behavior now excludes parent relationships unless explicitly requested with `traversalDirection: 'both'`
+  - This provides more intuitive results when visualizing a specific work item
+
+### v1.1.0 (2025-11-26)olor nodes by assigned team
 - **Iteration timeline** - Show iteration boundaries on timeline view
 
 ## Version History
+
+### v1.1.0 (2025-11-26)
+- **New Features:**
+  - Added `excludeStates` parameter (default: ['Done', 'Closed', 'Removed', 'Cut']) for cleaner current-work views
+  - Added `groupByEpic` mode (DOT only) - groups work items under their parent Epic for better organization
+  - Takes precedence over `groupByType` when both are enabled
+- **Improvements:**
+  - Changed arrow label direction: arrows pointing to children now show "child-of" instead of "parent-of" (more intuitive)
+  - Improved color contrast: Feature color changed from cyan-blue to bright green for better distinction from PBIs
+  - Dashed lines for 'related' relationships (both DOT and Mermaid formats)
+  - Increased `maxNodes` default from 100 to 200, maximum from 500 to 1000
+  - Fixed sprint progress handler format enum compatibility
+
+### v1.0.3 (2025-11-26)
+- **Visual Enhancements:**
+  - Changed Task color from amber (#FBBF24) to bright orange (#FB923C) for better contrast and readability
+  - Changed Bug shape from diamond to box (prevents oversizing in both DOT and Mermaid formats)
+  - Filter out removed/cut work items from visualizations (they no longer appear in graphs)
+  - Deduplicate edges to prevent multiple lines between same items
+- **Quality Improvements:**
+  - All work item types now use appropriate sizes and high-contrast colors
+  - Cleaner graphs with no duplicate relationships shown
+
+### v1.0.2 (2025-11-26)
+- **Visual Enhancement:** Improved contrast for Product Backlog Item (PBI) type
+  - Changed PBI/Story color from emerald green (#34D399) to bright blue (#3B82F6)
+  - Provides maximum contrast on both light and dark backgrounds
+  - All work item type colors now optimized for high visibility
 
 ### v1.0.1 (2025-11-26)
 - **Bug Fix:** Fixed dependency visualization not finding relationships

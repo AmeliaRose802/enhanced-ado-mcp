@@ -51,6 +51,13 @@ afterAll(async () => {
   } catch (error) {
     // Ignore if queryHandleService is not available
   }
+  
+  try {
+    const { cacheService } = await import('../src/services/cache-service.js');
+    cacheService.stopCleanup();
+  } catch (error) {
+    // Ignore if cacheService is not available
+  }
 });
 
 // Global test utilities

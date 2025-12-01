@@ -16,7 +16,8 @@ import {
   getRenderingInstructions,
   type RelationType,
   type ExportFormat,
-  type LayoutDirection
+  type LayoutDirection,
+  type TraversalDirection
 } from '../../visualization-service.js';
 import { z } from 'zod';
 
@@ -29,9 +30,12 @@ const visualizeDependenciesSchema = z.object({
   format: z.enum(['dot', 'mermaid']).default('mermaid').describe('Export format: dot (Graphviz) or mermaid'),
   relationTypes: z.array(z.enum(['all', 'parent-child', 'blocks', 'related', 'depends-on'])).default(['all']).describe('Relationship types to include'),
   maxDepth: z.number().min(1).max(10).default(3).describe('Maximum depth to traverse (prevents huge graphs)'),
-  maxNodes: z.number().min(10).max(500).default(100).describe('Maximum number of nodes to include'),
-  layoutDirection: z.enum(['LR', 'TB', 'RL', 'BT']).default('LR').describe('Layout direction (LR=left-to-right, TB=top-to-bottom)'),
+  maxNodes: z.number().min(10).max(1000).default(200).describe('Maximum number of nodes to include'),
+  layoutDirection: z.enum(['LR', 'TB', 'RL', 'BT']).default('TB').describe('Layout direction (TB=top-to-bottom, LR=left-to-right)'),
+  traversalDirection: z.enum(['both', 'children-only', 'parents-only']).default('children-only').describe('Traversal direction: children-only prevents including parents/siblings, both includes entire tree'),
   groupByType: z.boolean().default(false).describe('Group nodes by work item type (DOT only)'),
+  groupByEpic: z.boolean().default(false).describe('Group nodes by parent Epic (DOT only, requires epic relationships)'),
+  excludeStates: z.array(z.string()).default(['Done', 'Closed', 'Removed', 'Cut']).describe('Work item states to exclude from visualization (useful for current-work views)'),
   includeMetadata: z.boolean().default(true).describe('Include work item metadata (type, state) in labels'),
   colorByState: z.boolean().default(false).describe('Color nodes by state (default: color by type)'),
   organization: z.string().optional().describe('Azure DevOps organization name (uses config default if not provided)'),
@@ -116,7 +120,10 @@ export async function handleVisualizeDependencies(args: unknown): Promise<ToolEx
       maxDepth: input.maxDepth,
       maxNodes: input.maxNodes,
       layoutDirection: input.layoutDirection as LayoutDirection,
+      traversalDirection: input.traversalDirection as TraversalDirection,
       groupByType: input.groupByType,
+      groupByEpic: input.groupByEpic,
+      excludeStates: input.excludeStates,
       includeMetadata: input.includeMetadata,
       colorByState: input.colorByState
     });
@@ -129,6 +136,7 @@ export async function handleVisualizeDependencies(args: unknown): Promise<ToolEx
         relationTypes: input.relationTypes as RelationType[],
         layoutDirection: input.layoutDirection as LayoutDirection,
         groupByType: input.groupByType,
+        groupByEpic: input.groupByEpic,
         includeMetadata: input.includeMetadata,
         colorByState: input.colorByState
       });

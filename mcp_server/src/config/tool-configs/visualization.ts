@@ -9,12 +9,15 @@ import { z } from "zod";
 const visualizeDependenciesSchema = z.object({
   queryHandle: z.string().optional(),
   workItemIds: z.array(z.number()).optional(),
-  format: z.enum(['dot', 'mermaid']).default('mermaid'),
+  format: z.enum(['mermaid']).default('mermaid'),
   relationTypes: z.array(z.enum(['all', 'parent-child', 'blocks', 'related', 'depends-on'])).default(['all']),
   maxDepth: z.number().min(1).max(10).default(3),
-  maxNodes: z.number().min(10).max(500).default(100),
-  layoutDirection: z.enum(['LR', 'TB', 'RL', 'BT']).default('LR'),
+  maxNodes: z.number().min(10).max(1000).default(200),
+  layoutDirection: z.enum(['LR', 'TB', 'RL', 'BT']).default('TB'),
+  traversalDirection: z.enum(['both', 'children-only', 'parents-only']).default('children-only'),
   groupByType: z.boolean().default(false),
+  groupByEpic: z.boolean().default(false),
+  excludeStates: z.array(z.string()).default(['Done', 'Closed', 'Removed', 'Cut']),
   includeMetadata: z.boolean().default(true),
   colorByState: z.boolean().default(false),
   organization: z.string().optional(),
@@ -24,7 +27,7 @@ const visualizeDependenciesSchema = z.object({
 export const visualizationTools: ToolConfig[] = [
   {
     name: "visualize-dependencies",
-    description: "📊 DEPENDENCY VISUALIZATION: Generate visual dependency graphs showing work item relationships (parent-child, blocks, related, depends-on). Exports as Graphviz DOT format or Mermaid diagrams. Helps understand complex work item hierarchies and blockers. Perfect for sprint planning, backlog management, and identifying blockers. Supports filtering by relationship type, depth limiting to keep graphs readable, and both color schemes (by type or state). VS Code has built-in Mermaid support!",
+    description: "📊 DEPENDENCY VISUALIZATION: Generate visual dependency graphs showing work item relationships (parent-child, blocks, related, depends-on). Exports as Mermaid diagrams with built-in VS Code, GitHub, and Azure DevOps support. Helps understand complex work item hierarchies and blockers. Perfect for sprint planning, backlog management, and identifying blockers. Supports filtering by relationship type, depth limiting to keep graphs readable, and color schemes (by type or state).",
     script: "",
     schema: visualizeDependenciesSchema,
     inputSchema: {
@@ -41,9 +44,9 @@ export const visualizationTools: ToolConfig[] = [
         },
         format: {
           type: "string",
-          enum: ["dot", "mermaid"],
+          enum: ["mermaid"],
           default: "mermaid",
-          description: "Export format: 'dot' for Graphviz (professional graphs, requires Graphviz installation) or 'mermaid' (built-in VS Code support, GitHub/Azure DevOps compatible)"
+          description: "Export format: 'mermaid' for Mermaid diagrams (built-in VS Code support, GitHub/Azure DevOps compatible)"
         },
         relationTypes: {
           type: "array",
@@ -64,20 +67,37 @@ export const visualizationTools: ToolConfig[] = [
         maxNodes: {
           type: "number",
           minimum: 10,
-          maximum: 500,
-          default: 100,
-          description: "Maximum number of nodes (work items) to include in graph. Graph truncated at this limit. Start with 100, increase if needed."
+          maximum: 1000,
+          default: 200,
+          description: "Maximum number of nodes (work items) to include in graph. Graph truncated at this limit. Start with 200, increase if needed for large hierarchies."
         },
         layoutDirection: {
           type: "string",
           enum: ["LR", "TB", "RL", "BT"],
-          default: "LR",
-          description: "Layout direction: LR (left-to-right, good for hierarchies), TB (top-to-bottom, good for workflows), RL (right-to-left), BT (bottom-to-top)"
+          default: "TB",
+          description: "Layout direction: TB (top-to-bottom, good for workflows and hierarchies), LR (left-to-right), RL (right-to-left), BT (bottom-to-top)"
+        },
+        traversalDirection: {
+          type: "string",
+          enum: ["both", "children-only", "parents-only"],
+          default: "children-only",
+          description: "Traversal direction: 'children-only' shows only the requested item and its descendants (prevents including parents/siblings/ancestors), 'both' includes entire hierarchy tree, 'parents-only' shows only ancestors. Use 'children-only' for focused epic/feature breakdowns."
         },
         groupByType: {
           type: "boolean",
           default: false,
-          description: "Group nodes by work item type (Epics, Features, Stories, etc.). DOT format only. Creates visual clusters for better organization."
+          description: "Group nodes by work item type (Epics, Features, Stories, etc.). Creates visual clusters for better organization."
+        },
+        groupByEpic: {
+          type: "boolean",
+          default: false,
+          description: "Group nodes by parent Epic. Shows which items belong to which Epic for better organization. Takes precedence over groupByType."
+        },
+        excludeStates: {
+          type: "array",
+          items: { type: "string" },
+          default: ["Done", "Closed", "Removed", "Cut"],
+          description: "Work item states to exclude from visualization (case-insensitive). Perfect for current-work views that hide completed items. Set to empty array [] to include all states."
         },
         includeMetadata: {
           type: "boolean",

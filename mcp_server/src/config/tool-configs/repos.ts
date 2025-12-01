@@ -1,5 +1,5 @@
 import type { ToolConfig } from "../../types/index.js";
-import { getPullRequestDiffSchema, getPullRequestCommentsSchema } from "../schemas.js";
+import { getPullRequestDiffSchema, getPullRequestCommentsSchema, addPullRequestCommentSchema } from "../schemas.js";
 
 /**
  * Repository Tools
@@ -159,6 +159,90 @@ export const reposTools: ToolConfig[] = [
         }
       },
       required: []
+    }
+  },
+  {
+    name: "add-pr-comment",
+    description: "✍️ ADD PR COMMENT: Create a new comment thread on a pull request with optional GitHub Copilot @mention tagging. Supports both general PR-level comments and line-specific code comments. When mentionCopilot=true, automatically formats the comment to properly tag GitHub Copilot using Azure DevOps mention syntax, ensuring Copilot receives notifications. Can auto-discover Copilot GUID or use provided value. Perfect for requesting Copilot reviews, asking questions, or providing feedback on PRs.",
+    script: "",
+    schema: addPullRequestCommentSchema,
+    inputSchema: {
+      type: "object",
+      properties: {
+        repository: {
+          type: "string",
+          description: "Repository name or ID containing the pull request"
+        },
+        pullRequestId: {
+          type: "number",
+          description: "Pull request ID to add comment to"
+        },
+        comment: {
+          type: "string",
+          description: "Comment text to add"
+        },
+        mentionCopilot: {
+          type: "boolean",
+          description: "Automatically tag GitHub Copilot in the comment using @mention (default: false)"
+        },
+        copilotGuid: {
+          type: "string",
+          description: "GitHub Copilot GUID in format 'localId@originId' (auto-discovered if not provided and mentionCopilot=true)"
+        },
+        copilotDisplayName: {
+          type: "string",
+          description: "Display name for Copilot mention (default: 'GitHub Copilot')"
+        },
+        threadContext: {
+          type: "object",
+          properties: {
+            filePath: {
+              type: "string",
+              description: "File path to comment on (for line-specific comments)"
+            },
+            rightFileStart: {
+              type: "object",
+              properties: {
+                line: {
+                  type: "number",
+                  description: "Starting line number in new version of file"
+                },
+                offset: {
+                  type: "number",
+                  description: "Character offset within the line (optional)"
+                }
+              },
+              required: ["line"],
+              description: "Starting line position in new version of file"
+            },
+            rightFileEnd: {
+              type: "object",
+              properties: {
+                line: {
+                  type: "number",
+                  description: "Ending line number in new version of file"
+                },
+                offset: {
+                  type: "number",
+                  description: "Character offset within the line (optional)"
+                }
+              },
+              required: ["line"],
+              description: "Ending line position in new version of file"
+            }
+          },
+          description: "Optional context for line-specific comments. Omit for general PR-level comments."
+        },
+        organization: {
+          type: "string",
+          description: "Azure DevOps organization name"
+        },
+        project: {
+          type: "string",
+          description: "Azure DevOps project name"
+        }
+      },
+      required: ["repository", "pullRequestId", "comment"]
     }
   }
 ];

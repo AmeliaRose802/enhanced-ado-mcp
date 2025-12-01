@@ -436,8 +436,14 @@ export class ADOGitService {
           };
 
           // Fetch diffs if requested and path matches filter
-          if (includeDiffs && change.item.gitObjectType === 'blob' && this.matchesPathFilter(change.item.path, pathFilter)) {
+          // Check: includeDiffs is true, item is not a folder, and matches path filter
+          const isFile = change.item.gitObjectType === 'blob' || 
+                        (change.item.gitObjectType === undefined && !change.item.isFolder);
+          
+          if (includeDiffs && isFile && this.matchesPathFilter(change.item.path, pathFilter)) {
             try {
+              logger.debug(`Generating diff for: ${change.item.path} (type: ${change.changeType})`);
+              
               // Get file content at source and target commits
               const sourceCommit = iterationDetails.sourceRefCommit.commitId;
               const targetCommit = iterationDetails.targetRefCommit.commitId;
@@ -447,11 +453,13 @@ export class ADOGitService {
 
               // For edits and deletes, get old content
               if (change.changeType === 'edit' || change.changeType === 'delete' || change.changeType === 'rename') {
+                logger.debug(`Fetching old content from target commit: ${targetCommit}`);
                 oldContent = await this.getFileContentAtCommit(repository, change.item.path, targetCommit);
               }
 
               // For edits and adds, get new content
               if (change.changeType === 'edit' || change.changeType === 'add' || change.changeType === 'rename') {
+                logger.debug(`Fetching new content from source commit: ${sourceCommit}`);
                 newContent = await this.getFileContentAtCommit(repository, change.item.path, sourceCommit);
               }
 
@@ -468,6 +476,8 @@ export class ADOGitService {
                 truncatedFiles.push(change.item.path);
               }
 
+              logger.debug(`Generated diff for ${change.item.path}: +${diffResult.additions}/-${diffResult.deletions}`);
+
               return {
                 ...baseChange,
                 diff: {
@@ -480,7 +490,7 @@ export class ADOGitService {
                 }
               };
             } catch (error) {
-              logger.warn(`Failed to fetch diff for ${change.item.path}:`, errorToContext(error));
+              logger.error(`Failed to fetch diff for ${change.item.path}:`, errorToContext(error));
               return {
                 ...baseChange,
                 diff: {
@@ -492,6 +502,13 @@ export class ADOGitService {
                 }
               };
             }
+          } else {
+            logger.debug(
+              `Skipping diff for ${change.item.path}: ` +
+              `includeDiffs=${includeDiffs}, isFile=${isFile}, ` +
+              `gitObjectType=${change.item.gitObjectType}, isFolder=${change.item.isFolder}, ` +
+              `matchesFilter=${this.matchesPathFilter(change.item.path, pathFilter)}`
+            );
           }
 
           return baseChange;
@@ -763,6 +780,79 @@ export class ADOGitService {
       totalComments,
       commentsByStatus
     };
+  }
+
+  /**
+   * Create a new thread (comment) on a pull request
+   * Supports general PR comments and line-specific comments
+   */
+  async createPullRequestThread(params: {
+    repository: string;
+    pullRequestId: number;
+    comment: string;
+    threadContext?: {
+      filePath?: string;
+      rightFileStart?: { line: number; offset?: number };
+      rightFileEnd?: { line: number; offset?: number };
+    };
+  }): Promise<ADOPullRequestThread> {
+    const { repository, pullRequestId, comment, threadContext } = params;
+
+    const tokenProvider = getTokenProvider();
+    const client = createADOHttpClient(this.organization, tokenProvider, this.project);
+
+    const endpoint = `git/repositories/${encodeURIComponent(repository)}/pullRequests/${pullRequestId}/threads`;
+
+    // Build thread request body
+    const threadRequest: any = {
+      comments: [
+        {
+          parentCommentId: 0,
+          content: comment,
+          commentType: 'text'
+        }
+      ],
+      status: 'active'
+    };
+
+    // Add thread context if provided (for line-specific comments)
+    if (threadContext?.filePath) {
+      threadRequest.threadContext = {
+        filePath: threadContext.filePath,
+        ...(threadContext.rightFileStart && { rightFileStart: threadContext.rightFileStart }),
+        ...(threadContext.rightFileEnd && { rightFileEnd: threadContext.rightFileEnd })
+      };
+    }
+
+    try {
+      logger.debug(`Creating PR thread: ${endpoint}`);
+      logger.debug(`Thread request: ${JSON.stringify(threadRequest, null, 2)}`);
+      
+      const response = await client.post<ADOPullRequestThread>(endpoint, threadRequest);
+
+      logger.info(
+        `Created thread ${response.data.id} on PR ${pullRequestId} ` +
+        `in repository ${repository}`
+      );
+
+      return response.data;
+    } catch (error) {
+      if (error instanceof ADOHttpError) {
+        if (error.status === 404) {
+          throw new Error(
+            `Pull request ${pullRequestId} not found in repository ${repository}. ` +
+            `Verify the PR ID and repository name are correct.`
+          );
+        }
+        if (error.status === 400) {
+          throw new Error(
+            `Invalid thread context or comment format: ${error.message}`
+          );
+        }
+        throw new Error(`Failed to create PR thread: ${error.message}`);
+      }
+      throw error;
+    }
   }
 }
 

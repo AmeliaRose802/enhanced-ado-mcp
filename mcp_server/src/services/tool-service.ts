@@ -41,18 +41,15 @@ import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-p
 
 // Integration handlers
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
-import { handleGenerateChangelog } from './handlers/integration/generate-changelog.handler.js';
 
 // Repos handlers
 import { handleGetPullRequestDiff } from './handlers/repos/get-pr-diff.handler.js';
 import { handleGetPullRequestComments } from './handlers/repos/get-pr-comments.handler.js';
+import { handleAddPullRequestComment } from './handlers/repos/add-pr-comment.handler.js';
 
 // Visualization handlers
 import { handleVisualizeDependencies } from './handlers/visualization/visualize-dependencies.handler.js';
 
-// Chart handlers
-import { handleGenerateBurndownChart } from './handlers/charts/generate-burndown-chart.handler.js';
-import { handleGenerateBurnupChart } from './handlers/charts/generate-burnup-chart.handler.js';
 
   // Context handlers
 import { handleGetWorkItemContextPackage } from './handlers/context/get-work-item-context-package.handler.js';
@@ -330,24 +327,14 @@ async function executeToolInternal(name: string, args: unknown): Promise<ToolExe
     return await handleGetPullRequestComments(config, args, serverInstance || undefined);
   }
 
+  // Add pull request comment
+  if (name === 'add-pr-comment') {
+    return await handleAddPullRequestComment(config, args);
+  }
+
   // Dependency visualization
   if (name === 'visualize-dependencies') {
     return await handleVisualizeDependencies(args);
-  }
-
-  // Generate burndown chart
-  if (name === 'generate-burndown-chart') {
-    return await handleGenerateBurndownChart(args);
-  }
-
-  // Generate burnup chart
-  if (name === 'generate-burnup-chart') {
-    return await handleGenerateBurnupChart(args);
-  }
-
-  // Generate changelog
-  if (name === 'generate-changelog') {
-    return await handleGenerateChangelog(config, args);
   }
 
   // NOTE: AI enhancement tools (enhance-descriptions, assign-story-points, add-acceptance-criteria)

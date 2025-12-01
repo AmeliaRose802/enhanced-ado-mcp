@@ -104,6 +104,7 @@ export class CacheService {
   private defaultTTL: number;
   private enabled: boolean;
   private ttls: Record<string, number>;
+  private cleanupInterval?: NodeJS.Timeout;
   
   // Statistics
   private hits = 0;
@@ -404,6 +405,18 @@ export class CacheService {
     
     return cleaned;
   }
+
+  /**
+   * Stop the automatic cleanup interval
+   * Call this during shutdown or in test teardown
+   */
+  stopCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+      logger.debug('[Cache] Cleanup interval stopped');
+    }
+  }
 }
 
 // Singleton instance with default configuration
@@ -411,7 +424,7 @@ export const cacheService = new CacheService();
 
 // Start periodic cleanup (every 5 minutes)
 if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
+  (cacheService as any).cleanupInterval = setInterval(() => {
     cacheService.cleanExpired();
   }, 5 * 60 * 1000);
 }
