@@ -158,7 +158,7 @@ These tools automatically use the discovered iteration:
 ### Modified Files
 - `mcp_server/src/config/config.ts` - Re-enabled auto-discovery in `ensureCurrentIterationPath()`
 - `mcp_server/src/index.ts` - Added discovery call during server startup
-- `mcp_server/docs/feature_specs/current-iteration-path-discovery.md` - Updated status and version
+- `docs/feature_specs/current-iteration-path-discovery.md` - Updated status and version
 
 ## Benefits
 

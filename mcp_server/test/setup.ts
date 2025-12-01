@@ -58,6 +58,20 @@ afterAll(async () => {
   } catch (error) {
     // Ignore if cacheService is not available
   }
+  
+  try {
+    const { telemetryService } = await import('../src/services/telemetry-service.js');
+    await telemetryService.shutdown();
+  } catch (error) {
+    // Ignore if telemetryService is not available
+  }
+  
+  // Force clear all timers
+  jest.clearAllTimers();
+  jest.useRealTimers();
+  
+  // Small delay to allow cleanup to complete
+  await new Promise(resolve => setTimeout(resolve, 100));
 });
 
 // Global test utilities

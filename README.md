@@ -424,7 +424,6 @@ npm test
 ## Documentation
 
 - [Feature Specs](docs/feature_specs/) - Detailed tool documentation
-- [API Reference](mcp_server/docs/api/) - OpenAPI specs
 - [Resources](mcp_server/resources/) - Quick reference guides
 - [Contributing](docs/CONTRIBUTING.md) - Development guidelines
 

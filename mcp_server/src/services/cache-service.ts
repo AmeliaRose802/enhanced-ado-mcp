@@ -427,4 +427,7 @@ if (typeof setInterval !== 'undefined') {
   (cacheService as any).cleanupInterval = setInterval(() => {
     cacheService.cleanExpired();
   }, 5 * 60 * 1000);
+  
+  // Allow Node.js to exit if this is the only active timer
+  (cacheService as any).cleanupInterval?.unref();
 }

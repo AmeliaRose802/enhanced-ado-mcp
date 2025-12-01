@@ -118,5 +118,11 @@ export default {
   errorOnDeprecated: true,
   
   // Max workers for parallel execution
-  maxWorkers: '50%'
+  maxWorkers: '50%',
+  
+  // Force exit after tests complete to prevent hanging
+  forceExit: true,
+  
+  // Detect open handles to help identify leaks
+  detectOpenHandles: false // Set to true for debugging
 };

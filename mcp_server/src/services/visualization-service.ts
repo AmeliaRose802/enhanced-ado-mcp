@@ -300,17 +300,45 @@ export async function buildDependencyGraph(
 }
 
 /**
+ * Calculate relative luminance of a color (used for contrast calculations)
+ * Formula from WCAG 2.0: https://www.w3.org/TR/WCAG20/#relativeluminancedef
+ */
+function getRelativeLuminance(hex: string): number {
+  // Remove # if present
+  const rgb = hex.replace('#', '');
+  const r = parseInt(rgb.substring(0, 2), 16) / 255;
+  const g = parseInt(rgb.substring(2, 4), 16) / 255;
+  const b = parseInt(rgb.substring(4, 6), 16) / 255;
+  
+  const rsRGB = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+  const gsRGB = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+  const bsRGB = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+  
+  return 0.2126 * rsRGB + 0.7152 * gsRGB + 0.0722 * bsRGB;
+}
+
+/**
+ * Determine if a color needs black or white text for good contrast
+ * Returns black (#000000) for light backgrounds, white (#FFFFFF) for dark backgrounds
+ */
+function getContrastTextColor(bgColor: string): string {
+  const luminance = getRelativeLuminance(bgColor);
+  // Use threshold of 0.5 - lighter colors get black text, darker get white
+  return luminance > 0.5 ? '#000000' : '#FFFFFF';
+}
+
+/**
  * Get color for work item state
  */
 function getStateColor(state: string): string {
   const stateLower = state.toLowerCase();
   
-  if (stateLower === 'new' || stateLower === 'proposed') return '#87CEEB'; // Sky blue
-  if (stateLower === 'active' || stateLower === 'in progress' || stateLower === 'committed') return '#FFD700'; // Gold
-  if (stateLower === 'resolved' || stateLower === 'done' || stateLower === 'closed') return '#90EE90'; // Light green
-  if (stateLower === 'removed' || stateLower === 'cut') return '#D3D3D3'; // Light gray
+  if (stateLower === 'new' || stateLower === 'proposed') return '#5DADE2'; // Medium blue (darker than sky blue)
+  if (stateLower === 'active' || stateLower === 'in progress' || stateLower === 'committed') return '#F39C12'; // Orange (darker than gold)
+  if (stateLower === 'resolved' || stateLower === 'done' || stateLower === 'closed') return '#27AE60'; // Medium green (darker)
+  if (stateLower === 'removed' || stateLower === 'cut') return '#95A5A6'; // Medium gray
   
-  return '#FFFFFF'; // White default
+  return '#BDC3C7'; // Light gray default
 }
 
 /**
@@ -321,12 +349,12 @@ function getTypeColor(type: string): string {
   const typeLower = type.toLowerCase();
   
   if (typeLower.includes('epic')) return '#8B4789'; // Purple
-  if (typeLower.includes('feature')) return '#FF6B35'; // Orange
-  if (typeLower.includes('story') || typeLower.includes('backlog')) return '#4A90E2'; // Blue
-  if (typeLower.includes('task')) return '#50C878'; // Emerald
-  if (typeLower.includes('bug')) return '#E63946'; // Red
+  if (typeLower.includes('feature')) return '#E67E22'; // Dark orange (better contrast)
+  if (typeLower.includes('story') || typeLower.includes('backlog')) return '#3498DB'; // Medium blue
+  if (typeLower.includes('task')) return '#16A085'; // Teal (darker than emerald)
+  if (typeLower.includes('bug')) return '#E74C3C'; // Red
   
-  return '#E5E5E5'; // Light gray default
+  return '#95A5A6'; // Medium gray default
 }
 
 /**
@@ -390,13 +418,14 @@ export function exportAsDot(graph: DependencyGraph, options: VisualizationOption
       for (const id of ids) {
         const node = graph.nodes.get(id)!;
         const label = options.includeMetadata 
-          ? `[${id}] ${node.type}: ${node.title}\\n${node.state}`
+          ? `[${id}] ${node.type}: ${node.title}\n${node.state}`
           : `[${id}] ${node.title}`;
         
         const shape = getTypeShape(node.type);
         const color = options.colorByState ? getStateColor(node.state) : getTypeColor(node.type);
+        const fontColor = getContrastTextColor(color);
         
-        lines.push(`    "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}"];`);
+        lines.push(`    "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}", fontcolor="${fontColor}"];`);
       }
       
       lines.push('  }');
@@ -413,13 +442,14 @@ export function exportAsDot(graph: DependencyGraph, options: VisualizationOption
       for (const id of noEpicGroup) {
         const node = graph.nodes.get(id)!;
         const label = options.includeMetadata 
-          ? `[${id}] ${node.type}: ${node.title}\\n${node.state}`
+          ? `[${id}] ${node.type}: ${node.title}\n${node.state}`
           : `[${id}] ${node.title}`;
         
         const shape = getTypeShape(node.type);
         const color = options.colorByState ? getStateColor(node.state) : getTypeColor(node.type);
+        const fontColor = getContrastTextColor(color);
         
-        lines.push(`    "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}"];`);
+        lines.push(`    "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}", fontcolor="${fontColor}"];`);
       }
       
       lines.push('  }');
@@ -445,13 +475,14 @@ export function exportAsDot(graph: DependencyGraph, options: VisualizationOption
       for (const id of ids) {
         const node = graph.nodes.get(id)!;
         const label = options.includeMetadata 
-          ? `[${id}] ${node.type}: ${node.title}\\n${node.state}`
+          ? `[${id}] ${node.type}: ${node.title}\n${node.state}`
           : `[${id}] ${node.title}`;
         
         const shape = getTypeShape(node.type);
         const color = options.colorByState ? getStateColor(node.state) : getTypeColor(node.type);
+        const fontColor = getContrastTextColor(color);
         
-        lines.push(`    "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}"];`);
+        lines.push(`    "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}", fontcolor="${fontColor}"];`);
       }
       
       lines.push('  }');
@@ -461,13 +492,14 @@ export function exportAsDot(graph: DependencyGraph, options: VisualizationOption
     // Add nodes without grouping
     for (const [id, node] of graph.nodes) {
       const label = options.includeMetadata 
-        ? `[${id}] ${node.type}: ${node.title}\\n${node.state}`
+        ? `[${id}] ${node.type}: ${node.title}\n${node.state}`
         : `[${id}] ${node.title}`;
       
       const shape = getTypeShape(node.type);
       const color = options.colorByState ? getStateColor(node.state) : getTypeColor(node.type);
+      const fontColor = getContrastTextColor(color);
       
-      lines.push(`  "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}"];`);
+      lines.push(`  "${id}" [label="${escapeLabel(label)}", shape=${shape}, style=filled, fillcolor="${color}", fontcolor="${fontColor}"];`);
     }
     lines.push('');
   }
@@ -567,10 +599,10 @@ export function exportAsMermaid(graph: DependencyGraph, options: VisualizationOp
   
   if (options.colorByState) {
     // Define state-based style classes
-    lines.push('  classDef stateNew fill:#87CEEB,stroke:#1E3A8A,stroke-width:3px,color:#000');
-    lines.push('  classDef stateActive fill:#FFD700,stroke:#92400E,stroke-width:3px,color:#000');
-    lines.push('  classDef stateResolved fill:#90EE90,stroke:#166534,stroke-width:3px,color:#000');
-    lines.push('  classDef stateRemoved fill:#D3D3D3,stroke:#374151,stroke-width:3px,color:#000');
+    lines.push('  classDef stateNew fill:#5DADE2,stroke:#1E3A8A,stroke-width:3px,color:#FFF');
+    lines.push('  classDef stateActive fill:#F39C12,stroke:#92400E,stroke-width:3px,color:#FFF');
+    lines.push('  classDef stateResolved fill:#27AE60,stroke:#166534,stroke-width:3px,color:#FFF');
+    lines.push('  classDef stateRemoved fill:#95A5A6,stroke:#374151,stroke-width:3px,color:#FFF');
     lines.push('');
     
     // Apply state-based classes
@@ -589,11 +621,11 @@ export function exportAsMermaid(graph: DependencyGraph, options: VisualizationOp
   } else {
     // Define type-based style classes with vibrant colors
     lines.push('  classDef typeEpic fill:#8B4789,stroke:#4A1D48,stroke-width:3px,color:#FFF');
-    lines.push('  classDef typeFeature fill:#FF6B35,stroke:#CC4400,stroke-width:3px,color:#FFF');
-    lines.push('  classDef typeStory fill:#4A90E2,stroke:#1E5BA8,stroke-width:3px,color:#FFF');
-    lines.push('  classDef typeTask fill:#50C878,stroke:#2A8F55,stroke-width:3px,color:#000');
-    lines.push('  classDef typeBug fill:#E63946,stroke:#B8161F,stroke-width:3px,color:#FFF');
-    lines.push('  classDef typeDefault fill:#E5E7EB,stroke:#374151,stroke-width:3px,color:#000');
+    lines.push('  classDef typeFeature fill:#E67E22,stroke:#A04000,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeStory fill:#3498DB,stroke:#1E5BA8,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeTask fill:#16A085,stroke:#0E6655,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeBug fill:#E74C3C,stroke:#B8161F,stroke-width:3px,color:#FFF');
+    lines.push('  classDef typeDefault fill:#95A5A6,stroke:#374151,stroke-width:3px,color:#FFF');
     lines.push('');
     
     // Apply type-based classes

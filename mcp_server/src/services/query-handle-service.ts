@@ -731,6 +731,9 @@ class QueryHandleService {
           logger.debug(`Cleaned up ${deleted} expired query handles`);
         }
       }, 5 * 60 * 1000); // Run every 5 minutes
+      
+      // Allow Node.js to exit if this is the only active timer
+      this.cleanupInterval.unref();
     }
   }
 

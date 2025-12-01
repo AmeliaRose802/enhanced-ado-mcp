@@ -574,6 +574,9 @@ export class TelemetryService {
         logger.warn(`[Telemetry] Auto-export failed: ${err}`);
       });
     }, this.config.autoExportInterval);
+    
+    // Allow Node.js to exit if this is the only active timer
+    this.autoExportTimer.unref();
 
     logger.info(`[Telemetry] Auto-export started (interval: ${this.config.autoExportInterval}ms)`);
   }
