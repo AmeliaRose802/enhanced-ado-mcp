@@ -196,6 +196,24 @@ describe('add-pr-comment', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should reject invalid offset (zero) - offset must be >= 1', () => {
+      const input = {
+        repository: 'MyRepo',
+        pullRequestId: 123,
+        comment: 'Test',
+        threadContext: {
+          filePath: 'test.ts',
+          rightFileStart: { line: 10, offset: 0 }
+        }
+      };
+
+      const result = addPullRequestCommentSchema.safeParse(input);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('Offset must be ≥1');
+      }
+    });
+
     it('should accept organization and project overrides', () => {
       const input = {
         repository: 'MyRepo',

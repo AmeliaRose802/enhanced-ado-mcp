@@ -59,51 +59,80 @@ Azure DevOps uses a simple plain text format for @mentions:
 - **mentionCopilot** (boolean, default: false): Automatically tag GitHub Copilot in the comment using @mention
 - **copilotGuid** (string): GitHub Copilot GUID in format `localId@originId` (auto-discovered if not provided and mentionCopilot=true)
 - **copilotDisplayName** (string, default: "GitHub Copilot"): Display name for Copilot mention
-- **threadContext** (object): Optional context for line-specific comments
+- **threadContext** (object): Optional context for line-specific comments. Omit entirely for general PR-level comments.
   - **filePath** (string): File path to comment on
   - **rightFileStart** (object): Starting line position
-    - **line** (number): Line number in new version of file
-    - **offset** (number, optional): Character offset within the line
+    - **line** (number, required): Line number in new version of file (1-based)
+    - **offset** (number, optional): 1-based character offset within the line. **Must be ≥1 if provided.** Omit for line-only comments. Example: `offset: 5` means 5th character on the line.
   - **rightFileEnd** (object): Ending line position
-    - **line** (number): Line number in new version of file
-    - **offset** (number, optional): Character offset within the line
+    - **line** (number, required): Line number in new version of file (1-based)
+    - **offset** (number, optional): 1-based character offset within the line. **Must be ≥1 if provided.** Omit for line-only comments. Example: `offset: 10` means 10th character on the line.
 - **organization** (string): Azure DevOps organization name (uses config default if not provided)
 - **project** (string): Azure DevOps project name (uses config default if not provided)
 
 ## Examples
 
-### Example 1: General PR Comment with Copilot Mention
+### Example 1: Minimal Line-Specific Comment (Line Only, No Offset)
+
+The most common case is commenting on specific lines without character offsets:
 
 ```typescript
 {
-  "repository": "Compute-Fabric-HostGateway",
-  "pullRequestId": 13997912,
-  "comment": "Please review this PR for security vulnerabilities.",
-  "mentionCopilot": true
+  "repository": "MyRepo",
+  "pullRequestId": 123,
+  "comment": "Consider adding error handling here",
+  "threadContext": {
+    "filePath": "src/api/handler.ts",
+    "rightFileStart": { "line": 45 },
+    "rightFileEnd": { "line": 45 }
+  }
 }
 ```
+
+**Note:** The `offset` field is optional. Omit it entirely for line-level comments. If you do provide `offset`, it must be ≥1 (1-based character index).
+
+### Example 2: Line-Specific Comment (With Character Offset)
+
+```typescript
+{
+  "repository": "CoreAPI",
+  "pullRequestId": 456,
+  "comment": "This function needs error handling for null inputs.",
+  "threadContext": {
+    "filePath": "src/utils/validation.ts",
+    "rightFileStart": { "line": 45, "offset": 1 },
+    "rightFileEnd": { "line": 52, "offset": 20 }
+  }
+}
+```
+
+**Important:** When specifying `offset`, it must be ≥1 (1-based character index). Setting `offset: 0` will cause an error: "value 0 is outside the allowed range".
 
 **Result:**
 ```json
 {
   "success": true,
   "data": {
-    "threadId": 1763168101,
-    "pullRequestId": 13997912,
-    "repository": "Compute-Fabric-HostGateway",
-    "commentId": 9876543,
-    "publishedDate": "2025-12-01T22:25:00Z",
+    "threadId": 7890123,
+    "pullRequestId": 456,
+    "repository": "CoreAPI",
+    "commentId": 1234567,
+    "publishedDate": "2025-12-01T22:30:00Z",
     "status": "active",
-    "threadContext": null,
-    "url": "https://msazure.visualstudio.com/One/_git/Compute-Fabric-HostGateway/pullRequest/13997912#1763168101",
-    "mentionedCopilot": true
+    "threadContext": {
+      "filePath": "src/utils/validation.ts",
+      "rightFileStart": { "line": 45, "offset": 1 },
+      "rightFileEnd": { "line": 52, "offset": 20 }
+    },
+    "url": "https://dev.azure.com/myorg/myproject/_git/CoreAPI/pullRequest/456#7890123",
+    "mentionedCopilot": false
   },
   "errors": [],
-  "warnings": ["Auto-discovered GitHub Copilot GUID: 5d6898bb-45ec-419a-ad8a-1234567890ab@2c895908-abcd-efgh-ijkl-mnopqrstuvwx"]
+  "warnings": []
 }
 ```
 
-### Example 2: Line-Specific Comment
+### Example 3: General PR Comment with Copilot Mention
 
 ```typescript
 {
@@ -142,7 +171,38 @@ Azure DevOps uses a simple plain text format for @mentions:
 }
 ```
 
-### Example 3: Copilot Mention with Explicit GUID
+### Example 3: General PR Comment with Copilot Mention
+
+```typescript
+{
+  "repository": "Compute-Fabric-HostGateway",
+  "pullRequestId": 13997912,
+  "comment": "Please review this PR for security vulnerabilities.",
+  "mentionCopilot": true
+}
+```
+
+**Result:**
+```json
+{
+  "success": true,
+  "data": {
+    "threadId": 1763168101,
+    "pullRequestId": 13997912,
+    "repository": "Compute-Fabric-HostGateway",
+    "commentId": 9876543,
+    "publishedDate": "2025-12-01T22:25:00Z",
+    "status": "active",
+    "threadContext": null,
+    "url": "https://msazure.visualstudio.com/One/_git/Compute-Fabric-HostGateway/pullRequest/13997912#1763168101",
+    "mentionedCopilot": true
+  },
+  "errors": [],
+  "warnings": ["Auto-discovered GitHub Copilot GUID: 5d6898bb-45ec-419a-ad8a-1234567890ab@2c895908-abcd-efgh-ijkl-mnopqrstuvwx"]
+}
+```
+
+### Example 4: Copilot Mention with Explicit GUID
 
 ```typescript
 {
@@ -400,6 +460,7 @@ Uses Azure DevOps REST API version **7.1**.
 2. **Display Name**: Must match registered identity name for proper linking
 3. **Thread Context**: Only supports `rightFile*` positions (new version), not `leftFile*` (old version)
 4. **Single Comment**: Creates threads with one initial comment only (additional comments require separate API calls)
+5. **Offset Validation**: When specifying character offsets, the value must be ≥1 (1-based). Setting `offset: 0` will cause Azure DevOps API to return "value 0 is outside the allowed range". Simply omit the `offset` field for line-level comments.
 
 ## Future Enhancements
 
@@ -413,6 +474,13 @@ Uses Azure DevOps REST API version **7.1**.
 - Attachment support
 
 ## Changelog
+
+### Version 1.0.1 (2025-12-01)
+- **Fixed:** Offset validation now correctly requires ≥1 (1-based character index) instead of ≥0
+- **Improved:** Added comprehensive documentation about offset field being optional and 1-based
+- **Improved:** Added minimal line comment example without offset
+- **Improved:** Added example showing offset usage with validation notes
+- **Improved:** Added "Known Limitations" section documenting offset=0 error
 
 ### Version 1.0.0 (2025-12-01)
 - Initial implementation

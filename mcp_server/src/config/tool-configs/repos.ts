@@ -209,7 +209,7 @@ export const reposTools: ToolConfig[] = [
                 },
                 offset: {
                   type: "number",
-                  description: "Character offset within the line (optional)"
+                  description: "1-based character offset within the line. Optional - when provided, must be ≥1. Omit for line-only comments. Example: offset=5 means 5th character on the line."
                 }
               },
               required: ["line"],
@@ -224,7 +224,7 @@ export const reposTools: ToolConfig[] = [
                 },
                 offset: {
                   type: "number",
-                  description: "Character offset within the line (optional)"
+                  description: "1-based character offset within the line. Optional - when provided, must be ≥1. Omit for line-only comments. Example: offset=10 means 10th character on the line."
                 }
               },
               required: ["line"],

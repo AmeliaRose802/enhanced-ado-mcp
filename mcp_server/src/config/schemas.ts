@@ -654,11 +654,11 @@ export const addPullRequestCommentSchema = z.object({
     filePath: optionalString().describe("File path to comment on (for line-specific comments)"),
     rightFileStart: z.object({
       line: z.number().int().positive("Line number must be positive"),
-      offset: z.number().int().min(0, "Offset must be non-negative").optional()
+      offset: z.number().int().min(1, "Offset must be ≥1 (1-based character index)").optional().describe("1-based character offset within the line (optional, must be ≥1 if provided)")
     }).optional().describe("Starting line position in new version of file"),
     rightFileEnd: z.object({
       line: z.number().int().positive("Line number must be positive"),
-      offset: z.number().int().min(0, "Offset must be non-negative").optional()
+      offset: z.number().int().min(1, "Offset must be ≥1 (1-based character index)").optional().describe("1-based character offset within the line (optional, must be ≥1 if provided)")
     }).optional().describe("Ending line position in new version of file")
   }).optional().describe("Optional context for line-specific comments. Omit for general PR-level comments."),
   ...orgProjectFields()
