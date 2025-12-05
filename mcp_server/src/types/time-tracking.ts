@@ -253,7 +253,7 @@ export interface TimeTrackingResult {
     completedWork?: number;
     remainingWork?: number;
     percentComplete?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   error?: string;
 }

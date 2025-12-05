@@ -366,7 +366,7 @@ export interface ADOPullRequestThread {
   status: 'unknown' | 'active' | 'fixed' | 'wontFix' | 'closed' | 'byDesign' | 'pending';
   threadContext?: ADOPullRequestThreadContext;
   properties?: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
   identities?: {
     [id: string]: ADOIdentity;
@@ -382,7 +382,14 @@ export interface ADOPullRequestThread {
       secondComparingIteration: number;
     };
     changeTrackingId?: number;
-    trackingCriteria?: any;
+    trackingCriteria?: {
+      firstComparingIteration?: number;
+      secondComparingIteration?: number;
+      origLeftFileStart?: number;
+      origLeftFileEnd?: number;
+      origRightFileStart?: number;
+      origRightFileEnd?: number;
+    };
   };
 }
 

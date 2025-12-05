@@ -93,7 +93,7 @@ export async function getCurrentIterationPath(
     
     // Query Azure DevOps team settings API for current iteration
     const token = await getTokenProvider()();
-    const url = `https://dev.azure.com/${organization}/${project}/${teamName}/_apis/work/teamsettings/iterations?$timeframe=current&api-version=7.1`;
+    const url = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/${encodeURIComponent(teamName)}/_apis/work/teamsettings/iterations?$timeframe=current&api-version=7.1`;
     
     const response = await fetch(url, {
       headers: {
@@ -164,7 +164,7 @@ export async function getTeamIterations(
     logger.debug(`[Cache] MISS: Fetching all iterations for team: ${teamName}`);
     
     const token = await getTokenProvider()();
-    const url = `https://dev.azure.com/${organization}/${project}/${teamName}/_apis/work/teamsettings/iterations?api-version=7.1`;
+    const url = `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/${encodeURIComponent(teamName)}/_apis/work/teamsettings/iterations?api-version=7.1`;
     
     const response = await fetch(url, {
       headers: {

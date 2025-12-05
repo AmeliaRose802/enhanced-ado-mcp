@@ -5,6 +5,7 @@
 
 import type { ToolConfig, ToolExecutionResult, ToolExecutionData, ToolExecutionMetadata, JSONValue, ODataAnalyticsArgs, ODataResponse } from "@/types/index.js";
 import type { MCPServer, MCPServerLike } from "@/types/mcp.js";
+import type { ADOIdentity } from "@/types/ado.js";
 import { validateAzureCLI } from "../../../utils/azure-cli-validator.js";
 import { getRequiredConfig } from "@/config/config.js";
 import { buildValidationErrorResponse, buildAzureCliErrorResponse, buildSamplingUnavailableResponse } from "@/utils/response-builder.js";
@@ -22,6 +23,40 @@ import type { z } from 'zod';
 
 // Type for validated OData query arguments
 type ODataQueryArgs = z.infer<typeof odataQuerySchema>;
+
+/**
+ * OData Analytics API Work Item structure
+ * Note: Field names use PascalCase (different from WIQL API)
+ */
+interface ODataWorkItem {
+  WorkItemId: number;
+  Title: string;
+  WorkItemType: string;
+  State: string;
+  AreaPath: string;
+  IterationPath: string;
+  AssignedTo?: string | ADOIdentity | { displayName: string };
+  CreatedDate: string;
+  ChangedDate: string;
+  Tags?: string;
+  Priority?: number;
+  [key: string]: unknown; // Allow additional OData fields
+}
+
+/**
+ * Context information stored for each work item in query handle
+ */
+interface WorkItemContextInfo {
+  title: string;
+  state: string;
+  type: string;
+  createdDate: string;
+  changedDate: string;
+  assignedTo: string;
+  areaPath: string;
+  iterationPath: string;
+  tags: string;
+}
 
 /**
  * Azure CLI token provider specifically for Analytics API
@@ -226,7 +261,7 @@ async function executeODataAnalytics(
     };
   }
   
-  const baseUrl = `https://analytics.dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_odata/v4.0-preview`;
+  const baseUrl = `https://analytics.dev.azure.com/${encodeURIComponent(queryArgs.organization)}/${encodeURIComponent(queryArgs.project)}/_odata/v4.0-preview`;
   const fullUrl = `${baseUrl}/WorkItems?${odataQuery}`;
   
   const cacheKey = generateODataCacheKey(fullUrl);
@@ -377,7 +412,7 @@ async function executeODataQueryForHandle(
   }
   
   const token = await getAnalyticsTokenProvider()();
-  const baseUrl = `https://analytics.dev.azure.com/${queryArgs.organization}/${queryArgs.project}/_odata/v3.0-preview/WorkItems`;
+  const baseUrl = `https://analytics.dev.azure.com/${encodeURIComponent(queryArgs.organization)}/${encodeURIComponent(queryArgs.project)}/_odata/v3.0-preview/WorkItems`;
   
   const fieldsToSelect = queryArgs.includeFields && queryArgs.includeFields.length > 0 
     ? queryArgs.includeFields.join(',')
@@ -451,8 +486,8 @@ async function executeODataQueryForHandle(
     };
   }
   
-  const workItemIds = workItems.map((wi: any) => wi.WorkItemId);
-  const workItemContext = new Map<number, any>();
+  const workItemIds = workItems.map((wi: ODataWorkItem) => wi.WorkItemId);
+  const workItemContext = new Map<number, WorkItemContextInfo>();
   
   for (const wi of workItems) {
     workItemContext.set(wi.WorkItemId, {
@@ -488,7 +523,7 @@ async function executeODataQueryForHandle(
       work_item_count: workItemIds.length,
       query: odataQuery,
       summary: `Query handle created for ${workItemIds.length} work item(s). Use the handle with bulk operation tools. Handle expires in 24 hours.`,
-      work_items: workItems.map((wi: any) => ({
+      work_items: workItems.map((wi: ODataWorkItem) => ({
         id: wi.WorkItemId,
         title: wi.Title,
         state: wi.State,
@@ -518,7 +553,7 @@ async function executeODataQueryForHandle(
 async function generateAndValidateODataQuery(
   samplingClient: SamplingClient,
   description: string,
-  queryArgs: any,
+  queryArgs: ODataQueryArgs,
   maxIterations: number,
   includeExamples: boolean,
   testQuery: boolean
@@ -683,7 +718,7 @@ async function testODataQuery(
   
   try {
     const token = await getAnalyticsTokenProvider()();
-    const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
+    const baseUrl = `https://analytics.dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_odata/v3.0-preview/WorkItems`;
     const url = `${baseUrl}?${query}${query.includes('$top') ? '' : '&$top=5'}`;
 
     logger.debug(`Testing OData query: ${url}`);

@@ -804,7 +804,21 @@ export class ADOGitService {
     const endpoint = `git/repositories/${encodeURIComponent(repository)}/pullRequests/${pullRequestId}/threads`;
 
     // Build thread request body
-    const threadRequest: any = {
+    interface ThreadRequest {
+      comments: Array<{
+        parentCommentId: number;
+        content: string;
+        commentType: string;
+      }>;
+      status: string;
+      threadContext?: {
+        filePath: string;
+        rightFileStart?: { line: number; offset: number };
+        rightFileEnd?: { line: number; offset: number };
+      };
+    }
+    
+    const threadRequest: ThreadRequest = {
       comments: [
         {
           parentCommentId: 0,

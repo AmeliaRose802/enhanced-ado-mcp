@@ -24,11 +24,11 @@ export interface BatchProcessorOptions {
   onProgress?: (completed: number, total: number, succeeded: number, failed: number) => void;
 }
 
-export interface BatchResult<T> {
+export interface BatchResult<T, R = unknown> {
   /**
    * Successfully processed items
    */
-  succeeded: Array<{ item: T; result: any }>;
+  succeeded: Array<{ item: T; result: R }>;
   
   /**
    * Failed items with error messages
@@ -68,11 +68,11 @@ export interface BatchResult<T> {
  * );
  * ```
  */
-export async function processBatch<T, R = void>(
+export async function processBatch<T, R = unknown>(
   items: T[],
   processor: (item: T) => Promise<R>,
   options: BatchProcessorOptions = {}
-): Promise<BatchResult<T>> {
+): Promise<BatchResult<T, R>> {
   const {
     concurrency = 5,
     stopOnError = false,
@@ -193,12 +193,12 @@ export async function processBatch<T, R = void>(
  * );
  * ```
  */
-export async function processInChunks<T, R = void>(
+export async function processInChunks<T, R = unknown>(
   items: T[],
   chunkSize: number,
   processor: (chunk: T[]) => Promise<R>,
   options: BatchProcessorOptions = {}
-): Promise<BatchResult<T[]>> {
+): Promise<BatchResult<T[], R>> {
   const chunks: T[][] = [];
   
   // Split into chunks

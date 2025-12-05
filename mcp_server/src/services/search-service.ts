@@ -79,8 +79,29 @@ interface SearchQueryResult {
   result: (number | string)[];
 }
 
+/**
+ * FlexSearch configuration options
+ */
+interface FlexSearchOptions {
+  document?: {
+    id: string;
+    index: string | string[];
+    store?: string | string[] | boolean;
+  };
+  tokenize?: string;
+  resolution?: number;
+  cache?: boolean;
+  worker?: boolean;
+  optimize?: boolean;
+  context?: boolean | {
+    resolution?: number;
+    depth?: number;
+    bidirectional?: boolean;
+  };
+}
+
 // FlexSearch Document constructor type
-type FlexSearchDocumentConstructor = new <T>(options: any) => FlexSearchDocument<T>;
+type FlexSearchDocumentConstructor = new <T>(options: FlexSearchOptions) => FlexSearchDocument<T>;
 
 /**
  * Search Service

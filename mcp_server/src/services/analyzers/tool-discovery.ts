@@ -132,11 +132,12 @@ export class ToolDiscoveryAnalyzer {
         warnings: result.warnings || []
       };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Tool discovery failed', errorToContext(error));
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during tool discovery';
       return {
         success: false,
-        errors: [error.message || 'Unknown error during tool discovery'],
+        errors: [errorMessage],
         warnings: [],
         metadata: { intent: args.intent }
       };
@@ -302,8 +303,9 @@ ${JSON.stringify(toolList, null, 2)}
         warnings: parsed.warnings
       };
 
-    } catch (error: any) {
-      logger.error('Failed to parse AI response', { error: error.message, response: aiResponse });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to parse AI response', { error: errorMessage, response: aiResponse });
       
       // Fallback: provide a basic recommendation based on keyword matching
       return {

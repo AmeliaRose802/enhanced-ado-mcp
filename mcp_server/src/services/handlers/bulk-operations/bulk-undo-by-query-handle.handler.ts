@@ -69,7 +69,15 @@ export async function handleBulkUndoByQueryHandle(config: ToolConfig, args: unkn
 
     if (dryRun) {
       // Show preview of what will be undone
-      const allPreviewItems: any[] = [];
+      interface UndoPreviewItem {
+        work_item_id: number;
+        operation_type: string;
+        operation_timestamp: string;
+        changes_to_revert: Record<string, unknown>;
+        undo_actions: string[];
+      }
+      
+      const allPreviewItems: UndoPreviewItem[] = [];
       const warnings: string[] = [];
       let totalItemsAffected = 0;
       
@@ -305,7 +313,15 @@ async function performUndo(
       break;
       
     case 'bulk-update':
-      const updatePatches: any[] = [];
+            logger.info(`Performing undo on ${operationCount} operation(s)...`);
+      
+      interface UpdatePatch {
+        op: 'add' | 'replace' | 'remove';
+        path: string;
+        value?: unknown;
+      }
+      
+      const updatePatches: UpdatePatch[] = [];
       for (const [path, value] of Object.entries(changes)) {
         if (value.from !== undefined) {
           updatePatches.push({

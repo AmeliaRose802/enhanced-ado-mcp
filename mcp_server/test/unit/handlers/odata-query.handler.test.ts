@@ -1330,5 +1330,42 @@ describe('OData Query Handler', () => {
       
       expect(url).toContain('$select=WorkItemId,Title,State');
     });
+
+    it('should URL encode organization and project names with special characters', async () => {
+      // Test case for ADO-Work-Item-MSP-48: Fix sprint planning 404 error for project lookup
+      const configWithSpaces = {
+        ...config,
+        azureDevOps: {
+          ...config.azureDevOps,
+          organization: 'My Org',
+          project: 'Project One'
+        }
+      };
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ WorkItemId: 1 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(configWithSpaces, {
+        queryType: 'velocityMetrics',
+        dateRangeStart: '2024-01-01'
+      });
+
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      // Verify URL encoding (spaces become %20)
+      expect(url).toContain('My%20Org');
+      expect(url).toContain('Project%20One');
+      // Should NOT contain unencoded spaces
+      expect(url).not.toContain('My Org');
+      expect(url).not.toContain('Project One');
+    });
   });
 });

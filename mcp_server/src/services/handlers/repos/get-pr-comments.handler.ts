@@ -72,7 +72,16 @@ async function generateSearchCriteria(
     const responseText = samplingClient.extractResponseText(response);
 
     // Parse JSON response
-    let parsed: any;
+    interface AISearchCriteria {
+      success: boolean;
+      mode?: string;
+      pullRequestId?: number;
+      repositoryId?: string;
+      project?: string;
+      [key: string]: unknown;
+    }
+    
+    let parsed: AISearchCriteria;
     try {
       // Extract JSON from markdown code blocks if present
       const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/);
@@ -348,6 +357,23 @@ export async function handleGetPullRequestComments(
       }
 
       // Fetch comments for each PR
+      interface FormattedThread {
+        threadId: number;
+        status: string;
+        publishedDate: string;
+        lastUpdatedDate?: string;
+        commentCount: number;
+        filePath?: string;
+        comments: Array<{
+          id: number;
+          author: string;
+          authorEmail: string;
+          content: string;
+          publishedDate: string;
+          commentType: string;
+        }>;
+      }
+      
       const pullRequestsWithComments: Array<{
         pullRequestId: number;
         title: string;
@@ -362,7 +388,7 @@ export async function handleGetPullRequestComments(
           totalComments: number;
           commentsByStatus: Record<string, number>;
         };
-        threads: any[];
+        threads: FormattedThread[];
       }> = [];
 
       let totalThreads = 0;

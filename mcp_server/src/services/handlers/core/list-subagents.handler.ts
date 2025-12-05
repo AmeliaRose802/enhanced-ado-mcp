@@ -183,7 +183,7 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
       
       gitItems = itemsResponse.data.value || [];
       logger.debug(`Found ${gitItems.length} items in ${policiesPath}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If directory doesn't exist or is empty, return empty results
       if (error.status === 404) {
         logger.debug(`Directory ${policiesPath} not found in repository ${repository}`);

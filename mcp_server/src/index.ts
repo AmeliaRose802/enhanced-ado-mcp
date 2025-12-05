@@ -35,7 +35,16 @@ const server = new Server({
 });
 
 // Request handler with proper error handling
-server.fallbackRequestHandler = async (request: any) => {
+interface MCPRequest {
+  method: string;
+  params?: {
+    name?: string;
+    arguments?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+}
+
+server.fallbackRequestHandler = async (request: MCPRequest) => {
   logger.debug(`Handling request: ${request.method}`, { params: request.params });
   
   if (request.method === "tools/list") {

@@ -64,8 +64,8 @@ export class ADOHttpClient {
     this.organization = organization;
     this.tokenProvider = tokenProvider;
     this.baseUrl = project
-      ? `https://dev.azure.com/${organization}/${project}/_apis`
-      : `https://dev.azure.com/${organization}/_apis`;
+      ? `https://dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_apis`
+      : `https://dev.azure.com/${encodeURIComponent(organization)}/_apis`;
   }
 
   /**

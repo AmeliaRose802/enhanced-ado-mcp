@@ -205,7 +205,13 @@ async function fetchParentRelations(
 
       if (response.data?.value) {
         for (const item of response.data.value) {
-          const parentRelation = item.relations?.find((r: any) => 
+          interface RelationObject {
+            rel: string;
+            url: string;
+            attributes?: Record<string, string>;
+          }
+          
+          const parentRelation = item.relations?.find((r: RelationObject) => 
             r.rel === 'System.LinkTypes.Hierarchy-Reverse'
           );
           if (parentRelation?.url) {

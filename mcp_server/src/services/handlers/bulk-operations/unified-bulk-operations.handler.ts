@@ -497,7 +497,16 @@ async function executeAssignAction(
   const workItemsById = new Map<number, any>();
   try {
     const idsParam = workItemIds.join(',');
-    const response = await httpClient.get<{ value: any[] }>(
+    interface TeamMember {
+      identity: {
+        displayName: string;
+        uniqueName: string;
+        id: string;
+      };
+      [key: string]: unknown;
+    }
+    
+    const response = await httpClient.get<{ value: TeamMember[] }>(
       `wit/workitems?ids=${idsParam}&fields=System.AssignedTo&api-version=7.1`
     );
     for (const item of response.data.value || []) {

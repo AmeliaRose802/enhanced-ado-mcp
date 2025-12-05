@@ -130,7 +130,7 @@ export async function handleAddPullRequestComment(
       errors: [],
       warnings
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       return buildValidationErrorResponse(error);

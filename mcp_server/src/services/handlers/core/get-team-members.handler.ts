@@ -101,7 +101,7 @@ export async function handleGetTeamMembers(args: unknown): Promise<ToolExecution
     
     // Execute OData query
     const token = await getAnalyticsTokenProvider()();
-    const baseUrl = `https://analytics.dev.azure.com/${organization}/${project}/_odata/v3.0-preview/WorkItems`;
+    const baseUrl = `https://analytics.dev.azure.com/${encodeURIComponent(organization)}/${encodeURIComponent(project)}/_odata/v3.0-preview/WorkItems`;
     const url = `${baseUrl}?${odataQuery}`;
     
     logger.debug(`Fetching from: ${url}`);
