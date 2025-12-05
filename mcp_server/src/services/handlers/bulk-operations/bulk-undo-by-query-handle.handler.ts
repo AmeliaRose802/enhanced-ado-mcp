@@ -313,7 +313,6 @@ async function performUndo(
       break;
       
     case 'bulk-update':
-            logger.info(`Performing undo on ${operationCount} operation(s)...`);
       
       interface UpdatePatch {
         op: 'add' | 'replace' | 'remove';

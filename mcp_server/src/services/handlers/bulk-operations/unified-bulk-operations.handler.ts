@@ -21,7 +21,6 @@ import { unifiedBulkOperationsSchema } from "../../../config/schemas.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { processBatch } from "../../../utils/batch-processor.js";
 import { createBatchEnabledOperations, BatchUpdateOperation } from "../../batch-enabled-operations.js";
-import { createBatchEnabledOperations, BatchUpdateOperation } from "../../batch-enabled-operations.js";
 
 type BulkAction = z.infer<typeof unifiedBulkOperationsSchema>['actions'][number];
 
@@ -637,6 +636,7 @@ async function executeAssignAction(
   try {
     const idsParam = workItemIds.join(',');
     interface TeamMember {
+      id: number;
       identity: {
         displayName: string;
         uniqueName: string;
