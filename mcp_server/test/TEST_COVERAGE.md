@@ -269,9 +269,29 @@ When adding new tools or modifying existing ones:
 5. Test both happy paths and error scenarios
 6. Update this documentation
 
+## Known Issues
+
+### Skipped Tests - MUST BE FIXED
+
+⚠️ **TEMPORARY SKIP - 17 OpenAPI Generation Tests**
+
+**Status:** Currently skipped in `test/unit/openapi-generation.test.ts`
+
+**Reason:** Tests require pre-generated `docs/api/openapi.json` and `docs/api/schemas/*.json` files that aren't part of build pipeline
+
+**Fix Plan:**
+1. **ADO-Work-Item-MSP-128** - Integrate OpenAPI generation as prebuild step
+2. **ADO-Work-Item-MSP-129** - Un-skip tests after integration complete
+3. **ADO-Work-Item-MSP-130** - Fix duplicate imports in test file
+
+**GitHub Issue:** [#107](https://github.com/AmeliaRose802/enhanced-ado-mcp/issues/107)
+
+**DO NOT ACCEPT:** These tests must be un-skipped before release. Skipping tests is technical debt that hides potential API contract breakage.
+
 ---
 
-**Last Updated:** 2025-10-14
+**Last Updated:** 2025-12-04
 **Test Files:** 5 (4 unit + 1 integration)
-**Test Cases:** 57+
+**Test Cases:** 57+ (17 currently skipped - MUST FIX)
 **Coverage Target:** >80%
+**Active Tests:** 830 passing
