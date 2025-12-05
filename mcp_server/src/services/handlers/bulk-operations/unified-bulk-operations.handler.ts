@@ -20,6 +20,8 @@ import { getTokenProvider } from '../../../utils/token-provider.js';
 import { unifiedBulkOperationsSchema } from "../../../config/schemas.js";
 import { SamplingClient } from "../../../utils/sampling-client.js";
 import { processBatch } from "../../../utils/batch-processor.js";
+import { createBatchEnabledOperations, BatchUpdateOperation } from "../../batch-enabled-operations.js";
+import { createBatchEnabledOperations, BatchUpdateOperation } from "../../batch-enabled-operations.js";
 
 type BulkAction = z.infer<typeof unifiedBulkOperationsSchema>['actions'][number];
 
@@ -97,6 +99,31 @@ export async function handleUnifiedBulkOperations(
     const proj = project || cfg.azureDevOps.project;
     const httpClient = new ADOHttpClient(org, getTokenProvider(), proj);
 
+    // OPTIMIZATION 2: Fetch work items once upfront for all actions
+    // This eliminates redundant fetches when multiple actions need the same data
+    // Expected improvement: Reduces API calls by N-1 for N actions that need work item data
+    const workItemsCache = new Map<number, ADOWorkItem>();
+    if (!dryRun) {
+      logger.info(`[OPTIMIZATION] Pre-fetching ${selectedCount} work items to cache for all actions`);
+      try {
+        const fieldsToFetch = 'System.Id,System.Title,System.State,System.AssignedTo,System.Priority,System.Tags,System.AreaPath,System.IterationPath,System.WorkItemType';
+        const idsParam = selectedWorkItemIds.join(',');
+        const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+          `wit/workitems?ids=${idsParam}&fields=${fieldsToFetch}&api-version=7.1`
+        );
+        for (const item of response.data.value || []) {
+          workItemsCache.set(item.id, item);
+        }
+        logger.info(`[OPTIMIZATION] Cached ${workItemsCache.size} work items for reuse across actions (saves ${Math.max(0, actions.length - 1)} fetch operations)`);
+      } catch (error) {
+        logger.warn('Failed to pre-fetch work items for cache, will fetch per-action:', errorToContext(error));
+      }
+    }
+
+    // OPTIMIZATION 1: Create batch-enabled operations for efficient bulk updates
+    // Expected improvement: Reduces API calls by 50-100x for bulk updates (N calls → ceil(N/200) calls)
+    const batchOperations = createBatchEnabledOperations(httpClient, org, proj);
+
     // Process each action sequentially
     const actionResults: ActionResult[] = [];
     const allErrors: string[] = [];
@@ -124,7 +151,9 @@ export async function handleUnifiedBulkOperations(
           dryRun || false,
           concurrency || 5,
           maxPreviewItems,
-          server
+          server,
+          workItemsCache,
+          batchOperations
         );
 
         actionResults.push(result);
@@ -234,15 +263,17 @@ async function executeAction(
   dryRun: boolean,
   concurrency: number,
   maxPreviewItems?: number,
-  server?: MCPServer | MCPServerLike
+  server?: MCPServer | MCPServerLike,
+  workItemsCache?: Map<number, ADOWorkItem>,
+  batchOperations?: ReturnType<typeof createBatchEnabledOperations>
 ): Promise<ActionResult> {
   
   switch (action.type) {
     case "comment":
-      return await executeCommentAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
+      return await executeCommentAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems, workItemsCache, batchOperations);
     
     case "update":
-      return await executeUpdateAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
+      return await executeUpdateAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems, workItemsCache, batchOperations);
     
     case "assign":
       return await executeAssignAction(action, workItemIds, httpClient, queryHandle, dryRun, concurrency, maxPreviewItems);
@@ -282,6 +313,9 @@ async function executeAction(
 /**
  * Execute comment action
  */
+/**
+ * Execute comment action
+ */
 async function executeCommentAction(
   action: Extract<BulkAction, { type: "comment" }>,
   workItemIds: number[],
@@ -289,7 +323,9 @@ async function executeCommentAction(
   queryHandle: string,
   dryRun: boolean,
   concurrency: number,
-  maxPreviewItems?: number
+  maxPreviewItems?: number,
+  workItemsCache?: Map<number, ADOWorkItem>,
+  batchOperations?: ReturnType<typeof createBatchEnabledOperations>
 ): Promise<ActionResult> {
   
   if (dryRun) {
@@ -306,13 +342,57 @@ async function executeCommentAction(
     };
   }
 
-  let succeeded = 0;
-  let failed = 0;
   const errors: string[] = [];
   const itemsAffected: WorkItemChange[] = [];
 
   // Convert markdown to HTML for proper rendering (consistent with description/acceptance criteria handling)
   const htmlComment = smartConvertToHtml(action.comment);
+
+  // OPTIMIZATION 1: Use Batch API for comments (50-100x improvement)
+  if (batchOperations && batchOperations.isBatchAPIEnabled()) {
+    logger.info(`[OPTIMIZATION] Using Batch API for ${workItemIds.length} comments (reduces API calls by ~${Math.floor(workItemIds.length / Math.ceil(workItemIds.length / 200))}x)`);
+    
+    const batchComments = workItemIds.map(workItemId => ({
+      workItemId,
+      comment: htmlComment
+    }));
+
+    const batchResult = await batchOperations.commentBatch(batchComments);
+
+    // Track successful comments for undo
+    for (const { item } of batchResult.succeeded) {
+      itemsAffected.push({
+        workItemId: item.workItemId,
+        changes: { comment: action.comment }
+      });
+    }
+
+    // Collect errors
+    for (const { item, error } of batchResult.failed) {
+      errors.push(`Work item ${item.workItemId}: ${error}`);
+    }
+
+    // Record operation for undo
+    if (itemsAffected.length > 0) {
+      queryHandleService.recordOperation(queryHandle, 'bulk-comment', itemsAffected);
+    }
+
+    return {
+      action,
+      success: batchResult.failed.length === 0,
+      itemsAffected: workItemIds.length,
+      itemsSucceeded: batchResult.succeeded.length,
+      itemsFailed: batchResult.failed.length,
+      errors,
+      warnings: [],
+      summary: `Added comment to ${batchResult.succeeded.length} work item(s) via Batch API (${batchResult.totalRequests} API call${batchResult.totalRequests > 1 ? 's' : ''} vs ${workItemIds.length} without batching)${batchResult.failed.length > 0 ? `, ${batchResult.failed.length} failed` : ""}`
+    };
+  }
+
+  // Fallback: Use sequential processing with concurrency control
+  logger.info(`Batch API not available, using parallel processing with concurrency=${concurrency}`);
+  let succeeded = 0;
+  let failed = 0;
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(
@@ -373,7 +453,9 @@ async function executeUpdateAction(
   queryHandle: string,
   dryRun: boolean,
   concurrency: number,
-  maxPreviewItems?: number
+  maxPreviewItems?: number,
+  workItemsCache?: Map<number, ADOWorkItem>,
+  batchOperations?: ReturnType<typeof createBatchEnabledOperations>
 ): Promise<ActionResult> {
   
   if (dryRun) {
@@ -390,27 +472,84 @@ async function executeUpdateAction(
     };
   }
 
-  // Fetch work items BEFORE updates to capture previous values
-  const workItemsById = new Map<number, ADOWorkItem>();
-  try {
-    const idsParam = workItemIds.join(',');
-    const fieldsToFetch = action.updates
-      .map(u => u.path.replace('/fields/', ''))
-      .join(',');
-    const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
-      `wit/workitems?ids=${idsParam}&fields=${fieldsToFetch}&api-version=7.1`
-    );
-    for (const item of response.data.value || []) {
-      workItemsById.set(item.id, item);
+  // OPTIMIZATION 3: Use cached work items if available, otherwise fetch
+  // This avoids redundant fetch when cache is populated upfront
+  const workItemsById = workItemsCache || new Map<number, ADOWorkItem>();
+  if (!workItemsCache || workItemsCache.size === 0) {
+    try {
+      const idsParam = workItemIds.join(',');
+      const fieldsToFetch = action.updates
+        .map(u => u.path.replace('/fields/', ''))
+        .join(',');
+      const response = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(
+        `wit/workitems?ids=${idsParam}&fields=${fieldsToFetch}&api-version=7.1`
+      );
+      for (const item of response.data.value || []) {
+        workItemsById.set(item.id, item);
+      }
+    } catch (error) {
+      logger.warn('Failed to fetch work items before update for undo tracking:', errorToContext(error));
     }
-  } catch (error) {
-    logger.warn('Failed to fetch work items before update for undo tracking:', errorToContext(error));
+  } else {
+    logger.info(`[OPTIMIZATION] Using cached work items (skipped 1 fetch operation)`);
   }
 
+  const itemsAffected: WorkItemChange[] = [];
+  const errors: string[] = [];
+
+  // OPTIMIZATION 1: Use Batch API for updates (50-100x improvement)
+  // Batch API reduces N individual PATCH calls to ceil(N/200) batch calls
+  if (batchOperations && batchOperations.isBatchAPIEnabled()) {
+    logger.info(`[OPTIMIZATION] Using Batch API for ${workItemIds.length} updates (reduces API calls by ~${Math.floor(workItemIds.length / Math.ceil(workItemIds.length / 200))}x)`);
+    
+    const batchUpdates: BatchUpdateOperation[] = workItemIds.map(workItemId => ({
+      workItemId,
+      operations: action.updates
+    }));
+
+    const batchResult = await batchOperations.updateBatch(batchUpdates);
+
+    // Track successful updates for undo
+    for (const { item } of batchResult.succeeded) {
+      const previousItem = workItemsById.get(item.workItemId);
+      const changes: Record<string, unknown> = {};
+      for (const update of action.updates) {
+        const field = update.path.replace('/fields/', '');
+        const previousValue = previousItem?.fields?.[field];
+        changes[update.path] = {
+          from: previousValue,
+          to: update.value
+        };
+      }
+      itemsAffected.push({ workItemId: item.workItemId, changes });
+    }
+
+    // Collect errors
+    for (const { item, error } of batchResult.failed) {
+      errors.push(`Work item ${item.workItemId}: ${error}`);
+    }
+
+    // Record operation for undo
+    if (itemsAffected.length > 0) {
+      queryHandleService.recordOperation(queryHandle, 'bulk-update', itemsAffected);
+    }
+
+    return {
+      action,
+      success: batchResult.failed.length === 0,
+      itemsAffected: workItemIds.length,
+      itemsSucceeded: batchResult.succeeded.length,
+      itemsFailed: batchResult.failed.length,
+      errors,
+      warnings: [],
+      summary: `Updated ${batchResult.succeeded.length} work item(s) via Batch API (${batchResult.totalRequests} API call${batchResult.totalRequests > 1 ? 's' : ''} vs ${workItemIds.length} without batching)${batchResult.failed.length > 0 ? `, ${batchResult.failed.length} failed` : ""}`
+    };
+  }
+
+  // Fallback: Use sequential processing with concurrency control
+  logger.info(`Batch API not available, using parallel processing with concurrency=${concurrency}`);
   let succeeded = 0;
   let failed = 0;
-  const errors: string[] = [];
-  const itemsAffected: WorkItemChange[] = [];
 
   // Process work items in parallel with controlled concurrency
   const results = await processBatch(

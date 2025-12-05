@@ -52,11 +52,20 @@ Add to VS Code `settings.json`:
 **Step 3:** Add this configuration:
 
 ```json
-```
-
-**Real Example:**
-
-```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "enhanced-ado-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "enhanced-ado-mcp-server",
+        "YOUR_ORG",
+        "--area-path",
+        "YOUR_PROJECT\\YOUR_TEAM"
+      ]
+    }
+  }
+}
 ```
 
 **Step 4:** Replace placeholders:
@@ -155,8 +164,6 @@ Add to VS Code `settings.json`:
 
 While the [basic ADO MCP server](https://github.com/modelcontextprotocol/servers/tree/main/src/ado) provides core Azure DevOps functionality, this enhanced version offers significant advantages for production workflows:
 
-```
-
 ### 🛡️ Anti-Hallucination Architecture
 **Query Handle Pattern** - AI agents can't hallucinate work item IDs. Instead of exposing raw IDs that agents might invent, our query handle system ensures agents only operate on validated work items from actual queries.
 
@@ -183,13 +190,13 @@ Agents struggle with flows that require multiple steps. Creating and parenting a
 - **OData Analytics** - Advanced metrics and aggregations for team velocity, trends, burndown
 - **WIQL + OData** - Both query languages supported with validation and auto-correction
 
-### Better context window usage
+### Better Context Window Usage
 
 With the normal ado mcp server, you eventually find the item you are looking for by pulling in hundreds of items, but it will quickly max out the context window making the process slow and unreliable.
 
 Want aggregate stats on velocity? The agent will need to manually count points which it will get wrong and hallucinate. By allowing for server side aggregation and filtering, the enhanced-ado mcp server allows you to work with more data without breaking the context window.
 
-Relibly generating queries requires thosands of tokens of context, which will degrade the performance of your main agent. Using dedicated sub-agents with sampling allows for natural language to wiql/odata query conversion with mininal context window impact.
+Reliably generating queries requires thousands of tokens of context, which will degrade the performance of your main agent. Using dedicated sub-agents with sampling allows for natural language to wiql/odata query conversion with minimal context window impact.
 
 ### 🤖 AI-Powered Analysis
 
@@ -348,8 +355,9 @@ Server automatically selects fastest free model. No configuration needed.
 
 ### Common Errors
 
-**OData 401 Authorization Error (TF400813)**  
-**Root Cause:** This error typically means you lack "View analytics" permission in Azure DevOps, OR you're not logged into Azure CLI.  
+#### OData 401 Authorization Error (TF400813)
+
+**Root Cause:** This error typically means you lack "View analytics" permission in Azure DevOps, OR you're not logged into Azure CLI.
 
 **Fix:**
 
@@ -367,8 +375,6 @@ OData Analytics queries automatically use Azure CLI authentication (as of v1.10.
 
 **📖 Detailed Guide:** See [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for comprehensive diagnosis, resolution steps, and migration patterns.
 
----
-
 ### Permission Requirements by Tool
 
 | Tool | Required Permission | Notes |
@@ -380,12 +386,12 @@ OData Analytics queries automatically use Azure CLI authentication (as of v1.10.
 
 **Key Difference:** "View analytics" is a SEPARATE permission from "View work items". Having work item access does NOT automatically grant Analytics API access.
 
----
+#### Missing Work Item Type ($undefined)
 
-**Missing Work Item Type ($undefined)**  
 **Fix:** Always specify `workItemType` when creating items.
 
-**Area Path Required (404)**  
+#### Area Path Required (404)
+
 **Fix:** Use `wit-list-area-paths` to find valid paths.
 
 ### Debug Mode

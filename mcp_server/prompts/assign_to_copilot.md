@@ -30,6 +30,7 @@ description: >-
 ## User Interactions
 
 **Step 1 - Get Work Item:**
+
 ```
 What would you like to assign to GitHub Copilot?
 - Enter work item ID (e.g., "12345")
@@ -40,6 +41,7 @@ What would you like to assign to GitHub Copilot?
 Auto-detect from git or ask: "Which repository?"
 
 **Step 4 - Agent Selection:**
+
 ```
 Recommended agent: [Name]
 Options:
@@ -489,11 +491,11 @@ AI: ✅ Work item created and assigned to GitHub Copilot!
 **Assigned To:** GitHub Copilot (via SecurityScanAgent)
 
 GitHub Copilot will analyze this work item and begin working on a solution.
-`
+```
 
 ### Example 2: Assign Existing Work Item
 
-`
+```
 User: "12345"
 
 AI: Found work item #12345: "Update dependencies in package.json"
@@ -561,7 +563,7 @@ AI: ✅ Work item assigned to GitHub Copilot!
 **Repository:** my-app
 **Branch:** https://dev.azure.com/org/project/_git/my-app?version=GB12345-update-deps
 **Assigned To:** GitHub Copilot (via ComponentGovernanceAgent)
-`
+```
 
 ## Best Practices
 

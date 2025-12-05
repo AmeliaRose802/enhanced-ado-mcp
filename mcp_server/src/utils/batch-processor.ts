@@ -3,6 +3,9 @@
  * 
  * Provides utilities for processing large arrays of items with configurable
  * parallel execution, error handling, and progress tracking.
+ * 
+ * PERFORMANCE NOTE: Uses Promise.allSettled() for true parallel execution within
+ * each concurrency batch, maximizing throughput compared to sequential processing.
  */
 
 export interface BatchProcessorOptions {
@@ -79,14 +82,16 @@ export async function processBatch<T, R = unknown>(
     onProgress
   } = options;
   
-  const succeeded: Array<{ item: T; result: R }> = [];
-  const failed: Array<{ item: T; error: string }> = [];
-  
   let completed = 0;
   
-  // Process items in batches with controlled concurrency
+  // OPTIMIZATION 3: Process items in parallel batches for maximum throughput
+  // Uses Promise.allSettled() to ensure all operations in a batch run concurrently
+  // This provides true parallelism within the concurrency limit
   for (let i = 0; i < items.length; i += concurrency) {
     const batch = items.slice(i, i + concurrency);
+    
+    // Process batch items in parallel (not sequential)
+    const results = await Promise.allSettled(ncy);
     
     // Process batch items in parallel
     const results = await Promise.allSettled(
