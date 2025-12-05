@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "assignedToEmail": {
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Single email address to analyze (e.g., 'user@domain.com')"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of email addresses for batch analysis (1-20 people, e.g., ['user1@domain.com', 'user2@domain.com'])"
+        }
+      ],
+      "description": "Email address(es) of person/people to analyze. Provide a single string for individual analysis or an array for batch team analysis."
+    },
+    "analysisPeriodDays": {
+      "type": "number",
+      "description": "Number of days to analyze backwards from today (default 90, min 7, max 365)"
+    },
+    "additionalIntent": {
+      "type": "string",
+      "description": "Optional custom analysis intent (e.g., 'check for career growth opportunities', 'assess readiness for promotion', 'evaluate technical skill development'). Applied to all team members in batch mode."
+    },
+    "continueOnError": {
+      "type": "boolean",
+      "description": "[Batch mode only] Continue analyzing remaining people if one fails (default true)"
+    },
+    "maxConcurrency": {
+      "type": "number",
+      "description": "[Batch mode only] Maximum concurrent analyses (1-10, default 5). Lower values reduce API load."
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name (uses configured default if not provided)"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name (uses configured default if not provided)"
+    },
+    "areaPath": {
+      "type": "string",
+      "description": "Area path to filter work items (uses configured default if not provided)"
+    }
+  },
+  "required": [
+    "assignedToEmail"
+  ],
+  "$id": "#/components/schemas/analyze-workload",
+  "title": "analyze-workload",
+  "description": "AI-powered workload analysis to assess burnout risk, overspecialization, work-life balance issues, and professional health indicators. Accepts EITHER a single email (for individual analysis) OR an array of emails (for batch team analysis). When analyzing multiple people, processes up to 20 team members concurrently with configurable concurrency (default 5) and returns individual analyses plus team-level metrics (average health score, health distribution, top concerns). Automatically fetches completed and active work, calculates metrics, and provides actionable insights. Supports optional custom analysis intent (e.g., 'assess readiness for promotion', 'check for career growth opportunities'). Requires VS Code sampling support.",
+  "category": "AI-Powered Analysis",
+  "aiPowered": true
+}

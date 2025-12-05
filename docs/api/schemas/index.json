@@ -1,0 +1,33 @@
+{
+  "schemas": [
+    "create-workitem.json",
+    "assign-copilot.json",
+    "get-context.json",
+    "extract-security-links.json",
+    "query-wiql.json",
+    "query-odata.json",
+    "execute-bulk-operations.json",
+    "link-workitems.json",
+    "undo-bulk.json",
+    "undo-forensic.json",
+    "export-work-items.json",
+    "analyze-workload.json",
+    "discover-tools.json",
+    "analyze-query-handle.json",
+    "analyze-bulk.json",
+    "list-handles.json",
+    "inspect-handle.json",
+    "get-context-bulk.json",
+    "get-config.json",
+    "get-team-members.json",
+    "get-prompts.json",
+    "list-agents.json",
+    "discover-custom-fields.json",
+    "export-field-schema.json",
+    "get-pr-diff.json",
+    "get-pr-comments.json",
+    "add-pr-comment.json"
+  ],
+  "generated": "2025-12-05T21:26:46.103Z",
+  "version": "1.5.0"
+}

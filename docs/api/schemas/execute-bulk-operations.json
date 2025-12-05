@@ -1,0 +1,387 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle from wit-wiql-query with returnQueryHandle=true"
+    },
+    "actions": {
+      "type": "array",
+      "description": "Array of actions to perform sequentially on selected work items",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "comment"
+              },
+              "comment": {
+                "type": "string",
+                "description": "Comment text (supports Markdown)"
+              }
+            },
+            "required": [
+              "type",
+              "comment"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "update"
+              },
+              "updates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "op": {
+                      "type": "string",
+                      "enum": [
+                        "add",
+                        "replace",
+                        "remove"
+                      ]
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "value": {}
+                  },
+                  "required": [
+                    "op",
+                    "path"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "updates"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "assign"
+              },
+              "assignTo": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "assignTo"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "remove"
+              },
+              "removeReason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "transition-state"
+              },
+              "targetState": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "validateTransitions": {
+                "type": "boolean"
+              },
+              "skipInvalidTransitions": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "targetState"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "move-iteration"
+              },
+              "targetIterationPath": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "updateChildItems": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "targetIterationPath"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "change-type"
+              },
+              "targetType": {
+                "type": "string"
+              },
+              "validateTypeChanges": {
+                "type": "boolean"
+              },
+              "skipInvalidChanges": {
+                "type": "boolean"
+              },
+              "preserveFields": {
+                "type": "boolean"
+              },
+              "comment": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "targetType"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "add-tag"
+              },
+              "tags": {
+                "type": "string",
+                "description": "Semicolon-separated tags to add"
+              }
+            },
+            "required": [
+              "type",
+              "tags"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "remove-tag"
+              },
+              "tags": {
+                "type": "string",
+                "description": "Semicolon-separated tags to remove"
+              }
+            },
+            "required": [
+              "type",
+              "tags"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "enhance-descriptions"
+              },
+              "enhancementStyle": {
+                "type": "string",
+                "enum": [
+                  "concise",
+                  "detailed",
+                  "technical",
+                  "business"
+                ],
+                "description": "Enhancement style (default: detailed)"
+              },
+              "preserveOriginal": {
+                "type": "boolean",
+                "description": "Append to existing description instead of replacing"
+              },
+              "minConfidenceScore": {
+                "type": "number",
+                "description": "Minimum confidence to apply enhancement (default: 0.6)"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "assign-story-points"
+              },
+              "estimationScale": {
+                "type": "string",
+                "enum": [
+                  "fibonacci",
+                  "powers-of-2",
+                  "linear",
+                  "t-shirt"
+                ],
+                "description": "Estimation scale (default: fibonacci)"
+              },
+              "includeReasoning": {
+                "type": "boolean",
+                "description": "Add estimation reasoning as comment"
+              },
+              "overwriteExisting": {
+                "type": "boolean",
+                "description": "Overwrite existing story points"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "add-acceptance-criteria"
+              },
+              "criteriaFormat": {
+                "type": "string",
+                "enum": [
+                  "gherkin",
+                  "checklist",
+                  "user-story"
+                ],
+                "description": "Criteria format (default: gherkin)"
+              },
+              "minCriteria": {
+                "type": "number",
+                "description": "Minimum criteria to generate (default: 3)"
+              },
+              "maxCriteria": {
+                "type": "number",
+                "description": "Maximum criteria to generate (default: 7)"
+              },
+              "appendToExisting": {
+                "type": "boolean",
+                "description": "Append to existing acceptance criteria"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        ]
+      }
+    },
+    "itemSelector": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "all"
+          ],
+          "description": "Select all items"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Array of indices [0,1,2]"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "states": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "titleContains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "daysInactiveMin": {
+              "type": "number"
+            },
+            "daysInactiveMax": {
+              "type": "number"
+            }
+          }
+        }
+      ],
+      "description": "Item selection: 'all', indices, or criteria (default: all)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Preview operations without making changes (default true)"
+    },
+    "maxPreviewItems": {
+      "type": "number",
+      "description": "Maximum items to preview in dry-run (default 10)"
+    },
+    "stopOnError": {
+      "type": "boolean",
+      "description": "Stop executing actions if one fails (default true)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle",
+    "actions"
+  ],
+  "$id": "#/components/schemas/execute-bulk-operations",
+  "title": "execute-bulk-operations",
+  "description": "🎯 UNIFIED BULK OPERATIONS: Perform multiple operations (comment, update, assign, remove, transition-state, move-iteration, change-type, add-tag, remove-tag, enhance-descriptions, assign-story-points, add-acceptance-criteria) on work items identified by a query handle. Consolidates all bulk operations into a single tool that accepts an array of actions to execute sequentially. Supports dry-run mode, error handling strategies, item selection, and AI-powered enhancements. Reduces tool confusion by providing one entry point for all bulk modifications.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

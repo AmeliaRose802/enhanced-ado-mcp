@@ -1,0 +1,34 @@
+{
+  "type": "object",
+  "properties": {
+    "workItemId": {
+      "type": "number",
+      "description": "Existing work item ID to assign"
+    },
+    "repository": {
+      "type": "string",
+      "description": "Git repository name (required)"
+    },
+    "branch": {
+      "type": "string",
+      "description": "Override default branch from config"
+    },
+    "gitHubCopilotGuid": {
+      "type": "string",
+      "description": "Override default GitHub Copilot GUID from config"
+    },
+    "specializedAgent": {
+      "type": "string",
+      "description": "Optional specialized Copilot agent name (e.g., 'ComponentGovernanceAgent'). Will be added as tag 'copilot:agent=<name>'"
+    }
+  },
+  "required": [
+    "workItemId",
+    "repository"
+  ],
+  "$id": "#/components/schemas/assign-copilot",
+  "title": "assign-copilot",
+  "description": "Assign an existing Azure DevOps work item to GitHub Copilot and add branch link. Optionally specify a specialized Copilot agent using the specializedAgent parameter. organization, project, branch, and gitHubCopilotGuid are automatically filled from configuration - only provide them to override defaults.",
+  "category": "Copilot Integration",
+  "aiPowered": false
+}

@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "queryHandle": {
+      "type": "string",
+      "description": "Query handle from wit-wiql-query with returnQueryHandle=true"
+    },
+    "undoAll": {
+      "type": "boolean",
+      "description": "Undo all operations performed on this query handle (default: false, only undoes last operation)"
+    },
+    "dryRun": {
+      "type": "boolean",
+      "description": "Preview undo operation without making changes (default true)"
+    },
+    "maxPreviewItems": {
+      "type": "number",
+      "description": "Maximum items to preview in dry-run (default 10)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "queryHandle"
+  ],
+  "$id": "#/components/schemas/undo-bulk",
+  "title": "undo-bulk",
+  "description": "🔄 UNDO OPERATIONS: Undo bulk operations performed on a query handle. Can undo just the last operation (default) or all operations (undoAll: true). Reverts comments, field updates, assignments, state transitions, and iteration moves. Supports dry-run mode to preview undo actions. NOTE: Comments cannot be deleted via ADO API, so a reversal comment is added instead.",
+  "category": "Query Handles",
+  "aiPowered": false
+}

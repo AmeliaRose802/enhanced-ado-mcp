@@ -52,7 +52,9 @@
     "typescript"
   ],
   "scripts": {
+    "prebuild": "npm run generate-openapi",
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json && npm run copy-resources",
+    "pretest": "npm run generate-openapi",
     "copy-resources": "node -e \"require('fs').cpSync('resources', 'dist/resources', {recursive: true})\" && node -e \"require('fs').cpSync('prompts', 'dist/prompts', {recursive: true})\" && node -e \"require('fs').cpSync('src/utils/module-dir.mjs', 'dist/utils/module-dir.mjs')\"",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",

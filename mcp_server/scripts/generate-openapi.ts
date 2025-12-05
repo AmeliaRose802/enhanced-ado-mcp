@@ -14,6 +14,7 @@
  */
 
 import { writeFile, mkdir } from 'fs/promises';
+import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { zodToJsonSchema } from 'zod-to-json-schema';
@@ -21,10 +22,10 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 // Import tool configs (which includes pre-built inputSchemas)
 import { toolConfigs } from '../src/config/tool-configs/index.js';
 
-// Get project root
+// Get project root (go up two levels: scripts -> mcp_server -> project root)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const projectRoot = join(__dirname, '..');
+const projectRoot = join(__dirname, '..', '..');
 
 // Extend Zod with OpenAPI metadata support
 // extendZodWithOpenApi(z); // Not needed since we're using toolConfigs directly
@@ -317,7 +318,12 @@ async function generateIndividualSchemas(outputDir: string): Promise<void> {
     generated: new Date().toISOString(),
     version: '1.5.0'
   }, null, 2));
-  console.log(`✓ Generated schema index: index.json`);
+  
+  // Verify index was written
+  if (!existsSync(indexPath)) {
+    throw new Error(`Failed to write schema index to ${indexPath}`);
+  }
+  console.log(`✓ Generated schema index: index.json (${schemaFiles.length} schemas)`);
 }
 
 /**
@@ -329,6 +335,7 @@ async function main(): Promise<void> {
   try {
     // Create output directory
     const outputDir = join(projectRoot, 'docs', 'api');
+    console.log(`📁 Creating output directory: ${outputDir}`);
     await mkdir(outputDir, { recursive: true });
 
     // Generate OpenAPI spec
@@ -338,6 +345,11 @@ async function main(): Promise<void> {
     // Write OpenAPI spec
     const openapiPath = join(outputDir, 'openapi.json');
     await writeFile(openapiPath, JSON.stringify(spec, null, 2));
+    
+    // Verify file was written
+    if (!existsSync(openapiPath)) {
+      throw new Error(`Failed to write OpenAPI spec to ${openapiPath}`);
+    }
     console.log(`✓ Generated OpenAPI spec: ${openapiPath}\n`);
 
     // Generate individual schemas
@@ -349,6 +361,7 @@ async function main(): Promise<void> {
     console.log(`\nGenerated files:`);
     console.log(`  - docs/api/openapi.json (${Object.keys(spec.paths || {}).length} endpoints)`);
     console.log(`  - docs/api/schemas/*.json (${toolConfigs.length} schemas)`);
+    console.log(`\nOutput directory: ${outputDir}`);
     console.log(`\nYou can now use these files to:`);
     console.log(`  - Generate API clients`);
     console.log(`  - Create API documentation`);
@@ -361,7 +374,8 @@ async function main(): Promise<void> {
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
+// Run the script
+main().catch((error) => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});

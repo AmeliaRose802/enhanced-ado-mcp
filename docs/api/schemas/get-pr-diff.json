@@ -1,0 +1,73 @@
+{
+  "type": "object",
+  "properties": {
+    "repository": {
+      "type": "string",
+      "description": "Repository name or ID containing the pull request"
+    },
+    "pullRequestId": {
+      "type": "number",
+      "description": "Pull request ID to fetch diff for"
+    },
+    "iterationId": {
+      "type": "number",
+      "description": "Optional: Specific iteration ID to fetch. If not provided, fetches the latest iteration's diff"
+    },
+    "includeContentMetadata": {
+      "type": "boolean",
+      "description": "Include additional file metadata (default: false)"
+    },
+    "includeDiffs": {
+      "type": "boolean",
+      "description": "Include actual file diffs for each changed file (default: true). Set to false for just file list."
+    },
+    "diffFormat": {
+      "type": "string",
+      "enum": [
+        "unified",
+        "sideBySide"
+      ],
+      "description": "Diff format: 'unified' for standard unified diff, 'sideBySide' for side-by-side comparison (default: unified)"
+    },
+    "contextLines": {
+      "type": "number",
+      "description": "Number of context lines around changes in unified diff (default: 3, max: 20)"
+    },
+    "maxDiffLines": {
+      "type": "number",
+      "description": "Maximum total diff lines to include per file (default: 1000, max: 10000). Files exceeding this show truncation warning."
+    },
+    "pathFilter": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Only include diffs for files matching these path patterns (glob-style, e.g., ['src/**/*.ts', 'tests/**'])"
+    },
+    "top": {
+      "type": "number",
+      "description": "Maximum number of changed files to return (default: 100, max: 1000)"
+    },
+    "skip": {
+      "type": "number",
+      "description": "Number of changed files to skip for pagination (default: 0)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization name"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project name"
+    }
+  },
+  "required": [
+    "repository",
+    "pullRequestId"
+  ],
+  "$id": "#/components/schemas/get-pr-diff",
+  "title": "get-pr-diff",
+  "description": "📄 PULL REQUEST DIFF: Fetch the complete diff for a pull request with actual code changes. Returns file-by-file unified diffs showing additions, deletions, and modifications by default (set includeDiffs=false for just file list). Supports side-by-side format, path filtering, and pagination. Essential for AI-powered code review workflows and understanding what changed in a PR.",
+  "category": "Work Item Operations",
+  "aiPowered": false
+}

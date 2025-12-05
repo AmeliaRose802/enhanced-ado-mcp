@@ -8,10 +8,7 @@
 import { logger, errorToContext } from '@/utils/logger.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import * as os from 'os';
 
 export interface SearchableWorkItem {
   id: number;
@@ -101,7 +98,7 @@ class SearchService {
     this.documents = new Map();
     
     // Store index in temp directory
-    const tempDir = process.env.TEMP || process.env.TMP || '/tmp';
+    const tempDir = os.tmpdir();
     this.indexPath = path.join(tempDir, 'ado-mcp-search-index.json');
     
     this.stats = {

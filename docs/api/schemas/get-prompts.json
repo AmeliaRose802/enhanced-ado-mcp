@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "promptName": {
+      "type": "string",
+      "description": "Name of the prompt to retrieve (omit to get all prompts)"
+    },
+    "includeContent": {
+      "type": "boolean",
+      "description": "Whether to include the filled prompt content (default: true)"
+    },
+    "args": {
+      "type": "object",
+      "description": "Arguments to fill in prompt template variables (merged with config defaults)"
+    }
+  },
+  "required": [],
+  "$id": "#/components/schemas/get-prompts",
+  "title": "get-prompts",
+  "description": "[DEBUG ONLY] Retrieve pre-filled prompt templates by name or list all available prompts. This tool is disabled in production and only available when MCP_ENABLE_DEBUG_TOOLS=1 environment variable is set. Useful for testing prompt templates or for agents that need direct access to prompt content for specialized use cases.",
+  "category": "Work Item Operations",
+  "aiPowered": false
+}

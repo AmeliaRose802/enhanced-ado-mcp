@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "includeSystemFields": {
+      "type": "boolean",
+      "description": "Include system fields (System.*) in results (default: false)"
+    },
+    "includeMicrosoftFields": {
+      "type": "boolean",
+      "description": "Include Microsoft VSTS fields (Microsoft.*) in results (default: true)"
+    },
+    "includePicklistValues": {
+      "type": "boolean",
+      "description": "Include allowed values for picklist fields (default: true)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization (optional, uses config default)"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project (optional, uses config default)"
+    }
+  },
+  "required": [],
+  "$id": "#/components/schemas/discover-custom-fields",
+  "title": "discover-custom-fields",
+  "description": "Discover all custom fields in an Azure DevOps project, including field metadata (name, type, description), usage across work item types, picklist values, and field categories. Useful for field audits, documentation, and understanding project configuration.",
+  "category": "Configuration",
+  "aiPowered": false
+}

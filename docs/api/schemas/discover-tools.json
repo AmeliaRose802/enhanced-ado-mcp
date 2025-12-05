@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "intent": {
+      "type": "string",
+      "description": "Natural language description of what you want to accomplish (e.g., 'I want to find all stale bugs and update their priority'). Required unless listAll=true."
+    },
+    "listAll": {
+      "type": "boolean",
+      "description": "List all available tools without AI analysis (default false). When true, returns concise tool inventory instead of recommendations."
+    },
+    "context": {
+      "type": "string",
+      "description": "Additional context about your project, team, or specific requirements (only used when listAll=false)"
+    },
+    "maxRecommendations": {
+      "type": "number",
+      "description": "Maximum number of tool recommendations to return (1-10, default 3, only used when listAll=false)"
+    },
+    "includeExamples": {
+      "type": "boolean",
+      "description": "Include detailed usage examples for each recommended tool (default false, saves ~100-300 tokens per tool, only used when listAll=false)"
+    },
+    "filterCategory": {
+      "type": "string",
+      "enum": [
+        "creation",
+        "analysis",
+        "bulk-operations",
+        "query",
+        "ai-powered",
+        "all"
+      ],
+      "description": "Filter tools by category: creation (create/new items), analysis (analyze/detect/validate), bulk-operations (bulk updates), query (WIQL/OData), ai-powered (AI tools), all (no filter, default)"
+    }
+  },
+  "required": [],
+  "$id": "#/components/schemas/discover-tools",
+  "title": "discover-tools",
+  "description": "🤖 AI-POWERED TOOL DISCOVERY: Find the right tools for your task using natural language OR list all available tools. When listAll=true, returns a concise inventory of all tools. When listAll=false (default), analyzes your intent and recommends the most appropriate tools with confidence scores and workflow guidance. Perfect when you're not sure which tool to use.",
+  "category": "AI-Powered Analysis",
+  "aiPowered": true
+}

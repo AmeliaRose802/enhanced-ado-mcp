@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "enum": [
+        "json",
+        "yaml"
+      ],
+      "description": "Export format (default: json)"
+    },
+    "outputPath": {
+      "type": "string",
+      "description": "File path to save exported schema (optional, returns in response if not provided)"
+    },
+    "includeSystemFields": {
+      "type": "boolean",
+      "description": "Include system fields in export (default: false)"
+    },
+    "includeMicrosoftFields": {
+      "type": "boolean",
+      "description": "Include Microsoft VSTS fields in export (default: true)"
+    },
+    "includeUsageMetadata": {
+      "type": "boolean",
+      "description": "Include work item type usage metadata (default: true)"
+    },
+    "prettyPrint": {
+      "type": "boolean",
+      "description": "Format output with indentation (default: true)"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization (optional, uses config default)"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project (optional, uses config default)"
+    }
+  },
+  "required": [],
+  "$id": "#/components/schemas/export-field-schema",
+  "title": "export-field-schema",
+  "description": "Export field definitions as structured JSON or YAML schema for documentation, migration, or template generation. Includes field metadata, types, picklist values, and usage across work item types.",
+  "category": "Work Item Operations",
+  "aiPowered": false
+}

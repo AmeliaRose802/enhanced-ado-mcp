@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "repository": {
+      "type": "string",
+      "description": "Repository name or ID to scan for specialized agents"
+    },
+    "organization": {
+      "type": "string",
+      "description": "Azure DevOps organization (optional, uses default from config)"
+    },
+    "project": {
+      "type": "string",
+      "description": "Azure DevOps project (optional, uses default from config)"
+    }
+  },
+  "required": [
+    "repository"
+  ],
+  "$id": "#/components/schemas/list-agents",
+  "title": "list-agents",
+  "description": "Discover available specialized Copilot agents in an Azure DevOps repository by scanning /.azuredevops/policies directory. Returns agent names and descriptions parsed from YAML metadata.",
+  "category": "Copilot Integration",
+  "aiPowered": false
+}

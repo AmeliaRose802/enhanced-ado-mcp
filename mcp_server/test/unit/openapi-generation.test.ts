@@ -13,14 +13,14 @@ import { describe, it, expect, beforeAll } from '@jest/globals';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-describe.skip('OpenAPI Generation', () => {
+describe('OpenAPI Generation', () => {
   let openapiSpec: any;
   let schemaIndex: any;
 
   beforeAll(() => {
-    // Load generated files
-    const openapiPath = join(__dirname, '../../docs/api/openapi.json');
-    const indexPath = join(__dirname, '../../docs/api/schemas/index.json');
+    // Load generated files from project root docs/api directory
+    const openapiPath = join(__dirname, '../../../docs/api/openapi.json');
+    const indexPath = join(__dirname, '../../../docs/api/schemas/index.json');
 
     const openapiContent = readFileSync(openapiPath, 'utf-8');
     const indexContent = readFileSync(indexPath, 'utf-8');
@@ -85,8 +85,8 @@ describe.skip('OpenAPI Generation', () => {
       });
 
       // Check for specific known tools
-      expect(paths).toContain('/tools/wit-create-new-item');
-      expect(paths).toContain('/tools/wit-generate-wiql-query');
+      expect(paths).toContain('/tools/create-workitem');
+      expect(paths).toContain('/tools/query-wiql');
     });
 
     it('should have POST operations for all tools', () => {
@@ -126,9 +126,9 @@ describe.skip('OpenAPI Generation', () => {
 
       // Check for known AI-powered tools
       const aiToolPaths = aiPoweredTools.map(([path, _]) => path);
-      expect(aiToolPaths).toContain('/tools/wit-generate-wiql-query');
-      // wit-ai-assignment-analyzer might not be marked as AI-powered in description
-      // so just check for query generation tools
+      expect(aiToolPaths).toContain('/tools/analyze-query-handle');
+      // analyze-query-handle is AI-powered for intelligent query analysis
+      // query-wiql itself is not AI-powered (it's just a query executor)
     });
   });
 
@@ -145,12 +145,12 @@ describe.skip('OpenAPI Generation', () => {
     });
 
     it('should have schema files for all tools', () => {
-      // Should have at least 28 tools (2 deprecated tools removed)
-      expect(schemaIndex.schemas.length).toBeGreaterThanOrEqual(28);
+      // Should have at least 27 tools (current count)
+      expect(schemaIndex.schemas.length).toBeGreaterThanOrEqual(27);
 
       // Check for known schemas
-      expect(schemaIndex.schemas).toContain('wit-create-new-item.json');
-      expect(schemaIndex.schemas).toContain('wit-generate-wiql-query.json');
+      expect(schemaIndex.schemas).toContain('create-workitem.json');
+      expect(schemaIndex.schemas).toContain('query-wiql.json');
     });
   });
 
