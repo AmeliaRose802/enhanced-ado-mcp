@@ -41,7 +41,7 @@ jest.mock('../../src/utils/logger.js', () => ({
   errorToContext: jest.fn((error: unknown) => ({
     message: error instanceof Error ? error.message : String(error),
     name: error instanceof Error ? error.name : 'Error'
-  }))
+  })) as jest.Mock
 }));
 
 jest.mock('../../src/config/config.js', () => ({
@@ -300,13 +300,13 @@ jest.mock('../../src/services/sampling-service.js', () => ({
       return {
         content: [{ type: 'text', text: JSON.stringify({ analysis: 'mock' }) }]
       };
-    })
-  }))
+    }) as jest.Mock
+  })) as jest.Mock
 }));
 
 jest.mock('../../src/utils/ado-http-client.js', () => ({
-  createADOHttpClient: jest.fn(() => createMockClient()),
-  ADOHttpClient: jest.fn().mockImplementation(() => createMockClient()),
+  createADOHttpClient: jest.fn(() => createMockClient()) as jest.Mock,
+  ADOHttpClient: jest.fn().mockImplementation(() => createMockClient()) as jest.Mock,
   ADOHttpError: class ADOHttpError extends Error {
     constructor(message: string, public statusCode: number) {
       super(message);

@@ -18,23 +18,23 @@ import { odataQuerySchema } from '../../../src/config/schemas.js';
 import { handleODataQuery } from '../../../src/services/handlers/query/odata-query.handler.js';
 
 // Mock dependencies
-const mockValidateAzureCLI = jest.fn();
-const mockGetRequiredConfig = jest.fn();
-const mockGetTokenProvider = jest.fn();
-const mockCreateAuthenticator = jest.fn();
-const mockEscapeAreaPathForOData = jest.fn();
+const mockValidateAzureCLI = jest.fn() as jest.Mock;
+const mockGetRequiredConfig = jest.fn() as jest.Mock;
+const mockGetTokenProvider = jest.fn() as jest.Mock;
+const mockCreateAuthenticator = jest.fn() as jest.Mock;
+const mockEscapeAreaPathForOData = jest.fn() as jest.Mock;
 const mockCacheService = {
-  get: jest.fn(),
-  set: jest.fn()
+  get: jest.fn() as jest.Mock,
+  set: jest.fn() as jest.Mock
 };
 const mockQueryHandleService = {
-  storeQuery: jest.fn(),
-  getDefaultTTL: jest.fn().mockReturnValue(86400000) // 24 hours
+  storeQuery: jest.fn() as jest.Mock,
+  getDefaultTTL: jest.fn().mockReturnValue(86400000) as jest.Mock // 24 hours
 };
 const mockSamplingClient = {
-  hasSamplingSupport: jest.fn(),
-  createMessage: jest.fn(),
-  extractResponseText: jest.fn()
+  hasSamplingSupport: jest.fn() as jest.Mock,
+  createMessage: jest.fn() as jest.Mock,
+  extractResponseText: jest.fn() as jest.Mock
 };
 const mockLogger = {
   debug: jest.fn(),
@@ -43,9 +43,9 @@ const mockLogger = {
   error: jest.fn()
 };
 
-const mockBuildValidationErrorResponse = jest.fn();
-const mockBuildAzureCliErrorResponse = jest.fn();
-const mockBuildSamplingUnavailableResponse = jest.fn();
+const mockBuildValidationErrorResponse = jest.fn() as jest.Mock;
+const mockBuildAzureCliErrorResponse = jest.fn() as jest.Mock;
+const mockBuildSamplingUnavailableResponse = jest.fn() as jest.Mock;
 
 // Mock global fetch
 global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;

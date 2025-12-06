@@ -14,22 +14,22 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ContextPackageArgs } from '../../../src/types/index.js';
 
 // Mock dependencies
-const mockLoadConfiguration = jest.fn();
-const mockCreateADOHttpClient = jest.fn();
-const mockGetTokenProvider = jest.fn();
+const mockLoadConfiguration = jest.fn() as jest.Mock;
+const mockCreateADOHttpClient = jest.fn() as jest.Mock;
+const mockGetTokenProvider = jest.fn() as jest.Mock;
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn()
 };
-const mockBuildSuccessResponse = jest.fn();
-const mockBuildNotFoundError = jest.fn();
-const mockBuildErrorResponse = jest.fn();
+const mockBuildSuccessResponse = jest.fn() as jest.Mock;
+const mockBuildNotFoundError = jest.fn() as jest.Mock;
+const mockBuildErrorResponse = jest.fn() as jest.Mock;
 
 // Mock HTTP client
 const mockHttpClient = {
-  get: jest.fn()
+  get: jest.fn() as jest.Mock
 };
 
 jest.mock('../../../src/config/config.js', () => ({

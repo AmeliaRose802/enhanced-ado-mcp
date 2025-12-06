@@ -14,8 +14,8 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ToolConfig } from '../../../src/types/index.js';
 
 // Mock dependencies
-const mockValidateAndParse = jest.fn();
-const mockCreateWorkItem = jest.fn();
+const mockValidateAndParse = jest.fn() as jest.Mock;
+const mockCreateWorkItem = jest.fn() as jest.Mock;
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -23,12 +23,12 @@ const mockLogger = {
   error: jest.fn()
 };
 const mockQueryHandleService = {
-  storeQuery: jest.fn()
+  storeQuery: jest.fn() as jest.Mock
 };
 const mockTemplateService = {
-  mergeTemplateWithArgs: jest.fn()
+  mergeTemplateWithArgs: jest.fn() as jest.Mock
 };
-const mockGetRequiredConfig = jest.fn();
+const mockGetRequiredConfig = jest.fn() as jest.Mock;
 
 jest.mock('../../../src/utils/handler-helpers.js', () => ({
   validateAndParse: mockValidateAndParse

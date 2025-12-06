@@ -22,8 +22,8 @@ jest.mock('../../src/config/config.js', () => ({
       defaultAssignedTo: '',
       inheritParentPaths: false
     }
-  })),
-  updateConfigFromCLI: jest.fn(),
+  })) as jest.Mock,
+  updateConfigFromCLI: jest.fn() as jest.Mock,
   getRequiredConfig: jest.fn(() => ({
     organization: 'test-org',
     project: 'test-project',
@@ -33,7 +33,7 @@ jest.mock('../../src/config/config.js', () => ({
     defaultIterationPath: '',
     gitRepository: { defaultBranch: 'main' },
     gitHubCopilot: { guid: '' }
-  }))
+  })) as jest.Mock
 }));
 
 // Mock Azure CLI validation
@@ -41,14 +41,14 @@ jest.mock('../../src/utils/azure-cli-validator', () => ({
   validateAzureCLI: jest.fn(() => ({
     isAvailable: true,
     isLoggedIn: true
-  }))
+  })) as jest.Mock
 }));
 
 // Mock sampling client
 const mockSamplingClient = {
-  hasSamplingSupport: jest.fn(() => true),
-  createMessage: jest.fn<() => Promise<any>>(),
-  extractResponseText: jest.fn()
+  hasSamplingSupport: jest.fn(() => true) as jest.Mock,
+  createMessage: jest.fn<() => Promise<any>>() as jest.Mock,
+  extractResponseText: jest.fn() as jest.Mock
 };
 
 jest.mock('../../src/utils/sampling-client.js', () => ({
@@ -57,7 +57,7 @@ jest.mock('../../src/utils/sampling-client.js', () => ({
 
 // Mock queryWorkItemsByWiql
 jest.mock('../../src/services/ado-work-item-service.js', () => ({
-  queryWorkItemsByWiql: jest.fn()
+  queryWorkItemsByWiql: jest.fn() as jest.Mock
 }));
 
 import { queryWorkItemsByWiql } from '../../src/services/ado-work-item-service.js';
