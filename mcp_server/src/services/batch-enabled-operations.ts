@@ -64,9 +64,9 @@ export class BatchEnabledWorkItemOperations {
 
     // Load batch API configuration
     const config = loadConfiguration();
-    this.batchAPIEnabled = config.batchAPI.enabled;
-    this.maxBatchSize = config.batchAPI.maxBatchSize;
-    this.fallbackOnError = config.batchAPI.fallbackOnError;
+    this.batchAPIEnabled = config.batchAPI?.enabled ?? false;
+    this.maxBatchSize = config.batchAPI?.maxBatchSize ?? 200;
+    this.fallbackOnError = config.batchAPI?.fallbackOnError ?? true;
 
     // Initialize batch client if enabled
     if (this.batchAPIEnabled) {
@@ -75,7 +75,7 @@ export class BatchEnabledWorkItemOperations {
         organization,
         project,
         {
-          timeout: config.batchAPI.timeout,
+          timeout: config.batchAPI?.timeout ?? 30000,
           maxRetries: 2
         }
       );
