@@ -82,6 +82,8 @@ export async function processBatch<T, R = unknown>(
     onProgress
   } = options;
   
+  const succeeded: Array<{ item: T; result: R }> = [];
+  const failed: Array<{ item: T; error: string }> = [];
   let completed = 0;
   
   // OPTIMIZATION 3: Process items in parallel batches for maximum throughput
@@ -89,9 +91,6 @@ export async function processBatch<T, R = unknown>(
   // This provides true parallelism within the concurrency limit
   for (let i = 0; i < items.length; i += concurrency) {
     const batch = items.slice(i, i + concurrency);
-    
-    // Process batch items in parallel (not sequential)
-    const results = await Promise.allSettled(ncy);
     
     // Process batch items in parallel
     const results = await Promise.allSettled(
