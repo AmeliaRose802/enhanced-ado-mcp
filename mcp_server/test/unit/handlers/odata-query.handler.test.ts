@@ -18,23 +18,23 @@ import { odataQuerySchema } from '../../../src/config/schemas.js';
 import { handleODataQuery } from '../../../src/services/handlers/query/odata-query.handler.js';
 
 // Mock dependencies
-const mockValidateAzureCLI = jest.fn() as jest.Mock;
-const mockGetRequiredConfig = jest.fn() as jest.Mock;
-const mockGetTokenProvider = jest.fn() as jest.Mock;
-const mockCreateAuthenticator = jest.fn() as jest.Mock;
-const mockEscapeAreaPathForOData = jest.fn() as jest.Mock;
+const mockValidateAzureCLI = jest.fn<any>();
+const mockGetRequiredConfig = jest.fn<any>();
+const mockGetTokenProvider = jest.fn<any>();
+const mockCreateAuthenticator = jest.fn<any>();
+const mockEscapeAreaPathForOData = jest.fn<any>();
 const mockCacheService = {
-  get: jest.fn() as jest.Mock,
-  set: jest.fn() as jest.Mock
+  get: jest.fn<any>(),
+  set: jest.fn<any>()
 };
 const mockQueryHandleService = {
-  storeQuery: jest.fn() as jest.Mock,
-  getDefaultTTL: jest.fn().mockReturnValue(86400000) as jest.Mock // 24 hours
+  storeQuery: jest.fn<any>(),
+  getDefaultTTL: jest.fn<any>().mockReturnValue(86400000) // 24 hours
 };
 const mockSamplingClient = {
-  hasSamplingSupport: jest.fn() as jest.Mock,
-  createMessage: jest.fn() as jest.Mock,
-  extractResponseText: jest.fn() as jest.Mock
+  hasSamplingSupport: jest.fn<any>(),
+  createMessage: jest.fn<any>(),
+  extractResponseText: jest.fn<any>()
 };
 const mockLogger = {
   debug: jest.fn(),
@@ -43,12 +43,12 @@ const mockLogger = {
   error: jest.fn()
 };
 
-const mockBuildValidationErrorResponse = jest.fn() as jest.Mock;
-const mockBuildAzureCliErrorResponse = jest.fn() as jest.Mock;
-const mockBuildSamplingUnavailableResponse = jest.fn() as jest.Mock;
+const mockBuildValidationErrorResponse = jest.fn<any>();
+const mockBuildAzureCliErrorResponse = jest.fn<any>();
+const mockBuildSamplingUnavailableResponse = jest.fn<any>();
 
 // Mock global fetch
-global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+global.fetch = jest.fn<any>() as jest.MockedFunction<typeof fetch>;
 
 jest.mock('../../../src/utils/azure-cli-validator.js', () => ({
   validateAzureCLI: mockValidateAzureCLI
@@ -117,7 +117,7 @@ describe('OData Query Handler', () => {
     });
     
     // Default token provider
-    const mockTokenFn = jest.fn() as jest.Mock;
+    const mockTokenFn = jest.fn<any>();
     mockTokenFn.mockResolvedValue('mock-token');
     (mockCreateAuthenticator as jest.Mock).mockReturnValue(mockTokenFn);
     
@@ -561,14 +561,12 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Query Handle Lifecycle', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-  describe('Query Handle Lifecycle', () => {
     const config = createTestConfig();
 
     it('should create query handle for non-aggregation queries', async () => {
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ WorkItemId: 101 }, { WorkItemId: 102 }]
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -681,14 +679,14 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Pagination', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-  describe('Pagination', () => {
     const config = createTestConfig();
 
     it('should handle pagination parameters', async () => {
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: Array.from({ length: 50 }, (_, i) => ({ WorkItemId: i })),
+        '@odata.nextLink': 'next-url'
+      };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -754,19 +752,18 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Cache Behavior', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-      handler: handleODataQuery
-    };
-
-    it('should use cached results when available', async () => {
-      const cachedData: ODataResponse = {
-  describe('Cache Behavior', () => {
     const config = createTestConfig();
 
     it('should use cached results when available', async () => {
+      const cachedData: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 42 }]
+      };
+      (mockCacheService.get as jest.Mock).mockReturnValue(cachedData);
+
+      const result = await handleODataQuery(config, {
+        queryType: 'workItemCount'
+      });
 
       expect(result.success).toBe(true);
       expect((result.data as any).results[0].Count).toBe(42);
@@ -804,12 +801,7 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Error Handling', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-      handler: handleODataQuery
-    };
+    const config = createTestConfig();
 
     it('should handle 401 unauthorized errors', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -818,10 +810,14 @@ describe('OData Query Handler', () => {
         statusText: 'Unauthorized',
         text: async () => 'TF400813: Resource not available for anonymous access'
       } as Response);
-  describe('Error Handling', () => {
-    const config = createTestConfig();
 
-    it('should handle 401 unauthorized errors', async () => {
+      const result = await handleODataQuery(config, {
+        queryType: 'workItemCount'
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors[0]).toContain('Analytics API authorization error');
+    });
 
     it('should handle 403 forbidden errors', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -919,7 +915,7 @@ describe('OData Query Handler', () => {
 
     it('should generate and execute AI-powered query', async () => {
       (mockSamplingClient.hasSamplingSupport as jest.Mock).mockReturnValue(true);
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValue({
+      mockSamplingClient.createMessage.mockResolvedValue({
         role: 'assistant',
         content: { type: 'text', text: "$filter=State eq 'Active' and WorkItemType eq 'Bug'" },
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 }
@@ -951,7 +947,7 @@ describe('OData Query Handler', () => {
 
     it('should handle AI generation failures gracefully', async () => {
       (mockSamplingClient.hasSamplingSupport as jest.Mock).mockReturnValue(true);
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValue({
+      mockSamplingClient.createMessage.mockResolvedValue({
         role: 'assistant',
         content: { type: 'text', text: 'Invalid query syntax' }
       });
@@ -1019,14 +1015,14 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Metadata Options', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-  describe('Metadata Options', () => {
     const config = createTestConfig();
 
     it('should include OData metadata when requested', async () => {
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        '@odata.count': 42,
+        value: [{ Count: 42 }]
+      };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -1091,14 +1087,14 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Edge Cases', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-  describe('Edge Cases', () => {
     const config = createTestConfig();
 
     it('should handle empty result sets', async () => {
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: []
+      };
+
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse
@@ -1236,19 +1232,19 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Query Building', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-      handler: handleODataQuery
-    };
-
-    it('should build query with multiple filters', async () => {
-      const mockResponse: ODataResponse = {
-  describe('Query Building', () => {
     const config = createTestConfig();
 
     it('should build query with multiple filters', async () => {
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 1 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
       await handleODataQuery(config, {
         queryType: 'workItemCount',
         filters: {

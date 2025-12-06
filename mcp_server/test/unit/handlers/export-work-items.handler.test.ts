@@ -14,7 +14,7 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ToolConfig } from '../../../src/types/index.js';
 
 // Mock dependencies
-const mockValidateAndParse = jest.fn() as jest.Mock;
+const mockValidateAndParse = jest.fn<any>();
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -22,13 +22,13 @@ const mockLogger = {
   error: jest.fn()
 };
 const mockQueryHandleService = {
-  resolveItemSelector: jest.fn() as jest.Mock,
-  getQueryData: jest.fn() as jest.Mock
+  resolveItemSelector: jest.fn<any>(),
+  getQueryData: jest.fn<any>()
 };
-const mockADOHttpClient = jest.fn() as jest.Mock;
-const mockLoadConfiguration = jest.fn() as jest.Mock;
-const mockGetTokenProvider = jest.fn() as jest.Mock;
-const mockExportWorkItems = jest.fn() as jest.Mock;
+const mockADOHttpClient = jest.fn<any>();
+const mockLoadConfiguration = jest.fn<any>();
+const mockGetTokenProvider = jest.fn<any>();
+const mockExportWorkItems = jest.fn<any>();
 
 jest.mock('../../../src/utils/handler-helpers.js', () => ({
   validateAndParse: mockValidateAndParse
@@ -79,7 +79,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
       }
     });
     
-    const mockTokenFn = jest.fn().mockResolvedValue('test-token') as jest.Mock;
+    const mockTokenFn = jest.fn<any>().mockResolvedValue('test-token');
     (mockGetTokenProvider as jest.Mock).mockReturnValue(mockTokenFn);
   });
 
@@ -221,7 +221,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('EACCES: permission denied, open \'/root/protected/export.csv\'')
       );
 
@@ -247,7 +247,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('ENOSPC: no space left on device')
       );
 
@@ -273,7 +273,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('ENOENT: no such file or directory')
       );
 
@@ -299,7 +299,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('EROFS: read-only file system')
       );
 
@@ -331,7 +331,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Worksheet name exceeds 31 character limit')
       );
 
@@ -358,7 +358,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Excel row limit (1,048,576) exceeded')
       );
 
@@ -383,7 +383,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Failed to create workbook: Internal library error')
       );
 
@@ -410,7 +410,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Request timeout after 30000ms while fetching work items')
       );
 
@@ -435,7 +435,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('HTTP 429: Too Many Requests. Rate limit exceeded.')
       );
 
@@ -461,7 +461,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Work item 999 not found or access denied')
       );
 
@@ -490,7 +490,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('JavaScript heap out of memory')
       );
 
@@ -516,7 +516,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Stream write error: Connection closed')
       );
 
@@ -544,7 +544,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Field "NonExistent.Field" not found in work item type definition')
       );
 
@@ -571,7 +571,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Circular relationship detected at depth 3')
       );
 
@@ -597,7 +597,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Comments API unavailable or access denied')
       );
 
@@ -624,7 +624,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('History API timeout after fetching 30 revisions')
       );
 
@@ -658,7 +658,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Missing required configuration: organization')
       );
 
@@ -690,7 +690,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
         contextMap: new Map()
       });
 
-      (mockExportWorkItems as jest.Mock).mockRejectedValue(
+      mockExportWorkItems.mockRejectedValue(
         new Error('Missing required configuration: project')
       );
 

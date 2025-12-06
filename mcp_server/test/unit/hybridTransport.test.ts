@@ -366,7 +366,8 @@ describe('HybridStdioServerTransport', () => {
     });
     
     it('should trigger onerror callback for invalid JSON in message body', (done) => {
-      const invalidJson = 'Content-Length: 10\r\n\r\n{invalid}';
+      const invalidBody = '{invalid}';
+      const invalidJson = `Content-Length: ${invalidBody.length}\r\n\r\n${invalidBody}`;
       
       transport.onerror = (err) => {
         expect(err).toBeInstanceOf(Error);
@@ -499,7 +500,7 @@ describe('HybridStdioServerTransport', () => {
       
       // Verify lifecycle
       expect(sentMessages.length).toBeGreaterThan(0);
-      expect(receivedMessages).toContain(incomingMessage);
+      expect(receivedMessages).toContainEqual(incomingMessage);
       expect(closeCalled).toBe(true);
     });
     

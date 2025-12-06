@@ -14,22 +14,22 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ContextPackageArgs } from '../../../src/types/index.js';
 
 // Mock dependencies
-const mockLoadConfiguration = jest.fn() as jest.Mock;
-const mockCreateADOHttpClient = jest.fn() as jest.Mock;
-const mockGetTokenProvider = jest.fn() as jest.Mock;
+const mockLoadConfiguration = jest.fn<any>();
+const mockCreateADOHttpClient = jest.fn<any>();
+const mockGetTokenProvider = jest.fn<any>();
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn()
 };
-const mockBuildSuccessResponse = jest.fn() as jest.Mock;
-const mockBuildNotFoundError = jest.fn() as jest.Mock;
-const mockBuildErrorResponse = jest.fn() as jest.Mock;
+const mockBuildSuccessResponse = jest.fn<any>();
+const mockBuildNotFoundError = jest.fn<any>();
+const mockBuildErrorResponse = jest.fn<any>();
 
 // Mock HTTP client
 const mockHttpClient = {
-  get: jest.fn() as jest.Mock
+  get: jest.fn<any>()
 };
 
 jest.mock('../../../src/config/config.js', () => ({
@@ -67,7 +67,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
         project: 'test-project'
       }
     });
-    const mockTokenFn = jest.fn() as jest.Mock;
+    const mockTokenFn = jest.fn<any>();
     mockTokenFn.mockResolvedValue('test-token');
     mockGetTokenProvider.mockReturnValue(mockTokenFn);
     mockCreateADOHttpClient.mockReturnValue(mockHttpClient);
@@ -94,7 +94,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle invalid workItemId (negative number)', async () => {
       const args = { workItemId: -1 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue(new Error('Work item not found'));
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue(new Error('Work item not found'));
       (mockBuildNotFoundError as jest.Mock).mockReturnValue({
         success: false,
         data: null,
@@ -106,13 +106,13 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
       const result = await handleGetWorkItemContextPackage(args);
 
       expect(result.success).toBe(false);
-      expect(mockHttpClient.get).toHaveBeenCalled();
+      expect((mockHttpClient.get as jest.Mock<any,any>)).toHaveBeenCalled();
     });
 
     it('should handle invalid workItemId (zero)', async () => {
       const args = { workItemId: 0 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue(new Error('Invalid work item ID'));
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue(new Error('Invalid work item ID'));
       (mockBuildNotFoundError as jest.Mock).mockReturnValue({
         success: false,
         data: null,
@@ -129,7 +129,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle non-existent workItemId', async () => {
       const args = { workItemId: 999999 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue({ status: 404, message: 'Not found' });
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue({ status: 404, message: 'Not found' });
       (mockBuildNotFoundError as jest.Mock).mockReturnValue({
         success: false,
         data: null,
@@ -151,7 +151,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
 
       const timeoutError = new Error('Request timeout');
       timeoutError.name = 'TimeoutError';
-      (mockHttpClient.get as jest.Mock).mockRejectedValue(timeoutError);
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue(timeoutError);
 
       (mockBuildErrorResponse as jest.Mock).mockReturnValue({
         success: false,
@@ -170,7 +170,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle connection refused errors', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue(new Error('ECONNREFUSED'));
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue(new Error('ECONNREFUSED'));
 
       (mockBuildErrorResponse as jest.Mock).mockReturnValue({
         success: false,
@@ -189,7 +189,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle DNS resolution errors', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue(new Error('ENOTFOUND dev.azure.com'));
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue(new Error('ENOTFOUND dev.azure.com'));
 
       (mockBuildErrorResponse as jest.Mock).mockReturnValue({
         success: false,
@@ -207,7 +207,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle HTTP 500 internal server errors', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue({ 
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue({ 
         status: 500, 
         message: 'Internal Server Error',
         statusText: 'Internal Server Error'
@@ -229,7 +229,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle HTTP 401 unauthorized errors', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue({ 
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue({ 
         status: 401, 
         message: 'Unauthorized',
         statusText: 'Unauthorized'
@@ -252,7 +252,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle HTTP 403 forbidden errors', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue({ 
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue({ 
         status: 403, 
         message: 'Access denied',
         statusText: 'Forbidden'
@@ -277,7 +277,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
       const args = { workItemId: 123, includeRelations: true } as ContextPackageArgs;
 
       // API returns work item without critical fields
-      (mockHttpClient.get as jest.Mock).mockResolvedValue({
+      (mockHttpClient.get as jest.Mock<any,any>).mockResolvedValue({
         data: {
           id: 123
           // Missing fields object
@@ -293,7 +293,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle null/undefined in nested API response', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockResolvedValue({
+      (mockHttpClient.get as jest.Mock<any,any>).mockResolvedValue({
         data: null,
         status: 200
       });
@@ -314,7 +314,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
     it('should handle invalid JSON in API response', async () => {
       const args = { workItemId: 123 } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockRejectedValue(new Error('Unexpected token < in JSON at position 0'));
+      (mockHttpClient.get as jest.Mock<any,any>).mockRejectedValue(new Error('Unexpected token < in JSON at position 0'));
 
       (mockBuildErrorResponse as jest.Mock).mockReturnValue({
         success: false,
@@ -338,7 +338,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
       } as ContextPackageArgs;
 
       // Main work item succeeds
-      mockHttpClient.get
+      (mockHttpClient.get as jest.Mock<any,any>)
         .mockResolvedValueOnce({
           data: {
             id: 123,
@@ -369,7 +369,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
         includeHistory: true 
       } as ContextPackageArgs;
 
-      mockHttpClient.get
+      (mockHttpClient.get as jest.Mock<any,any>)
         .mockResolvedValueOnce({
           data: {
             id: 123,
@@ -398,7 +398,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
         includeChildren: true 
       } as ContextPackageArgs;
 
-      mockHttpClient.get
+      (mockHttpClient.get as jest.Mock<any,any>)
         .mockResolvedValueOnce({
           data: {
             id: 123,
@@ -428,7 +428,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
         includeRelations: true 
       } as ContextPackageArgs;
 
-      (mockHttpClient.get as jest.Mock).mockResolvedValue({
+      (mockHttpClient.get as jest.Mock<any,any>).mockResolvedValue({
         data: {
           id: 123,
           fields: { 'System.Title': 'Test' },

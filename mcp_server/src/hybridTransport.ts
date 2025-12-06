@@ -54,7 +54,7 @@ export class HybridStdioServerTransport {
         const headerEnd = this._buffer.indexOf("\r\n\r\n");
         const firstNewline = this._buffer.indexOf("\n");
         const startsWithBrace = this._buffer[0] === 0x7b; // '{'
-        const startsWithContentLength = this._buffer.toString("utf8", 0, 15).toLowerCase().startsWith("content-length");
+        const startsWithContentLength = this._buffer.toString("utf8", 0, Math.min(15, this._buffer.length)).toLowerCase().startsWith("content-length");
 
         if (startsWithContentLength && headerEnd !== -1) {
           const header = this._buffer.toString("utf8", 0, headerEnd);
@@ -79,6 +79,15 @@ export class HybridStdioServerTransport {
           const line = this._buffer.toString("utf8", 0, firstNewline).trimEnd();
           this._buffer = this._buffer.subarray(firstNewline + 1);
           if (line.length > 0) this._emitMessage(line);
+          continue;
+        } else if (!startsWithContentLength && !startsWithBrace && firstNewline !== -1) {
+          // Empty line or whitespace before JSON - skip it
+          this._buffer = this._buffer.subarray(firstNewline + 1);
+          continue;
+        } else if (!startsWithContentLength && !startsWithBrace) {
+          // Garbage data - skip first byte and try again
+          this._buffer = this._buffer.subarray(1);
+          if (this._buffer.length === 0) return;
           continue;
         }
         // Need more data

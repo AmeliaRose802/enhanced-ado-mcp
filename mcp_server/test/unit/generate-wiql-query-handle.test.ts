@@ -11,7 +11,7 @@ import { queryHandleService } from '../../src/services/query-handle-service.js';
 
 // Mock configuration
 jest.mock('../../src/config/config.js', () => ({
-  loadConfiguration: jest.fn(() => ({
+  loadConfiguration: jest.fn<any>(() => ({
     azureDevOps: {
       organization: 'test-org',
       project: 'test-project',
@@ -22,9 +22,9 @@ jest.mock('../../src/config/config.js', () => ({
       defaultAssignedTo: '',
       inheritParentPaths: false
     }
-  })) as jest.Mock,
-  updateConfigFromCLI: jest.fn() as jest.Mock,
-  getRequiredConfig: jest.fn(() => ({
+  })),
+  updateConfigFromCLI: jest.fn<any>(),
+  getRequiredConfig: jest.fn<any>(() => ({
     organization: 'test-org',
     project: 'test-project',
     defaultWorkItemType: 'Task',
@@ -33,22 +33,22 @@ jest.mock('../../src/config/config.js', () => ({
     defaultIterationPath: '',
     gitRepository: { defaultBranch: 'main' },
     gitHubCopilot: { guid: '' }
-  })) as jest.Mock
+  }))
 }));
 
 // Mock Azure CLI validation
 jest.mock('../../src/utils/azure-cli-validator', () => ({
-  validateAzureCLI: jest.fn(() => ({
+  validateAzureCLI: jest.fn<any>(() => ({
     isAvailable: true,
     isLoggedIn: true
-  })) as jest.Mock
+  }))
 }));
 
 // Mock sampling client
 const mockSamplingClient = {
-  hasSamplingSupport: jest.fn(() => true) as jest.Mock,
-  createMessage: jest.fn<() => Promise<any>>() as jest.Mock,
-  extractResponseText: jest.fn() as jest.Mock
+  hasSamplingSupport: jest.fn<any>(() => true),
+  createMessage: jest.fn<any>(),
+  extractResponseText: jest.fn<any>()
 };
 
 jest.mock('../../src/utils/sampling-client.js', () => ({
