@@ -67,7 +67,7 @@ describe('Get Work Item Context Package Handler - Error Scenarios', () => {
         project: 'test-project'
       }
     });
-    mockGetTokenProvider.mockReturnValue(jest.fn().mockResolvedValue('test-token'));
+    mockGetTokenProvider.mockReturnValue((jest.fn() as jest.Mock).mockResolvedValue('test-token'));
     mockCreateADOHttpClient.mockReturnValue(mockHttpClient);
   });
 

@@ -117,7 +117,7 @@ describe('OData Query Handler', () => {
     });
     
     // Default token provider
-    const mockTokenFn = jest.fn().mockResolvedValue('mock-token');
+    const mockTokenFn = (jest.fn() as jest.Mock).mockResolvedValue('mock-token');
     mockCreateAuthenticator.mockReturnValue(mockTokenFn);
     
     // Default area path escaping

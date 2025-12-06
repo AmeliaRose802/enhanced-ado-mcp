@@ -3,7 +3,7 @@
  * Unified handler for both direct WIQL execution and AI-powered query generation
  */
 
-import type { ToolConfig, ToolExecutionResult, ToolExecutionMetadata, WiqlQueryArgs } from '@/types/index.js';
+import type { ToolConfig, ToolExecutionResult, ToolExecutionMetadata } from '@/types/index.js';
 import type { ADOWorkItem } from '@/types/ado.js';
 import type { WorkItemContext, WorkItemContextPackage } from '@/types/index.js';
 import type { MCPServer, MCPServerLike } from "@/types/mcp.js";

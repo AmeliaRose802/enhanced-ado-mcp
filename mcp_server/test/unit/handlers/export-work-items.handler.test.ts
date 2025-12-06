@@ -79,7 +79,7 @@ describe('Export Work Items Handler - Error Scenarios', () => {
       }
     });
     
-    mockGetTokenProvider.mockReturnValue(jest.fn().mockResolvedValue('test-token'));
+    mockGetTokenProvider.mockReturnValue((jest.fn() as jest.Mock).mockResolvedValue('test-token'));
   });
 
   describe('Query Handle Errors', () => {
