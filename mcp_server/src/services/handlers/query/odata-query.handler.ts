@@ -511,7 +511,7 @@ async function executeODataQueryForHandle(
       queryType: 'odata'
     },
     queryHandleService.getDefaultTTL(),
-    workItemContext
+    workItemContext as any
   );
 
   logger.info(`Query handle created: ${handle} (${workItemIds.length} work items)`);
@@ -530,7 +530,7 @@ async function executeODataQueryForHandle(
         type: wi.WorkItemType,
         areaPath: wi.AreaPath,
         iterationPath: wi.IterationPath,
-        assignedTo: wi.AssignedTo?.displayName || wi.AssignedTo
+        assignedTo: typeof wi.AssignedTo === 'string' ? wi.AssignedTo : (wi.AssignedTo as any)?.displayName || wi.AssignedTo
       })),
       expires_at: new Date(Date.now() + queryHandleService.getDefaultTTL()).toISOString()
     }),

@@ -137,6 +137,6 @@ export async function handleAddPullRequestComment(
     }
 
     // Handle other errors
-    return buildErrorResponse(error);
+    return buildErrorResponse(error instanceof Error ? error : new Error(String(error)));
   }
 }

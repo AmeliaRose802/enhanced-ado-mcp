@@ -185,7 +185,7 @@ export async function handleListSubagents(args: unknown): Promise<ToolExecutionR
       logger.debug(`Found ${gitItems.length} items in ${policiesPath}`);
     } catch (error: unknown) {
       // If directory doesn't exist or is empty, return empty results
-      if (error.status === 404) {
+      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
         logger.debug(`Directory ${policiesPath} not found in repository ${repository}`);
         return buildSuccessResponse(
           {

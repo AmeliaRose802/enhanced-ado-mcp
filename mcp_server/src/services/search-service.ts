@@ -180,32 +180,32 @@ class SearchService {
               depth: 2,
               bidirectional: true
             }
-          },
+          } as any,
           {
             field: 'description',
             tokenize: 'forward',
             optimize: true,
             resolution: 5,
             depth: 2
-          },
+          } as any,
           {
             field: 'comments',
             tokenize: 'forward',
             optimize: true,
             resolution: 3
-          },
+          } as any,
           {
             field: 'acceptanceCriteria',
             tokenize: 'forward',
             optimize: true,
             resolution: 5,
             depth: 2
-          },
+          } as any,
           {
             field: 'tags',
             tokenize: 'full',
             optimize: true
-          }
+          } as any
         ],
         store: ['title', 'type', 'state', 'url', 'description', 'comments', 'acceptanceCriteria']
       },
@@ -216,7 +216,7 @@ class SearchService {
       depth: 3,
       bidirectional: true,
       cache: true
-    });
+    } as any);
   }
 
   /**

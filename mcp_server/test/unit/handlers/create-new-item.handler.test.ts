@@ -206,7 +206,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      mockCreateWorkItem.mockResolvedValue({
+      (mockCreateWorkItem as jest.Mock).mockResolvedValue({
         id: 123,
         title: 'Test Epic',
         state: 'New',
@@ -230,7 +230,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      mockCreateWorkItem.mockResolvedValue({
+      (mockCreateWorkItem as jest.Mock).mockResolvedValue({
         id: 124,
         title: 'Test Key Result',
         state: 'New',
@@ -313,7 +313,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      mockCreateWorkItem.mockResolvedValue({
+      (mockCreateWorkItem as jest.Mock).mockResolvedValue({
         id: 125,
         title: 'Test',
         state: 'New',

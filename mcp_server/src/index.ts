@@ -75,6 +75,9 @@ server.fallbackRequestHandler = async (request: MCPRequest) => {
   
   if (request.method === "prompts/get") {
     const { name, arguments: args } = request.params || {};
+    if (!name) {
+      throw new Error('Prompt name is required');
+    }
     const content = await getPromptContent(name, args);
     return {
       messages: [{
@@ -91,6 +94,9 @@ server.fallbackRequestHandler = async (request: MCPRequest) => {
   
   if (request.method === "resources/read") {
     const { uri } = request.params || {};
+    if (typeof uri !== 'string') {
+      throw new Error('Resource URI must be a string');
+    }
     const content = await getResourceContent(uri);
     return {
       contents: [{
@@ -104,6 +110,9 @@ server.fallbackRequestHandler = async (request: MCPRequest) => {
   
   if (request.method === "tools/call") {
     const { name, arguments: args } = request.params || {};
+    if (!name) {
+      throw new Error('Tool name is required');
+    }
     const result = await executeTool(name, args);
     logger.debug(`Tool '${name}' completed (success=${result.success}).`);
     return {

@@ -833,8 +833,18 @@ export class ADOGitService {
     if (threadContext?.filePath) {
       threadRequest.threadContext = {
         filePath: threadContext.filePath,
-        ...(threadContext.rightFileStart && { rightFileStart: threadContext.rightFileStart }),
-        ...(threadContext.rightFileEnd && { rightFileEnd: threadContext.rightFileEnd })
+        ...(threadContext.rightFileStart && { 
+          rightFileStart: {
+            line: threadContext.rightFileStart.line,
+            offset: threadContext.rightFileStart.offset ?? 0
+          }
+        }),
+        ...(threadContext.rightFileEnd && { 
+          rightFileEnd: {
+            line: threadContext.rightFileEnd.line,
+            offset: threadContext.rightFileEnd.offset ?? 0
+          }
+        })
       };
     }
 

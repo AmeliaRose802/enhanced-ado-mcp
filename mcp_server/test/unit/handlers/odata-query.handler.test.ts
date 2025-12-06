@@ -103,13 +103,13 @@ describe('OData Query Handler', () => {
     jest.clearAllMocks();
     
     // Default successful Azure CLI validation
-    mockValidateAzureCLI.mockReturnValue({
+    (mockValidateAzureCLI as jest.Mock).mockReturnValue({
       isAvailable: true,
       isLoggedIn: true
     });
     
     // Default config
-    mockGetRequiredConfig.mockReturnValue({
+    (mockGetRequiredConfig as jest.Mock).mockReturnValue({
       organization: 'test-org',
       project: 'test-project',
       defaultAreaPath: 'TestProject\\TestTeam',
@@ -119,7 +119,7 @@ describe('OData Query Handler', () => {
     // Default token provider
     const mockTokenFn = jest.fn() as jest.Mock;
     mockTokenFn.mockResolvedValue('mock-token');
-    mockCreateAuthenticator.mockReturnValue(mockTokenFn);
+    (mockCreateAuthenticator as jest.Mock).mockReturnValue(mockTokenFn);
     
     // Default area path escaping
     mockEscapeAreaPathForOData.mockImplementation((path: string) => {
@@ -128,10 +128,10 @@ describe('OData Query Handler', () => {
     });
     
     // Default cache miss
-    mockCacheService.get.mockReturnValue(null);
+    (mockCacheService.get as jest.Mock).mockReturnValue(null);
     
     // Mock response builders with sensible defaults
-    mockBuildValidationErrorResponse.mockReturnValue({
+    (mockBuildValidationErrorResponse as jest.Mock).mockReturnValue({
       success: false,
       data: null,
       metadata: { source: 'odata-query' },
@@ -139,7 +139,7 @@ describe('OData Query Handler', () => {
       warnings: []
     });
     
-    mockBuildAzureCliErrorResponse.mockReturnValue({
+    (mockBuildAzureCliErrorResponse as jest.Mock).mockReturnValue({
       success: false,
       data: null,
       metadata: { source: 'odata-query' },
@@ -147,7 +147,7 @@ describe('OData Query Handler', () => {
       warnings: []
     });
     
-    mockBuildSamplingUnavailableResponse.mockReturnValue({
+    (mockBuildSamplingUnavailableResponse as jest.Mock).mockReturnValue({
       success: false,
       data: null,
       metadata: { source: 'odata-query' },
@@ -166,7 +166,7 @@ describe('OData Query Handler', () => {
 
   describe('Azure CLI Validation', () => {
     it('should fail when Azure CLI is not available', async () => {
-      mockValidateAzureCLI.mockReturnValue({
+      (mockValidateAzureCLI as jest.Mock).mockReturnValue({
         isAvailable: false,
         isLoggedIn: false
       });
@@ -182,7 +182,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should fail when not logged into Azure CLI', async () => {
-      mockValidateAzureCLI.mockReturnValue({
+      (mockValidateAzureCLI as jest.Mock).mockReturnValue({
         isAvailable: true,
         isLoggedIn: false
       });
@@ -203,14 +203,12 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Input Validation', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-  describe('Input Validation', () => {
     const config = createTestConfig();
 
     it('should reject invalid input schema', async () => {
+      const result = await handleODataQuery(config, {
+        // invalid: missing all required fields
+      });
       expect(result.success).toBe(false);
       expect(result.errors).toBeDefined();
     });
@@ -226,7 +224,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should validate organization and project are provided', async () => {
-      mockGetRequiredConfig.mockReturnValue({
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
         organization: '',
         project: ''
       });
@@ -245,14 +243,10 @@ describe('OData Query Handler', () => {
   // =========================================================================
 
   describe('Area Path Filtering', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-  describe('Area Path Filtering', () => {
     const config = createTestConfig();
 
     it('should properly escape area paths with backslashes', async () => {
+      const mockResponse = { value: [], '@odata.count': 0 };
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
@@ -275,7 +269,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should properly escape area paths with single quotes', async () => {
-      mockEscapeAreaPathForOData.mockReturnValue("Project\\\\Team''s Area");
+      (mockEscapeAreaPathForOData as jest.Mock).mockReturnValue("Project\\\\Team''s Area");
 
       const mockResponse: ODataResponse = {
         '@odata.context': 'test',
@@ -301,7 +295,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should use default area path when not provided', async () => {
-      mockGetRequiredConfig.mockReturnValue({
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
         organization: 'test-org',
         project: 'test-project',
         defaultAreaPath: 'DefaultProject\\DefaultTeam'
@@ -326,7 +320,7 @@ describe('OData Query Handler', () => {
 
     it('should handle deeply nested area paths', async () => {
       const deepPath = 'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway';
-      mockEscapeAreaPathForOData.mockReturnValue('One\\\\Azure Compute\\\\OneFleet Node\\\\Azure Host Agent\\\\Azure Host Gateway');
+      (mockEscapeAreaPathForOData as jest.Mock).mockReturnValue('One\\\\Azure Compute\\\\OneFleet Node\\\\Azure Host Agent\\\\Azure Host Gateway');
 
       const mockResponse: ODataResponse = {
         '@odata.context': 'test',
@@ -356,16 +350,6 @@ describe('OData Query Handler', () => {
   // Query Type Tests
   // =========================================================================
 
-  describe('Query Type Execution', () => {
-    const config: ToolConfig = {
-      name: 'query-odata',
-      description: 'Test',
-      schema: odataQuerySchema,
-      handler: handleODataQuery
-    };
-
-    it('should execute workItemCount query', async () => {
-      const mockResponse: ODataResponse = {
   describe('Query Type Execution', () => {
     const config = createTestConfig();
 
@@ -430,8 +414,8 @@ describe('OData Query Handler', () => {
       const mockResponse: ODataResponse = {
         '@odata.context': 'test',
         value: [
-          { AssignedTo: { UserName: 'john@example.com' }, Count: 8 },
-          { AssignedTo: { UserName: 'jane@example.com' }, Count: 12 }
+          { AssignedTo: 'john@example.com', Count: 8 },
+          { AssignedTo: 'jane@example.com', Count: 12 }
         ]
       };
 
@@ -592,7 +576,7 @@ describe('OData Query Handler', () => {
         json: async () => mockResponse
       } as Response);
 
-      mockQueryHandleService.storeQuery.mockReturnValue('qh_odata_abc123');
+      (mockQueryHandleService.storeQuery as jest.Mock).mockReturnValue('qh_odata_abc123');
 
       const result = await handleODataQuery(config, {
         customODataQuery: "$filter=State eq 'Active'",
@@ -673,7 +657,7 @@ describe('OData Query Handler', () => {
         json: async () => mockResponse
       } as Response);
 
-      mockQueryHandleService.storeQuery.mockReturnValue('qh_with_context');
+      (mockQueryHandleService.storeQuery as jest.Mock).mockReturnValue('qh_with_context');
 
       await handleODataQuery(config, {
         customODataQuery: "$filter=State eq 'Active'",
@@ -791,7 +775,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should cache results after fetch', async () => {
-      mockCacheService.get.mockReturnValue(null);
+      (mockCacheService.get as jest.Mock).mockReturnValue(null);
 
       const mockResponse: ODataResponse = {
         '@odata.context': 'test',
@@ -923,7 +907,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should fail AI generation when sampling not available', async () => {
-      mockSamplingClient.hasSamplingSupport.mockReturnValue(false);
+      (mockSamplingClient.hasSamplingSupport as jest.Mock).mockReturnValue(false);
 
       const result = await handleODataQuery(config, {
         description: 'Find all active bugs'
@@ -934,13 +918,13 @@ describe('OData Query Handler', () => {
     });
 
     it('should generate and execute AI-powered query', async () => {
-      mockSamplingClient.hasSamplingSupport.mockReturnValue(true);
-      mockSamplingClient.createMessage.mockResolvedValue({
+      (mockSamplingClient.hasSamplingSupport as jest.Mock).mockReturnValue(true);
+      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValue({
         role: 'assistant',
         content: { type: 'text', text: "$filter=State eq 'Active' and WorkItemType eq 'Bug'" },
         usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 }
       });
-      mockSamplingClient.extractResponseText.mockReturnValue(
+      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValue(
         "$filter=State eq 'Active' and WorkItemType eq 'Bug'"
       );
 
@@ -966,12 +950,12 @@ describe('OData Query Handler', () => {
     });
 
     it('should handle AI generation failures gracefully', async () => {
-      mockSamplingClient.hasSamplingSupport.mockReturnValue(true);
-      mockSamplingClient.createMessage.mockResolvedValue({
+      (mockSamplingClient.hasSamplingSupport as jest.Mock).mockReturnValue(true);
+      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValue({
         role: 'assistant',
         content: { type: 'text', text: 'Invalid query syntax' }
       });
-      mockSamplingClient.extractResponseText.mockReturnValue('Invalid query syntax');
+      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValue('Invalid query syntax');
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
@@ -992,7 +976,7 @@ describe('OData Query Handler', () => {
     });
 
     it('should retry failed AI generations', async () => {
-      mockSamplingClient.hasSamplingSupport.mockReturnValue(true);
+      (mockSamplingClient.hasSamplingSupport as jest.Mock).mockReturnValue(true);
       
       // First attempt fails
       mockSamplingClient.createMessage
@@ -1235,7 +1219,7 @@ describe('OData Query Handler', () => {
         json: async () => mockResponse
       } as Response);
 
-      mockQueryHandleService.storeQuery.mockReturnValue('qh_partial');
+      (mockQueryHandleService.storeQuery as jest.Mock).mockReturnValue('qh_partial');
 
       const result = await handleODataQuery(config, {
         customODataQuery: "$filter=WorkItemId eq 401",
@@ -1370,3 +1354,4 @@ describe('OData Query Handler', () => {
     });
   });
 });
+

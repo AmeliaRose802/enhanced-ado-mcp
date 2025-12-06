@@ -208,7 +208,7 @@ export async function handleWiqlQuery(
       } else {
         logger.debug(`Cache miss for WIQL query, executing: ${cacheKey.substring(0, 32)}...`);
         // Always fetch full data to populate handle context, even in handleOnly mode
-        result = await queryWorkItemsByWiql(queryArgs);
+        result = await queryWorkItemsByWiql(queryArgs) as any;
         
         // Cache the result for 5 minutes
         cacheService.set(cacheKey, result, 5 * 60 * 1000);
@@ -311,7 +311,7 @@ export async function handleWiqlQuery(
       
       // Always build work item context map for the handle (needed for later retrieval)
       const workItemContext = new Map<number, WorkItemContext>();
-      for (const wi of result.workItems) {
+      for (const wi of result.workItems as any[]) {
         // Get tags from System.Tags field (stored as semicolon-separated string)
         const tagsValue = wi.additionalFields?.['System.Tags'];
         const tagsString = typeof tagsValue === 'string' ? tagsValue : '';
@@ -337,8 +337,8 @@ export async function handleWiqlQuery(
         includeSubstantiveChange: queryArgs.includeSubstantiveChange || false,
         stalenessThresholdDays: queryArgs.staleThresholdDays,
         analysisTimestamp: new Date().toISOString(),
-        successCount: result.workItems.filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length,
-        failureCount: result.workItems.length - result.workItems.filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length
+        successCount: (result.workItems as any[]).filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length,
+        failureCount: result.workItems.length - (result.workItems as any[]).filter((wi) => wi.lastSubstantiveChangeDate !== undefined).length
       };
       
       const handle = queryHandleService.storeQuery(

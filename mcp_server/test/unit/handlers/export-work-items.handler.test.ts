@@ -79,9 +79,8 @@ describe('Export Work Items Handler - Error Scenarios', () => {
       }
     });
     
-    const mockTokenFn = jest.fn() as jest.Mock;
-    mockTokenFn.mockResolvedValue('test-token');
-    mockGetTokenProvider.mockReturnValue(mockTokenFn);
+    const mockTokenFn = jest.fn().mockResolvedValue('test-token') as jest.Mock;
+    (mockGetTokenProvider as jest.Mock).mockReturnValue(mockTokenFn);
   });
 
   describe('Query Handle Errors', () => {

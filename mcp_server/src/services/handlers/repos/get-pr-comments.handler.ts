@@ -99,9 +99,9 @@ async function generateSearchCriteria(
     logger.info(`✅ Generated search criteria: ${JSON.stringify(parsed, null, 2)}`);
 
     return {
-      success: true,
-      ...parsed
-    };
+      ...parsed,
+      success: true
+    } as any;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Failed to generate PR search criteria', errorToContext(error));
