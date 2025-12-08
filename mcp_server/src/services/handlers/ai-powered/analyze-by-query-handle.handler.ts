@@ -23,7 +23,7 @@ import { SamplingService } from '../../sampling-service.js';
 import { SamplingClient } from '../../../utils/sampling-client.js';
 import { WorkItemIntelligenceAnalyzer } from '../../analyzers/work-item-intelligence.js';
 import { AIAssignmentAnalyzer } from '../../analyzers/ai-assignment.js';
-import { handleIntelligentParentFinder } from '../analysis/intelligent-parent-finder-new.handler.js';
+import { handleIntelligentParentFinder } from '../analysis/intelligent-parent-finder.handler.js';
 
 // Type definitions for analysis results
 interface EffortAnalysisResult {
