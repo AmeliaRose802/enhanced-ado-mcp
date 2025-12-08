@@ -84,7 +84,6 @@
     "@azure/msal-node": "^2.16.3",
     "@modelcontextprotocol/sdk": "^0.6.1",
     "exceljs": "^4.4.0",
-    "flexsearch": "^0.8.212",
     "marked": "^16.4.1",
     "open": "^10.2.0",
     "yaml": "^2.8.1",
