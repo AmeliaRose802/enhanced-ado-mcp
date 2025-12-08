@@ -127,8 +127,6 @@ export interface TelemetryConfig {
   exportDir: string;
   /** Enable console logging of events (verbose) */
   consoleLogging: boolean;
-  /** Batch size for file writes */
-  writeBatchSize: number;
 }
 
 /**
@@ -140,8 +138,7 @@ const DEFAULT_CONFIG: TelemetryConfig = {
   autoExport: false,
   autoExportInterval: 5 * 60 * 1000, // 5 minutes
   exportDir: './telemetry',
-  consoleLogging: false,
-  writeBatchSize: 100
+  consoleLogging: false
 };
 
 /**
@@ -153,8 +150,6 @@ export class TelemetryService {
   private events: TelemetryEvent[] = [];
   private periodStart: Date = new Date();
   private autoExportTimer?: NodeJS.Timeout;
-  private pendingWrites: TelemetryEvent[] = [];
-  private isWriting = false;
 
   constructor(config?: Partial<TelemetryConfig>) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -242,16 +237,6 @@ export class TelemetryService {
     // Console logging if enabled
     if (this.config.consoleLogging) {
       logger.debug(`[Telemetry] ${JSON.stringify(fullEvent)}`);
-    }
-
-    // Add to pending writes
-    this.pendingWrites.push(fullEvent);
-
-    // Trigger batch write if threshold reached
-    if (this.pendingWrites.length >= this.config.writeBatchSize && !this.isWriting) {
-      this.writePendingEvents().catch(err => {
-        logger.warn(`[Telemetry] Failed to write pending events: ${err}`);
-      });
     }
   }
 
@@ -501,7 +486,6 @@ export class TelemetryService {
    */
   clear(): void {
     this.events = [];
-    this.pendingWrites = [];
     this.periodStart = new Date();
     logger.info('[Telemetry] Events cleared');
   }
@@ -593,49 +577,10 @@ export class TelemetryService {
   }
 
   /**
-   * Write pending events to file (batched)
-   */
-  private async writePendingEvents(): Promise<void> {
-    if (this.isWriting || this.pendingWrites.length === 0) {
-      return;
-    }
-
-    this.isWriting = true;
-    const eventsToWrite = [...this.pendingWrites];
-    this.pendingWrites = [];
-
-    try {
-      const exportPath = path.resolve(this.config.exportDir);
-      await fs.mkdir(exportPath, { recursive: true });
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filepath = path.join(exportPath, `telemetry-stream-${timestamp}.jsonl`);
-
-      // Append as JSON Lines format (one event per line)
-      const lines = eventsToWrite.map(e => JSON.stringify(e)).join('\n') + '\n';
-      await fs.appendFile(filepath, lines, 'utf-8');
-      
-      logger.debug(`[Telemetry] Wrote ${eventsToWrite.length} events to ${filepath}`);
-    } catch (error) {
-      logger.warn(`[Telemetry] Failed to write pending events: ${error}`);
-      // Re-queue events for next attempt
-      this.pendingWrites.unshift(...eventsToWrite);
-    } finally {
-      this.isWriting = false;
-    }
-  }
-
-  /**
    * Shutdown and cleanup
    */
   async shutdown(): Promise<void> {
     this.stopAutoExport();
-    
-    // Write any pending events
-    if (this.pendingWrites.length > 0) {
-      await this.writePendingEvents();
-    }
-    
     logger.info('[Telemetry] Shutdown complete');
   }
 }

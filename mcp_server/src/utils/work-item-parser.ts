@@ -72,16 +72,3 @@ export function parseWorkItemForHierarchy(workItemData: ADOWorkItem): WorkItemHi
     return null;
   }
 }
-
-export function getRecommendedParentType(childType: string): string {
-  const parentTypeMap: Record<string, string> = {
-    'Task': 'User Story or Bug',
-    'User Story': 'Feature or Epic',
-    'Bug': 'Feature or Epic',
-    'Test Case': 'User Story or Feature',
-    'Feature': 'Epic',
-    'Epic': 'Initiative or Portfolio Item'
-  };
-  
-  return parentTypeMap[childType] || 'appropriate parent';
-}

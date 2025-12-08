@@ -64,45 +64,6 @@ export interface ODataResponse {
 
 /**
  * =============================================================================
- * WIQL QUERY GENERATION
- * =============================================================================
- */
-
-/**
- * Generate WIQL Query Arguments
- */
-export interface GenerateWiqlQueryArgs {
-  description: string;
-  organization: string;
-  project: string;
-  maxIterations?: number;
-  includeExamples?: boolean;
-  testQuery?: boolean;
-  areaPath?: string;
-  iterationPath?: string;
-  serverInstance?: MCPServerInstance; // Server instance for sampling
-}
-
-/**
- * Generate OData Query Arguments
- */
-export interface GenerateODataQueryArgs {
-  description: string;
-  organization: string;
-  project: string;
-  maxIterations?: number;
-  includeExamples?: boolean;
-  testQuery?: boolean;
-  areaPath?: string;
-  iterationPath?: string;
-  returnQueryHandle?: boolean;
-  maxResults?: number;
-  includeFields?: string[];
-  serverInstance?: MCPServerInstance; // Server instance for sampling
-}
-
-/**
- * =============================================================================
  * HANDLER-SPECIFIC ARGUMENTS
  * =============================================================================
  */
@@ -130,71 +91,4 @@ export interface ContextPackageArgs {
   includeAttachments?: boolean;
   includeTags?: boolean;
   includeSystemFields?: boolean;
-}
-
-/**
- * Batch Context Arguments
- */
-export interface BatchContextArgs {
-  workItemIds: number[];
-  organization?: string;
-  project?: string;
-  includeRelations?: boolean;
-  includeFields?: string[];
-  includeExtendedFields?: boolean;
-  includeTags?: boolean;
-  includeStateCounts?: boolean;
-  includeStoryPointAggregation?: boolean;
-  includeRiskScoring?: boolean;
-  includeAIAssignmentHeuristic?: boolean;
-  includeParentOutsideSet?: boolean;
-  includeChildrenOutsideSet?: boolean;
-  maxOutsideReferences?: number;
-  returnFormat?: 'graph' | 'array';
-  maxDepth?: number;
-}
-
-/**
- * Bulk Add Comments Arguments
- */
-export interface BulkAddCommentsArgs {
-  items: CommentItem[];
-  template?: string;
-  templateVariables?: Record<string, string>;
-  organization: string;
-  project: string;
-}
-
-export interface CommentItem {
-  workItemId: number;
-  comment: string;
-  variables?: Record<string, string>;
-}
-
-/**
- * =============================================================================
- * ANALYSIS HANDLER ARGUMENTS
- * =============================================================================
- */
-
-/**
- * Detect Patterns Arguments
- */
-export interface DetectPatternsArgs {
-  workItemIds?: number[];
-  areaPath?: string;
-  includeChildAreas?: boolean;
-  maxItems?: number;
-  organization?: string;
-  queryType?: string;
-}
-
-/**
- * Last Substantive Change Arguments
- */
-export interface LastSubstantiveChangeArgs {
-  workItemId: number;
-  organization?: string;
-  project?: string;
-  staleDays?: number;
 }

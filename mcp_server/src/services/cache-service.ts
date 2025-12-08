@@ -385,9 +385,22 @@ export class CacheService {
   }
 
   /**
-   * Clean up expired entries (maintenance task)
+   * Stop the automatic cleanup interval
+   * Call this during shutdown or in test teardown
    */
-  cleanExpired(): number {
+  stopCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = undefined;
+      logger.debug('[Cache] Cleanup interval stopped');
+    }
+  }
+
+  /**
+   * Clean up expired entries (called automatically by interval)
+   * Made protected to allow testing while discouraging external use
+   */
+  protected cleanExpired(): number {
     const now = Date.now();
     let cleaned = 0;
     
@@ -405,18 +418,6 @@ export class CacheService {
     
     return cleaned;
   }
-
-  /**
-   * Stop the automatic cleanup interval
-   * Call this during shutdown or in test teardown
-   */
-  stopCleanup(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = undefined;
-      logger.debug('[Cache] Cleanup interval stopped');
-    }
-  }
 }
 
 // Singleton instance with default configuration
@@ -425,7 +426,8 @@ export const cacheService = new CacheService();
 // Start periodic cleanup (every 5 minutes)
 if (typeof setInterval !== 'undefined') {
   (cacheService as any).cleanupInterval = setInterval(() => {
-    cacheService.cleanExpired();
+    // Call protected method via any cast (internal use only)
+    (cacheService as any).cleanExpired();
   }, 5 * 60 * 1000);
   
   // Allow Node.js to exit if this is the only active timer

@@ -4,12 +4,6 @@ import { z } from "zod";
 // Re-export types from MCP SDK for convenience
 export type { Tool, Prompt };
 
-export interface ExecResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number | null;
-}
-
 export interface PromptArgument {
   type: string;
   required: boolean;
@@ -210,6 +204,3 @@ export * from './queries.js';
 
 // Error Handling Types
 export * from './error-categories.js';
-
-// Time Tracking Types
-export * from './time-tracking.js';

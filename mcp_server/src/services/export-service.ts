@@ -282,16 +282,8 @@ async function populateWorkItemsSheet(
   if (excelOpts?.autoColumnWidth !== false) {
     // @ts-ignore - ExcelJS type mismatch
     sheet.columns.forEach((column: ExcelJS.Column, index: number) => {
-      let maxLength = headers[index]?.length || 10;
-      
-      sheet.eachRow((row: ExcelJS.Row, rowNumber: number) => {
-        if (rowNumber === 1) return; // Skip header
-        const cell = row.getCell(index + 1);
-        const cellValue = cell.value?.toString() || '';
-        maxLength = Math.max(maxLength, cellValue.length);
-      });
-      
-      column.width = Math.min(maxLength + 2, 50); // Max 50 characters
+      const maxLength = headers[index]?.length || 10;
+      column.width = Math.min(maxLength + 15, 50);
     });
   }
 }
@@ -350,12 +342,9 @@ async function populateRelationshipsSheet(
     }
   }
 
-  // Auto-size columns
   if (excelOpts?.autoColumnWidth !== false) {
     // @ts-ignore - ExcelJS type mismatch
-    sheet.columns.forEach((column: ExcelJS.Column) => {
-      column.width = 20;
-    });
+    sheet.columns.forEach((col: ExcelJS.Column) => { col.width = 20; });
   }
 }
 
@@ -402,15 +391,10 @@ async function populateCommentsSheet(
     }
   }
 
-  // Auto-size columns
   if (excelOpts?.autoColumnWidth !== false) {
     // @ts-ignore - ExcelJS type mismatch
-    sheet.columns.forEach((column: ExcelJS.Column, index: number) => {
-      if (index === 5) { // Comment text column
-        column.width = 60;
-      } else {
-        column.width = 20;
-      }
+    sheet.columns.forEach((col: ExcelJS.Column, i: number) => {
+      col.width = i === 5 ? 60 : 20;
     });
   }
 }
@@ -458,15 +442,10 @@ async function populateHistorySheet(
     }
   }
 
-  // Auto-size columns
   if (excelOpts?.autoColumnWidth !== false) {
     // @ts-ignore - ExcelJS type mismatch
-    sheet.columns.forEach((column: ExcelJS.Column, index: number) => {
-      if (index === 5) { // Changes column
-        column.width = 60;
-      } else {
-        column.width = 20;
-      }
+    sheet.columns.forEach((col: ExcelJS.Column, i: number) => {
+      col.width = i === 5 ? 60 : 20;
     });
   }
 }

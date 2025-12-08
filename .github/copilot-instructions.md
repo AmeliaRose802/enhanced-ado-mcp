@@ -66,6 +66,57 @@ This workspace has the **Enhanced ADO MCP Server** available, which provides AI-
 
 ---
 
+## ⚠️ CRITICAL: POWERSHELL COMMAND RESTRICTIONS
+
+### 🚫 NEVER USE `Select-Object -First/-Last` WITH LONG-RUNNING COMMANDS
+
+**FORBIDDEN PATTERNS:**
+```powershell
+# ❌ WRONG - These will hang and wait for entire command to complete
+npm test 2>&1 | Select-Object -Last 30
+npm run build 2>&1 | Select-String "error" | Select-Object -First 10
+jest 2>&1 | Select-Object -Last 20
+```
+
+**Why This Fails:**
+- `Select-Object -Last N` must read the ENTIRE output before returning last N lines
+- Long-running commands (tests, builds) produce streaming output over minutes
+- PowerShell buffers everything, causing hangs and timeouts
+- Even with `-First`, output buffering can cause delays
+
+**✅ CORRECT ALTERNATIVES:**
+
+1. **For test output** - Use test framework flags:
+```powershell
+npm test -- --verbose=false --silent
+npm test -- --passWithNoTests
+```
+
+2. **For build output** - Let it stream normally:
+```powershell
+npm run build  # Shows errors naturally
+```
+
+3. **For selective output** - Use `Select-String` alone:
+```powershell
+npm test 2>&1 | Select-String -Pattern "PASS|FAIL"  # No -First/-Last
+```
+
+4. **For checking completion** - Use exit codes:
+```powershell
+npm test; if ($LASTEXITCODE -eq 0) { Write-Host "Tests passed" }
+```
+
+5. **For quick status** - Use summary flags:
+```powershell
+npm test -- --listTests  # Just list, don't run
+npm test -- --testNamePattern="specific-test"  # Run subset
+```
+
+**RULE: If a command takes >5 seconds, NEVER pipe to `Select-Object -First/-Last`**
+
+---
+
 ## 🔗 TASK TRACKING WITH BEADS
 
 ### Overview

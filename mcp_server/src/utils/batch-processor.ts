@@ -177,39 +177,3 @@ export async function processBatch<T, R = unknown>(
     failureCount: failed.length
   };
 }
-
-/**
- * Process an array of items in chunks with a batch operation
- * 
- * Useful when the API supports batch operations (e.g., updating multiple items in one request)
- * 
- * @param items Items to process
- * @param chunkSize Size of each chunk
- * @param processor Async function to process each chunk
- * @returns Batch processing results
- * 
- * @example
- * ```typescript
- * const results = await processInChunks(
- *   workItemIds,
- *   50,
- *   async (ids) => httpClient.post('wit/workitems/batch', { ids })
- * );
- * ```
- */
-export async function processInChunks<T, R = unknown>(
-  items: T[],
-  chunkSize: number,
-  processor: (chunk: T[]) => Promise<R>,
-  options: BatchProcessorOptions = {}
-): Promise<BatchResult<T[], R>> {
-  const chunks: T[][] = [];
-  
-  // Split into chunks
-  for (let i = 0; i < items.length; i += chunkSize) {
-    chunks.push(items.slice(i, i + chunkSize));
-  }
-  
-  // Process chunks with concurrency control
-  return processBatch(chunks, processor, options);
-}
