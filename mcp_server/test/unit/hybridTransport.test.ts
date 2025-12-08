@@ -548,7 +548,7 @@ describe('HybridStdioServerTransport', () => {
     });
     
     it('should correctly accumulate partial messages in buffer', (done) => {
-      const message = { jsonrpc: '2.0', method: 'test', params: { foo: 'bar' } };
+      const message = { jsonrpc: '2.0', method: 'test', params: { foo: 'bar', data: 'x'.repeat(100) } };
       const json = JSON.stringify(message);
       const payload = `Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`;
       
@@ -557,20 +557,17 @@ describe('HybridStdioServerTransport', () => {
         done();
       };
       
-      // Split into many small chunks
-      const chunkSize = 5;
-      let offset = 0;
+      // Split into two clear parts: header + partial body, then rest of body
+      const headerEnd = payload.indexOf('\r\n\r\n') + 4;
+      const midpoint = headerEnd + Math.floor((payload.length - headerEnd) / 2);
       
-      const sendNextChunk = () => {
-        if (offset < payload.length) {
-          const chunk = payload.slice(offset, offset + chunkSize);
-          mockStdin.write(chunk);
-          offset += chunkSize;
-          setTimeout(sendNextChunk, 5);
-        }
-      };
+      // Send first part
+      mockStdin.write(payload.slice(0, midpoint));
       
-      sendNextChunk();
+      // Send second part after a delay to ensure it's a separate data event
+      setTimeout(() => {
+        mockStdin.write(payload.slice(midpoint));
+      }, 10);
     });
   });
   

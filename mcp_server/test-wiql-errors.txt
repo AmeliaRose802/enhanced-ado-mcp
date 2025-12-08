@@ -1,0 +1,142 @@
+
+> enhanced-ado-mcp-server@2.1.0 pretest
+> npm run generate-openapi
+
+
+> enhanced-ado-mcp-server@2.1.0 generate-openapi
+> tsx scripts/generate-openapi.ts
+
+≡ƒÜÇ Generating OpenAPI specification...
+
+≡ƒôü Creating output directory: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api
+≡ƒô¥ Generating OpenAPI 3.0 specification...
+Γ£ô Generated OpenAPI spec: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api\openapi.json
+
+≡ƒôª Generating individual JSON schemas...
+Γ£ô Generated schema: create-workitem.json
+Γ£ô Generated schema: assign-copilot.json
+Γ£ô Generated schema: get-context.json
+Γ£ô Generated schema: extract-security-links.json
+Γ£ô Generated schema: query-wiql.json
+Γ£ô Generated schema: query-odata.json
+Γ£ô Generated schema: execute-bulk-operations.json
+Γ£ô Generated schema: link-workitems.json
+Γ£ô Generated schema: undo-bulk.json
+Γ£ô Generated schema: undo-forensic.json
+Γ£ô Generated schema: export-work-items.json
+Γ£ô Generated schema: analyze-workload.json
+Γ£ô Generated schema: discover-tools.json
+Γ£ô Generated schema: analyze-query-handle.json
+Γ£ô Generated schema: analyze-bulk.json
+Γ£ô Generated schema: list-handles.json
+Γ£ô Generated schema: inspect-handle.json
+Γ£ô Generated schema: get-context-bulk.json
+Γ£ô Generated schema: get-config.json
+Γ£ô Generated schema: get-team-members.json
+Γ£ô Generated schema: get-prompts.json
+Γ£ô Generated schema: list-agents.json
+Γ£ô Generated schema: discover-custom-fields.json
+Γ£ô Generated schema: export-field-schema.json
+Γ£ô Generated schema: get-pr-diff.json
+Γ£ô Generated schema: get-pr-comments.json
+Γ£ô Generated schema: add-pr-comment.json
+Γ£ô Generated schema index: index.json (27 schemas)
+
+Γ£à OpenAPI generation complete!
+
+Generated files:
+  - docs/api/openapi.json (27 endpoints)
+  - docs/api/schemas/*.json (27 schemas)
+
+Output directory: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api
+
+You can now use these files to:
+  - Generate API clients
+  - Create API documentation
+  - Validate requests/responses
+  - Import into tools like Swagger UI, Postman, etc.
+
+> enhanced-ado-mcp-server@2.1.0 test
+> jest generate-wiql-query-handle.test.ts
+
+FAIL test/unit/generate-wiql-query-handle.test.ts
+  ΓùÅ Test suite failed to run
+
+    test/unit/generate-wiql-query-handle.test.ts:146:77 - error TS2345: Argument of type '{ content: { type: string; text: string; }[]; usage: { inputTokens: number; outputTokens: number; }; }' is not assignable to parameter of type 'never'.
+
+    146       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    147         content: [{ type: 'text', text: 'SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = \'Active\'' }],
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    148         usage: { inputTokens: 100, outputTokens: 50 }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    149       });
+        ~~~~~~~
+    test/unit/generate-wiql-query-handle.test.ts:185:77 - error TS2345: Argument of type '{ content: { type: string; text: string; }[]; usage: { inputTokens: number; outputTokens: number; }; }' is not assignable to parameter of type 'never'.
+
+    185       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    186         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    187         usage: { inputTokens: 100, outputTokens: 50 }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    188       });
+        ~~~~~~~
+    test/unit/generate-wiql-query-handle.test.ts:278:77 - error TS2345: Argument of type '{ content: { type: string; text: string; }[]; usage: { inputTokens: number; outputTokens: number; }; }' is not assignable to parameter of type 'never'.
+
+    278       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    279         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'NonExistent\'' }],
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    280         usage: { inputTokens: 100, outputTokens: 50 }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    281       });
+        ~~~~~~~
+    test/unit/generate-wiql-query-handle.test.ts:326:77 - error TS2345: Argument of type '{ content: { type: string; text: string; }[]; usage: { inputTokens: number; outputTokens: number; }; }' is not assignable to parameter of type 'never'.
+
+    326       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    327         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    328         usage: { inputTokens: 100, outputTokens: 50 }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    329       });
+        ~~~~~~~
+    test/unit/generate-wiql-query-handle.test.ts:398:77 - error TS2345: Argument of type '{ content: { type: string; text: string; }[]; usage: { inputTokens: number; outputTokens: number; }; }' is not assignable to parameter of type 'never'.
+
+    398       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    399         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    400         usage: { inputTokens: 100, outputTokens: 50 }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    401       });
+        ~~~~~~~
+    test/unit/generate-wiql-query-handle.test.ts:440:77 - error TS2345: Argument of type '{ content: { type: string; text: string; }[]; usage: { inputTokens: number; outputTokens: number; }; }' is not assignable to parameter of type 'never'.
+
+    440       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    441         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    442         usage: { inputTokens: 100, outputTokens: 50 }
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    443       });
+        ~~~~~~~
+    test/unit/generate-wiql-query-handle.test.ts:510:77 - error TS2345: Argument of type '{ role: string; content: { type: string; text: string; }[]; }' is not assignable to parameter of type 'never'.
+
+    510       (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+                                                                                    ~
+    511         role: 'assistant',
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ... 
+    515         }]
+        ~~~~~~~~~~
+    516       });
+        ~~~~~~~
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        4.196 s
+Ran all test suites matching /generate-wiql-query-handle.test.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

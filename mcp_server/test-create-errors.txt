@@ -1,0 +1,148 @@
+
+> enhanced-ado-mcp-server@2.1.0 pretest
+> npm run generate-openapi
+
+
+> enhanced-ado-mcp-server@2.1.0 generate-openapi
+> tsx scripts/generate-openapi.ts
+
+≡ƒÜÇ Generating OpenAPI specification...
+
+≡ƒôü Creating output directory: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api
+≡ƒô¥ Generating OpenAPI 3.0 specification...
+Γ£ô Generated OpenAPI spec: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api\openapi.json
+
+≡ƒôª Generating individual JSON schemas...
+Γ£ô Generated schema: create-workitem.json
+Γ£ô Generated schema: assign-copilot.json
+Γ£ô Generated schema: get-context.json
+Γ£ô Generated schema: extract-security-links.json
+Γ£ô Generated schema: query-wiql.json
+Γ£ô Generated schema: query-odata.json
+Γ£ô Generated schema: execute-bulk-operations.json
+Γ£ô Generated schema: link-workitems.json
+Γ£ô Generated schema: undo-bulk.json
+Γ£ô Generated schema: undo-forensic.json
+Γ£ô Generated schema: export-work-items.json
+Γ£ô Generated schema: analyze-workload.json
+Γ£ô Generated schema: discover-tools.json
+Γ£ô Generated schema: analyze-query-handle.json
+Γ£ô Generated schema: analyze-bulk.json
+Γ£ô Generated schema: list-handles.json
+Γ£ô Generated schema: inspect-handle.json
+Γ£ô Generated schema: get-context-bulk.json
+Γ£ô Generated schema: get-config.json
+Γ£ô Generated schema: get-team-members.json
+Γ£ô Generated schema: get-prompts.json
+Γ£ô Generated schema: list-agents.json
+Γ£ô Generated schema: discover-custom-fields.json
+Γ£ô Generated schema: export-field-schema.json
+Γ£ô Generated schema: get-pr-diff.json
+Γ£ô Generated schema: get-pr-comments.json
+Γ£ô Generated schema: add-pr-comment.json
+Γ£ô Generated schema index: index.json (27 schemas)
+
+Γ£à OpenAPI generation complete!
+
+Generated files:
+  - docs/api/openapi.json (27 endpoints)
+  - docs/api/schemas/*.json (27 schemas)
+
+Output directory: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api
+
+You can now use these files to:
+  - Generate API clients
+  - Create API documentation
+  - Validate requests/responses
+  - Import into tools like Swagger UI, Postman, etc.
+
+> enhanced-ado-mcp-server@2.1.0 test
+> jest create-new-item.handler.test.ts
+
+FAIL test/unit/handlers/create-new-item.handler.test.ts
+  ΓùÅ Test suite failed to run
+
+    test/unit/handlers/create-new-item.handler.test.ts:103:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    103         new Error('Template "non-existent-template" not found')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:122:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    122         new Error('Invalid template syntax at line 5')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:141:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    141         new Error('Missing required variable: {projectName}')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:209:59 - error TS2345: Argument of type '{ id: number; title: string; state: string; type: string; parent_linked: boolean; }' is not assignable to parameter of type 'never'.
+
+    209       (mockCreateWorkItem as jest.Mock).mockResolvedValue({
+                                                                  ~
+    210         id: 123,
+        ~~~~~~~~~~~~~~~~
+    ... 
+    214         parent_linked: false
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    215       });
+        ~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:233:59 - error TS2345: Argument of type '{ id: number; title: string; state: string; type: string; parent_linked: boolean; }' is not assignable to parameter of type 'never'.
+
+    233       (mockCreateWorkItem as jest.Mock).mockResolvedValue({
+                                                                  ~
+    234         id: 124,
+        ~~~~~~~~~~~~~~~~
+    ... 
+    238         parent_linked: false
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    239       });
+        ~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:316:59 - error TS2345: Argument of type '{ id: number; title: string; state: string; type: string; parent_linked: boolean; }' is not assignable to parameter of type 'never'.
+
+    316       (mockCreateWorkItem as jest.Mock).mockResolvedValue({
+                                                                  ~
+    317         id: 125,
+        ~~~~~~~~~~~~~~~~
+    ... 
+    321         parent_linked: false
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    322       });
+        ~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:342:59 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    342       (mockCreateWorkItem as jest.Mock).mockRejectedValue(new Error('TF400898: An Internal Error Occurred'));
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:361:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    361         new Error('Parent work item 999999 not found')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:381:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    381         new Error('Cannot create parent-child link between Task and Bug')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:399:59 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    399       (mockCreateWorkItem as jest.Mock).mockRejectedValue(new Error('HTTP 401: Unauthorized'));
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:417:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    417         new Error('TF400813: The user does not have permissions')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:435:59 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    435       (mockCreateWorkItem as jest.Mock).mockRejectedValue(new Error('Request timeout after 30000ms'));
+                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:510:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    510         new Error('Title cannot be empty')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    test/unit/handlers/create-new-item.handler.test.ts:528:9 - error TS2345: Argument of type 'Error' is not assignable to parameter of type 'never'.
+
+    528         new Error('Title cannot contain only whitespace')
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        3.821 s
+Ran all test suites matching /create-new-item.handler.test.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

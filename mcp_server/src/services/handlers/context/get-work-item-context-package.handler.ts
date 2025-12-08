@@ -246,6 +246,9 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
     // Use $expand=all to get both relations and all fields
     const workItemUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${workItemId}?$expand=all&api-version=7.1`;
     
+    // Track warnings for partial failures
+    const warnings: string[] = [];
+    
     logger.debug(`Fetching work item ${workItemId} from ${organization}/${project}`);
     
     const wiResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${workItemId}?$expand=all`);
@@ -295,21 +298,29 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       try {
         const pResponse = await httpClient.get<ADOWorkItem>(`wit/workitems/${parent.id}?fields=System.Id,System.Title,System.WorkItemType,System.State`);
         parent = pResponse.data;
-      } catch (e) { logger.warn(`Failed to expand parent ${parent.id}`, errorToContext(e)); }
+      } catch (e) { 
+        logger.warn(`Failed to expand parent ${parent.id}`, errorToContext(e));
+        warnings.push(`Could not fetch details for parent work item ${parent.id}`);
+      }
     }
 
     // Expand children (one depth only unless maxChildDepth >1; we only support depth=1 for now to avoid complexity)
     let expandedChildren: SimplifiedWorkItem[] = [];
     if (children.length && maxChildDepth > 0) {
-      const childIds = children.map(c => c.id).slice(0, 200);
-      const idsParam = childIds.join(',');
-      const cResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(`wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State`);
-      if (cResponse.data && cResponse.data.value) {
-        // Filter out Done/Removed/Closed children immediately to reduce context
-        expandedChildren = cResponse.data.value.filter(c => {
-          const state = c.fields?.['System.State'];
-          return state !== 'Done' && state !== 'Removed' && state !== 'Closed';
-        });
+      try {
+        const childIds = children.map(c => c.id).slice(0, 200);
+        const idsParam = childIds.join(',');
+        const cResponse = await httpClient.get<ADOApiResponse<ADOWorkItem[]>>(`wit/workitems?ids=${idsParam}&fields=System.Id,System.Title,System.WorkItemType,System.State`);
+        if (cResponse.data && cResponse.data.value) {
+          // Filter out Done/Removed/Closed children immediately to reduce context
+          expandedChildren = cResponse.data.value.filter(c => {
+            const state = c.fields?.['System.State'];
+            return state !== 'Done' && state !== 'Removed' && state !== 'Closed';
+          });
+        }
+      } catch (e) { 
+        logger.warn(`Failed to expand children for work item ${workItemId}`, errorToContext(e));
+        warnings.push(`Could not fetch details for ${children.length} child work item(s)`);
       }
     }
     
@@ -336,7 +347,10 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
               }));
           }
         }
-      } catch (e) { logger.warn('Failed to expand related items', errorToContext(e)); }
+      } catch (e) { 
+        logger.warn('Failed to expand related items', errorToContext(e));
+        warnings.push('Could not fetch details for related work items');
+      }
     }
 
     // Get comments
@@ -384,7 +398,11 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
             });
           }
         }
-      } catch (e) { logger.warn(`Failed to load history for ${workItemId}`, errorToContext(e)); }
+      } catch (e) { 
+        const errorMsg = e instanceof Error ? e.message : String(e);
+        logger.warn(`Failed to load history for ${workItemId}`, errorToContext(e));
+        warnings.push(`Failed to fetch history: ${errorMsg}`);
+      }
     }
 
     // Build normalized core representation
@@ -433,7 +451,17 @@ export async function handleGetWorkItemContextPackage(args: ContextPackageArgs) 
       _raw: includeExtendedFields ? { fields: cleanFields(fieldsMap, includeSystemFields) } : undefined
     };
 
-    return buildSuccessResponse({ contextPackage: result }, { source: 'get-work-item-context-package' });
+    const response = buildSuccessResponse(
+      { contextPackage: result }, 
+      { source: 'get-work-item-context-package' }
+    );
+    
+    // Add warnings if any partial failures occurred
+    if (warnings.length > 0) {
+      response.warnings = warnings;
+    }
+    
+    return response;
   } catch (error) {
     logger.error('Failed to build context package', errorToContext(error));
     // Auto-categorizes based on error message (network, auth, etc.)

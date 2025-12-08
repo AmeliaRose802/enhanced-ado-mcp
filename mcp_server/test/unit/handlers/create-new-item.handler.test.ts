@@ -14,21 +14,21 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ToolConfig } from '../../../src/types/index.js';
 
 // Mock dependencies
-const mockValidateAndParse = jest.fn<any>();
-const mockCreateWorkItem = jest.fn<any>();
+const mockValidateAndParse = jest.fn() as jest.MockedFunction<any>;
+const mockCreateWorkItem = jest.fn() as jest.MockedFunction<(...args: any[]) => Promise<any>>;
 const mockLogger = {
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn()
+  debug: jest.fn() as jest.MockedFunction<any>,
+  info: jest.fn() as jest.MockedFunction<any>,
+  warn: jest.fn() as jest.MockedFunction<any>,
+  error: jest.fn() as jest.MockedFunction<any>
 };
 const mockQueryHandleService = {
-  storeQuery: jest.fn<any>()
+  storeQuery: jest.fn() as jest.MockedFunction<any>
 };
 const mockTemplateService = {
-  mergeTemplateWithArgs: jest.fn<any>()
+  mergeTemplateWithArgs: jest.fn() as jest.MockedFunction<(...args: any[]) => Promise<any>>
 };
-const mockGetRequiredConfig = jest.fn<any>();
+const mockGetRequiredConfig = jest.fn() as jest.MockedFunction<any>;
 
 jest.mock('../../../src/utils/handler-helpers.js', () => ({
   validateAndParse: mockValidateAndParse
@@ -99,7 +99,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockTemplateService.mergeTemplateWithArgs as jest.Mock).mockRejectedValue(
+      mockTemplateService.mergeTemplateWithArgs.mockRejectedValue(
         new Error('Template "non-existent-template" not found')
       );
 
@@ -118,7 +118,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockTemplateService.mergeTemplateWithArgs as jest.Mock).mockRejectedValue(
+      mockTemplateService.mergeTemplateWithArgs.mockRejectedValue(
         new Error('Invalid template syntax at line 5')
       );
 
@@ -137,7 +137,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockTemplateService.mergeTemplateWithArgs as jest.Mock).mockRejectedValue(
+      mockTemplateService.mergeTemplateWithArgs.mockRejectedValue(
         new Error('Missing required variable: {projectName}')
       );
 
@@ -206,7 +206,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockResolvedValue({
+      mockCreateWorkItem.mockResolvedValue({
         id: 123,
         title: 'Test Epic',
         state: 'New',
@@ -230,7 +230,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockResolvedValue({
+      mockCreateWorkItem.mockResolvedValue({
         id: 124,
         title: 'Test Key Result',
         state: 'New',
@@ -313,7 +313,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockResolvedValue({
+      mockCreateWorkItem.mockResolvedValue({
         id: 125,
         title: 'Test',
         state: 'New',
@@ -339,7 +339,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(new Error('TF400898: An Internal Error Occurred'));
+      mockCreateWorkItem.mockRejectedValue(new Error('TF400898: An Internal Error Occurred'));
 
       const result = await handleCreateNewItem(mockConfig, {});
 
@@ -357,7 +357,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(
+      mockCreateWorkItem.mockRejectedValue(
         new Error('Parent work item 999999 not found')
       );
 
@@ -377,7 +377,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(
+      mockCreateWorkItem.mockRejectedValue(
         new Error('Cannot create parent-child link between Task and Bug')
       );
 
@@ -396,7 +396,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(new Error('HTTP 401: Unauthorized'));
+      mockCreateWorkItem.mockRejectedValue(new Error('HTTP 401: Unauthorized'));
 
       const result = await handleCreateNewItem(mockConfig, {});
 
@@ -413,7 +413,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(
+      mockCreateWorkItem.mockRejectedValue(
         new Error('TF400813: The user does not have permissions')
       );
 
@@ -432,7 +432,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(new Error('Request timeout after 30000ms'));
+      mockCreateWorkItem.mockRejectedValue(new Error('Request timeout after 30000ms'));
 
       const result = await handleCreateNewItem(mockConfig, {});
 
@@ -506,7 +506,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(
+      mockCreateWorkItem.mockRejectedValue(
         new Error('Title cannot be empty')
       );
 
@@ -524,7 +524,7 @@ describe('Create New Item Handler - Error Scenarios', () => {
         }
       });
 
-      (mockCreateWorkItem as jest.Mock).mockRejectedValue(
+      mockCreateWorkItem.mockRejectedValue(
         new Error('Title cannot contain only whitespace')
       );
 
@@ -551,3 +551,4 @@ describe('Create New Item Handler - Error Scenarios', () => {
     });
   });
 });
+

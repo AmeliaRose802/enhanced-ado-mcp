@@ -23,7 +23,7 @@ jest.mock('../../src/config/config.js', () => ({
       inheritParentPaths: false
     }
   })),
-  updateConfigFromCLI: jest.fn<any>(),
+  updateConfigFromCLI: jest.fn(),
   getRequiredConfig: jest.fn<any>(() => ({
     organization: 'test-org',
     project: 'test-project',
@@ -46,9 +46,9 @@ jest.mock('../../src/utils/azure-cli-validator', () => ({
 
 // Mock sampling client
 const mockSamplingClient = {
-  hasSamplingSupport: jest.fn<any>(() => true),
-  createMessage: jest.fn<any>(),
-  extractResponseText: jest.fn<any>()
+  hasSamplingSupport: jest.fn(() => true) as jest.MockedFunction<any>,
+  createMessage: jest.fn() as jest.MockedFunction<(...args: any[]) => Promise<any>>,
+  extractResponseText: jest.fn() as jest.MockedFunction<any>
 };
 
 jest.mock('../../src/utils/sampling-client.js', () => ({
@@ -57,7 +57,7 @@ jest.mock('../../src/utils/sampling-client.js', () => ({
 
 // Mock queryWorkItemsByWiql
 jest.mock('../../src/services/ado-work-item-service.js', () => ({
-  queryWorkItemsByWiql: jest.fn() as jest.Mock
+  queryWorkItemsByWiql: jest.fn() as jest.MockedFunction<any>
 }));
 
 import { queryWorkItemsByWiql } from '../../src/services/ado-work-item-service.js';
@@ -73,7 +73,7 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
   };
 
   const mockServerInstance = {
-    requestSampling: jest.fn()
+    requestSampling: jest.fn() as jest.MockedFunction<any>
   };
 
   beforeEach(() => {
@@ -143,11 +143,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
     it('should return only the generated query without creating a handle', async () => {
       // NOTE: Using 'description' parameter triggers AI generation mode
       // Mock AI response
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = \'Active\'' }],
         usage: { inputTokens: 100, outputTokens: 50 }
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = \'Active\'');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id], [System.Title] FROM WorkItems WHERE [System.State] = \'Active\'');
 
       // Mock query validation
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -182,11 +182,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
     it('should create a query handle and return work items', async () => {
       // NOTE: Using 'description' parameter triggers AI generation mode
       // Mock AI response
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
         usage: { inputTokens: 100, outputTokens: 50 }
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
 
       // Mock query validation (first call)
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -275,11 +275,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
 
     it('should handle query with no results gracefully', async () => {
       // Mock AI response
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'NonExistent\'' }],
         usage: { inputTokens: 100, outputTokens: 50 }
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'NonExistent\'');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'NonExistent\'');
 
       // Mock query validation (first call - returns something to pass validation)
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -323,11 +323,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
 
     it('should include custom fields when specified', async () => {
       // Mock AI response
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
         usage: { inputTokens: 100, outputTokens: 50 }
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
 
       // Mock query validation
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -395,11 +395,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
 
     it('should handle API errors gracefully and fallback to query-only response', async () => {
       // Mock AI response
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
         usage: { inputTokens: 100, outputTokens: 50 }
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
 
       // Mock query validation (first call - succeeds)
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -437,11 +437,11 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
   describe('maxResults parameter', () => {
     it('should respect maxResults when fetching work items', async () => {
       // Mock AI response
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'' }],
         usage: { inputTokens: 100, outputTokens: 50 }
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = \'Active\'');
 
       // Mock query validation
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -507,14 +507,14 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
   describe('handleOnly mode', () => {
     it('should fetch full data for handle context even when handleOnly is true', async () => {
       // Mock AI generation
-      (mockSamplingClient.createMessage as jest.Mock).mockResolvedValueOnce({
+      mockSamplingClient.createMessage.mockResolvedValueOnce({
         role: 'assistant',
         content: [{
           type: 'text',
           text: 'SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"'
         }]
       });
-      (mockSamplingClient.extractResponseText as jest.Mock).mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"');
+      mockSamplingClient.extractResponseText.mockReturnValueOnce('SELECT [System.Id] FROM WorkItems WHERE [System.State] = "Active"');
 
       // Mock query execution for validation
       mockQueryWorkItemsByWiql.mockResolvedValueOnce({
@@ -629,4 +629,5 @@ describe('Unified WIQL Query Tool - AI Generation with returnQueryHandle paramet
     });
   });
 });
+
 

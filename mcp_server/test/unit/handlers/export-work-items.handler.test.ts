@@ -14,7 +14,7 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ToolConfig } from '../../../src/types/index.js';
 
 // Mock dependencies
-const mockValidateAndParse = jest.fn<any>();
+const mockValidateAndParse = jest.fn();
 const mockLogger = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -22,13 +22,13 @@ const mockLogger = {
   error: jest.fn()
 };
 const mockQueryHandleService = {
-  resolveItemSelector: jest.fn<any>(),
-  getQueryData: jest.fn<any>()
+  resolveItemSelector: jest.fn(),
+  getQueryData: jest.fn()
 };
-const mockADOHttpClient = jest.fn<any>();
-const mockLoadConfiguration = jest.fn<any>();
-const mockGetTokenProvider = jest.fn<any>();
-const mockExportWorkItems = jest.fn<any>();
+const mockADOHttpClient = jest.fn();
+const mockLoadConfiguration = jest.fn();
+const mockGetTokenProvider = jest.fn();
+const mockExportWorkItems = jest.fn() as any;
 
 jest.mock('../../../src/utils/handler-helpers.js', () => ({
   validateAndParse: mockValidateAndParse
@@ -79,8 +79,26 @@ describe('Export Work Items Handler - Error Scenarios', () => {
       }
     });
     
-    const mockTokenFn = jest.fn<any>().mockResolvedValue('test-token');
+    const mockTokenFn = jest.fn() as any;
+    mockTokenFn.mockResolvedValue('test-token');
     (mockGetTokenProvider as jest.Mock).mockReturnValue(mockTokenFn);
+    
+    // Mock ADOHttpClient instance with get method
+    const mockHttpClientInstance = {
+      get: jest.fn() as any
+    };
+    mockHttpClientInstance.get.mockResolvedValue({
+      data: {
+        id: 1,
+        fields: {
+          'System.Title': 'Test Work Item',
+          'System.WorkItemType': 'Task',
+          'System.State': 'Active'
+        },
+        relations: []
+      }
+    });
+    mockADOHttpClient.mockReturnValue(mockHttpClientInstance);
   });
 
   describe('Query Handle Errors', () => {

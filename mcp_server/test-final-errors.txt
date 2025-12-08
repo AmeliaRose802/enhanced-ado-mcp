@@ -1,0 +1,637 @@
+
+> enhanced-ado-mcp-server@2.1.0 pretest
+> npm run generate-openapi
+
+
+> enhanced-ado-mcp-server@2.1.0 generate-openapi
+> tsx scripts/generate-openapi.ts
+
+≡ƒÜÇ Generating OpenAPI specification...
+
+≡ƒôü Creating output directory: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api
+≡ƒô¥ Generating OpenAPI 3.0 specification...
+Γ£ô Generated OpenAPI spec: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api\openapi.json
+
+≡ƒôª Generating individual JSON schemas...
+Γ£ô Generated schema: create-workitem.json
+Γ£ô Generated schema: assign-copilot.json
+Γ£ô Generated schema: get-context.json
+Γ£ô Generated schema: extract-security-links.json
+Γ£ô Generated schema: query-wiql.json
+Γ£ô Generated schema: query-odata.json
+Γ£ô Generated schema: execute-bulk-operations.json
+Γ£ô Generated schema: link-workitems.json
+Γ£ô Generated schema: undo-bulk.json
+Γ£ô Generated schema: undo-forensic.json
+Γ£ô Generated schema: export-work-items.json
+Γ£ô Generated schema: analyze-workload.json
+Γ£ô Generated schema: discover-tools.json
+Γ£ô Generated schema: analyze-query-handle.json
+Γ£ô Generated schema: analyze-bulk.json
+Γ£ô Generated schema: list-handles.json
+Γ£ô Generated schema: inspect-handle.json
+Γ£ô Generated schema: get-context-bulk.json
+Γ£ô Generated schema: get-config.json
+Γ£ô Generated schema: get-team-members.json
+Γ£ô Generated schema: get-prompts.json
+Γ£ô Generated schema: list-agents.json
+Γ£ô Generated schema: discover-custom-fields.json
+Γ£ô Generated schema: export-field-schema.json
+Γ£ô Generated schema: get-pr-diff.json
+Γ£ô Generated schema: get-pr-comments.json
+Γ£ô Generated schema: add-pr-comment.json
+Γ£ô Generated schema index: index.json (27 schemas)
+
+Γ£à OpenAPI generation complete!
+
+Generated files:
+  - docs/api/openapi.json (27 endpoints)
+  - docs/api/schemas/*.json (27 schemas)
+
+Output directory: C:\Users\ameliapayne\ADO-Work-Item-MSP\docs\api
+
+You can now use these files to:
+  - Generate API clients
+  - Create API documentation
+  - Validate requests/responses
+  - Import into tools like Swagger UI, Postman, etc.
+
+> enhanced-ado-mcp-server@2.1.0 test
+> jest odata-query.handler.test.ts
+
+  console.error
+    [2025-12-08T20:37:57.787Z] [INFO] Creating Azure CLI token provider for Analytics API
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.info (src/utils/logger.ts:127:15)
+      at getAnalyticsTokenProvider (src/services/handlers/query/odata-query.handler.ts:69:12)
+      at executeODataAnalytics (src/services/handlers/query/odata-query.handler.ts:279:25)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:219:20)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:258:29)
+
+  console.error
+    [2025-12-08T20:37:57.843Z] [INFO] Query handle created: undefined (2 work items)
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.info (src/utils/logger.ts:127:15)
+      at executeODataQueryForHandle (src/services/handlers/query/odata-query.handler.ts:517:10)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:223:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:591:22)
+
+  console.error
+    [2025-12-08T20:37:57.865Z] [WARN] OData query returned 0 results - cannot create query handle
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.warn (src/utils/logger.ts:146:15)
+      at executeODataQueryForHandle (src/services/handlers/query/odata-query.handler.ts:469:12)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:223:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:642:22)
+
+  console.error
+    [2025-12-08T20:37:57.869Z] [INFO] Query handle created: undefined (1 work items)
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.info (src/utils/logger.ts:127:15)
+      at executeODataQueryForHandle (src/services/handlers/query/odata-query.handler.ts:517:10)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:223:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:677:22)
+
+  console.error
+    [2025-12-08T20:37:57.899Z] [ERROR] OData query handler error: {"message":"Cannot read properties of undefined (reading 'ok')","name":"TypeError","stack":"TypeError: Cannot read properties of undefined (reading 'ok')\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:291:19)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:784:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:784:22)
+
+  console.error
+    [2025-12-08T20:37:57.905Z] [ERROR] OData Analytics query failed: 401 Unauthorized - TF400813: Resource not available for anonymous access
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at executeODataAnalytics (src/services/handlers/query/odata-query.handler.ts:293:14)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:219:14)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:838:22)
+
+  console.error
+    [2025-12-08T20:37:57.907Z] [ERROR] OData query handler error: {"message":"Analytics API authorization error: 401 Unauthorized\n\nThe user account does not have permission to access Azure DevOps Analytics.\n\nREQUIRED PERMISSION: \"View analytics\" at the project level\nThis permission is required to use OData queries for aggregations and analytics.\n\nHOW TO CHECK YOUR PERMISSIONS:\n1. Go to: https://dev.azure.com/test-org/test-project/_settings/security\n2. Search for your email address in the Members list\n3. Look for \"View analytics\" permission in your permissions list\n\nHOW TO FIX:\n1. If you don't have \"View analytics\" permission, contact your Azure DevOps administrator\n2. Alternative: Use WIQL queries (query-wiql tool) which don't require Analytics permissions\n\nMORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\nTechnical details: TF400813: Resource not available for anonymous access","name":"Error","stack":"Error: Analytics API authorization error: 401 Unauthorized\n\nThe user account does not have permission to access Azure DevOps Analytics.\n\nREQUIRED PERMISSION: \"View analytics\" at the project level\nThis permission is required to use OData queries for aggregations and analytics.\n\nHOW TO CHECK YOUR PERMISSIONS:\n1. Go to: https://dev.azure.com/test-org/test-project/_settings/security\n2. Search for your email address in the Members list\n3. Look for \"View analytics\" permission in your permissions list\n\nHOW TO FIX:\n1. If you don't have \"View analytics\" permission, contact your Azure DevOps administrator\n2. Alternative: Use WIQL queries (query-wiql tool) which don't require Analytics permissions\n\nMORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\nTechnical details: TF400813: Resource not available for anonymous access\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:296:15)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:838:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:838:22)
+
+  console.error
+    [2025-12-08T20:37:57.909Z] [ERROR] OData Analytics query failed: 403 Forbidden - Access denied
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at executeODataAnalytics (src/services/handlers/query/odata-query.handler.ts:293:14)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:219:14)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:854:22)
+
+  console.error
+    [2025-12-08T20:37:57.910Z] [ERROR] OData query handler error: {"message":"Analytics API authorization error: 403 Forbidden\n\nThe user account does not have permission to access Azure DevOps Analytics.\n\nREQUIRED PERMISSION: \"View analytics\" at the project level\nThis permission is required to use OData queries for aggregations and analytics.\n\nHOW TO CHECK YOUR PERMISSIONS:\n1. Go to: https://dev.azure.com/test-org/test-project/_settings/security\n2. Search for your email address in the Members list\n3. Look for \"View analytics\" permission in your permissions list\n\nHOW TO FIX:\n1. If you don't have \"View analytics\" permission, contact your Azure DevOps administrator\n2. Alternative: Use WIQL queries (query-wiql tool) which don't require Analytics permissions\n\nMORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\nTechnical details: Access denied","name":"Error","stack":"Error: Analytics API authorization error: 403 Forbidden\n\nThe user account does not have permission to access Azure DevOps Analytics.\n\nREQUIRED PERMISSION: \"View analytics\" at the project level\nThis permission is required to use OData queries for aggregations and analytics.\n\nHOW TO CHECK YOUR PERMISSIONS:\n1. Go to: https://dev.azure.com/test-org/test-project/_settings/security\n2. Search for your email address in the Members list\n3. Look for \"View analytics\" permission in your permissions list\n\nHOW TO FIX:\n1. If you don't have \"View analytics\" permission, contact your Azure DevOps administrator\n2. Alternative: Use WIQL queries (query-wiql tool) which don't require Analytics permissions\n\nMORE INFO: https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-security\n\nTechnical details: Access denied\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:296:15)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:854:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:854:22)
+
+  console.error
+    [2025-12-08T20:37:57.913Z] [ERROR] OData Analytics query failed: 404 Not Found - Project not found
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at executeODataAnalytics (src/services/handlers/query/odata-query.handler.ts:293:14)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:219:14)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:870:22)
+
+  console.error
+    [2025-12-08T20:37:57.914Z] [ERROR] OData query handler error: {"message":"Analytics API error: 404 Not Found - Project not found","name":"Error","stack":"Error: Analytics API error: 404 Not Found - Project not found\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:313:13)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:870:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:870:22)
+
+  console.error
+    [2025-12-08T20:37:57.922Z] [ERROR] OData query handler error: {"message":"Network error","name":"Error","stack":"Error: Network error\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:880:9)\n    at Promise.then.completed (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\utils.js:298:28)\n    at new Promise (<anonymous>)\n    at callAsyncCircusFn (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\utils.js:231:10)\n    at _callCircusTest (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\run.js:316:40)\n    at _runTest (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\run.js:252:3)\n    at _runTestsForDescribeBlock (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\run.js:126:9)\n    at _runTestsForDescribeBlock (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at _runTestsForDescribeBlock (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\run.js:121:9)\n    at run (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\run.js:71:3)\n    at runAndTransformResultsToJestFormat (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapterInit.js:122:21)\n    at jestAdapter (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-circus\\build\\legacy-code-todo-rewrite\\jestAdapter.js:79:19)\n    at runTestInternal (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-runner\\build\\runTest.js:367:16)\n    at runTest (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\node_modules\\jest-runner\\build\\runTest.js:444:34)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:883:22)
+
+  console.error
+    [2025-12-08T20:37:57.925Z] [ERROR] OData query handler error: {"message":"Invalid JSON","name":"Error","stack":"Error: Invalid JSON\n    at Object.json (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:909:17)\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:316:27)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:913:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:913:22)
+
+  console.error
+    [2025-12-08T20:37:57.932Z] [ERROR] OData Analytics query failed: 400 Bad Request - Invalid OData syntax
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at executeODataAnalytics (src/services/handlers/query/odata-query.handler.ts:293:14)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:219:14)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1117:22)
+
+  console.error
+    [2025-12-08T20:37:57.934Z] [ERROR] OData query handler error: {"message":"Analytics API error: 400 Bad Request - Invalid OData syntax","name":"Error","stack":"Error: Analytics API error: 400 Bad Request - Invalid OData syntax\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:313:13)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:1117:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1117:22)
+
+  console.error
+    [2025-12-08T20:37:57.936Z] [ERROR] OData Analytics query failed: 400 Bad Request - Syntax error
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at executeODataAnalytics (src/services/handlers/query/odata-query.handler.ts:293:14)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:219:14)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1142:22)
+
+  console.error
+    [2025-12-08T20:37:57.938Z] [ERROR] OData query handler error: {"message":"Analytics API error: 400 Bad Request - Syntax error","name":"Error","stack":"Error: Analytics API error: 400 Bad Request - Syntax error\n    at executeODataAnalytics (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:313:13)\n    at handleODataQuery (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\src\\services\\handlers\\query\\odata-query.handler.ts:219:14)\n    at Object.<anonymous> (C:\\Users\\ameliapayne\\ADO-Work-Item-MSP\\mcp_server\\test\\unit\\handlers\\odata-query.handler.test.ts:1142:22)"}
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.error (src/utils/logger.ts:166:15)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:230:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1142:22)
+
+  console.error
+    [2025-12-08T20:37:57.945Z] [INFO] Query handle created: undefined (1 work items)
+
+    [0m [90m 27 |[39m       [36mreturn[39m[33m;[39m
+     [90m 28 |[39m     }
+    [31m[1m>[22m[39m[90m 29 |[39m     originalConsoleError([33m...[39margs)[33m;[39m
+     [90m    |[39m     [31m[1m^[22m[39m
+     [90m 30 |[39m   })[33m;[39m
+     [90m 31 |[39m   
+     [90m 32 |[39m   console[33m.[39mwarn [33m=[39m jest[33m.[39mfn(([33m...[39margs) [33m=>[39m {[0m
+
+      at console.<anonymous> (test/setup.ts:29:5)
+      at Logger.info (src/utils/logger.ts:127:15)
+      at executeODataQueryForHandle (src/services/handlers/query/odata-query.handler.ts:517:10)
+      at handleODataQuery (src/services/handlers/query/odata-query.handler.ts:223:12)
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1312:22)
+
+  console.error
+    [2025-12-08T20:37:57.958Z] [INFO] [Telemetry] Shutdown complete
+
+    [0m [90m 125 |[39m     [36mif[39m ([33m![39m[36mthis[39m[33m.[39mmcpConnected) {
+     [90m 126 |[39m       [36mconst[39m contextStr [33m=[39m context [33m?[39m [32m` ${JSON.stringify(context)}`[39m [33m:[39m [32m''[39m[33m;[39m
+    [31m[1m>[22m[39m[90m 127 |[39m       console[33m.[39merror([32m`[${timestamp}] [INFO] ${message}${contextStr}`[39m)[33m;[39m
+     [90m     |[39m               [31m[1m^[22m[39m
+     [90m 128 |[39m     }
+     [90m 129 |[39m     
+     [90m 130 |[39m     [90m// Always write to file if configured[39m[0m
+
+      at Logger.info (src/utils/logger.ts:127:15)
+      at TelemetryService.shutdown (src/services/telemetry-service.ts:639:12)
+      at Object.<anonymous> (test/setup.ts:64:28)
+
+FAIL test/unit/handlers/odata-query.handler.test.ts
+  OData Query Handler
+    Azure CLI Validation
+      ΓêÜ should fail when Azure CLI is not available (3 ms)
+      ΓêÜ should fail when not logged into Azure CLI
+    Input Validation
+      ΓêÜ should reject invalid input schema (2 ms)
+      ΓêÜ should require description, queryType, or customODataQuery (1 ms)
+      ΓêÜ should validate organization and project are provided (1 ms)
+    Area Path Filtering
+      ΓêÜ should properly escape area paths with backslashes (44 ms)
+      ΓêÜ should properly escape area paths with single quotes (1 ms)
+      ΓêÜ should use default area path when not provided
+      ΓêÜ should handle deeply nested area paths (1 ms)
+    Query Type Execution
+      ΓêÜ should execute workItemCount query (1 ms)
+      ΓêÜ should execute groupByState query (1 ms)
+      ΓêÜ should execute groupByType query
+      ΓêÜ should execute groupByAssignee query (1 ms)
+      ΓêÜ should execute velocityMetrics query
+      ΓêÜ should execute customODataQuery
+    Filter Construction
+      ΓêÜ should apply date range filters
+      ΓêÜ should apply custom filters (1 ms)
+      ΓêÜ should apply iteration path filter (1 ms)
+    Query Handle Lifecycle
+      ├ù should create query handle for non-aggregation queries (5 ms)
+      ΓêÜ should not create query handle for aggregation queries (1 ms)
+      ΓêÜ should handle empty query results gracefully (3 ms)
+      ├ù should include work item context in query handle (3 ms)
+    Pagination
+      ΓêÜ should handle pagination parameters (1 ms)
+      ΓêÜ should include pagination warning when more results available (1 ms)
+      ΓêÜ should not include pagination for single-page results
+    Cache Behavior
+      ├ù should use cached results when available (27 ms)
+      ├ù should cache results after fetch (2 ms)
+    Error Handling
+      ΓêÜ should handle 401 unauthorized errors (4 ms)
+      ΓêÜ should handle 403 forbidden errors (4 ms)
+      ΓêÜ should handle 404 not found errors (4 ms)
+      ΓêÜ should handle network errors (8 ms)
+      ΓêÜ should handle invalid JSON responses (3 ms)
+    AI-Powered Query Generation
+      ΓêÜ should fail AI generation without server instance
+      ΓêÜ should fail AI generation when sampling not available (1 ms)
+      ├ù should generate and execute AI-powered query (1 ms)
+      ΓêÜ should handle AI generation failures gracefully
+      ├ù should retry failed AI generations (1 ms)
+    Metadata Options
+      ΓêÜ should include OData metadata when requested
+      ├ù should strip OData metadata by default (5 ms)
+      ├ù should include query metadata when requested (4 ms)
+    Edge Cases
+      ΓêÜ should handle empty result sets (1 ms)
+      ΓêÜ should handle null values in results
+      ├ù should handle very large result sets (2 ms)
+      ├ù should handle aggregation query with zero results (1 ms)
+      ΓêÜ should handle special characters in filter values
+      ├ù should handle undefined fields in work item context (3 ms)
+    Query Building
+      ΓêÜ should build query with multiple filters (2 ms)
+      ΓêÜ should apply custom groupBy and orderBy (1 ms)
+      ΓêÜ should apply select fields
+      ΓêÜ should URL encode organization and project names with special characters (1 ms)
+
+  ΓùÅ OData Query Handler ΓÇ║ Query Handle Lifecycle ΓÇ║ should create query handle for non-aggregation queries
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "qh_odata_abc123"
+    Received: undefined
+
+      598 |       expect(result.data).toBeDefined();
+      599 |       const data = result.data as any;
+    > 600 |       expect(data.query_handle).toBe('qh_odata_abc123');
+          |                                 ^
+      601 |       expect(data.work_item_count).toBe(2);
+      602 |       expect(mockQueryHandleService.storeQuery).toHaveBeenCalledWith(
+      603 |         [101, 102],
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:600:33)
+
+  ΓùÅ OData Query Handler ΓÇ║ Query Handle Lifecycle ΓÇ║ should include work item context in query handle
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      682 |
+      683 |       expect(result.success).toBe(true);
+    > 684 |       expect(mockQueryHandleService.storeQuery).toHaveBeenCalled();
+          |                                                 ^
+      685 |       
+      686 |       const storeCall = mockQueryHandleService.storeQuery.mock.calls[0];
+      687 |       const contextMap = storeCall[4] as Map<number, any>;
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:684:49)
+
+  ΓùÅ OData Query Handler ΓÇ║ Cache Behavior ΓÇ║ should use cached results when available
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      786 |       });
+      787 |
+    > 788 |       expect(result.success).toBe(true);
+          |                              ^
+      789 |       expect(result.data).toBeDefined();
+      790 |       const data = result.data as any;
+      791 |       expect(data.results).toBeDefined();
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:788:30)
+
+  ΓùÅ OData Query Handler ΓÇ║ Cache Behavior ΓÇ║ should cache results after fetch
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: Any<String>, {"@odata.context": "test", "@odata.count": 10, "value": [{"Count": 10}]}, 300000
+
+    Number of calls: 0
+
+      813 |
+      814 |       expect(result.success).toBe(true);
+    > 815 |       expect(mockCacheService.set).toHaveBeenCalledWith(
+          |                                    ^
+      816 |         expect.any(String),
+      817 |         mockResponse,
+      818 |         5 * 60 * 1000 // 5 minutes
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:815:36)
+
+  ΓùÅ OData Query Handler ΓÇ║ AI-Powered Query Generation ΓÇ║ should generate and execute AI-powered query
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      994 |       }, mockServerInstance);
+      995 |
+    > 996 |       expect(result.success).toBe(true);
+          |                              ^
+      997 |       expect(result.data).toBeDefined();
+      998 |       expect(mockSamplingClient.createMessage).toHaveBeenCalled();
+      999 |       expect(result.metadata?.aiGenerated).toBe(true);
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:996:30)
+
+  ΓùÅ OData Query Handler ΓÇ║ AI-Powered Query Generation ΓÇ║ should retry failed AI generations
+
+    expect(jest.fn()).toHaveBeenCalled()
+
+    Expected number of calls: >= 1
+    Received number of calls:    0
+
+      1067 |
+      1068 |       // Should have made at least one attempt
+    > 1069 |       expect(mockSamplingClient.createMessage).toHaveBeenCalled();
+           |                                                ^
+      1070 |     });
+      1071 |   });
+      1072 |
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1069:48)
+
+  ΓùÅ OData Query Handler ΓÇ║ Metadata Options ΓÇ║ should strip OData metadata by default
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      1120 |       });
+      1121 |
+    > 1122 |       expect(result.success).toBe(true);
+           |                              ^
+      1123 |       expect(result.data).toBeDefined();
+      1124 |       const data = result.data as any;
+      1125 |       // Metadata should be stripped from results
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1122:30)
+
+  ΓùÅ OData Query Handler ΓÇ║ Metadata Options ΓÇ║ should include query metadata when requested
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      1145 |       });
+      1146 |
+    > 1147 |       expect(result.success).toBe(true);
+           |                              ^
+      1148 |       expect(result.data).toBeDefined();
+      1149 |       const data = result.data as any;
+      1150 |       // includeMetadata affects result.metadata, not result.data
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1147:30)
+
+  ΓùÅ OData Query Handler ΓÇ║ Edge Cases ΓÇ║ should handle very large result sets
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1000
+    Received length: 1
+    Received array:  [{"Count": 10}]
+
+      1234 |       expect(result.data).toBeDefined();
+      1235 |       const data = result.data as any;
+    > 1236 |       expect(data.results).toHaveLength(1000);
+           |                            ^
+      1237 |     });
+      1238 |
+      1239 |     it('should handle aggregation query with zero results', async () => {
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1236:28)
+
+  ΓùÅ OData Query Handler ΓÇ║ Edge Cases ΓÇ║ should handle aggregation query with zero results
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 0
+    Received length: 1
+    Received array:  [{"Count": 5}]
+
+      1257 |       const data = result.data as any;
+      1258 |       // Empty result set should have count of 0
+    > 1259 |       expect(data.results).toHaveLength(0);
+           |                            ^
+      1260 |       expect(data.count).toBe(0);
+      1261 |     });
+      1262 |
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1259:28)
+
+  ΓùÅ OData Query Handler ΓÇ║ Edge Cases ΓÇ║ should handle undefined fields in work item context
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "qh_partial"
+    Received: undefined
+
+      1319 |       expect(result.data).toBeDefined();
+      1320 |       const data = result.data as any;
+    > 1321 |       expect(data.query_handle).toBe('qh_partial');
+           |                                 ^
+      1322 |     });
+      1323 |   });
+      1324 |
+
+      at Object.<anonymous> (test/unit/handlers/odata-query.handler.test.ts:1321:33)
+
+Test Suites: 1 failed, 1 total
+Tests:       11 failed, 39 passed, 50 total
+Snapshots:   0 total
+Time:        3.45 s, estimated 4 s
+Ran all test suites matching /odata-query.handler.test.ts/i.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
