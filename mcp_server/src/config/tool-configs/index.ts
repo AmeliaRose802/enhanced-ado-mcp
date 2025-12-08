@@ -51,7 +51,6 @@ export const toolConfigs: ToolConfig[] = [
  * 
  * Other AI Tools:
  * - get-pr-comments: AI-powered analysis when enrichWithAI=true
- * - find-intelligent-parent: AI-powered parent suggestion
  */
 export const AI_POWERED_TOOLS = [
   'analyze-workload',
@@ -62,8 +61,7 @@ export const AI_POWERED_TOOLS = [
   'query-odata',      // When description parameter is provided  
   'execute-bulk-operations', // When action is enhance-descriptions/assign-story-points/add-acceptance-criteria
   'analyze-bulk',     // When clusteringMethod is 'ai-semantic'
-  'get-pr-comments',  // When enrichWithAI is true
-  'find-intelligent-parent' // Always requires sampling
+  'get-pr-comments'   // When enrichWithAI is true
 ];
 
 /**

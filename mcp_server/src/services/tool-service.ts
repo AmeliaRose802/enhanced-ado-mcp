@@ -37,7 +37,6 @@ import { handleAIQueryAnalysis, initializeAIQueryAnalyzer } from './handlers/ai-
 
 // Analysis handlers
 import { handleExtractSecurityLinks } from './handlers/analysis/extract-security-links.handler.js';
-import { handleIntelligentParentFinder } from './handlers/analysis/intelligent-parent-finder.handler.js';
 
 // Integration handlers
 import { handleAssignToCopilot } from './handlers/integration/assign-to-copilot.handler.js';
