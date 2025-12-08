@@ -520,8 +520,7 @@ class SearchService {
     // This is a simplified implementation
     // FlexSearch doesn't natively support boolean operators,
     // so we'll handle this by splitting and searching multiple times
-    // For now, just return the original query
-    // TODO: Implement proper boolean query parsing
+    // For now, just return the original query (boolean parsing not implemented)
     return query;
   }
 

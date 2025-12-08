@@ -5,7 +5,6 @@
  * Supports field selection, relationships, comments, and history.
  */
 
-// TODO: Install exceljs types: npm install --save-dev @types/exceljs
 import * as ExcelJS from 'exceljs';
 import { logger, errorToContext } from '../utils/logger.js';
 import { loadConfiguration } from '../config/config.js';

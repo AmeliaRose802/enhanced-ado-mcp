@@ -8,8 +8,6 @@ import { aiAnalysisTools } from "./ai-analysis.js";
 import { queryHandleTools } from "./query-handle.js";
 import { discoveryTools } from "./discovery.js";
 import { reposTools } from "./repos.js";
-// TODO: Fix time-tracking tools - they don't match ToolConfig interface
-// import { timeTrackingTools } from "./time-tracking.js";
 
 /**
  * Unified tool configuration registry
@@ -25,7 +23,6 @@ export const toolConfigs: ToolConfig[] = [
   ...queryHandleTools,
   ...discoveryTools,
   ...reposTools
-  // ...timeTrackingTools, // Disabled - needs refactoring
 ];
 
 /**
@@ -118,5 +115,4 @@ export {
   queryHandleTools,
   discoveryTools,
   reposTools
-  // timeTrackingTools, // Disabled - needs refactoring
 };
