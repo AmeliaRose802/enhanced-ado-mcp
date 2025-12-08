@@ -254,7 +254,6 @@ class QueryHandleService {
     
     if (new Date() > data.expiresAt) {
       this.handles.delete(handle);
-      this.totalMemoryBytes -= data.itemContext.reduce((sum, item) => sum + JSON.stringify(item).length * 2, 0);
       return null;
     }
     return data;
