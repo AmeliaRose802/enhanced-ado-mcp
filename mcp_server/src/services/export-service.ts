@@ -5,7 +5,7 @@
  * Supports field selection, relationships, comments, and history.
  */
 
-import * as ExcelJS from 'exceljs';
+import ExcelJS from 'exceljs';
 import { logger, errorToContext } from '../utils/logger.js';
 import { loadConfiguration } from '../config/config.js';
 import type { ADOWorkItem } from '../types/ado.js';
