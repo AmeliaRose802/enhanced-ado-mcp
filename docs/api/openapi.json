@@ -2401,7 +2401,7 @@
                           },
                           "history": {
                             "type": "string",
-                            "description": "Name for history sheet (default: 'History')"
+                            "description": "Name for history sheet (default: 'WI_History' - Excel reserves 'History')"
                           }
                         }
                       }

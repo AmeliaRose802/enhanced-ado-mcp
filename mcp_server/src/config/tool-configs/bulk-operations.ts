@@ -348,7 +348,7 @@ export const bulkOperationsTools: ToolConfig[] = [
                 workItems: { type: "string", description: "Name for work items sheet (default: 'Work Items')" },
                 relationships: { type: "string", description: "Name for relationships sheet (default: 'Relationships')" },
                 comments: { type: "string", description: "Name for comments sheet (default: 'Comments')" },
-                history: { type: "string", description: "Name for history sheet (default: 'History')" }
+                history: { type: "string", description: "Name for history sheet (default: 'WI_History' - Excel reserves 'History')" }
               }
             }
           }

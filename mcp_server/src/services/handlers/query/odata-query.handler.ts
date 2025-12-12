@@ -97,19 +97,50 @@ export async function handleODataQuery(
     // Determine if this is AI generation or direct execution
     const isAIGeneration = !!parsed.data.description && !parsed.data.queryType && !parsed.data.customODataQuery;
     
+    // Resolve area path and iteration path with useDefaultAreaPaths flag
+    // Priority: explicit value > default (if useDefaultAreaPaths=true) > none
+    // Note: useDefaultAreaPaths controls BOTH area path and iteration path for consistency
+    const useDefaultAreaPaths = parsed.data.useDefaultAreaPaths !== false; // Default to true for backward compatibility
+    
+    let resolvedAreaPath: string | undefined;
+    if (parsed.data.areaPath) {
+      // Explicit area path provided - always use it
+      resolvedAreaPath = parsed.data.areaPath;
+    } else if (useDefaultAreaPaths && requiredConfig.defaultAreaPath) {
+      // Use default area path if flag is true (default behavior)
+      resolvedAreaPath = requiredConfig.defaultAreaPath;
+      logger.debug(`Applied default area path: ${requiredConfig.defaultAreaPath}`);
+    } else {
+      // No area path filtering - query entire project
+      resolvedAreaPath = undefined;
+      if (!useDefaultAreaPaths) {
+        logger.debug(`useDefaultAreaPaths=false: Skipping default area path filter`);
+      }
+    }
+    
+    let resolvedIterationPath: string | undefined;
+    if (parsed.data.iterationPath) {
+      // Explicit iteration path provided - always use it
+      resolvedIterationPath = parsed.data.iterationPath;
+    } else if (useDefaultAreaPaths && requiredConfig.defaultIterationPath) {
+      // Use default iteration path if flag is true (default behavior)
+      resolvedIterationPath = requiredConfig.defaultIterationPath;
+      logger.debug(`Applied default iteration path: ${requiredConfig.defaultIterationPath}`);
+    } else {
+      // No iteration path filtering - query all iterations
+      resolvedIterationPath = undefined;
+      if (!useDefaultAreaPaths) {
+        logger.debug(`useDefaultAreaPaths=false: Skipping default iteration path filter`);
+      }
+    }
+    
     const queryArgs: ODataQueryArgs = {
       ...parsed.data,
       organization: parsed.data.organization || requiredConfig.organization,
       project: parsed.data.project || requiredConfig.project,
-      areaPath: parsed.data.areaPath || requiredConfig.defaultAreaPath,
-      iterationPath: parsed.data.iterationPath || requiredConfig.defaultIterationPath
+      areaPath: resolvedAreaPath,
+      iterationPath: resolvedIterationPath
     };
-
-    // Apply default area path if not provided
-    if (!queryArgs.areaPath && requiredConfig.defaultAreaPath) {
-      queryArgs.areaPath = requiredConfig.defaultAreaPath;
-      logger.debug(`Applied default area path: ${requiredConfig.defaultAreaPath}`);
-    }
 
     let finalQuery: string;
     let aiGenerationMetadata: Record<string, unknown> = {};
@@ -261,7 +292,7 @@ async function executeODataAnalytics(
     };
   }
   
-  const baseUrl = `https://analytics.dev.azure.com/${encodeURIComponent(queryArgs.organization)}/${encodeURIComponent(queryArgs.project)}/_odata/v4.0-preview`;
+  const baseUrl = `https://analytics.dev.azure.com/${encodeURIComponent(queryArgs.organization)}/${encodeURIComponent(queryArgs.project)}/_odata/v3.0-preview`;
   const fullUrl = `${baseUrl}/WorkItems?${odataQuery}`;
   
   const cacheKey = generateODataCacheKey(fullUrl);
@@ -278,6 +309,8 @@ async function executeODataAnalytics(
     
     const token = await getAnalyticsTokenProvider()();
     
+    logger.debug(`Executing OData Analytics query: ${fullUrl.substring(0, 150)}...`);
+    
     const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
@@ -287,6 +320,8 @@ async function executeODataAnalytics(
         'X-TFS-FedAuthRedirect': 'Suppress'  // Suppress federated auth redirects - required for proper authentication
       }
     });
+
+    logger.debug(`OData Analytics response: status=${response.status}, ok=${response.ok}, statusText=${response.statusText}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -315,12 +350,23 @@ async function executeODataAnalytics(
 
     data = await response.json() as ODataResponse;
     
+    // Log diagnostic info about the response structure
+    logger.debug(`OData API response structure: hasValue=${!!data.value}, valueType=${typeof data.value}, valueLength=${Array.isArray(data.value) ? data.value.length : 'N/A'}, hasCount=${!!data['@odata.count']}`);
+    
+    // Warn if we got success but no data - could indicate permissions issue
+    if (!data.value || (Array.isArray(data.value) && data.value.length === 0)) {
+      logger.warn(`OData query returned successfully but with no data. This might indicate: 1) No matching items, 2) Permission to query but not to view results, 3) Incorrect query filter. Query: ${odataQuery.substring(0, 100)}`);
+    }
+    
     // Cache the result for 5 minutes
     cacheService.set(cacheKey, data, 5 * 60 * 1000);
   }
   
   const includeOdataMetadata = queryArgs.includeOdataMetadata ?? false;
-  const cleanedResults = cleanODataResults(data.value, !includeOdataMetadata);
+  // Safely handle missing or undefined value array
+  const rawResults = data.value || [];
+  logger.debug(`Processing ${rawResults.length} raw results from OData API`);
+  const cleanedResults = cleanODataResults(rawResults, !includeOdataMetadata);
   const resultCount = data["@odata.count"] || cleanedResults.length || 0;
   const summary = generateSummary(queryArgs.queryType || 'custom', resultCount, cleanedResults);
 
@@ -463,6 +509,10 @@ async function executeODataQueryForHandle(
   }
   
   const data = await response.json();
+  
+  // Log diagnostic info about the response structure
+  logger.debug(`OData query handle response: hasValue=${!!data.value}, valueType=${typeof data.value}, valueLength=${Array.isArray(data.value) ? data.value.length : 'N/A'}`);
+  
   const workItems = data.value || [];
   
   if (workItems.length === 0) {
@@ -974,7 +1024,12 @@ function buildODataQuery(args: ODataAnalyticsArgs): string {
 /**
  * Clean OData metadata from results
  */
-function cleanODataResults(results: Record<string, unknown>[], stripMetadata: boolean = true): Record<string, unknown>[] {
+function cleanODataResults(results: Record<string, unknown>[] | undefined | null, stripMetadata: boolean = true): Record<string, unknown>[] {
+  // Handle undefined, null, or non-array results gracefully
+  if (!results || !Array.isArray(results)) {
+    return [];
+  }
+  
   if (!stripMetadata) {
     return results;
   }

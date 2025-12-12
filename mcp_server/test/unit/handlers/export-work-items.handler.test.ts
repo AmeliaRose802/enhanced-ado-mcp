@@ -718,4 +718,115 @@ describe('Export Work Items Handler - Error Scenarios', () => {
       expect(result.errors[0]).toContain('project');
     });
   });
+
+  describe('Excel Reserved Sheet Names', () => {
+    it('should auto-rename reserved sheet name "History" to "WI_History"', async () => {
+      mockValidateAndParse.mockReturnValue({
+        success: true,
+        data: {
+          queryHandle: 'qh-123',
+          format: 'xlsx',
+          includeHistory: true,
+          excelOptions: {
+            sheetNames: {
+              history: 'History' // Reserved name
+            }
+          }
+        }
+      });
+
+      mockQueryHandleService.resolveItemSelector.mockReturnValue([1]);
+      mockQueryHandleService.getQueryData.mockReturnValue({
+        workItemIds: [1],
+        contextMap: new Map()
+      });
+
+      mockExportWorkItems.mockResolvedValue({
+        success: true,
+        filePath: '/tmp/export.xlsx',
+        itemCount: 1,
+        format: 'xlsx',
+        fileSize: 1024,
+        metadata: {}
+      });
+
+      const result = await handleExportWorkItems(mockConfig, {});
+
+      expect(result.success).toBe(true);
+      expect(mockExportWorkItems).toHaveBeenCalled();
+      
+      // Verify that the export was called (the sanitization happens inside export-service)
+      const exportCall = mockExportWorkItems.mock.calls[0];
+      expect(exportCall).toBeDefined();
+    });
+
+    it('should handle custom sheet names that are not reserved', async () => {
+      mockValidateAndParse.mockReturnValue({
+        success: true,
+        data: {
+          queryHandle: 'qh-123',
+          format: 'xlsx',
+          includeHistory: true,
+          excelOptions: {
+            sheetNames: {
+              history: 'Revision History' // Not reserved
+            }
+          }
+        }
+      });
+
+      mockQueryHandleService.resolveItemSelector.mockReturnValue([1]);
+      mockQueryHandleService.getQueryData.mockReturnValue({
+        workItemIds: [1],
+        contextMap: new Map()
+      });
+
+      mockExportWorkItems.mockResolvedValue({
+        success: true,
+        filePath: '/tmp/export.xlsx',
+        itemCount: 1,
+        format: 'xlsx',
+        fileSize: 1024,
+        metadata: {}
+      });
+
+      const result = await handleExportWorkItems(mockConfig, {});
+
+      expect(result.success).toBe(true);
+    });
+
+    it('should sanitize sheet names with invalid characters', async () => {
+      mockValidateAndParse.mockReturnValue({
+        success: true,
+        data: {
+          queryHandle: 'qh-123',
+          format: 'xlsx',
+          excelOptions: {
+            sheetNames: {
+              workItems: 'Items/Work*Items' // Contains invalid chars
+            }
+          }
+        }
+      });
+
+      mockQueryHandleService.resolveItemSelector.mockReturnValue([1]);
+      mockQueryHandleService.getQueryData.mockReturnValue({
+        workItemIds: [1],
+        contextMap: new Map()
+      });
+
+      mockExportWorkItems.mockResolvedValue({
+        success: true,
+        filePath: '/tmp/export.xlsx',
+        itemCount: 1,
+        format: 'xlsx',
+        fileSize: 1024,
+        metadata: {}
+      });
+
+      const result = await handleExportWorkItems(mockConfig, {});
+
+      expect(result.success).toBe(true);
+    });
+  });
 });

@@ -345,6 +345,233 @@ describe('OData Query Handler', () => {
       expect(mockEscapeAreaPathForOData).toHaveBeenCalledWith('DefaultProject\\DefaultTeam');
     });
 
+    it('should NOT use default area path when useDefaultAreaPaths=false', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultAreaPath: 'DefaultProject\\DefaultTeam'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 10 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'workItemCount',
+        useDefaultAreaPaths: false
+      });
+
+      // Should NOT call area path escaping since no area path should be used
+      expect(mockEscapeAreaPathForOData).not.toHaveBeenCalled();
+      
+      // Verify the query URL doesn't contain area path filter
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      expect(url).not.toContain('startswith(Area/AreaPath');
+      expect(url).not.toContain('DefaultProject');
+    });
+
+    it('should respect explicit areaPath even when useDefaultAreaPaths=false', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultAreaPath: 'DefaultProject\\DefaultTeam'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 3 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'workItemCount',
+        areaPath: 'ExplicitProject\\ExplicitTeam',
+        useDefaultAreaPaths: false
+      });
+
+      // Should use the explicit area path, not the default
+      expect(mockEscapeAreaPathForOData).toHaveBeenCalledWith('ExplicitProject\\ExplicitTeam');
+      expect(mockEscapeAreaPathForOData).not.toHaveBeenCalledWith('DefaultProject\\DefaultTeam');
+    });
+
+    it('should apply useDefaultAreaPaths=false to predefined query types', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultAreaPath: 'DefaultProject\\DefaultTeam'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [
+          { State: 'Active', Count: 5 },
+          { State: 'Closed', Count: 3 }
+        ]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'groupByState',
+        useDefaultAreaPaths: false
+      });
+
+      // Should NOT apply default area path filter
+      expect(mockEscapeAreaPathForOData).not.toHaveBeenCalled();
+      
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      expect(url).not.toContain('startswith(Area/AreaPath');
+    });
+
+    it('should NOT use default iteration path when useDefaultAreaPaths=false', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultAreaPath: 'DefaultProject\\DefaultTeam',
+        defaultIterationPath: 'DefaultProject\\Sprint 5'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 15 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'workItemCount',
+        useDefaultAreaPaths: false
+      });
+
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      // Should NOT contain iteration path filter
+      expect(url).not.toContain('Iteration/IterationPath');
+      expect(url).not.toContain('Sprint 5');
+      
+      // Should also not contain area path filter
+      expect(url).not.toContain('startswith(Area/AreaPath');
+    });
+
+    it('should apply default iteration path when useDefaultAreaPaths=true (default)', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultIterationPath: 'DefaultProject\\Sprint 5'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 8 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'workItemCount'
+        // useDefaultAreaPaths not specified, defaults to true
+      });
+
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      // Should contain iteration path filter
+      expect(url).toContain('Iteration/IterationPath');
+      expect(url).toContain('Sprint 5');
+    });
+
+    it('should respect explicit iterationPath even when useDefaultAreaPaths=false', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultIterationPath: 'DefaultProject\\Sprint 5'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [{ Count: 4 }]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'workItemCount',
+        iterationPath: 'ExplicitProject\\Sprint 10',
+        useDefaultAreaPaths: false
+      });
+
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      // Should use the explicit iteration path, not the default
+      expect(url).toContain('Iteration/IterationPath');
+      expect(url).toContain('Sprint 10');
+      expect(url).not.toContain('Sprint 5');
+    });
+
+    it('should skip both area and iteration path filters with useDefaultAreaPaths=false', async () => {
+      (mockGetRequiredConfig as jest.Mock).mockReturnValue({
+        organization: 'test-org',
+        project: 'test-project',
+        defaultAreaPath: 'DefaultProject\\DefaultTeam',
+        defaultIterationPath: 'DefaultProject\\Sprint 5'
+      });
+
+      const mockResponse: ODataResponse = {
+        '@odata.context': 'test',
+        value: [
+          { State: 'Active', Count: 100 },
+          { State: 'Closed', Count: 200 }
+        ]
+      };
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse
+      } as Response);
+
+      await handleODataQuery(config, {
+        queryType: 'groupByState',
+        useDefaultAreaPaths: false
+      });
+
+      const fetchCall = (global.fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      const url = fetchCall[0] as string;
+      
+      // Should not contain ANY default filters
+      expect(url).not.toContain('startswith(Area/AreaPath');
+      expect(url).not.toContain('Iteration/IterationPath');
+      expect(url).not.toContain('DefaultTeam');
+      expect(url).not.toContain('Sprint 5');
+    });
+
     it('should handle deeply nested area paths', async () => {
       const deepPath = 'One\\Azure Compute\\OneFleet Node\\Azure Host Agent\\Azure Host Gateway';
       (mockEscapeAreaPathForOData as jest.Mock).mockReturnValue('One\\\\Azure Compute\\\\OneFleet Node\\\\Azure Host Agent\\\\Azure Host Gateway');
@@ -1334,6 +1561,33 @@ describe('OData Query Handler', () => {
 
       expect(result.success).toBe(true);
       expect((result.data as any).query_handle).toBe('qh_partial');
+    });
+
+    it('should handle missing or undefined value array in API response', async () => {
+      // Ensure cache is empty
+      (mockCacheService.get as jest.Mock).mockReturnValue(null);
+      
+      // Test case: API returns response without value array
+      const mockResponse = {
+        '@odata.context': 'test',
+        '@odata.count': 0
+        // value is undefined
+      } as any;
+
+      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+        text: async () => JSON.stringify(mockResponse)
+      } as Response);
+
+      const result = await handleODataQuery(config, {
+        queryType: 'workItemCount'
+      });
+
+      // Should succeed with empty results instead of crashing
+      expect(result.success).toBe(true);
+      expect((result.data as any).count).toBe(0);
+      expect((result.data as any).results).toEqual([]);
     });
   });
 

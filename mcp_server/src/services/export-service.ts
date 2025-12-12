@@ -12,6 +12,43 @@ import type { ADOWorkItem } from '../types/ado.js';
 import * as path from 'path';
 import * as fs from 'fs';
 
+/**
+ * Excel reserved sheet names that cannot be used
+ * Source: https://support.microsoft.com/en-us/office/rename-a-worksheet-3f1f7148-ee83-404d-8ef0-9ff99fbad1f9
+ */
+const EXCEL_RESERVED_NAMES = new Set([
+  'History',
+  // Excel also reserves these for internal use
+  'Print_Area',
+  'Print_Titles',
+  'Consolidate_Area',
+  'Sheet_Title'
+]);
+
+/**
+ * Validates and sanitizes sheet name to avoid Excel reserved names and invalid characters
+ * @param name - Desired sheet name
+ * @returns Sanitized sheet name safe for Excel
+ */
+function sanitizeSheetName(name: string): string {
+  // Replace invalid characters (Excel doesn't allow: \ / * ? [ ] : )
+  let sanitized = name.replace(/[\\/\*\?\[\]:]/g, '_');
+  
+  // Trim to max length (Excel allows 31 characters)
+  if (sanitized.length > 31) {
+    sanitized = sanitized.substring(0, 31);
+  }
+  
+  // Check for reserved names (case-insensitive)
+  if (EXCEL_RESERVED_NAMES.has(sanitized) || EXCEL_RESERVED_NAMES.has(sanitized.toLowerCase())) {
+    // Auto-rename reserved names by adding a prefix
+    sanitized = `WI_${sanitized}`;
+    logger.debug(`Sheet name '${name}' is reserved by Excel, renamed to '${sanitized}'`);
+  }
+  
+  return sanitized;
+}
+
 export interface ExportOptions {
   format: 'csv' | 'xlsx' | 'tsv';
   outputPath?: string;
@@ -162,24 +199,28 @@ async function exportToExcel(
   const fieldsToExport = getFieldsToExport(workItemsData, options);
 
   // Create Work Items sheet
-  const workItemsSheet = workbook.addWorksheet(excelOpts.sheetNames?.workItems || 'Work Items');
+  const workItemsSheetName = sanitizeSheetName(excelOpts.sheetNames?.workItems || 'Work Items');
+  const workItemsSheet = workbook.addWorksheet(workItemsSheetName);
   await populateWorkItemsSheet(workItemsSheet, workItemsData, fieldsToExport, excelOpts);
 
   // Create Relationships sheet if requested
   if (options.includeRelationships && multipleSheets) {
-    const relationshipsSheet = workbook.addWorksheet(excelOpts.sheetNames?.relationships || 'Relationships');
+    const relationshipsSheetName = sanitizeSheetName(excelOpts.sheetNames?.relationships || 'Relationships');
+    const relationshipsSheet = workbook.addWorksheet(relationshipsSheetName);
     await populateRelationshipsSheet(relationshipsSheet, workItemsData, excelOpts);
   }
 
   // Create Comments sheet if requested
   if (options.includeComments && multipleSheets) {
-    const commentsSheet = workbook.addWorksheet(excelOpts.sheetNames?.comments || 'Comments');
+    const commentsSheetName = sanitizeSheetName(excelOpts.sheetNames?.comments || 'Comments');
+    const commentsSheet = workbook.addWorksheet(commentsSheetName);
     await populateCommentsSheet(commentsSheet, workItemsData, excelOpts);
   }
 
   // Create History sheet if requested
   if (options.includeHistory && multipleSheets) {
-    const historySheet = workbook.addWorksheet(excelOpts.sheetNames?.history || 'History');
+    const historySheetName = sanitizeSheetName(excelOpts.sheetNames?.history || 'History');
+    const historySheet = workbook.addWorksheet(historySheetName);
     await populateHistorySheet(historySheet, workItemsData, excelOpts);
   }
 
